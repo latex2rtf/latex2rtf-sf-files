@@ -12,8 +12,13 @@ Scott Prahl, October 2001
 #include "parser.h"
 #include "funct1.h"
 #include "util.h"
+#include "cfg.h"
+#include "counters.h"
+#include "funct1.h"
 
-#define MAX_DEFINITIONS 50
+#define MAX_DEFINITIONS 200
+#define MAX_ENVIRONMENTS 20
+#define MAX_THEOREMS 20
 
 struct {
 	char * name;
@@ -26,10 +31,18 @@ struct {
 	char * begdef;
 	char * enddef;
 	int  params;
-} NewEnvironments[MAX_DEFINITIONS];
+} NewEnvironments[MAX_ENVIRONMENTS];
+
+struct {
+	char * name;
+	char * numbered_like;
+	char * caption;
+	char * within;
+} NewTheorems[MAX_THEOREMS];
 
 static int iDefinitionCount = 0;
 static int iNewEnvironmentCount = 0;
+static int iNewTheoremCount = 0;
 
 int 
 strequal(char *a, char *b)
@@ -45,7 +58,32 @@ strequal(char *a, char *b)
 		return 1;
 }
 
-static void
+/* static void printDefinitions(void)
+{
+int i=0;
+	fprintf(stderr, "\n");
+	while(i < iDefinitionCount ) {
+		fprintf(stderr, "[%d] name   =<%s>\n",i, Definitions[i].name);
+		fprintf(stderr, "    def    =<%s>\n", Definitions[i].def);
+		fprintf(stderr, "    params =<%d>\n", Definitions[i].params);
+		i++;
+	}
+}
+
+static void printTheorems(void)
+{
+int i=0;
+	fprintf(stderr, "\n");
+	for (i=0; i< iNewTheoremCount; i++) {
+		fprintf(stderr, "[%d] name   =<%s>\n",i, NewTheorems[i].name);
+		fprintf(stderr, "    caption    =<%s>\n", NewTheorems[i].caption);
+		fprintf(stderr, "    like =<%s>\n", NewTheorems[i].numbered_like);
+		fprintf(stderr, "    within    =<%s>\n", NewTheorems[i].within);
+	}
+}
+*/
+
+static char *
 expandmacro(char *macro, int params)
 /**************************************************************************
      purpose: retrieves and expands a defined macro 
@@ -53,17 +91,13 @@ expandmacro(char *macro, int params)
 {
 	int i,param;
 	char * args[9], *dmacro, *macro_piece, *next_piece, *expanded, buffer[1024], *cs;
-		
-	diagnostics(5, "expandmacro macro=<%s>, params=%d", macro, params);
 
-	if (params == 0) {
-		ConvertString(macro);
-		return;
-	}
-
+	if (params<=0) 
+		return strdup(macro);
+	
 	for (i=0; i<params; i++) {
 		args[i] = getBraceParam();
-		diagnostics(6, "argument #%d <%s>", i+1, args[i]);
+		diagnostics(3, "argument #%d <%s>", i+1, args[i]);
 	}
 	
 	expanded = buffer;
@@ -83,29 +117,62 @@ expandmacro(char *macro, int params)
 		if (next_piece) {
 			*next_piece = '\0';
 			next_piece++;
-			param = *next_piece - '1';
+			if (*next_piece=='#')
+				param = 101;				/* just a flag for below */
+			else
+				param = *next_piece - '1';
 			next_piece++;
 		} else
 			param = -1;
 			
-		diagnostics(6, "expandmacro piece =<%s>", macro_piece);
+		diagnostics(3, "expandmacro piece =<%s>", macro_piece);
 		strcpy(expanded,macro_piece);
 		expanded += strlen(macro_piece);
 		if (param > -1) {
-			diagnostics(6, "expandmacro arg =<%s>", args[param]);
-			strcpy(expanded,args[param]);
-			expanded += strlen(args[param]);
+			if (param==101) {
+				diagnostics(3, "expandmacro ## = #");
+				strcpy(expanded,"#");
+				expanded ++;
+			} else if (param<params) {
+				diagnostics(3, "expandmacro arg =<%s>", args[param]);
+				strcpy(expanded,args[param]);
+				expanded += strlen(args[param]);
+			} else
+				diagnostics(WARNING,"confusing definition in macro=<%s>", macro);
 		}
 		
 		macro_piece = next_piece;
 	}
 	
-	diagnostics(4, "expandmacro expanded=<%s>", buffer);
-	ConvertString(buffer);
+	
+/*	ConvertString(buffer);*/
 	for (i=0; i< params; i++)
 		if (args[i]) free(args[i]);
 
 	if (dmacro) free(dmacro);
+
+	diagnostics(3, "expandmacro expanded=<%s>", buffer);
+	return strdup(buffer);
+}
+
+int
+maybeDefinition(char * s, int n)
+/**************************************************************************
+     purpose: checks to see if a named TeX definition possibly exists
+     returns: the array index of the named TeX definition
+**************************************************************************/
+{
+	int i;
+	
+	if (n==0) return TRUE;
+	
+	for (i=0; i<iDefinitionCount; i++) {
+		diagnostics(6, "seeking=<%s>, i=%d, current=<%s>", s,i,Definitions[i].name);
+		if (strncmp(s,Definitions[i].name,n) == 0) 
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 int
@@ -115,12 +182,11 @@ existsDefinition(char * s)
      returns: the array index of the named TeX definition
 **************************************************************************/
 {
-	int n, i=0;
+	int i;
 	
-	n = strlen(s);
-	while(i < iDefinitionCount && !strequal(s,Definitions[i].name)) {
+	for (i=0; i<iDefinitionCount; i++) {
 		diagnostics(6, "seeking=<%s>, i=%d, current=<%s>", s,i,Definitions[i].name);
-		i++;
+		if (strcmp(s,Definitions[i].name) == 0) break;
 	}
 
 	if (i==iDefinitionCount) 
@@ -137,8 +203,17 @@ newDefinition(char *name, char *def, int params)
               define \hd, name = "hd"
 **************************************************************************/
 {
+	diagnostics(3,"Adding macro <%s>=<%s>",name,def);
+
+	if (strcmp(name,"LaTeX")==0) return;
+	if (strcmp(name,"TeX")==0) return;
+	if (strcmp(name,"AmSTeX")==0) return;
+	if (strcmp(name,"BibTex")==0) return;
+	if (strcmp(name,"LaTeXe")==0) return;
+	if (strcmp(name,"AmSLaTeX")==0) return;
+	
 	if (iDefinitionCount==MAX_DEFINITIONS){
-		fprintf(stderr,"Too many definitions, ignoring %s", name);
+		diagnostics(WARNING,"Too many definitions, ignoring %s", name);
 		return;
 	}
 	
@@ -147,15 +222,13 @@ newDefinition(char *name, char *def, int params)
 	Definitions[iDefinitionCount].name=strdup(name); 
 	
 	if (Definitions[iDefinitionCount].name==NULL) {
-		fprintf(stderr, "\nCannot allocate name for definition \\%s\n", name);
-		exit(1);
+		diagnostics(ERROR, "\nCannot allocate name for definition \\%s\n", name);
 	}
 
 	Definitions[iDefinitionCount].def=strdup(def); 
 
 	if (Definitions[iDefinitionCount].def==NULL) {
-		fprintf(stderr, "\nCannot allocate def for definition \\%s\n", name);
-		exit(1);
+		diagnostics(ERROR, "\nCannot allocate def for definition \\%s\n", name);
 	}
 	
 	iDefinitionCount++;
@@ -168,6 +241,8 @@ renewDefinition(char * name, char * def, int params)
 **************************************************************************/
 {
 	int i;
+
+	diagnostics(3,"renewDefinition seeking <%s>\n",name);
 	i = existsDefinition(name);
 	
 	if (i<0) {
@@ -185,16 +260,18 @@ renewDefinition(char * name, char * def, int params)
 	}
 }
 
-void
+char *
 expandDefinition(int thedef)
 /**************************************************************************
      purpose: retrieves and expands a \newcommand macro 
 **************************************************************************/
 {
-	diagnostics(5, "expandDefinition name=<%s>", Definitions[thedef].name);
-	diagnostics(5, "expandDefinition def =<%s>", Definitions[thedef].def);
 
-	expandmacro(Definitions[thedef].def, Definitions[thedef].params);
+	diagnostics(3, "expandDefinition name   =<%s>", Definitions[thedef].name);
+	diagnostics(3, "expandDefinition def    =<%s>", Definitions[thedef].def);
+	diagnostics(3, "expandDefinition params =<%d>", Definitions[thedef].params);
+
+	return expandmacro(Definitions[thedef].def, Definitions[thedef].params);
 }
 
 int
@@ -225,7 +302,7 @@ newEnvironment(char *name, char *begdef, char *enddef, int params)
               name should not begin with a '\' 
 **************************************************************************/
 {
-	if (iNewEnvironmentCount==MAX_DEFINITIONS){
+	if (iNewEnvironmentCount==MAX_ENVIRONMENTS){
 		diagnostics(WARNING,"Too many newenvironments, ignoring %s", name);
 		return;
 	}
@@ -269,7 +346,7 @@ renewEnvironment(char *name, char *begdef, char *enddef, int params)
 	}
 }
 
-void
+char *
 expandEnvironment(int thedef, int code)
 /**************************************************************************
      purpose: retrieves and expands a \newenvironment 
@@ -279,15 +356,109 @@ expandEnvironment(int thedef, int code)
 	
 		diagnostics(4, "\\begin{%s} <%s>", NewEnvironments[thedef].name, \
 										   NewEnvironments[thedef].begdef);
-		expandmacro(NewEnvironments[thedef].begdef, NewEnvironments[thedef].params);
+		return expandmacro(NewEnvironments[thedef].begdef, NewEnvironments[thedef].params);
 	
 	} else {
 
 		diagnostics(4, "\\end{%s} <%s>", NewEnvironments[thedef].name, \
 										 NewEnvironments[thedef].enddef);
-		expandmacro(NewEnvironments[thedef].enddef, 0);
+		return expandmacro(NewEnvironments[thedef].enddef, 0);
 	}
 }
 
+void
+newTheorem(char *name, char *caption, char *numbered_like, char *within)
+/**************************************************************************
+     purpose: allocates and initializes a \newtheorem 
+**************************************************************************/
+{
+	if (iNewTheoremCount==MAX_THEOREMS){
+		diagnostics(WARNING,"Too many \\newtheorems, ignoring %s", name);
+		return;
+	}
+	
+	NewTheorems[iNewTheoremCount].name=strdup(name); 
+	
+	NewTheorems[iNewTheoremCount].caption=strdup(caption); 
 
+	if (numbered_like)
+		NewTheorems[iNewTheoremCount].numbered_like=strdup(numbered_like);
+	else 
+		NewTheorems[iNewTheoremCount].numbered_like=strdup(name);
+
+	if (within)
+		NewTheorems[iNewTheoremCount].within=strdup(within);
+	else 
+		NewTheorems[iNewTheoremCount].within=NULL;
+		
+	setCounter(NewTheorems[iNewTheoremCount].numbered_like,0);
+
+	iNewTheoremCount++;
+}
+
+int
+existsTheorem(char * s)
+/**************************************************************************
+     purpose: checks to see if a user created environment exists
+     returns: the array index of the \newtheorem
+**************************************************************************/
+{
+	int i=0;
+	
+	while(i < iNewTheoremCount && !strequal(s,NewTheorems[i].name)) {
+		diagnostics(6, "seeking=<%s>, i=%d, current=<%s>", s,i,NewTheorems[i].name);
+		i++;
+	}
+
+	if (i==iNewTheoremCount) 
+		return -1;
+	else
+		return i;
+}
+
+char *
+expandTheorem(int i, char *option)
+/**************************************************************************
+     purpose: retrieves and expands a \newtheorem into a string
+**************************************************************************/
+{	
+	char s[128], *num;
+	int ithm;
+	
+	if (i<0 || i>=iNewTheoremCount)
+		return strdup("");
+	
+	incrementCounter(NewTheorems[i].numbered_like);
+	ithm = getCounter(NewTheorems[i].numbered_like);
+	
+	if (NewTheorems[i].within) {
+		num = FormatUnitNumber(NewTheorems[i].within);
+		if (option)
+			sprintf(s,"%s %s.%d (%s)", NewTheorems[i].caption, num, ithm, option);
+		else
+			sprintf(s,"%s %s.%d", NewTheorems[i].caption, num, ithm);
+		free(num);
+	} else {
+		if (option)
+			sprintf(s,"%s %d (%s)", NewTheorems[i].caption, ithm, option);
+		else
+			sprintf(s,"%s %d", NewTheorems[i].caption, ithm);
+	}
+			
+	return strdup(s);
+}
+
+void
+resetTheoremCounter(char *unit)
+/**************************************************************************
+     purpose: resets theorem counters based on unit
+**************************************************************************/
+{	
+	int i;
+	
+	for (i=0; i<iNewTheoremCount; i++) {
+		if (strequal(unit,NewTheorems[i].within))
+			setCounter(NewTheorems[i].numbered_like, 0);
+	}
+}
 

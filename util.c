@@ -1,25 +1,11 @@
 /*
- * $Id: util.c,v 1.18 2001/11/23 21:43:48 prahl Exp $ 
+ * $Id: util.c,v 1.20 2002/04/03 15:44:19 prahl Exp $ 
  */
 #include <stdlib.h>
 #include <string.h>
 #include "main.h"
 #include "util.h"
 #include "parser.h"
-
-#ifdef HAS_NO_STRDUP
-char           *
-strdup(const char *str)
-{
-	char           *s;
-
-	if ((s = malloc(strlen(str) + 1)) == NULL) {
-		diagnostics(ERROR,"Cannot allocate memory for string\n");
-	}
-	strcpy(s, str);
-	return s;
-}
-#endif
 
 char *  
 strdup_together(char *s, char *t)
@@ -45,6 +31,7 @@ strdup_noblanks(char *s)
 ******************************************************************************/
 {
 char *p, *dup;
+	if (s==NULL) return NULL;
 	while (*s == ' ' || *s == '\n') s++;	/* skip to non blank */
 	dup = malloc(strlen(s) + 1);
 	p = dup;
@@ -77,6 +64,29 @@ purpose: duplicate text with only a..z A..Z 0..9 and _
 	}
 
 	return dup;
+}
+
+char * 
+strdup_noendblanks(char * s)
+/******************************************************************************
+ purpose:  duplicates a string without spaces or newlines at front or end
+******************************************************************************/
+{
+char *p, *t;
+
+	if (s==NULL) return NULL;
+	t=s;
+	while (*t == ' ' || *t == '\n') t++;	/* skip to non blank */
+	
+	p = s + strlen(s) - 1;
+	while (p >= t && (*p == ' ' || *p == '\n')) p--;	/* skip to non blank */
+
+	if (p < s)
+		return strdup("");
+	
+	p++;
+	*p='\0';
+	return strdup(s);
 }
 
 char *

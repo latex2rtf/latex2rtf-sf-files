@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.43 2001/11/16 05:16:27 prahl Exp $ */
+/* $Id: main.c,v 1.67 2002/04/03 15:44:19 prahl Exp $ */
 
 #include <stdio.h>
 #include <ctype.h>
@@ -25,11 +25,12 @@
 #include "preamble.h"
 #include "xref.h"
 
-FILE           *fRtf = (FILE *) NULL;	/* file pointer to RTF file */
-char           *input = NULL;
-static char    *output = NULL;
-char           *AuxName = NULL;
-char           *BblName = NULL;
+FILE           *fRtf = NULL;			/* file pointer to RTF file */
+char           *g_tex_name = NULL;
+char    	   *g_rtf_name = NULL;
+char           *g_aux_name = NULL;
+char           *g_bbl_name = NULL;
+char		   *g_home_dir = NULL;
 
 char           *progname;	            /* name of the executable file */
 bool            GermanMode = FALSE;	    /* support germanstyle */
@@ -38,7 +39,8 @@ bool            FrenchMode = FALSE;	    /* support frenchstyle */
 char            g_encoding[20] = "cp1252";
 bool            twoside = FALSE;
 int      		g_verbosity_level = WARNING;
-static FILE    *logfile = NULL;
+bool			g_little_endian = FALSE;  /* set properly in main() */
+int				g_dots_per_inch = 300;
 
 /* Holds the last referenced "link" value, used by \Ref and \Pageref */
 char           *hyperref = NULL;
@@ -65,6 +67,16 @@ bool            g_processing_tabular = FALSE;
 int				g_processing_arrays = 0;
 int 			g_processing_fields = 0;
 bool			g_RTF_warnings = FALSE;
+char           *g_config_path = NULL;
+char		   *g_tmp_path = NULL;
+char           *g_preamble = NULL;
+char     		g_field_separator = ',';
+
+bool			g_equation_display_rtf    = TRUE;
+bool			g_equation_inline_rtf     = TRUE;
+bool			g_equation_inline_bitmap  = FALSE;
+bool			g_equation_display_bitmap = FALSE;
+bool			g_equation_comment        = FALSE;
 
 int             indent = 0;
 char            alignment = JUSTIFIED;	/* default for justified: */
@@ -77,48 +89,38 @@ static void     OpenRtfFile(char *filename, FILE ** f);
 static void     CloseRtf(FILE ** f);
 static void     ConvertLatexPreamble(void);
 static void     InitializeLatexLengths(void);
-static void		printhelp(void);
 
-void           *GetCommandFunc(char *cCommand);
+static void 	SetEndianness(void);
 static void 	ConvertWholeDocument(void);
+static void		usage(void);
 
 extern char *optarg;
 extern int   optind;
 extern int getopt(int ac, char *const av[], const char *optstring);
 
-/****************************************************************************
-purpose: checks parameter and starts convert routine
-params:  command line arguments argc, argv
-globals: initializes in- and outputfile fRtf,
- ****************************************************************************/
-	int
-	                main(int argc, char **argv)
+int main(int argc, char **argv)
 {
-	int             c;
-	bool            errflag = FALSE;
-
-	fRtf = stdout;
-
+	int             c,x;
+	char           *basename = NULL;
+		
+	SetEndianness();
 	progname = argv[0];
 	optind = 1;
-	while ((c = getopt(argc, argv, "lhvVWZ:o:a:b:d:i:")) != EOF) {
+	while ((c = getopt(argc, argv, "lhvSVWZ:o:a:b:d:i:C:D:M:P:T:")) != EOF) {
 		switch (c) {
 		case 'a':
-			AuxName = optarg;
+			g_aux_name = optarg;
 			break;
 		case 'b':
-			BblName = optarg;
+			g_bbl_name = optarg;
 			break;
 		case 'd':
 			g_verbosity_level = *optarg - '0';
 			if (g_verbosity_level < 0 || g_verbosity_level > 7) {
-				printhelp();
-				diagnostics(ERROR, "debug level must be 0--6");
+				diagnostics(WARNING, "debug level (-d# option) must be 0-7");
+				usage();
 			}
 			break;
-		case 'h':
-			printhelp();
-			return(1);
 		case 'i':
 			setPackageBabel(optarg);
 			break;
@@ -126,13 +128,41 @@ globals: initializes in- and outputfile fRtf,
 			setPackageBabel("latin1");
 			break;
 		case 'o':
-			output = optarg;
+			g_rtf_name = optarg;
 			break;
 		case 'v':
 			fprintf(stderr, "%s: %s\n", progname, Version);
 			return (0);
 		case 'C':
 			setPackageInputenc(optarg);
+			break;
+		case 'D':
+			sscanf(optarg, "%d", &g_dots_per_inch);
+			if (g_dots_per_inch < 25 || g_dots_per_inch >600)
+				fprintf(stderr, "Dots per inch must be between 25 and 600 dpi\n");
+			break;
+		case 'M':
+			sscanf(optarg, "%d", &x);
+			diagnostics(WARNING, "Math option = %s x=%d",optarg,x);
+			g_equation_display_rtf    = (x & 1) ? TRUE : FALSE;
+			g_equation_inline_rtf     = (x & 2) ? TRUE : FALSE;
+			g_equation_display_bitmap = (x & 4) ? TRUE : FALSE;
+			g_equation_inline_bitmap  = (x & 8) ? TRUE : FALSE;
+			g_equation_comment        = (x & 16)? TRUE : FALSE;
+			diagnostics(WARNING, "Math option g_equation_display_rtf   = %d",g_equation_display_rtf);
+			diagnostics(WARNING, "Math option g_equation_inline_rtf    = %d",g_equation_inline_rtf);
+			diagnostics(WARNING, "Math option g_equation_display_bitmap= %d",g_equation_display_bitmap);
+			diagnostics(WARNING, "Math option g_equation_inline_bitmap = %d",g_equation_inline_bitmap);
+			diagnostics(WARNING, "Math option g_equation_comment       = %d",g_equation_comment);
+			break;
+		case 'P':
+			g_config_path = strdup(optarg);
+			break;
+		case 'S':
+			g_field_separator = ';';
+			break;
+		case 'T':
+			g_tmp_path = strdup(optarg);
 			break;
 		case 'V':
 			fprintf(stderr, "%s: %s\n", progname, Version);
@@ -145,94 +175,73 @@ globals: initializes in- and outputfile fRtf,
 			g_safety_braces = FALSE;
 			g_safety_braces = *optarg - '0';
 			if (g_safety_braces < 0 || g_safety_braces > 9) {
-				printhelp();
-				diagnostics(ERROR, "Added number of braces must be 0--9");
+				diagnostics(WARNING, "Number of safety braces (-Z#) must be 0-9");
+				usage();
 			}
 			break;
-			break;
+			
+		case 'h':
+		case '?':
 		default:
-			errflag = TRUE;
+			usage();
 		}
 	}
 
-	if (argc > optind + 1 || errflag) {
-		printhelp();
-		return (1);
+ 	argc -= optind;
+    argv += optind;
+	
+	if (argc > 1) {
+		diagnostics(WARNING, "Only a single file can be processed at a time");
+		diagnostics(ERROR,   " Type \"latex2rtf -h\" for help");
 	}
 	
-	if (argc == optind + 1) {
-		char           *s, *newrtf;
+/* Parse filename.  Extract directory if possible.  Beware of stdin cases */
+   	
+	if (argc == 1 && strcmp(*argv,"-")!=0) { 	/* filename exists and != "-" */
+		char           *s, *t;
 
-		/* if filename does not end in .tex then append .tex */
-		if ((s = strrchr(argv[optind], PATHSEP)) == NULL)
-			s = argv[optind];
+		basename = strdup(*argv);				/* parse filename            */
+		s = strrchr(basename, PATHSEP);
+		if (s != NULL) {						
+			g_home_dir = strdup(basename);		/* parse /tmp/file.tex 		 */
+			t = strdup(s+1);
+			free(basename);
+			basename = t;						/* basename = file.tex 		 */	
+			s = strrchr(g_home_dir, PATHSEP);
+			*(s+1) = '\0';						/* g_home_dir = /tmp/ 		 */
+		}
 
-		if ((s = strrchr(s, '.')) == NULL) {
-			if ((input = malloc(strlen(argv[optind]) + 4)) == NULL)
-				diagnostics(ERROR, " malloc error -> out of memory!\n");
-			strcpy(input, argv[optind]);
-			strcat(input, ".tex");
-		} else if (strcmp(s, ".tex"))
-			diagnostics(ERROR, "latex files must end with .tex");
-		else
-			input = argv[optind];
+		t = strstr(basename, ".tex");			/* remove .tex if present 	 */
+		if (t != NULL) 
+			*t = '\0';
+		
+		g_tex_name = strdup_together(basename, ".tex");
+		g_rtf_name = strdup_together(basename, ".rtf");
+	} 
+	
+	if (g_aux_name == NULL && basename != NULL) 
+		g_aux_name = strdup_together(basename, ".aux");
 
-		diagnostics(3, "latex filename is %s\n", input);
+	if (g_bbl_name == NULL && basename != NULL)
+		g_bbl_name = strdup_together(basename, ".bbl");
 
-		/* create the .rtf filename */
-		if ((newrtf = malloc(strlen(input) + 5)) == NULL)
-			diagnostics(ERROR, " malloc error -> out of memory!\n");
-		strcpy(newrtf, input);
-		if ((s = strrchr(newrtf, '.')) == NULL || strcmp(s, ".tex") != 0)
-			strcat(newrtf, ".rtf");
-		else
-			strcpy(s, ".rtf");
-		output = newrtf;
-		diagnostics(3, "rtf filename is %s\n", output);
+	if (basename) {
+		diagnostics(3, "latex filename is <%s>", g_tex_name);
+		diagnostics(3, "  rtf filename is <%s>", g_rtf_name);
+		diagnostics(3, "  aux filename is <%s>", g_aux_name);
+		diagnostics(3, "  bbl filename is <%s>", g_bbl_name);
+		diagnostics(3, "home directory is <%s>", g_home_dir);
 	}
 	
-	if (AuxName == NULL) {
-		char           *s;
-		if (input != NULL) {
-			if ((AuxName = malloc(strlen(input) + 5)) == NULL)
-				diagnostics(ERROR, " malloc error -> out of memory!\n");
-			strcpy(AuxName, input);
-			if ((s = strrchr(AuxName, '.')) == NULL || strcmp(s, ".tex") != 0)
-				strcat(AuxName, ".aux");
-			else
-				strcpy(s, ".aux");
-		} else {
-			if ((AuxName = malloc(1)) == NULL)
-				diagnostics(ERROR, " malloc error -> out of memory!\n");
-			*AuxName = '\0';
-		}
-	}
-
-	if (BblName == NULL) {
-		char           *s;
-		if (input != NULL) {
-			if ((BblName = malloc(strlen(input) + 5)) == NULL)
-				diagnostics(ERROR, " malloc error -> out of memory!\n");
-			strcpy(BblName, input);
-			if ((s = strrchr(BblName, '.')) == NULL || strcmp(s, ".tex") != 0)
-				strcat(BblName, ".bbl");
-			else
-				strcpy(s, ".bbl");
-		} else {
-			if ((BblName = malloc(1)) == NULL)
-				diagnostics(ERROR, " malloc error -> out of memory!\n");
-			BblName = '\0';
-		}
-	}
-
 	ReadCfg();
-	if (PushSource(input, NULL)) {
-		OpenRtfFile(output, &fRtf);
+	if (PushSource(g_tex_name, NULL)) {
+		OpenRtfFile(g_rtf_name, &fRtf);
 		
 		InitializeStack();
 		InitializeLatexLengths();
 		InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
-	
+		PushTrackLineNumber(TRUE);
+
 		ConvertWholeDocument();	
 		PopSource();
 		CloseRtf(&fRtf);
@@ -242,16 +251,32 @@ globals: initializes in- and outputfile fRtf,
 		return 1;
 }
 
+static void 	
+SetEndianness(void) 
+/*
+purpose : Figure out endianness of machine.  Needed for graphics support
+*/
+{
+	unsigned int 	endian_test = 0xaabbccdd;
+	unsigned char   endian_test_char = *(unsigned char *)&endian_test;
+
+	if (endian_test_char == 0xdd)
+		g_little_endian = TRUE;
+}	
+
+
 static void
 ConvertWholeDocument(void)
 {
 char * body, *sec_head, *sec_head2, *label;
+	char t[] = "\\begin{document}";
 
 		PushEnvironment(PREAMBLE);
 		SetTexMode(MODE_VERTICAL);
 		ConvertLatexPreamble(); 
 		WriteRtfHeader();
-		
+		ConvertString(t);
+
 		g_processing_preamble = FALSE;
 		getSection(&body,&sec_head,&label);
 		
@@ -282,43 +307,53 @@ char * body, *sec_head, *sec_head2, *label;
 }
 
 static void
-printhelp(void)
+usage(void)
 {
     	fprintf(stderr, "Usage:\n\t %s [options] input[.tex]\n", progname);
 		fprintf(stderr, "Options:\n");
-		fprintf(stderr, "\t -a auxfile    : use LaTeX auxfile rather than input.aux\n");
-		fprintf(stderr, "\t -b bblfile    : use BibTex bblfile rather than input.bbl)\n");
-		fprintf(stderr, "\t -d#           : debug level (# is 0-6)\n");
-		fprintf(stderr, "\t -h            : display this help\n");
-		fprintf(stderr, "\t -i language   : babel idiom (german, french)\n");
-		fprintf(stderr, "\t -l            : use latin1 encoding (default)\n");
-		fprintf(stderr, "\t -o outputfile : RTF output other than input.rtf\n");
-		fprintf(stderr, "\t -v            : version information\n");
-		fprintf(stderr, "\t -C codepage   : input encoding (latin1, cp850, etc.)\n");
-		fprintf(stderr, "\t -V            : version information\n");
-		fprintf(stderr, "\t -W            : include warnings in RTF\n");
-		fprintf(stderr, "\t -Z#           : add # of '}'s at end of rtf file (# is 0-9)\n\n");
+		fprintf(stderr, "\t -a auxfile       : use LaTeX auxfile rather than input.aux\n");
+		fprintf(stderr, "\t -b bblfile       : use BibTex bblfile rather than input.bbl)\n");
+		fprintf(stderr, "\t -d#              : debug level (# is 0-6)\n");
+		fprintf(stderr, "\t -h               : display this help\n");
+		fprintf(stderr, "\t -i language      : babel idiom (german, french)\n");
+		fprintf(stderr, "\t -l               : use latin1 encoding (default)\n");
+		fprintf(stderr, "\t -o outputfile    : RTF output other than input.rtf\n");
+		fprintf(stderr, "\t -v               : version information\n");
+		fprintf(stderr, "\t -C codepage      : input encoding (latin1, cp850, etc.)\n");
+		fprintf(stderr, "\t -D#              : dots per inch for bitmaps\n");
+		fprintf(stderr, "\t -M#              : math equation handling\n");
+		fprintf(stderr, "\t      -M1         :  displayed equations to RTF\n");
+		fprintf(stderr, "\t      -M2         :  inline equations to RTF\n");
+		fprintf(stderr, "\t      -M3         :  inline and displayed equations to RTF (default)\n");
+		fprintf(stderr, "\t      -M4         :  displayed equations to bitmap\n");
+		fprintf(stderr, "\t      -M6         :  inline equations to RTF and displayed equations to bitmaps\n");
+		fprintf(stderr, "\t      -M8         :  inline equations to bitmap\n");
+		fprintf(stderr, "\t      -M12        :  inline and displayed equations to bitmaps\n");
+		fprintf(stderr, "\t      -M16        :  insert Word comment field that the original equation text\n");
+		fprintf(stderr, "\t -P /path/to/cfg  : directory containing .cfg files\n");
+		fprintf(stderr, "\t -V               : version information\n");
+		fprintf(stderr, "\t -S               : use ';' to separate args in RTF fields\n");
+		fprintf(stderr, "\t -T /path/to/tmp  : temporary directory\n");
+		fprintf(stderr, "\t -W               : include warnings in RTF\n");
+		fprintf(stderr, "\t -Z#              : add # of '}'s at end of rtf file (# is 0-9)\n\n");
 		fprintf(stderr, "RTFPATH designates the directory for configuration files (*.cfg)\n");
-		fprintf(stderr, "\t RTFPATH = '%s'\n\n", getenv("RTFPATH"));
+		fprintf(stderr, "\t RTFPATH = '%s'\n", getenv("RTFPATH"));
+		fprintf(stderr, "\t LIBDIR  = '%s'\n\n", LIBDIR);
+		exit(1);
 }
 
 void
 diagnostics(int level, char *format,...)
 /*
-purpose : Writes the message to errfile depending on debugging level
+purpose : Writes the message to stderr depending on debugging level
 */
 {
 	char           buffer[512], *buff_ptr;
 	va_list        apf;
-	FILE           *errfile;
 	int            i,linenumber, iEnvCount;
 	char          *input;
 	
 	buff_ptr = buffer;
-	if (logfile != NULL)
-		errfile = logfile;
-	else
-		errfile = stderr;
 
 	va_start(apf, format);
 
@@ -330,12 +365,10 @@ purpose : Writes the message to errfile depending on debugging level
 		
 		switch (level) {
 		case 0:
-			fprintf(errfile, "\nError! line=%d ", linenumber);
-			CloseRtf(&fRtf);
-			exit(0);
+			fprintf(stderr, "\nError! line=%d ", linenumber);
 			break;
 		case 1:
-			fprintf(errfile, "\nWarning line=%d ", linenumber);
+			fprintf(stderr, "\nWarning line=%d ", linenumber);
 			if (g_RTF_warnings) {
 				vsprintf(buffer, format, apf);
 				fprintRTF("{\\plain\\cf2 [latex2rtf:");
@@ -348,25 +381,30 @@ purpose : Writes the message to errfile depending on debugging level
 		case 4:
 		case 5:
 		case 6:
-		    fprintf(errfile, "\n%s %4d rec=%d ", input, linenumber, RecursionLevel);
+		    fprintf(stderr, "\n%s %4d rec=%d ", input, linenumber, RecursionLevel);
 			for (i=0; i<BraceLevel; i++)
-				fprintf(errfile, "{");
+				fprintf(stderr, "{");
 			for (i=8; i>BraceLevel; i--)
-				fprintf(errfile, " ");
+				fprintf(stderr, " ");
 			
 			for (i=0; i<RecursionLevel; i++)
-				fprintf(errfile, "  ");
+				fprintf(stderr, "  ");
 			break;
 		default:
-			fprintf(errfile, "\nline=%d ", linenumber);
+			fprintf(stderr, "\nline=%d ", linenumber);
 			break;
 		}
-		vfprintf(errfile, format, apf);
+		vfprintf(stderr, format, apf);
 	}
 	va_end(apf);
 
 	if (level == 0) {
 		fprintf(stderr, "\n");
+		fflush(stderr);
+		if (fRtf) {
+			fflush(fRtf);
+			CloseRtf(&fRtf);
+		}
 		exit(EXIT_FAILURE);
 	}
 }
@@ -425,20 +463,19 @@ purpose: reads the LaTeX preamble (to \begin{document} ) for the file
  ****************************************************************************/
 {
 	FILE * hidden;
-	char * s;
+	char t[] = "\\begin{document}";
 	
 	diagnostics(4, "Reading LaTeX Preamble");
 	hidden = fRtf;
 	fRtf = stderr;
 	 
-	s = getTexUntil("\\begin{document}",0);
+	g_preamble = getTexUntil(t,1);
 	
-	diagnostics(4, "Entering ConvertString() from ConvertLatexPreamble <%s>",s);
-	ConvertString(s);
+	diagnostics(4, "Entering ConvertString() from ConvertLatexPreamble <%s>",g_preamble);
+	ConvertString(g_preamble);
 	diagnostics(4, "Exiting ConvertString() from ConvertLatexPreamble");
 	
 	fRtf = hidden;
-	free(s);
 }
 
 
@@ -450,18 +487,26 @@ params: filename - name of outputfile, possibly NULL for already open file
 	f - pointer to filepointer to store file ID
  ****************************************************************************/
 {
-	diagnostics(4, "Opening RTF file %s", filename);
-	if (filename != NULL) {
-		/*
-		 * I have replaced "wb" with "w" in the following fopen, for
-		 * correct operation under MS DOS (with the -o option). I
-		 * believe this should make no difference under UNIX.
-		 * --V.Menkov
-		 */
+	char * name;
+	
+	if (filename == NULL) {
+		diagnostics(4, "Writing RTF to stdout");
+		*f = stdout;
 
-		if ((*f = fopen(filename, "w")) == NULL) 	/* open file */
-			diagnostics(ERROR,  "Error opening RTF file %s\n", filename);
+	} else {
 		
+		if (g_home_dir)
+			name = strdup_together(g_home_dir,filename);
+		else
+			name = strdup(filename);
+			
+		diagnostics(3, "Opening RTF file <%s>", name);
+		*f = fopen(name, "w");
+
+		if (*f == NULL) 
+			diagnostics(ERROR,  "Error opening RTF file <%s>\n", name);
+		
+		free(name);
 	}
 }
 
@@ -470,11 +515,17 @@ CloseRtf(FILE ** f)
 /****************************************************************************
 purpose: closes output file.
 params: f - pointer to filepointer to invalidate
-globals: progname;
+globals: g_tex_name;
  ****************************************************************************/
 {
 	int i;
 	CmdEndParagraph(0);
+	if (BraceLevel>1) 
+		diagnostics(WARNING,"Mismatched '{' in RTF file, Conversion may cause problems.");
+
+	if (BraceLevel-1>g_safety_braces) 
+		diagnostics(WARNING,"Try translating with 'latex2rtf -Z%d %s'", BraceLevel-1, g_tex_name);
+	
 	fprintf(*f, "}\n");
 	for (i=0; i<g_safety_braces; i++)
 		fprintf(*f, "}");
@@ -524,11 +575,11 @@ purpose: output filter to track of brace depth and font settings
 	
 	while ( *text ) {
 	
-		if (*text < 0)
+		if ((unsigned char) *text > 127) {
 			
 			WriteEightBitChar(text[0]);
 			
-		else {		
+		} else {		
 			fputc(*text, fRtf);
 			
 			if (*text == '{')
@@ -543,3 +594,57 @@ purpose: output filter to track of brace depth and font settings
 		text++;
 	}			
 }
+
+char *
+getTmpPath(void)
+/****************************************************************************
+purpose: return the directory to store temporary files
+ ****************************************************************************/
+{
+#if defined(MSDOS) || defined(MACINTOSH) || defined(__MWERKS__)
+
+	return strdup("");
+
+#else
+
+	char * t, *u;
+	
+	/* first use any temporary directory specified as an option */
+	if (g_tmp_path)
+		t= strdup(g_tmp_path);
+
+	/* next try the environment variable TMPDIR */
+	else if ((u = getenv("TMPDIR"))!=NULL)
+		t= strdup(u);
+	
+	/* finally just return "/tmp/" */
+	else 
+		t = strdup("/tmp/");
+		
+	/* append a final '/' if missing */
+	if (*(t+strlen(t)-1)!='/') {
+		u = strdup_together(t,"/");
+		free(t);
+		return u;
+	}
+	
+	return t;
+#endif
+}
+
+char           *
+my_strdup(const char *str)
+/****************************************************************************
+purpose: duplicate string --- exists to ease porting
+ ****************************************************************************/
+{
+	char           *s;
+
+	if ((s = malloc(strlen(str) + 1)) == NULL) {
+		diagnostics(ERROR,"Cannot allocate memory for string\n");
+	}
+	strcpy(s, str);
+	return s;
+}
+
+

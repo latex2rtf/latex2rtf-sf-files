@@ -1,4 +1,4 @@
-/* $Id: main.h,v 1.32 2001/11/13 05:43:57 prahl Exp $ */
+/* $Id: main.h,v 1.43 2002/04/04 03:11:24 prahl Exp $ */
 #ifndef __MAIN_H
 #define __MAIN_H
 
@@ -20,9 +20,8 @@
 #endif 
 #endif
 
-#ifdef MACINTOSH || __MWERKS__
+#if defined(MACINTOSH) || defined(__MWERKS__)
 #define HAS_NO_GETOPT
-#define HAS_NO_STRDUP
 #define ENVSEP '^'
 #define PATHSEP ':'
 #include "MainMain.h"
@@ -32,10 +31,9 @@
 #define getopt my_getopt
 #endif
 
-#ifdef SEMICOLONSEP
-#define FORMULASEP ';'
+#ifdef HAS_STRDUP
 #else
-#define FORMULASEP ','
+#define strdup my_strdup
 #endif
 
 #ifndef SEEK_SET
@@ -65,8 +63,9 @@ typedef int     bool;
 void            diagnostics(int level, char *format,...);
 
 extern /* @dependent@ */ FILE *fRtf;	/* file pointer to RTF file */
-extern			char *AuxName;
-extern			char *BblName;
+extern			char *g_aux_name;
+extern			char *g_bbl_name;
+extern			char *g_home_dir;
 extern 			char *progname;			/* name of the executable file */
 
 extern bool     GermanMode;
@@ -100,6 +99,7 @@ extern bool 	g_processing_table;
 extern bool     g_processing_eqnarray;
 extern int		g_processing_arrays;
 extern int 		g_processing_fields;
+extern int		g_dots_per_inch;
 
 extern int      g_equation_number;
 extern bool     g_show_equation_number;
@@ -112,8 +112,20 @@ extern char		*g_figure_label;
 extern char		*g_table_label;
 extern char		*g_equation_label;
 extern char  	*g_section_label;
+extern char		*g_config_path;
+extern char     g_field_separator;
+extern char    *g_preamble;
+
+extern bool		g_equation_inline_rtf;
+extern bool		g_equation_display_rtf;
+extern bool		g_equation_inline_bitmap;
+extern bool		g_equation_display_bitmap;
+extern bool		g_equation_comment;
+extern bool		g_little_endian;
 
 void fprintRTF(char *format, ...);
 void putRtfChar(char cThis);
+char *getTmpPath(void);
+char *  my_strdup(const char *str);
 
 #endif				/* __MAIN_H */

@@ -1,9 +1,9 @@
-# $Id: Makefile,v 1.4 2001/11/10 19:31:56 prahl Exp $
+# $Id: Makefile,v 1.6 2002/04/03 15:28:32 prahl Exp $
 
 all:	latex2rtf.html latex2rtf.info latex2rtf.pdf latex2rtf.txt almostclean
 
 latex2rtf.html:	latex2rtf.texi
-	makeinfo --html latex2rtf
+	makeinfo --html --no-split latex2rtf
 
 latex2rtf.info: latex2rtf.texi
 	makeinfo latex2rtf
@@ -19,4 +19,4 @@ almostclean:
 	*.cp *.cps *.ind *.ilg *.tmp
 
 clean:	almostclean
-	rm -f latex2rtf.pdf latex2rtf.info* latex2rtf.html latex2rtf.txt
+	rm -f latex2rtf.pdf latex2rtf.info latex2rtf.txt latex2rtf.html

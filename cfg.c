@@ -1,4 +1,4 @@
-/* $Id: cfg.c,v 1.19 2001/11/21 05:10:26 prahl Exp $
+/* $Id: cfg.c,v 1.22 2002/03/14 06:42:21 prahl Exp $
 
      purpose : Read config files and provide lookup routines
 
@@ -23,11 +23,11 @@
 #include "util.h"
 
 typedef struct ConfigInfoT {
-	 /* @observer@ */ char *filename;
-	 /* @owned@ *//* @null@ */ ConfigEntryT **config_info;
+	char           *filename;
+	ConfigEntryT  **config_info;
 	size_t          config_info_size;
 	bool            remove_leading_backslash;
-}               ConfigInfoT;
+} ConfigInfoT;
 
 static ConfigInfoT configinfo[] =
 {
@@ -56,95 +56,94 @@ cfg_compare(ConfigEntryT ** el1, ConfigEntryT ** el2)
 	return strcmp((*el1)->TexCommand, (*el2)->TexCommand);
 }
 
-/*
- * LEG240698
- * Tries to open the config file NAME. First all of the paths
- * specified in RTFPATH are searched. Then the precompiled default
- * path is searched.
- * At compiletime the defaults for the pathseparator end the separator
- * between directory names in the path can be overridden to match
- * e.g. MS-DOS naming conventions: ENVSEP = ';' PATHSEP = '\\'
- * leading or trailing ENVSEP's are allowed and ignored, trailing
- * PATHSEP's are allowed and ignored too.
- */
-FILE           *
+FILE *
+try_path(const char *path, const char *file)
+{
+	char * both;
+	FILE * fp=NULL;
+	int    lastchar;
+		
+	diagnostics(4, "trying path=<%s> file=<%s>", path, file);
+	
+	if (path==NULL || file == NULL) return NULL;
+
+	lastchar = strlen(path);
+
+	both = malloc(strlen(path) + strlen(file) + 2);
+	if (both == NULL)
+		diagnostics(ERROR, "Could not allocate memory for both strings.");
+
+	strcpy(both, path);
+	
+	/* fix path ending if needed */
+	if (both[lastchar] != PATHSEP) {
+		both[lastchar] = PATHSEP;
+		both[lastchar+1] = '\0';
+	}
+	
+	strcat(both, file);
+	fp = fopen(both, "r");
+	free(both);
+	return fp;
+}
+
+FILE *
 open_cfg(const char *name)
 /****************************************************************************
-purpose: open config files specified in name
-params:  name: config-file-name
+purpose: open config by trying multiple paths
  ****************************************************************************/
 {
-	char           *cfg_path = getenv("RTFPATH");
-	 /* @only@ */ static char *path = NULL;
-	static size_t   size = BUFFER_INCREMENT;
-	size_t          len;
+	char           *env_path,*p,*p1;
+	char		   *lib_path;
 	FILE           *fp;
 
-	diagnostics(4, "RTFPATH=`%s'", cfg_path);
-	if (path == NULL && (path = (char *) malloc(size)) == NULL) {
-		fprintf(stderr, "%s: Fatal Error: Cannot allocate memory\n", progname);
-		exit(EXIT_FAILURE);
-	}
-	if (cfg_path != NULL) {
-		char           *s, *t;
-		s = cfg_path;
-		while (s != NULL && *s != '\0') {
-			size_t          pathlen = 0;
-			t = s;
-			s = strchr(s, ENVSEP);
-			if (s) {/* found */
-				pathlen = (size_t) (s - t);
-				s++;
-			} else {/* ENVSEP not found---could be last path in string */
-				if (strlen(t) != 0)
-					pathlen = strlen(t);
-			}
-			if ((len = (pathlen + strlen(name) + 2)) > size) {
-				size = len;
-				if ((path = realloc(path, size)) == NULL) {
-					Fatal("Cannot allocate memory for cfg filename");
-				}
-			}
-			strncpy(path, t, pathlen);
-
-			/* now fix up string ending */
-			t = &path[pathlen - 1];
-			if (*t++ != PATHSEP)
-				*t++ = PATHSEP;
-			*t = '\0';
-
-			strcat(path, name);
-			diagnostics(4, "Trying to open config: %s", path);
-			if ((fp = fopen(path, "r")) != NULL) {
-				diagnostics(4, "Opened config file %s", path);
-				return (fp);
-			}
+/* try path specified on the line */
+	fp=try_path(g_config_path, name);
+	if (fp) return fp;
+		
+/* try the environment variable RTFPATH */
+	p = getenv("RTFPATH");	
+	if (p) {
+		env_path = strdup(p);  /* create a copy to work with */
+		p = env_path;
+		while (p) {
+			p1 = strchr(p, ENVSEP);
+			if (p1) *p1 = '\0';
+			
+			fp=try_path(p, name);
+			if (fp) {free(env_path); return fp;}
+			
+			p= (p1) ? p1+1 : NULL;
 		}
-	}
-	if ((len = (strlen(LIBDIR) + strlen(name) + 2)) > size) {
-		size = len;
-		if ((path = (char *) realloc(path, size)) == NULL) {
-			fprintf(stderr, "%s: Fatal Error: Cannot allocate memory\n",
-				progname);
-			exit(EXIT_FAILURE);
-		}
-	}
-	strcpy(path, LIBDIR);
-	if (strlen(path) > 2 && path[strlen(path) - 1] != PATHSEP) {	/* append PATHSEP if
-									 * needed */
-		int             pathlen = strlen(path);
-		path[pathlen] = PATHSEP;
-		path[pathlen+1] = '\0';
-	}
-	strcat(path, name);
-	if ((fp = fopen(path, "r")) == NULL) {
-		diagnostics(4, "Path: %s", path);
-		diagnostics(4, "cfg-Path: %s", cfg_path);
-		diagnostics(ERROR, "cannot open config file '%s'", name);
-	}
-	diagnostics(4, "Opened default config file %s", path);
+		free(env_path);
+	}		
 
-	return (fp);
+/* last resort.  try LIBDIR */
+	lib_path = strdup(LIBDIR);
+	if (lib_path) {
+		p = lib_path;
+		while (p) {
+			p1 = strchr(p, ENVSEP);
+			if (p1) *p1 = '\0';
+			
+			fp=try_path(p, name);
+			if (fp) {free(lib_path); return fp;}
+			
+			p= (p1) ? p1+1 : NULL;
+		}
+		free(lib_path);
+	}
+
+/* failed ... give some feedback */
+	diagnostics(WARNING, "Cannot open the latex2rtf .cfg files");
+	diagnostics(WARNING, "Locate the directory containing the .cfg files and");
+	diagnostics(WARNING, "   (1) define the environment variable RTFPATH, *or*");
+	diagnostics(WARNING, "   (2) use command line path option \"-P /path/to/cfg/file\", *or*");
+	diagnostics(WARNING, "   (3) recompile latex2rtf with LIBDIR defined properly");
+	diagnostics(WARNING, "Current RTFPATH: %s", getenv("RTFPATH"));
+	diagnostics(WARNING, "Current  LIBDIR: %s", LIBDIR);
+	diagnostics(ERROR,   " Giving up.  Have a nice day.");
+	return NULL;
 }
 
 

@@ -1,4 +1,4 @@
-/* $Id: l2r_fonts.c,v 1.22 2001/10/17 02:48:31 prahl Exp $
+/* $Id: l2r_fonts.c,v 1.24 2002/04/04 03:11:24 prahl Exp $
 
 	All changes to font size, font style, and font face are 
 	handled in this file.  Explicit changing of font characteristics
@@ -72,7 +72,7 @@ typedef struct RtfFontInfoType
 	int size;
 } RtfFontInfoType;
 
-#define MAX_FONT_INFO_DEPTH 101
+#define MAX_FONT_INFO_DEPTH 301
 static RtfFontInfoType RtfFontInfo[MAX_FONT_INFO_DEPTH];
 static int FontInfoDepth=0;
 
@@ -521,7 +521,7 @@ strstartnum(char *text, char *str, int *num)
 	text += strlen(str);
 	numptr = text;
 
-	while (isdigit(*numptr)) {
+	while (isdigit((int)*numptr)) {
 		*num = (*num * 10) + (*numptr - '0');
 		numptr++;
 	}

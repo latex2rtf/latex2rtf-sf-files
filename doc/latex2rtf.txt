@@ -1,8 +1,7 @@
-This file documents LaTeX2RTF , a converter from the LaTeX  markup
-language for document typesetting into rtf, which does the same thing,
-but in another way and mood.
+This file documents LaTeX2RTF , a converter that translates LaTeX  to
+RTF.
 
-   Copyright 1998-2001 Georg Lehner minor updates by Wilfried Hennings
+   Copyright 1998-2002 Georg Lehner minor updates by Wilfried Hennings
 and Scott Prahl
 
    Permission is granted to make and distribute verbatim copies of this
@@ -24,9 +23,8 @@ LaTeX2RTF
 
 **********
 
-   This file documents LaTeX2RTF , a converter from the LaTeX  markup
-language for document typesetting into rtf, which does the same thing,
-but in another way and mood.
+   This file documents LaTeX2RTF , a converter that translates LaTeX
+to RTF.
 
 History & Copyright
 *******************
@@ -45,17 +43,17 @@ LaTeX2RTF  on the TeX Conversion Webpage
 (http://tug.org/utilities/texconv/index.html)  of Wilfried Hennings
 <W.Hennings@fz-juelich.de> and added some functionality and took over
 the maintainence of the program.  The last version release by Georg is
-1.8aa.  Wilfried Hennings now coordinates the development of the
-program and maintains the project on SourceForge
+1.8aa.  The bulk of development post 1.8aa was done by Scott Prahl.
+Wilfried Hennings now coordinates the development of the program and
+maintains the project on SourceForge
 (http://sourceforge.net/projects/latex2rtf/) where there are also (low
 volume) mailing lists for users <latex2rtf-users@lists.sourceforge.net>
 and developers <latex2rtf-developers@lists.sourceforge.net>.  For
 subscription to these lists:
-<mail_to_latex2rtf-users-request@lists.sourceforge.net?subject=subscribe>
-or
-<mail_to_latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe>
+<latex2rtf-users-request@lists.sourceforge.net?subject=subscribe> or
+<latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe>
 
-   As of December 2001, version 1.9.12 of LaTeX2RTF  is available.  One
+   As of April 2002, version 1.9.13 of LaTeX2RTF  is available.  One
 day there shall be a jump to Version 2.0, but this is not history but
 future ...
 
@@ -67,17 +65,15 @@ Introduction
 
    LaTeX2RTF  is a translator program from LaTeX  text into "rich text
 format" files.  These files are commonly referred to as RTF files.  RTF
-is a published standard format by Microsoft.  This standard is somewhat
-ambiguous in places and Microsoft ignores various parts of the standard
-that are inconvenient, but RTF is widely used by many WYSIWIG text
-editors and is supported by Microsoft Word and Word for Windows. RTF
-can be exported and/or imported by several textprocessors.
+is a published standard format by Microsoft.  This standard can be
+ambiguous in places and Microsoft ignores parts of the standard it
+finds inconvenient, but RTF is widely used by many WYSIWIG text editors
+and is supported by Microsoft Word and most text processors.
 
-   LaTeX2RTF  translates the text and much of the formatting
-information from LaTeX  to RTF, but the typeset output is not nearly as
-good as what you would get from using LaTeX
-
-   directly.  So, why bother translating? There are three purposes:
+   LaTeX2RTF  translates the text and as much of the formatting
+information from LaTeX  to RTF.  Be forewarned that the typeset output
+is not nearly as good as what you would get from using LaTeX  directly.
+So, why bother translating? Consider,
 
   1. You use LaTeX  and hate everything beginning with MS-....
      Nevertheless, you have to share your documents with people who
@@ -88,16 +84,6 @@ good as what you would get from using LaTeX
      import her files, steal some part, and then desktop publish it in
      your fine MS-... environment.
 
-  3. You maybe have both things, LaTeX  and MS-..., or you don't. But
-     you like the way how LaTeX  and friends work, and you don't want
-     to type in a letter to your friends with about 345 characters and
-     end up with a `.doc' file of 32,845 byte. So you edit your
-     documents either with `edit.com' or `edlin' in the structured form
-     that LaTeX
-
-     encourages, and then you use MS-..., or MS-...-Viewer or any other
-     RTF-rendering software to print out your file.  Yes, this somewhat
-     bizarre, but we are all somewhat bizarre, are we not?
 
    There are drawbacks to the conversion process. In fact, don't expect
 any LaTeX  file to be converted as you would like, don't expect it to
@@ -123,12 +109,10 @@ buggy. *Note Known Bugs::.
 
    RTF is a moving target, because Microsoft does not stop inventing
 new extensions and features for it. So you cannot view newer RTF files
-with older word Processors.  LaTeX2RTF
-
-   eventually will generate RTF output that is unreadable with your
-Program.  The syntax and semantics of RTF are somewhat artistic, i.e.,
-you can generate a syntactically correct RTF file that cannot be
-displayed by some/most word processors.
+with older word processors.  LaTeX2RTF  eventually will generate RTF
+output that is unreadable with your Program.  The syntax and semantics
+of RTF are somewhat artistic, i.e., you can generate a syntactically
+correct RTF file that cannot be displayed by some/most word processors.
 
    For more details on RTF look at the RTF-Tools by Paul DuBois, and
 the corresponding newsgroups, etc. `http://www.primate.wisc.edu/'
@@ -146,18 +130,18 @@ MS-DOS version (1.8aa and up) will also run under all MS windows
 versions, the Win32 version has been discontinued.
 
    Subsequent to 1.8aa, Scott Prahl <prahl@ece.ogi.edu> has fixed many
-bugs, improved handling of tabular environments, significantly improve
-handling of equations, added macro expansion of `\newcommand'
-definitions, improved handling of cross references, and added some
+bugs, improved handling of tabular environments, significantly improved
+handling of equations, added macro expansion, improved handling of
+cross references, added bitmap rendering of equations, and added some
 support for `\includegraphics' files.
 
    You find the latest version on SourceForge
 (http://sourceforge.net/projects/latex2rtf/) and - with some delay - on
 CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
 
-   There are a couple of persons working on the LaTeX2RTF  revival,
-coordinated by Wilfried Hennings <W.Hennings@fz-juelich.de>. Contact
-the mailing_list for the latest news.
+   There are a couple of people working on the LaTeX2RTF , coordinated
+by Wilfried Hennings <W.Hennings@fz-juelich.de>. Contact the
+mailing_list for the latest news.
 
 Installing LaTeX2RTF
 ********************
@@ -165,54 +149,111 @@ Installing LaTeX2RTF
 General
 =======
 
+   The documentation of the program is found in the `doc/' directory in
+the file `latex2rtf.texi' in the GNU TeXInfo format.  For your
+convenience, you can find HTML and PDF versions of the manual there as
+well.
+
 UNIX
 ====
 
-   The documentation of the program is found in the `doc/' directory in
-the file `latex2rtf.info' in the GNU info format.  For your
-convenience, you can find `.html' and `.pdf' versions of the manual
-there as well.
+   To install,
+  1. Edit `Makefile' for your local configuration.  In particular, pay
+     attention to the `PREFIX' variable.  If you do not have root
+     access you might wish to set the makefile variable `PREFIX' to be
+     your home directory.
 
-   To install (on a UNIX system)
-  1. Edit  `Makefile' for your local configuration. The install part
-     supports multiple directories to install to, you will normally
-     only need one. Be sure to correctly configure the `LIBDIR'
-     variable to the directory where support files (ending in `.cfg')
-     will be found by the program. This is normally the same as the
-     `LIBINSTALL' variable.
+  2. As of version 1.9.13, LaTeX2RTF  supports conversion of LaTeX
+     equations to bitmaps using the shell script `latex2png', found in
+     `scripts/'.  `latex2png' requires that both LaTeX  and
+     `ImageMagick' are installed.  LaTeX2RTF  will translate documents
+     without a working `latex2png', but some features will be missing.
 
-  2. `make'
+  3. `make'
 
-  3. If this is not your first time installation, you may want to
+     If this is not your first time installation, you may want to
      preserve   your old configuration (`*.cfg') files. Copy them to a
      safe place before   installing.
 
-  4. `make install'
+  4. `make check'
 
-  5. If you have problems with make install (for example if your `mkdir'
-      doesn't support the `-p' option) and you do not need multiple
-     install   targets, try:   `make simple_install'
+     [OPTIONAL] This tests LaTeX2RTF  on a variety of LaTeX  files.
+     Expect a whole lot of warnings, but no outright errors.
 
-  6. Define the environment variable `RTFPATH'. This is typically
-     `/usr/local/lib/latex2rtf'
+  5. `make install'
 
-  7. Run `make test' to test your installation
+     If your `mkdir' doesn't support the `-p' option, then create   the
+     necessary directories by hand and remove the option from the
+     `$MKDIR' variable.    If you have other problems, just copy
+     `latex2rtf' and `latex2png' to   a binary directory, and move the
+     contents of the `cfg/' directory to   the location specified by
+     `$CFG_INSTALL'.
 
-   Open the `latex2rtf' directory and type
-     make
-     make test
-     sudo make install
+  6. `make install-info'
 
-Windows
-=======
+     [OPTIONAL] This installs `.info' files for use with the `info'
+     program.
 
-   The file `L2R.BAT' is for use with the DJGPP generated version
-`LATEX2RT.EXE'.
+
+   You no longer need to define the environment variable `RTFPATH'. This
+is only necessary if you move the directory containing the `.cfg' files.
+Just define `RTFPATH' to be the path to the new location.
+
+DOS or Windows
+==============
 
    The UNIX and Mac distributions do not contain an executable for DOS
-/ Windows.  Instead, get the DOS / Windows port as file
-`latex2rtf-x.xx_dos.zip' (where x.xx is the version number) from
-`http://sourceforge.net/projects/latex2rtf/'
+or Windows. Instead, get the DOS port as file `latex2rtf-x.xx_dos.zip'
+(where x.xx is the version number) from SourceForge
+(http://sourceforge.net/projects/latex2rtf/)
+
+   The DOS distribution contains a precompiled executable which should
+run under plain DOS and also under any MS Windows system.
+
+   To install latex2rtf, extract all files from the zip archive to
+C:\l2r or to another folder (i.e. directory) of your choice, preserving
+the folder structure (winzip: check "use folder names").  If you
+extracted them to another folder, edit the files `L2R.BAT' and
+`L2RSEM.BAT' and change the pathes to `LATEX2RT.EXE' and to the cfg
+files to the folder where you put them.
+
+   Make sure that the folder containing the files `L2R.BAT',
+`L2RSEM.BAT' and `LATEX2PNG.BAT' is in your search path (e.g. adding to
+your autoexcec.bat: "PATH=...;...;C:\l2r") or put these files into a
+folder which is in your search path.
+
+   The file `L2R.BAT' or `L2RSEM.BAT' will call the DJGPP generated
+version `LATEX2RT.EXE'.
+
+   If you want to use the option to convert equations to bitmaps (-M
+12), you must have TeX, ImageMagick and Ghostscript installed.  This
+works only on win32 systems (win95, win98, winNT4, win2000, winXP)
+because ImageMagick is available only for win32, not for pure DOS.
+
+   * Of TeX, you need a complete installation.
+
+   * Of ImageMagick, get the version for Win2000. It will also work
+     under win95 and win98.  You only need convert.exe.
+
+   * Of Ghostscript, you only need gswin32c.exe and gsdll32.dll.
+
+   Either the folders where TeX, ImageMagick and Ghostscript are
+installed must be in your search path, or you must edit the file
+`LATEX2PNG.BAT' and specify the folders where TeX, ImageMagick and
+Ghostscript are installed in the SET commands, e.g.
+
+     ...
+     rem Set path to latex here (ending with \)
+     rem     if it isn't in your search path:
+     SET TEXDIR=C:\texmf\miktex\bin\
+     
+     rem Set path to ImageMagick's convert here (ending with \)
+     rem     if it isn't in your search path:
+     SET MAGICKDIR=C:\ImageMagick\
+     
+     rem Set path to Ghostscript's gswin32c.exe here (NOT ending with \)
+     rem     if it isn't in your search path:
+     SET GSDIR=C:\Aladdin\gs6.01\bin
 
 Macintosh
 =========
@@ -246,13 +287,14 @@ are
      different development system.  Plese report these, but a quick fix
      is to remove all compiler options.
 
-   * Not defining `RTFPATH'.
+   * Not defining `RTFPATH' (either as environment variable or by the
+     command line parameter -P).
 
    * Not defining `HAS_NO_STRDUP' in the Makefile when your system
      lacks this facility.
 
-Problems with `make test'
-=========================
+Problems with `make check'
+==========================
 
    All the files in the `test' directory are converted (with more or
 less success) using LaTeX2RTF  and are tested before each CVS check-in
@@ -267,8 +309,8 @@ LaTeX2RTF  then problems are probably caused by
 Using LaTeX2RTF
 ***************
 
-General assumptions made by LaTeX2RTF
-=====================================
+General Assumptions
+===================
 
    LaTeX2RTF  assumes that the `.tex' file you want to convert is a
 valid LaTeX
@@ -285,7 +327,7 @@ and how the LaTeX  default font names should be converted to RTF.
 *Note Font Configuration::. LaTeX  variables and user defined commands
 are not evaluated. They will be simply ignored. To let LaTeX2RTF  know
 the names of variables you can add them in the `ignore.cfg' file.
-*Note Ignore Command Configuration::.
+*Note Ignore Command::.
 
    The environment variable RTFPATH may contain a search path for the
 support files (all files ending in `.cfg'). If no file is found during
@@ -302,8 +344,7 @@ LaTeX2RTF  will need at least `fonts.cfg', `direct.cfg', `ignore.cfg',
 `english.cfg'. You may have to change one ore more of them to suit your
 needs. *Note Configuring LaTeX2RTF::.
 
-   *Note Missing and faulty command line options::, for actual
-implementations irregularities.
+   *Note Missing options::, for actual implementations irregularities.
 
    *Note Reporting Bugs::, for information on how to reach the
 maintainer.
@@ -318,8 +359,7 @@ syntax is:
 
      latex2rtf [-options] inputfile.[tex]
 
-   If inputfile is not specified, standard input is read.  The
-`-options' may consist of one or more of the following
+   The `-options' may consist of one or more of the following
 
 `-a auxfile'
      specify an `.aux' file (for table and figure references) that
@@ -374,6 +414,56 @@ syntax is:
      cp1250, cp1252, latin1, latin2, latin3, latin4, latin5, latin9,
      and next.  The default behavior is to use ansinew (code page 1252).
 
+`-D dots_per_inch'
+     used to specify the number of dots per inch for equations
+     converted to bitmaps.  This value is also used when picture
+     environments are converted to bitmaps as well as when EPS graphics
+     are converted to png files.  The default value is 300 dots per
+     inch.
+
+`-M#'
+     where # selects the type of equation conversion.  Use 	
+
+
+    `-M1'
+          	convert displayed equations to RTF
+
+    `-M2'
+          	convert inline equations to RTF
+
+    `-M4'
+          	convert displayed equations to bitmap
+
+    `-M8'
+          	convert inline equations to bitmap
+
+    `-M16'
+          	insert Word comment field that the original equation text
+     These switches can be added together to get the desired
+     conversion.  Handy examples are 	
+
+
+    `-M3'
+          	convert both inline and displayed equations to RTF (default)
+
+    `-M6'
+          	convert inline equations to RTF and displayed equations to
+          bitmaps
+
+    `-M12'
+          	convert both inline and displayed equations to bitmaps 	Bitmap
+     conversion requires that you have installed a working latex2png
+     script.  Producing bitmaps is slow.
+
+`-P /path/to/cfg'
+     used to specify the directory that contains the `.cfg' files
+
+`-S'
+     used to specify that semicolons should be used to separate
+     arguments in RTF fields (instead of commas).  Typically this is
+     needed when the machine that opens the RTF file has a version of
+     Windows that uses `,' for decimal points.
+
 `-V'
      prints version information on standard output and exits.
 
@@ -384,6 +474,18 @@ syntax is:
      add the specified number of extra `}' to the end of the RTF file.
      This is useful for files that are not cleanly converted by
      LaTeX2RTF .
+
+   With no arguments other than switches starting with a "-", LaTeX2RTF
+acts as a filter, i.e., it reads from `stdin' and writes to `stdout'.
+In addition, diagnostic messages are sent to `stderr'. If these standard
+channels are not redirected using `<' and `>', then the input is read
+from the command line, and both output and error messages are printed
+on the screen.
+
+   If a non-switch argument is present, LaTeX2RTF  assumes it is the
+name of the input file. The file must have extension ".tex" but the
+extension is optional. The output file is constructed from the input
+file name by removing the extension ".tex" and adding ".rtf".
 
 Debugging
 =========
@@ -451,10 +553,8 @@ This is not needed if your LaTeX  file contains
    Encountering the `german' package or documentstyle option (by H.
 Partl of the Viena University) makes LaTeX2RTF  behave like that:
 German Quotes, German Umlauts by `"a', etc....  This support is
-programmed directly into LaTeX2RTF
-
-   and supporting similar features for other languages will require
-patching the source code.
+programmed directly into LaTeX2RTF  and supporting similar features for
+other languages will require patching the source code.
 
    *Note Language Configuration::, for details on how to write a
 `language.cfg' file for your language by yourself.
@@ -464,36 +564,9 @@ Cross References
 
    Cross references include everything that you might expect and then
 some: bibliographic citations, equation references, table references,
-figure references, and section references.  Equation, table and figure
-references are implemented by placing RTF bookmarks around the equation
-number (or table number or figure number).
-
-   Ideally, section references would have been done the same way, but
-the crux of the problem is that LaTeX  allows you to tag a section with
-`\label' anywhere in the section.  To bookmark the section number, we
-need to know if any `\label' occurs in that section before the section
-is processed. A plausible alternative would be to insert a bookmark
-when `\label' is encountered with the proper number, and then
-cross-reference these bookmarks. Unfortunately, if the bookmarks are
-hidden, then the cross-reference is also hidden.  So this did not work.
-
-   So the choices were
-  1. to insert a visible bookmark in the document at the place where
-     the `\label'
-
-  2. to use the cross-reference information available in the `.aux' file
-     and lose the link.  This is not too bad when the section numbering
-     is not automatic.
-
-  3. to process the LaTeX  file twice so that the section labels will be
-     known when the section header is processed.  This is hard and
-     breaks using LaTeX2RTF  as pipe.
-
-  4. to process each section, subsection, subsubsection as a unit.
-        I opted for the last because this allows LaTeX2RTF  to bookmark
-the number in the section header avoids the drawbacks of the other
-options.  This was harder to code, and possibly makes things a bit more
-fragile.
+figure references, and section references.  Section, equation, table
+and figure references are implemented by placing RTF bookmarks around
+the equation number (or table number or figure number).
 
    Page references work but are implemented as "warm" cross-references.
 This means that Word does not automatically update the page references
@@ -529,26 +602,25 @@ LaTeX2RTF  in eqnarray environments.
 Equations
 =========
 
-   Equations are now converted to RTF fields.  This is an interim
-solution.  Ideally the equations would become OLE equation objects in
-the RTF file, but this needs to be implemented.
+   There are four separate levels of equation translation based on the
+-M switch, *Note LaTeX2RTF Options::.  Each equation is now converted
+either to an EQ field or to a bitmap.
 
-   It would be nice to have four separate levels of equation translation
-  1. The first level would just do a simple text translation without
-     any special formatting
+   This is an interim solution (for some definition of "interim").
+Ideally the equations would become OLE equation objects in the RTF
+file, but this needs to be implemented.
 
-  2. The second level (which is what is currently implemented) would be
-     to translate equations using fields.  These are not readily
-     editable and Word does not do a good job converting these to
-     equation objects
-
-  3. The third level would be to fully convert the LaTeX  equations to
-     Word equation objects.  The API for this has been published, but
-     is difficult because OLE encoding needs to be written.
-
-  4. Finally, the fourth translation would be to convert the equations
-     to images and embed these images in the RTF file.  This is what
-     `ltx2rtf' does and the results are not bad.
+   Some functions in the EQ fields have two or more parameters with a
+separator between each two. Unfortunately, the interpretation of these
+separators depends on the country specific settings in the MS Windows
+system in which the rtf file is opened. E.g. in English versions of MS
+Windows, the default parameter separator is the comma, in German
+versions the default is the semicolon. If the parameter in the RTF file
+does not match the Windows setting, some EQ fields are not interpreted
+correctly. You can check and set the separator in [Windows control panel
+- country settings - numbers - list separator]. By default, latex2rtf
+uses the comma as separator. If latex2rtf is called with the command
+line parameter -S , the semicolon is inserted as parameter delimiter.
 
 Tables
 ======
@@ -559,10 +631,10 @@ rewritten.
 Graphics
 ========
 
-   One day I will get around to encorporating all graphics formats into
-the RTF file.  This will probably be done using `imagemagick' to do the
-actual translation to formats that are supported by Word and then
-embedding the supported format in RTF.
+   There is now rudimentary support for `\includegraphics'.  Three file
+types will be inserted into the RTF file without needing conversion:
+.pict, .jpeg, and .png files.  EPS files are converted to PNG using
+`convert' from the ImageMagick package.
 
 Pagestyles
 ==========
@@ -580,15 +652,16 @@ Note that these features require RTF Version 1.4.
 Hyperlatex
 ==========
 
-   Hyperlatex support is largely broken at the moment.
+   Hyperlatex support is largely broken at the moment, but continues to
+improve.
 
    Otfried Schwarzkopf has created the "Hyperlatex Markup Language"
 which is a "little package that allows you to use LaTeX  to prepare
 documents in HTML."  It brings an Emacs lisp program with it to convert
 the Hyperlatex file to HTML.  Hyperlatex can be obtained from the
-CTAN-sites, *Note Availability::.  There are two handsome commands that
-avoid typing: \link and \xlink that generate an "internal" label which
-then is used in the following \Ref and \Pageref commands.
+CTAN-sites, *Note Availability::.  There are two convenient commands
+that avoid typing: \link and \xlink that generate an "internal" label
+which then is used in the following \Ref and \Pageref commands.
 
    LaTeX  makes it possible to write `\link{anchor}[ltx]{label}', which
 typesets: `anchor ltx'. LaTeX2RTF  does NOT support this aproach since
@@ -644,8 +717,8 @@ are translated, but it does offer some.  This flexibility resides in
 four files `direct.cfg', `ignore.cfg', `fonts.cfg', and `language.cfg'.
 These filese are documented in the next four sections.
 
-Direct Conversion Configuration
-===============================
+Direct Conversion
+=================
 
    The file `direct.cfg' is used for converting LaTeX  commands by
 simple text replacement. The format consists of lines with a LaTeX
@@ -658,8 +731,8 @@ specific font use `*fontname*', where `fontname' be defined in
      \alpha,{\f*Symbol* a}. #alpha in the Symbol Font
      \copyright,\'a9.
 
-Ignore Command Configuration
-============================
+Ignore Command
+==============
 
    The file `ignore.cfg' is used for defining how to ignore specific
 commands. This file is used for recognition of LaTeX  variables, user
@@ -713,7 +786,7 @@ Font Configuration
 ==================
 
    The file `fonts.cfg' contains the font name mapping.  For example,
-this file determine what font is used to represent `\rm' characters in
+this file determines what font is used to represent `\rm' characters in
 the RTF file.
 
    A line consists of a font name in LaTeX  followed by comma and a font
@@ -748,8 +821,8 @@ of LaTeX2RTF .
 file.  However, just look at one of the existing files and follow the
 pattern.  The format is really simple.
 
-Error Messages and Logging of LaTeX2RTF Activity
-************************************************
+Error Messages and Logging
+**************************
 
    As stated in the Debugging section, LaTeX2RTF  provides a means to
 control the amount of debugging information through the `-d#' switch.
@@ -806,17 +879,16 @@ Unimplemented Features
    * LaTeX2RTF  ignores some of the optional parameters of
      `\documentstyle'
 
-   * Need to finish code page support.  Typically characters that need
-     to be 	  constructed using RTF `\field' commands are not
-     implemented.
+   * Need to finish code page support.  Some characters that need to be
+      constructed using RTF `\field' commands are not implemented.
 
-   * Add the code to produce the corresponding chapter, section
-     informations       and page numbering with headings and myheadings
-     pagestyles. Implement       `\markboth' and `\markright'.
+   * Add the code to produce the corresponding chapter, section,
+     and page numbering with headings and myheadings pagestyles.
+     Implement       `\markboth' and `\markright'.
 
    * To support `\tableofcontents' there would be two approaches:
-     Transfer       sectioning information, title text and let produce
-     pagenumber by the rtf-       reader. Scan and label all of the
+     Transfer       sectioning information, title text and then produce
+     page numbers by the rtf-       reader. Scan and label all of the
      sectioning commands while reading and       then construct the
      sectioning information using these labels. Needs two       passes
      on LaTeX  input.
@@ -824,13 +896,10 @@ Unimplemented Features
    * Include the GNU gettext package to internationalize LaTeX2RTF 's
      Messages.
 
-   * Switch over to GNU getopt() and long options.
+Missing options
+===============
 
-Missing and faulty command line options
-=======================================
-
-   In this section you find comments about missing and buggy command
-line options.
+   Missing or buggy command line options.
 
 `-V'
      The version information output is not compatible with the GNU
@@ -855,8 +924,10 @@ line options.
      compile time.  There are some Warning messages if "newer" RTF Code
      is generated, but it is not consistent at all.
 
-   It would be useful to implement the GNU long option names, e.g.:
-`-debug', `-output_file', `-quiet', etc.
+`--long_names'
+     It would be useful to implement the GNU long option names, e.g.:
+     `-debug', `-output_file', `-quiet', etc.  This could be done by
+     switching to the GNU getopt package.
 
 Known Bugs
 ==========
@@ -877,10 +948,11 @@ Known Bugs
 Reporting Bugs
 ==============
 
-   Report bugs to Georg Lehner) <Jorge.Lehner@gmx.net>. Ralf
-Schlatterbeck is no longer the maintainer. Please provide the following
-information and observe the following guidelines when reporting a bug
-in the program:
+   Report bugs to to the bug tracking system at SourceForge
+(http://sourceforge.net/projects/latex2rtf/).  Only report bugs for the
+latest version of LaTeX2RTF  that is available.   Please provide the
+following information and observe the following guidelines when
+reporting a bug in the program:
   1. State the version of LaTeX2RTF  that you are using.  You can get
      the version by specifying the `-V' option to LaTeX2RTF .
 
@@ -908,15 +980,15 @@ Todo List
 =========
 
    Scott's ToDo list
-   * Improve `\input'
+   * Use lex/yacc to implement getSection
+
+   * Rewrite table code
 
    * Add support for pagestyle
 
-   * Add better graphic/graphicx support
+   * Improve graphic/graphicx support
 
-   * Convert equations to MathType OLE objects
-
-   * Create bitmaps of equations
+   * Better support for ignoring commands
 
    Georg's todo list
    * Make this Manual more consistent, the ToDo and Known Bug List
@@ -932,27 +1004,8 @@ Todo List
      that do       not convert to RTF, including their status (for
      future releases, never,       partially functional, ...).
 
-   The following comes from Ralf:
-   * Redesign the input routines to not use lseek so that LaTeX2RTF
-     can read from pipes.
-
-   * Change the Makefile to use default rules for generating .o files.
-
-   * Also use generic rules in some other places (clean target)
-
-   * For ignored commands the number of arguments to ignore should also
-     be given
-
-   * Environment definition produced with `\newtheorem' should be
-     supported
-
-   * Change how the current version is computed (currently version.h
-     defines the version of the whole package this should change to a
-     CVS (or RCS) version tag from which a version.h file should
-     automatically be generated).
-
-Index of Commandline and Configuration file Options
-***************************************************
+Index for LaTeX2RTF
+*******************
 
 Copyright issues:
           See ``History & Copyright''.

@@ -1,4 +1,4 @@
-/*  $Id: parser.c,v 1.37 2001/11/23 21:43:48 prahl Exp $
+/*  $Id: parser.c,v 1.53 2002/04/04 03:11:24 prahl Exp $
 
    Contains declarations for a generic recursive parser for LaTeX code.
 */
@@ -16,6 +16,8 @@
 #include "parser.h"
 #include "l2r_fonts.h"
 #include "lengths.h"
+#include "definitions.h"
+#include "funct1.h"
 
 typedef struct InputStackType
 {
@@ -25,35 +27,52 @@ typedef struct InputStackType
    long   file_line;
 } InputStackType;
 
-#define PARSER_SOURCE_MAX 40
+#define PARSER_SOURCE_MAX 100
+
 static InputStackType   g_parser_stack[PARSER_SOURCE_MAX];
 
 static int              g_parser_depth = -1;
 static char            *g_parser_string = "stdin";
-static FILE            *g_parser_file   = stdin;
+static FILE            *g_parser_file   = NULL;
 static int 				g_parser_line   = 1;
 static int 				g_parser_include_level=0;
-
-static long				g_parser_file_pos;
-static char            *g_parser_string_pos;
 
 static char             g_parser_currentChar;	/* Global current character */
 static char             g_parser_lastChar;
 static char             g_parser_penultimateChar;
 static int				g_parser_backslashes;
-static bool				g_parser_scan_ahead;
+
+#define TRACK_LINE_NUMBER_MAX 10
+static int				g_track_line_number_stack[TRACK_LINE_NUMBER_MAX];
+static int				g_track_line_number=-1;
 
 static void     parseBracket();
 
-static void
-SetScanAhead(int flag)
+void 
+PushTrackLineNumber(int flag)
 /***************************************************************************
- purpose:     allows getSection to avoid incrementing line number
+ purpose:    set whether or not line numbers should be tracked in LaTeX source file
 ****************************************************************************/
 {
-	g_parser_scan_ahead = flag;
+	if (g_track_line_number>=TRACK_LINE_NUMBER_MAX)
+		diagnostics(ERROR,"scan ahead stack too large! Sorry.");
+	
+	g_track_line_number++;
+	g_track_line_number_stack[g_track_line_number]=flag;
 }
 
+void
+PopTrackLineNumber(void)
+/***************************************************************************
+ purpose:    restore last state of line numbers tracking in LaTeX source file
+****************************************************************************/
+{
+	if (g_track_line_number<0)
+		diagnostics(ERROR,"scan ahead stack too small! Sorry.");
+	
+	g_track_line_number--;
+}
+	
 int 
 CurrentLineNumber(void) 
 /***************************************************************************
@@ -61,6 +80,20 @@ CurrentLineNumber(void)
 ****************************************************************************/
 {
 	return g_parser_line;
+}
+
+void 
+UpdateLineNumber(char *s) 
+/***************************************************************************
+ purpose:    advances the line number for each '\n' in s
+****************************************************************************/
+{
+	if (s == NULL) return;
+	
+	while (*s != '\0') {
+		if (*s == '\n') g_parser_line++;
+		s++;
+	}
 }
 
 char *
@@ -80,7 +113,7 @@ int
 PushSource(char * filename, char * string)
 /***************************************************************************
  purpose:     change the source used by getRawTexChar() to either file or string
- 			  pass NULL for unused argument
+ 			  pass NULL for unused argument (both NULL means use stdin)
 ****************************************************************************/
 {
 	char       s[50];
@@ -110,15 +143,28 @@ PushSource(char * filename, char * string)
 		g_parser_stack[g_parser_depth].string    = g_parser_string;
 	}
 		
-	if (filename) {
-		name = strdup(filename);
-		p = fopen(filename, "rb");
+	/* first test to see if we should use stdin */
+	if ((filename==NULL || strcmp(filename,"-")==0) && string == NULL) {
+		g_parser_include_level++;
+		g_parser_line=1;
+		name = strdup("stdin");
+		p = stdin;
+	
+	/* if not then try to open a file */	
+	} else if (filename) {
+		if (g_home_dir==NULL)
+			name = strdup(filename);
+		else
+			name = strdup_together(g_home_dir, filename);
+		p = fopen(name, "rb");
 		if (!p) {
-           diagnostics(WARNING, "Cannot open <%s>\n", filename);
+           diagnostics(WARNING, "Cannot open <%s>", name);
+           free(name);
            return 0;
        }
        g_parser_include_level++;
        g_parser_line=1;
+       
     } else {
     	name = CurrentFileName();
     	line = CurrentLineNumber();
@@ -291,7 +337,7 @@ getRawTexChar()
 			g_parser_currentChar = '\0';
 	}
 
-	if (g_parser_currentChar == '\n' && !g_parser_scan_ahead) 
+	if (g_parser_currentChar == '\n' && g_track_line_number_stack[g_track_line_number]) 
 			g_parser_line++;
 	
 	g_parser_penultimateChar = g_parser_lastChar;
@@ -322,7 +368,7 @@ purpose: rewind the filepointer in the LaTeX-file by one
 		}
 	}
 	
-	if (c == '\n' && !g_parser_scan_ahead)
+	if (c == '\n' && g_track_line_number_stack[g_track_line_number])
 		g_parser_line--;
 
 	g_parser_currentChar = g_parser_lastChar;
@@ -589,8 +635,9 @@ getBracketParam(void)
  ******************************************************************************/
 {
 	char            c, *text;
-
+	
 	c = getNonBlank();
+	PushTrackLineNumber(FALSE);
 
 	if (c == '[') {
 		text = getDelimitedText('[',']',FALSE);
@@ -602,6 +649,7 @@ getBracketParam(void)
 		diagnostics(5, "getBracketParam []");
 	}
 	
+	PopTrackLineNumber();
 	return text;
 }
 
@@ -622,51 +670,28 @@ getBraceParam(void)
  **************************************************************************/
 {
 	char            s[2], *text;
-
+	
 	s[0] = getNonSpace();			/*skip spaces and one possible newline */
 	if (s[0] == '\n')
 		s[0] = getNonSpace();	
+
+	PushTrackLineNumber(FALSE);
 	
 	if (s[0] == '\\') {
 		ungetTexChar(s[0]);
 		text=getSimpleCommand();
 
 	} else 	if (s[0] == '{') 
-		text = getDelimitedText('{','}',FALSE);
+		text = getDelimitedText('{','}',TRUE);
 	
 	else {
 		s[1] = '\0';
 		text = strdup(s);
 	}
 		
+	PopTrackLineNumber();
 	diagnostics(5, "Leaving getBraceParam {%s}", text);
 	return text;
-}
-
-static void 
-SaveFilePosition(void)
-{
-	if (g_parser_file) {
-		diagnostics(3, "Saving current file pos %ld",ftell(g_parser_file));
-		g_parser_file_pos = ftell(g_parser_file);
-	} else {
-		diagnostics(3, "Saving current string pos %ld char='%c'",g_parser_string, *g_parser_string);
-		g_parser_string_pos = g_parser_string;
-	}
-}
-
-static void 
-RestoreFilePosition(int offset)
-{
-	if (g_parser_file) {
-		diagnostics(3, "Restoring before pos %ld",ftell(g_parser_file));
-		fseek(g_parser_file, g_parser_file_pos+offset, SEEK_SET);
-		diagnostics(3, "Restoring after  pos %ld",ftell(g_parser_file));
-	} else {
-		diagnostics(3, "Restoring before pos %ld char='%c'",g_parser_string, *g_parser_string);
-		g_parser_string = g_parser_string_pos+offset;
-		diagnostics(3, "Restoring after  pos %ld char='%c'",g_parser_string, *g_parser_string);
-	}
 }
 
 char *
@@ -677,17 +702,22 @@ getTexUntil(char * target, int raw)
  **************************************************************************/
 {
 	char            *s, buffer[4096];
-	int             i   = 0;                /* size of string that has been read */
-	int             j   = 0;                /* number of found characters */
+	int				last_i = -1;
+	int             i   = 0;       /* size of string that has been read */
+	int             j   = 0;       /* number of found characters */
 	bool			end_of_file_reached = FALSE;
 	int             len = strlen(target);
-
-	SetScanAhead(TRUE);
-	diagnostics(3, "getTexUntil target = <%s> raw_search = %d ", target, raw);
 	
+	PushTrackLineNumber(FALSE);
+
+	diagnostics(3, "getTexUntil target = <%s> raw_search = %d ", target, raw);
+
 	while (j < len && i < 4095) {
 	
-		buffer[i] = (raw) ? getRawTexChar() : getTexChar();
+		if (i > last_i) {
+			buffer[i] = (raw) ? getRawTexChar() : getTexChar();
+			last_i = i;
+		}
 		
 		if (!buffer[i]) {
 			end_of_file_reached = TRUE;
@@ -696,29 +726,25 @@ getTexUntil(char * target, int raw)
 		
 		if (buffer[i] != target[j]) {
 			if (j > 0) {			        /* false start, put back what was found */
-				RestoreFilePosition(0);
 				i-=j;
 				j=0;
 			}
-		} else {
-			if (j==0)
-				SaveFilePosition();
+		} else 
 			j++;
-		}
+
 		i++;
 	}
 	
 	if (i == 4096) 
 		diagnostics(ERROR, "Could not find <%s> in 4096 characters", target);
 	
-	if (!end_of_file_reached) {
+	if (!end_of_file_reached) /* do not include target in returned string*/
 		buffer[i-len] = '\0';
-		RestoreFilePosition(-1);	/* move to start of target */
-	}
 	
-	SetScanAhead(FALSE);
+	PopTrackLineNumber();
+
 	s = strdup(buffer);
-	diagnostics(6,"strdup result = %s",s);
+	diagnostics(3,"strdup result = %s",s);
 	return s;
 }
 
@@ -737,6 +763,23 @@ getDimension(void)
 
 /* obtain optional sign */
 	cThis=getTexChar();
+	
+/* skip "to" */
+	if (cThis=='t') {
+		cThis=getTexChar();
+		cThis=getTexChar();
+	}
+	
+/* skip "spread" */
+	if (cThis=='s') {
+		cThis=getTexChar();
+		cThis=getTexChar();
+		cThis=getTexChar();
+		cThis=getTexChar();
+		cThis=getTexChar();
+		cThis=getTexChar();
+	}
+
 	if (cThis=='-' || cThis == '+')
 	{
 		buffer[i++]=cThis;
@@ -756,6 +799,7 @@ getDimension(void)
 	
 	if (i==19 || sscanf(buffer, "%f", &num) != 1) {
 		diagnostics(WARNING, "Screwy number in TeX dimension");
+		diagnostics(1,"getDimension() number is <%s>", buffer);
 		return 0;
 	}
 /*	num *= 2;                    convert pts to twips */
@@ -836,40 +880,59 @@ getSection(char **body, char **header, char **label)
 /**************************************************************************
 	purpose: obtain the next section of the latex file
 	
-	This is now the preparsing routine.  Ideally, macro expansion would
-	occur here as well.  The whole reason for this routine was to properly
-	handle \label for a sections.  This routine reads text until a new
-	section heading is found.  The text is returned in body and the *next*
-	header is returned in header.  If header is NULL then there is no next
-	header.  
+	This is now a preparsing routine that breaks a file up into sections.  
+	Macro expansion happens here as well.  \input and \include is also
+	handled here.  The reason for this routine is allow \labels to refer
+	to sections.  
 	
-	\include{file} is handled in this section here as well.
+	This routine reads text until a new section heading is found.  The text 
+	is returned in body and the *next* header is returned in header.  If 
+	no header follows then NULL is returned.
+	
 **************************************************************************/
 {
 	int possible_match, found;
-	char cNext, *s,*text,*next_header;
+	char cNext, *s,*text,*next_header,*str;
 	int i;
 	long delta;
-	int  match[19];
-	char * command[19] = {"\\begin{verbatim}", "\\begin{figure}", "\\begin{equation}", 
+	int  match[29];
+	char * command[29] = {"",  /* 0 entry is for user definitions */
+						  "\\begin{verbatim}", "\\begin{figure}", "\\begin{equation}", 
 						  "\\begin{eqnarray}", "\\begin{table}", "\\begin{description}",
+						  "\\end{verbatim}", "\\end{figure}", "\\end{equation}", 
+						  "\\end{eqnarray}", "\\end{table}", "\\end{description}",
 	                     "\\part", "\\chapter", "\\section", "\\subsection", "\\subsubsection", 
 	                     "\\section*", "\\subsection*", "\\subsubsection*", 
-	                     "\\label", "\\input", "\\include", "\\verb", "\\url" };
+	                     "\\label", "\\input", "\\include", "\\verb", "\\url",
+	                     "\\newcommand", "\\def" , "\\renewcommand"};
 
-	char * ecommand[6] = {"\\end{verbatim}", "\\end{figure}", "\\end{equation}", 
-						  "\\end{eqnarray}", "\\end{table}", "\\end{description}"};
-	int ncommands = 19;
-	int ecommands = 6;
+	int ncommands = 29;
 
-	const int label_item   = 14;
-	const int input_item   = 15;
-	const int include_item = 16;
-	const int verb_item    = 17;
-	const int url_item     = 18;
+	const int b_verbatim_item   = 1;
+	const int b_figure_item     = 2;
+	const int b_equation_item   = 3;
+	const int b_eqnarray_item   = 4;
+	const int b_table_item      = 5;
+	const int b_description_item= 6;
+	const int e_verbatim_item   = 7;
+	const int e_figure_item     = 8;
+	const int e_equation_item   = 9;
+	const int e_eqnarray_item   =10;
+	const int e_table_item      =11;
+	const int e_description_item=12;
+
+	const int label_item   = 21;
+	const int input_item   = 22;
+	const int include_item = 23;
+	const int verb_item    = 24;
+	const int url_item     = 25;
+	const int new_item     = 26;
+	const int def_item     = 27;
+	const int renew_item   = 28;
 
 	int bs_count = 0;
 	int index = 0;
+	int label_depth = 0;
 	
 	if (section_buffer == NULL) {
 		section_buffer = malloc(section_buffer_size+1);
@@ -883,22 +946,31 @@ getSection(char **body, char **header, char **label)
 	*header=NULL;
 	*label=NULL;
 	
-	SetScanAhead(TRUE);
+	PushTrackLineNumber(FALSE);
 	for (delta=0;;delta++) {
 	
 		if (delta+2 >= section_buffer_size) increase_buffer_size();
 		
-		*(section_buffer+delta) = getRawTexChar();
-		if (*(section_buffer+delta)=='\0')
-			diagnostics(2,"char=\\0");
-		else if (*(section_buffer+delta)=='\n')
-			diagnostics(2,"char=\\n");
+		cNext = getRawTexChar();
+		while (cNext == '\0' && g_parser_depth>0) {
+			PopSource();
+			cNext = getRawTexChar();
+		}
+		
+		if (cNext == '\0')
+			diagnostics(5,"char=000 \\0");
+		else if (cNext =='\n')
+			diagnostics(5,"char=012 \\n");
 		else
-			diagnostics(2,"char=%d %c",(int)*(section_buffer+delta),*(section_buffer+delta));
+			diagnostics(5,"char=%03d %c", (int) cNext, cNext);
+				
+		/* add character to buffer */
+		*(section_buffer+delta) = cNext;
 		
 		if (*(section_buffer+delta) == '\0') break;
-		
-		if (*(section_buffer+delta) == '%' && bs_count % 2) {	/* slurp TeX comments */
+
+		/* slurp TeX comments */
+		if (*(section_buffer+delta) == '%' && bs_count % 2) {	
 			delta++;
 			while ((cNext=getRawTexChar()) != '\n') {
 				if (delta+2 >= section_buffer_size) increase_buffer_size();
@@ -908,7 +980,8 @@ getSection(char **body, char **header, char **label)
 			*(section_buffer+delta) = cNext;
 		}
 
-		if (*(section_buffer+delta) == '\\') {				/* begin search if backslash found */
+		/* begin search if backslash found */
+		if (*(section_buffer+delta) == '\\') {
 			bs_count++;
 			if (bs_count % 2) {		/* avoid "\\section" and "\\\\section" */
 				for(i=0; i<ncommands; i++) match[i]=TRUE;
@@ -921,7 +994,14 @@ getSection(char **body, char **header, char **label)
 		if (index == 0) continue;
 			
 		possible_match = FALSE;	
-		for (i=0; i<ncommands; i++) {	/* test each command for match */
+
+/* slow... */
+		if (match[0])  	/* do any user defined commands possibly match? */
+			match[0] = maybeDefinition(section_buffer+delta-index+1, index-1);
+		
+		possible_match = match[0];
+		
+		for (i=1; i<ncommands; i++) {	/* test each command for match */
 			if (!match[i]) continue;
 				
 			if (*(section_buffer+delta)!=command[i][index]) {
@@ -932,9 +1012,33 @@ getSection(char **body, char **header, char **label)
 			}
 			possible_match = TRUE;
 		}
-
+		
 		found = FALSE;
-		for (i=0; i<ncommands; i++) {	/* discover any exact matches */
+		
+		if (match[0]) {						/* expand user macros */
+			cNext = getRawTexChar();		/* wrong when cNext == '%' */
+			ungetTexChar(cNext);
+			if (!isalpha((int)cNext) && index>1) {	/* is macro name complete? */
+					
+				*(section_buffer+delta+1) = '\0';
+				i=existsDefinition(section_buffer+delta-index+1);
+				if (i>-1) {
+					if (cNext == ' ') {
+						cNext=getNonSpace();
+						ungetTexChar(cNext);
+					}
+					
+					delta -= index+1;  		/* remove \macroname */
+					str = expandDefinition(i);
+					PushSource(NULL,str);   /* memory leak :-( */
+					index = 0;
+	    			diagnostics(4,"getSection() expanded macro string is <%s>", str);
+					continue;
+				}
+			}
+		}
+		
+		for (i=1; i<ncommands; i++) {	/* discover any exact matches */
 			if (!match[i]) continue;
 			if (index+1 == strlen(command[i])) {
 				found = TRUE;
@@ -947,7 +1051,7 @@ getSection(char **body, char **header, char **label)
 			cNext = getRawTexChar();
 			ungetTexChar(cNext);
 
-			if (i >= ecommands && i <= include_item && cNext != ' ' && cNext != '{') {
+			if (i > e_description_item && i <= include_item && cNext != ' ' && cNext != '{') {
 				found = FALSE;
 				match[i] = FALSE;
 				diagnostics(5, "oops! did not match %s", command[i]);
@@ -1042,7 +1146,7 @@ getSection(char **body, char **header, char **label)
 			delta += strlen(s)+1;
 			*(section_buffer+delta) = '}';
 
-			if (!(*label) && strlen(s)) 
+			if (!(*label) && strlen(s) && label_depth==0) 
 				*label = strdup_nobadchars(s);
 				
 			free(s);
@@ -1050,19 +1154,62 @@ getSection(char **body, char **header, char **label)
 			continue;
 		}
 		
-		if (i<ecommands) {			/* slurp environment to avoid \labels within */
-			delta++;
-			s=getTexUntil(ecommand[i],TRUE);
+		/* process any new definitions */
+		if (i==def_item || i==new_item || i==renew_item){
+			cNext = getRawTexChar();		/* wrong when cNext == '%' */
+			ungetTexChar(cNext);
+			if (isalpha((int)cNext)) 			/* is macro name complete? */
+				continue;
+				
+			delta -= strlen(command[i]);    /* do not include in buffer */
+			
+			if (i==def_item)
+				CmdNewDef(DEF_DEF);
+			else if (i==new_item)
+				CmdNewDef(DEF_NEW);
+			else 
+				CmdNewDef(DEF_RENEW);
 
-			while (delta+strlen(s)+1 >= section_buffer_size)
+			index = 0;				/* keep looking */
+			continue;
+		}
+			
+		if (i==b_figure_item || i==b_equation_item || i==b_eqnarray_item ||
+			i==b_table_item  || i==b_description_item){
+			label_depth++;		/* labels now will not be the section label */
+			index = 0;
+			continue;
+		}
+
+		if (i==e_figure_item || i==e_equation_item || i==e_eqnarray_item ||
+			i==e_table_item  || i==e_description_item){
+			label_depth--;		/* labels may now be the section label */
+			index = 0;
+			continue;
+		}
+
+		if (i==b_verbatim_item) {			/* slurp environment to avoid inside */
+			delta++;
+			s=getTexUntil(command[e_verbatim_item],TRUE);
+
+			while (delta+strlen(s)+strlen(command[e_verbatim_item])+1 >= section_buffer_size)
 				increase_buffer_size();
 
-			strcpy(section_buffer+delta,s);
-			delta += strlen(s)-1;
+			strcpy(section_buffer+delta,s);				/* append s */
+			delta += strlen(s);
+			
+			strcpy(section_buffer+delta,command[e_verbatim_item]);	/* append command[i] */
+			delta += strlen(command[e_verbatim_item])-1;
 			free(s);
 			index = 0;				/* keep looking */
 			continue;
 		} 
+		
+		diagnostics(5, "possible end of section");
+		diagnostics(5, "label_depth = %d", label_depth);
+		
+		if (label_depth > 0) 	/* still in a \begin{xxx} environment? */
+			continue;
 		
 		/* actually found command to end the section */
 		diagnostics(2,"getSection found command to end section");
@@ -1080,5 +1227,5 @@ getSection(char **body, char **header, char **label)
 	text = strdup(section_buffer);
 	*body = text;
 	*header = next_header;
-	SetScanAhead(FALSE);
+	PopTrackLineNumber();
 }

@@ -1,4 +1,4 @@
-/* $Id: xref.c,v 1.11 2001/11/16 05:16:27 prahl Exp $ 
+/* $Id: xref.c,v 1.20 2002/04/04 03:11:24 prahl Exp $ 
  
 This file contains routines to handle cross references :
 	\label{key}, \ref{key},   \pageref{key}, \bibitem{key},
@@ -23,6 +23,10 @@ char * g_figure_label = NULL;
 char * g_table_label = NULL;
 char * g_equation_label = NULL;
 char * g_section_label = NULL;
+
+#define MAX_LABELS 200
+char * g_label_list[MAX_LABELS];
+int g_label_list_number=-1;
 
 char * ScanAux(char *token, char * reference, int code);
 
@@ -82,13 +86,13 @@ CmdNoCite(int code)
 void 
 CmdBibliography(int code)
 {
-	if (PushSource(BblName, NULL)) {
+	if (PushSource(g_bbl_name, NULL)) {
 		diagnostics(4, "CmdBibliography ... begin Convert()");
 		Convert();
 		diagnostics(4, "CmdBibliography ... done Convert()");
 		PopSource();
 	} else
-		diagnostics(WARNING, "Cannot open bibliography file.  Create %s using BibTeX", BblName);
+		diagnostics(WARNING, "Cannot open bibliography file.  Create %s using BibTeX", g_bbl_name);
 }
 
 void 
@@ -128,17 +132,19 @@ CmdBibitem(int code)
 	
 	label = getBracketParam();
 	if (label) {
-		fprintRTF("[%s]", label);
+		fprintRTF("[");
+		ConvertString(label);
+		fprintRTF("]");
 		free(label);
 	}
 	
 	key = getBraceParam();
 	signet = strdup_nobadchars(key);
 	s=ScanAux("bibcite", key, 0);
-	
+	diagnostics(4,"CmdBibitem <%s>",s);
 	fprintRTF("[");
 	fprintRTF("{\\*\\bkmkstart BIB_%s}",signet);
-	fprintRTF("%s",((s)?s:""));
+	ConvertString(s);
 	fprintRTF("{\\*\\bkmkend BIB_%s}",signet);
 	fprintRTF("]");
 
@@ -200,6 +206,53 @@ CmdPrintIndex(int code)
 	fprintRTF("{\\field{\\*\\fldinst{INDEX \\\\c 2}}{\\fldrslt{}}}");
 }
 
+static int
+ExistsBookmark(char *s)
+{
+	int i;
+	if (!s) return FALSE;
+	for (i=0; i<=g_label_list_number; i++) {
+		if (strcmp(s,g_label_list[i])==0) 
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static void
+RecordBookmark(char *s)
+{
+	if (!s) return;
+	if (g_label_list_number>=MAX_LABELS)
+		diagnostics(WARNING, "Too many labels...some cross-references will fail");
+	else {
+		g_label_list_number++;
+		g_label_list[g_label_list_number] = strdup(s);
+	}
+}
+
+void
+InsertBookmark(char *name, char *text)
+{
+	char *signet;
+	if (!name) {
+		fprintRTF("%s",text);
+		return;
+	}
+
+	signet = strdup_nobadchars(name);
+
+	if (ExistsBookmark(signet)) {
+		diagnostics(3,"bookmark %s already exists",signet);
+
+	} else {
+		diagnostics(3,"bookmark %s being inserted around <%s>",signet,text);
+		RecordBookmark(signet);
+		fprintRTF("{\\*\\bkmkstart %s}%s{\\*\\bkmkend %s}",signet,text,signet);
+	}
+	
+	free(signet);
+}
+
 void CmdLabel(int code)
 /******************************************************************************
 purpose: handles \label \ref \pageref \cite
@@ -208,8 +261,8 @@ purpose: handles \label \ref \pageref \cite
 	char *text, *signet;
 	char *str1, *comma, *s, *str;
 	char *option = NULL;
+	int mode=GetTexMode();
 	
-	int mode = GetTexMode();
 	option = getBracketParam();
 	text = getBraceParam();
 	if (strlen(text)==0) {
@@ -220,29 +273,32 @@ purpose: handles \label \ref \pageref \cite
 	switch (code) {
 		case LABEL_LABEL:
 			if (g_processing_figure || g_processing_table) break;
-			signet = strdup_nobadchars(text);
 			if (mode == MODE_DISPLAYMATH) {
-				g_equation_label = signet;
-				diagnostics(3,"equation label is <%s>",signet);
-				break;
-			}
-			fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",signet);
-			fprintRTF("{\\*\\bkmkend PR_%s}}",signet);
-			free(signet);
+				g_equation_label = strdup_nobadchars(text);
+				diagnostics(3,"equation label is <%s>",text);
+			} else 
+				InsertBookmark(text,"");
 			break;
 		
 		case LABEL_HYPERREF:
 		case LABEL_REF:
 			signet = strdup_nobadchars(text);
 			s = ScanAux("newlabel", text, 1);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF LBL_%s}}",signet);
-			fprintRTF("{\\fldrslt{%s}}}", ((s)?s:"?"));
+			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF %s \\\\* MERGEFORMAT }}",signet);
+			fprintRTF("{\\fldrslt{");
+			if (s)
+				ConvertString(s);
+			else
+				fprintRTF("?");
+			fprintRTF("}}}");
+				
 			free(signet);
 			if (s) free(s);
 			break;
 		
+/* {\field{\*\fldinst{\lang1024 REF section31 \\* MERGEFORMAT }}{\fldrslt{?}}} */
 		case LABEL_CITE:
-			fprintRTF("[");
+			fprintRTF("\n[");
 			str = strdup_noblanks(text);
 			str1 = str;
 			do {
@@ -250,8 +306,13 @@ purpose: handles \label \ref \pageref \cite
 				if (comma) *comma = '\0';	/* replace ',' with '\0' */
 				s = ScanAux("bibcite", str1, 0);
 				signet = strdup_nobadchars(str1);
-				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BIB_%s}}",signet);
-				fprintRTF("{\\fldrslt{%s}}}", ((s)?s:"?"));
+				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BIB_%s \\\\* MERGEFORMAT }}",signet);
+				fprintRTF("{\\fldrslt{");
+				if (s && 0)
+					ConvertString(s);
+				else
+					fprintRTF("?");
+				fprintRTF("}}}");
 				if (comma) fprintRTF(",");
 				str1 = comma + 1;
 				if (s) free(s);
@@ -269,7 +330,7 @@ purpose: handles \label \ref \pageref \cite
 		case LABEL_HYPERPAGEREF:
 		case LABEL_PAGEREF:
 			signet = strdup_nobadchars(text);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF PR_%s}}",signet);
+			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF %s \\\\* MERGEFORMAT }}",signet);
 			fprintRTF("{\\fldrslt{}}}",signet);
 			free(signet);
 			break;
@@ -284,14 +345,15 @@ ScanAux(char *token, char * reference, int code)
 /*************************************************************************
 purpose: obtains a reference from .aux file
 
-code=0 means \\token{reference}{number}       -> "number"
-code=1 means \\token{reference}{{sect}{line}} -> "sect"
+code=0 means \token{reference}{number}       -> "number"
+code=1 means \token{reference}{{sect}{line}} -> "sect"
  ************************************************************************/
 {
 	static FILE    *fAux = NULL;
 	char            AuxLine[1024];
 	char            target[256];
 	char           *s,*t;
+	int				braces;
 
 	if (g_aux_file_missing || strlen(token) == 0) {
 		return NULL;
@@ -299,8 +361,8 @@ code=1 means \\token{reference}{{sect}{line}} -> "sect"
 
 	sprintf(target, "\\%s{%s}", token, reference);
 	
-	if (fAux == NULL && (fAux = fopen(AuxName, "r")) == NULL) {
-		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", AuxName);
+	if (fAux == NULL && (fAux = fopen(g_aux_name, "r")) == NULL) {
+		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", g_aux_name);
 		g_aux_file_missing = TRUE;
 		return NULL;
 	}
@@ -311,23 +373,56 @@ code=1 means \\token{reference}{{sect}{line}} -> "sect"
 
 		s = strstr(AuxLine, target);
 		if (s) {
-			s += strlen(target);
+		
+			s += strlen(target);		/* move to \token{reference}{ */			
+			if (code==1) s++;			/* move to \token{reference}{{ */
 
-			s = strchr(s, '{');
-			if (!s) return NULL;
-			s++;
-
-			if (code) {
-				s = strchr(s, '{');
-				if (!s) return NULL;
-				s++;		
+			t = s;					
+			braces = 1;
+			while ( braces >= 1) {		/* skip matched braces */
+				t++;
+				if (*t == '{') braces++;
+				if (*t == '}') braces--;
+				if (*t == '\0') return NULL;
 			}
 			
-			t = strchr(s, '}');		/* find end of string */
-			if (t) *t = '\0';		/* replace '}'        */
-			
-			return strdup(s);
+			*t = '\0';
+			return strdup(s+1);
 		}
 	}
 	return NULL;
+}
+
+void
+CmdHtml(int code)
+/******************************************************************************
+purpose: handles \htmladdnormallink{text}{link}
+******************************************************************************/
+{
+	char * text, *ref, *s;
+	
+	if (code == LABEL_HTMLADDNORMALREF) {
+		text = getBraceParam();
+		ref = getBraceParam();
+
+		while ((s = strstr(text,"\\~{}")) != NULL) {
+			*s = '~';
+			strcpy(s+1,s+4);
+		}
+		while ((s = strstr(ref,"\\~{}")) != NULL) {
+			*s = '~';
+			strcpy(s+1,s+4);
+		}
+			
+		fprintRTF("{\\field{\\*\\fldinst{ HYPERLINK \"%s\" }{{}}}",ref);
+		fprintRTF("{\\fldrslt{\\ul %s}}}", text);
+		free(text);
+		free(ref);
+	} else if (code == LABEL_HTMLREF) {
+		text = getBraceParam();
+		ref = getBraceParam();
+		ConvertString(text);
+		free(text);
+		free(ref);
+	}
 }

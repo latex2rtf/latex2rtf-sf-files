@@ -1,4 +1,4 @@
-/* $Id: funct1.c,v 1.50 2001/11/23 21:43:48 prahl Exp $ 
+/* $Id: funct1.c,v 1.67 2002/04/04 03:11:24 prahl Exp $ 
  
 This file contains routines that interpret various LaTeX commands and produce RTF
 
@@ -23,6 +23,7 @@ Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
 #include "lengths.h"
 #include "definitions.h"
 #include "preamble.h"
+#include "xref.h"
 
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
 extern int      indent;		/* includes the left margin e.g. for itemize-commands */
@@ -157,11 +158,12 @@ CmdNewDef(int code)
 		
 		/* handle simple parameters (discard delimiters) e.g., #1#2#3*/
 		while ( (cThis=getTexChar()) && cThis != '{' ){
-			if (isdigit(cThis)) param++;
+			if (isdigit((int)cThis)) param++;
 		}		
 		ungetTexChar('{');
 		
 		def = getBraceParam();
+		UpdateLineNumber(def);
 		newDefinition(name+1,def,param);		
 	}
 	
@@ -169,6 +171,9 @@ CmdNewDef(int code)
 		name = getBraceParam();
 		params = getBracketParam();
 		def = getBraceParam();
+		UpdateLineNumber(name);
+		UpdateLineNumber(params);
+		UpdateLineNumber(def);
 		param = 0;
 		if (params) {
 			if ('0' <= *params && *params <= '9')
@@ -201,6 +206,10 @@ CmdNewEnvironment(int code)
 	params = getBracketParam();
 	begdef = getBraceParam();
 	enddef = getBraceParam();
+	UpdateLineNumber(name);
+	UpdateLineNumber(params);
+	UpdateLineNumber(begdef);
+	UpdateLineNumber(enddef);
 	param = 0;
 	if (params) {
 		if ('0' <= *params && *params <= '9')
@@ -224,6 +233,33 @@ CmdNewEnvironment(int code)
 	if (params) free(params);
 	
 }
+
+void
+CmdNewTheorem(int code)
+{
+	char * name, *caption, *numbered_like, *within;
+	
+	name = getBraceParam();
+	numbered_like = getBracketParam();
+	caption = getBraceParam();
+	within = getBracketParam();
+	
+	UpdateLineNumber(name);
+	UpdateLineNumber(numbered_like);
+	UpdateLineNumber(caption);
+	UpdateLineNumber(within);
+
+	diagnostics(3,"CmdNewTheorem name=<%s>", name);
+	diagnostics(3,"CmdNewTheorem caption=<%s>", caption);
+	diagnostics(3,"CmdNewTheorem like=<%s>", numbered_like);
+	newTheorem(name,caption,numbered_like,within);
+	
+	free(name);
+	free(caption);
+	if (numbered_like) free(numbered_like);
+	if (within) free(within);
+}
+
 void
 CmdIndent(int code)
 /******************************************************************************
@@ -263,7 +299,7 @@ CmdSlashSlash(int code)
 	if (g_processing_arrays) {		/* array */
 		cThis=getNonBlank();
 		ungetTexChar(cThis);
-		fprintRTF("%c",FORMULASEP);
+		fprintRTF("%c",g_field_separator);
 		return;
 	}
 		
@@ -275,26 +311,30 @@ CmdSlashSlash(int code)
 	if (vertical_space) 				/* ignore for now */
 		free(vertical_space);
 
-	if (g_processing_eqnarray) {	/* eqnarray */
-
+	if (g_processing_eqnarray) {	/* eqnarray */		
+		if (g_processing_fields)
+			fprintRTF("}}{\\fldrslt }}");
 		if (g_show_equation_number && !g_suppress_equation_number) {
+			char number[20];
+			
 			for (; g_equation_column < 3; g_equation_column++)
 				fprintRTF("\\tab ");
 			incrementCounter("equation");
 			
-			fprintRTF("\\tab(");
-			if (g_equation_label) 
-				fprintRTF("{\\*\\bkmkstart LBL_%s}",g_equation_label);
-			fprintRTF("%d", getCounter("equation"));
-			if (g_equation_label) 
-				fprintRTF("{\\*\\bkmkend LBL_%s}",g_equation_label);
-			fprintRTF(")");
-			if (g_equation_label) 
-				free(g_equation_label);				
-			g_equation_label = NULL;
+			fprintRTF("\\tab{\\b0 (");
+			sprintf(number,"%d",getCounter("equation"));
+			InsertBookmark(g_equation_label,number);
+			if (g_equation_label) {
+				free(g_equation_label);
+				g_equation_label = NULL;
+			}
+			fprintRTF(")}");
 		}
 
 		fprintRTF("\\par\n\\tab ");
+		if (g_processing_fields)
+			fprintRTF("{\\field{\\*\\fldinst{ EQ ");
+
 		g_suppress_equation_number = FALSE;
 		g_equation_column = 1;
 		return;
@@ -323,8 +363,8 @@ CmdSlashSlash(int code)
 	CmdIndent(INDENT_INHIBIT);
 	
 	tabcounter = 0;
-	if (tabbing_on)
-		pos_begin_kill= ftell(fRtf);
+/*	if (tabbing_on)
+		pos_begin_kill= ftell(fRtf);*/
 }
 
 void 
@@ -338,26 +378,56 @@ CmdBeginEnd(int code)
  ***************************************************************************/
 {
 	int i;
+	char * str,*option;
 	char           *s = getBraceParam();
 
-	i=existsEnvironment(s);
-	if (i>-1) 
-	
-		expandEnvironment(i,code);
+	if (code==CMD_BEGIN) 
+		diagnostics(5, "\\begin{%s}", s);
+	else 
+		diagnostics(5, "\\end{%s}", s);
 
-	else {
+	i=existsEnvironment(s);
+	if (i>-1) {
+		str = expandEnvironment(i,code);
+		ConvertString(str);
+		free(str);
+		free(s);
+		return;
+	} else
+		diagnostics(5,"failed to match environment");
 	
-		switch (code) {
-		case CMD_BEGIN:
-			diagnostics(4, "\\begin{%s}", s);
-			(void) CallParamFunc(s, ON);
-			break;
-		case CMD_END:
-			diagnostics(4, "\\end{%s}", s);
-			(void) CallParamFunc(s, OFF);
+	i=existsTheorem(s);
+	if (i>-1) {
+		if (code == CMD_BEGIN) {
+			option = getBracketParam();
+			str = expandTheorem(i,option);
+			CmdEndParagraph(0);
+			CmdVspace(1);
+			CmdIndent(INDENT_NONE);
+			CmdStartParagraph(0);
+			fprintRTF("{\\b %s} {\\i ", str);
+			PushBrace();
+			if (option) free(option);
+			free(str);
+		} else {
+			PopBrace();
+			fprintRTF("}");
+			CmdEndParagraph(0);
+			CmdVspace(1);
 			CmdIndent(INDENT_INHIBIT);
-			break;
 		}
+		return;
+	} else
+		diagnostics(5,"failed to match theorem");
+
+
+	if (code==CMD_BEGIN) {
+		diagnostics(4, "\\begin{%s}", s);
+		(void) CallParamFunc(s, ON);
+	} else {
+		diagnostics(4, "\\end{%s}", s);
+		(void) CallParamFunc(s, OFF);
+		CmdIndent(INDENT_INHIBIT);
 	}
 	free(s);
 }
@@ -477,6 +547,69 @@ parameter: code includes the type of the environment
 	}
 }
 
+char *
+FormatUnitNumber(char *name)
+/******************************************************************************
+  purpose: returns the x.x.x number for the specified sectional unit.
+ ******************************************************************************/
+{
+	char			label[20];
+
+	label[0]='\0';
+	if (strcmp(name,"part")==0 || strcmp(name,"chapter")==0)
+			sprintf(label, "%d", getCounter(name));
+
+	else if (strcmp(name,"section")==0) {
+		if (g_document_type == FORMAT_ARTICLE)
+			sprintf(label, "%d.", getCounter("section"));
+		else
+			sprintf(label, "%d.%d", getCounter("chapter"),getCounter("section"));
+	}
+	
+	else if (strcmp(name,"subsection")==0) {
+		if (g_document_type == FORMAT_ARTICLE)
+			sprintf(label, "%d.%d", getCounter("section"),
+					getCounter("subsection"));
+		else
+			sprintf(label, "%d.%d.%d", getCounter("chapter"),
+					getCounter("section"), getCounter("subsection"));
+	}
+	
+	else if (strcmp(name,"subsubsection")==0) {
+		if (g_document_type == FORMAT_ARTICLE)
+			sprintf(label, "%d.%d.%d", getCounter("section"), 
+					getCounter("subsection"), getCounter("subsubsection"));
+		else
+			sprintf(label, "%d.%d.%d.%d", getCounter("chapter"), 
+					getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+	}
+	
+	else if (strcmp(name,"paragraph")==0) {
+		if (g_document_type == FORMAT_ARTICLE)
+			sprintf(label, "%d.%d.%d.%d", getCounter("section"), 
+					getCounter("subsection"), getCounter("subsubsection"),
+					getCounter("paragraph"));
+		else
+			sprintf(label, "%d.%d.%d.%d.%d", getCounter("chapter"), 
+					getCounter("section"), getCounter("subsection"), 
+					getCounter("subsubsection"),getCounter("paragraph"));
+	}
+	
+	else if (strcmp(name,"subparagraph")==0) {
+		if (g_document_type == FORMAT_ARTICLE)
+			sprintf(label, "%d.%d.%d.%d.%d", getCounter("section"), 
+					getCounter("subsection"),  getCounter("subsubsection"),
+					getCounter("paragraph"),   getCounter("subparagraph"));
+		else
+			sprintf(label, "%d.%d.%d.%d.%d.%d", getCounter("chapter"), 
+					getCounter("section"),        getCounter("subsection"), 
+					getCounter("subsubsection"),  getCounter("paragraph"),
+					getCounter("subparagraph"));
+	}
+
+	return strdup(label);
+}
+
 void 
 CmdSection(int code)
 /******************************************************************************
@@ -486,10 +619,8 @@ parameter: code: type of section-recursion-level
 {
 	char            *toc_entry;
 	char            *heading;
-	char			section_label[20];
-/*	char			c;
-	int				DefFont = DefaultFontFamily();
-*/	
+	char			*unit_label;
+
 	toc_entry = getBracketParam();
 	heading = getBraceParam();
 	
@@ -511,8 +642,9 @@ parameter: code: type of section-recursion-level
 		ConvertBabelName("PARTNAME");
 		if (code == SECT_PART) {
 			incrementCounter("part");
-			sprintf(section_label, "%d", getCounter("part"));
-			fprintRTF("%s\\par ", section_label);
+			unit_label = FormatUnitNumber("part");
+			fprintRTF("%s\\par ", unit_label);
+			free(unit_label);
 		}
 		ConvertString(heading);
 		CmdEndParagraph(0);
@@ -530,13 +662,11 @@ parameter: code: type of section-recursion-level
 			setCounter("subsubsection",0);
 			setCounter("paragraph",0);
 			setCounter("subparagraph",0);
-			sprintf(section_label, "%d", getCounter("chapter"));
+			resetTheoremCounter("chapter");
+			unit_label = FormatUnitNumber("chapter");
 			fprintRTF(" ");
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			InsertBookmark(g_section_label, unit_label);
+			free(unit_label);
 		}
 		fprintRTF("\\par\\par}{\\fi0\\plain\\b\\fs40\\kerning28 ");
 		ConvertString(heading);
@@ -554,19 +684,12 @@ parameter: code: type of section-recursion-level
 			setCounter("subsubsection",0);
 			setCounter("paragraph",0);
 			setCounter("subparagraph",0);
-			if (g_document_type == FORMAT_ARTICLE) {
-				fprintRTF("\\fs32 ");
-				sprintf(section_label, "%d.", getCounter("section"));
-			} else {
-				fprintRTF("\\fs32 ");
-				sprintf(section_label, "%d.%d", getCounter("chapter"),getCounter("section"));
-			}
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			resetTheoremCounter("section");
+			unit_label = FormatUnitNumber("section");
+			fprintRTF("\\fs32 ");
+			InsertBookmark(g_section_label, unit_label);
 			fprintRTF("  ");
+			free(unit_label);
 		}
 		ConvertString(heading);
 		CmdEndParagraph(0);
@@ -583,18 +706,11 @@ parameter: code: type of section-recursion-level
 			setCounter("subsubsection",0);
 			setCounter("paragraph",0);
 			setCounter("subparagraph",0);
-			if (g_document_type == FORMAT_ARTICLE)
-				sprintf(section_label, "%d.%d", getCounter("section"),
-				        getCounter("subsection"));
-			else
-				sprintf(section_label, "%d.%d.%d", getCounter("chapter"),
-				        getCounter("section"), getCounter("subsection"));
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			resetTheoremCounter("subsection");
+			unit_label = FormatUnitNumber("subsection");
+			InsertBookmark(g_section_label, unit_label);
 			fprintRTF("  ");
+			free(unit_label);
 		}
 		ConvertString(heading);
 		CmdEndParagraph(0);
@@ -610,19 +726,11 @@ parameter: code: type of section-recursion-level
 			incrementCounter("subsubsection");
 			setCounter("paragraph",0);
 			setCounter("subparagraph",0);
-			if (g_document_type == FORMAT_ARTICLE)
-				sprintf(section_label, "%d.%d.%d", getCounter("section"), 
-						getCounter("subsection"), getCounter("subsubsection"));
-			else
-				sprintf(section_label, "%d.%d.%d.%d", getCounter("chapter"), 
-				        getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
-
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			resetTheoremCounter("subsubsection");
+			unit_label = FormatUnitNumber("subsubsection");
+			InsertBookmark(g_section_label, unit_label);
 			fprintRTF("  ");
+			free(unit_label);
 		}
 		ConvertString(heading);
 		CmdEndParagraph(0);
@@ -636,21 +744,12 @@ parameter: code: type of section-recursion-level
 		fprintRTF("{\\plain\\b ");
 		if (code == SECT_SUBSUBSUB && getCounter("secnumdepth")>=3) {
 			incrementCounter("paragraph");
+			resetTheoremCounter("paragraph");
+			unit_label = FormatUnitNumber("paragraph");
 			setCounter("subparagraph",0);
-			if (g_document_type == FORMAT_ARTICLE)
-				sprintf(section_label, "%d.%d.%d.%d", getCounter("section"), 
-						getCounter("subsection"), getCounter("subsubsection"),
-						getCounter("paragraph"));
-			else
-				sprintf(section_label, "%d.%d.%d.%d.%d", getCounter("chapter"), 
-				        getCounter("section"), getCounter("subsection"), 
-				        getCounter("subsubsection"),getCounter("paragraph"));
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			InsertBookmark(g_section_label, unit_label);
 			fprintRTF("  ");
+			free(unit_label);
 		}
 		ConvertString(heading);
 		fprintRTF("}  ");
@@ -662,21 +761,11 @@ parameter: code: type of section-recursion-level
 		fprintRTF("{\\plain\\b ");
 		if (code == SECT_SUBSUBSUBSUB && getCounter("secnumdepth")>=4) {
 			incrementCounter("subparagraph");
-			if (g_document_type == FORMAT_ARTICLE)
-				sprintf(section_label, "%d.%d.%d.%d.%d", getCounter("section"), 
-						getCounter("subsection"),  getCounter("subsubsection"),
-						getCounter("paragraph"),   getCounter("subparagraph"));
-			else
-				sprintf(section_label, "%d.%d.%d.%d.%d.%d", getCounter("chapter"), 
-				        getCounter("section"),        getCounter("subsection"), 
-				        getCounter("subsubsection"),  getCounter("paragraph"),
-				        getCounter("subparagraph"));
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
-			fprintRTF("%s", section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
-			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
-			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			resetTheoremCounter("subparagraph");
+			unit_label = FormatUnitNumber("subparagraph");
+			InsertBookmark(g_section_label, unit_label);
 			fprintRTF("  ");
+			free(unit_label);
 		}
 		break;
 		ConvertString(heading);
@@ -702,6 +791,7 @@ CmdCaption(int code)
 	char           *lst_entry;
 	int				n;
 	char   			old_align;
+	char			number[20];
 	
 	old_align = alignment;
 	alignment = CENTERED;
@@ -730,21 +820,19 @@ CmdCaption(int code)
 	}
 
 	fprintRTF(" ");
-	if (g_processing_figure && g_figure_label)
-		fprintRTF("{\\*\\bkmkstart LBL_%s}",g_figure_label);
-
-	if (g_processing_table && g_table_label)
-		fprintRTF("{\\*\\bkmkstart LBL_%s}",g_table_label);
-
 	if (g_document_type != FORMAT_ARTICLE) 
-		fprintRTF("%d.", getCounter("chapter"));
-	fprintRTF("%d", n);
-
+		sprintf(number, "%d.%d", getCounter("chapter"), n);
+	else
+		sprintf(number, "%d", n);
+	
 	if (g_processing_figure && g_figure_label)
-		fprintRTF("{\\*\\bkmkend LBL_%s}",g_figure_label);
-
-	if (g_processing_table && g_table_label)
-		fprintRTF("{\\*\\bkmkend LBL_%s}",g_table_label);
+		InsertBookmark(g_figure_label, number);
+	
+	else if (g_processing_table && g_table_label)
+		InsertBookmark(g_table_label, number);
+	
+	else
+		fprintRTF("%s", number);
 
 	fprintRTF(":  ");
 	thecaption = getBraceParam();
@@ -939,6 +1027,7 @@ CmdItem(int code)
 		return;
 	}
 
+/*	PushLevels();*/
 	diagnostics(4, "Entering CmdItem depth=%d item=%d",g_enumerate_depth,item_number[g_enumerate_depth]);
 
 	CmdEndParagraph(0);
@@ -988,10 +1077,10 @@ CmdItem(int code)
 		break;
 	}
 	
-	Convert();
+/*	Convert();
 	CmdEndParagraph(0);
 	CmdIndent(INDENT_NONE);
-	diagnostics(4, "Exiting Convert() from CmdItem");
+	diagnostics(4, "Exiting Convert() from CmdItem");*/
 }
 
 void 
@@ -1003,16 +1092,14 @@ CmdBox(int code)
 	int mode = GetTexMode();
 	
 	diagnostics(4, "Entering CmdBox()");
-	if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
-		fprintRTF("{\\i0 ");	/* brace level without math italics */
+	if (g_processing_fields) g_processing_fields++;	/* hack to stop fields within fields */
 	
 	SetTexMode(MODE_RESTRICTED_HORIZONTAL);
 	diagnostics(4, "Entering Convert() from CmdBox");
 	Convert();
 	diagnostics(4, "Exiting Convert() from CmdBox");
 	
-	if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
-		fprintRTF("}");	/* brace level without math italics */
+	if (g_processing_fields) g_processing_fields--;	
 
 	SetTexMode(mode);
 	diagnostics(4, "Exited CmdBox()");
@@ -1076,7 +1163,7 @@ CmdVerbatim(int code)
 	VERBATIM_2   for \begin{Verbatim} ... \end{Verbatim}
 ******************************************************************************/
 {
-	char			*verbatim_text, *vptr;
+	char			*verbatim_text, *vptr,*endtag;
 	int				num;
 	int true_code = code & ~ON;
 	
@@ -1090,16 +1177,16 @@ CmdVerbatim(int code)
 		fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
 		
 		if (true_code == VERBATIM_2) 
-			verbatim_text = getTexUntil("\\end{Verbatim}", 1);
-			
+			endtag = strdup("\\end{Verbatim}");
 		else if (true_code == VERBATIM_3) 
-			verbatim_text = getTexUntil("\\end{alltt}", 1);
-			
+			endtag = strdup("\\end{alltt}");			
 		else
-			verbatim_text = getTexUntil("\\end{verbatim}", 1);
-
+			endtag = strdup("\\end{verbatim}");			
+			
+		verbatim_text = getTexUntil(endtag, 1);
+		UpdateLineNumber(verbatim_text);
 		vptr = verbatim_text;
-				
+			
 		if (true_code == VERBATIM_3)   /* alltt environment */
 
 			ConvertAllttString(verbatim_text);
@@ -1113,6 +1200,8 @@ CmdVerbatim(int code)
 		}
 		
 		free(verbatim_text);
+		ConvertString(endtag);
+		free(endtag);
 
 	} else {
 		diagnostics(4, "Exiting CmdVerbatim");
@@ -1290,15 +1379,17 @@ CmdFigure(int code)
  ******************************************************************************/
 {
 	char            *loc, *figure_contents;
+	char endfigure[] = "\\end{figure}";
 
 	if (code & ON) {
 		loc = getBracketParam();
 		diagnostics(4, "entering CmdFigure [%s]", loc);
 		g_processing_figure = TRUE;
 		if (loc) free(loc);
-		figure_contents = getTexUntil("\\end{figure}", FALSE);
+		figure_contents = getTexUntil(endfigure, TRUE);
 		g_figure_label = ExtractLabelTag(figure_contents);
 		ConvertString(figure_contents);	
+		ConvertString(endfigure);	
 		free(figure_contents);		
 	} else {
 		if (g_figure_label) free(g_figure_label);
@@ -1313,29 +1404,32 @@ CmdIgnoreEnviron(int code)
   purpose: function to ignore \begin{environ} ... \end{environ}
  ******************************************************************************/
 {
+	char *endtag=NULL;
 	char *s = NULL;
 	
 	if (code & ON) {
 	
 		switch (code & ~(ON)) {
-			case IGNORE_PICTURE:
-					s= getTexUntil("\\end{picture}",0);
-					break;
 			
 			case IGNORE_MINIPAGE:
-					s=getTexUntil("\\end{minipage}",0);
-					break;
+				endtag = strdup("\\end{minipage}");
+				break;
 
 			case IGNORE_HTMLONLY:
-					s=getTexUntil("\\end{htmlonly}",0);
-					break;
+				endtag = strdup("\\end{htmlonly}");
+				break;
 
 			case IGNORE_RAWHTML:
-					s=getTexUntil("\\end{rawhtml}",0);
-					break;
+				endtag = strdup("\\end{rawhtml}");
+				break;
 		}
 
-		if (s) free(s);
+		if (endtag) {
+			s=getTexUntil(endtag,0);
+			ConvertString(endtag);
+			if (s) free(s);
+			free(endtag);
+		}
 	}
 }
 
@@ -1378,6 +1472,7 @@ CmdLink(int code)
 	diagnostics(4, "  Converted first parameter");
 
 	optparam = getBracketParam();
+	UpdateLineNumber(optparam);
 	if (optparam) free(optparam);
 	
 	/* LEG190498 now should come processing of the optional parameter */
@@ -1458,7 +1553,7 @@ Cmd_OptParam_Without_braces( /* @unused@ */ int code)
 		 (cNext != '{') &&
 		 (cNext != '\n') &&
 		 (cNext != ',') &&
-		 ((cNext != '.') || (isdigit((unsigned char) cLast))) &&
+		 ((cNext != '.') || (isdigit((int) cLast))) &&
 	/*
 	 * . doesn't mean the end of an command inside an number of the type
 	 * real
@@ -1575,74 +1670,6 @@ CmdColsep(int code)
 }
 
 void 
-CmdGraphics(int code)
-{
-	char           *options;
-	char            fullpath[1023];
-	char           *filename;
-	int             cc, i;
-	short           top, left, bottom, right;
-	FILE           *fp;
-
-	/* could be \includegraphics*[0,0][5,5]{file.pict} */
-
-	options = getBracketParam();
-	if (options) free(options);
-
-	options = getBracketParam();
-	if (options) free(options);
-	
-	filename = getBraceParam();
-
-	if (strstr(filename, ".pict") || strstr(filename, ".PICT")) {
-		/* SAP fixes for Mac Platform */
-#ifdef __MWERKS__
-		{
-		char           *dp;
-		strcpy(fullpath, latexname);
-		dp = strrchr(fullpath, ':');
-		if (dp != NULL) {
-			dp++;
-			*dp = '\0';
-		} else
-			strcpy(fullpath, "");
-		strcat(fullpath, filename);
-		}
-#else
-		strcpy(fullpath,filename);
-#endif
-
-		fprintf(stderr, "processing picture %s\n", fullpath);
-		fp = fopen(fullpath, "rb");
-
-		if (fseek(fp, 514L, SEEK_CUR) ||     /* skip 512 byte header + 2 bytes for version info */
-		    (fread(&top, 2, 1, fp) < 1) ||    /* read the pict file dimensions in points */
-		    (fread(&left, 2, 1, fp) < 1) || 
-			(fread(&bottom, 2, 1, fp) < 1) || 
-			(fread(&right, 2, 1, fp) < 1) || 
-			fseek(fp, -10L, SEEK_CUR)) {    /* move back ten bytes so that entire file will be encoded */
-				free(filename);
-				fclose(fp);
-				return;
-			}
-		fprintRTF("\n{\\pict\\macpict\\picw%d\\pich%d\n", right - left, bottom - top);
-
-		i = 0;
-		while ((cc = fgetc(fp)) != EOF) {
-			fprintRTF("%.2x", cc);
-			if (++i > 126) {
-				i = 0;
-				fprintRTF("\n");
-			}	/* keep lines 254 chars long */
-		}
-
-		fprintRTF("}\n");
-		fclose(fp);
-		free(filename);
-	}
-}
-
-void 
 CmdVerbosityLevel(int code)
 /***************************************************************************
  * purpose: insert \verbositylevel{5} in the tex file to set the verbosity 
@@ -1699,4 +1726,44 @@ roman_item(int n)
 
 	s[i] = '\0';
 	return strdup(s);
+}
+
+void CmdNonBreakSpace(int code)
+{
+	fprintRTF("\\~");
+}
+
+void
+CmdInclude(int code)
+/******************************************************************************
+ purpose: handles \input file, \input{file}, \include{file}
+ ******************************************************************************/
+{
+	char            name[50], *s, *t, cNext;
+	int i;
+
+	cNext = getNonSpace();
+	
+	if (cNext == '{') {			/* \input{gnu} or \include{gnu} */
+		ungetTexChar(cNext);
+		s = getBraceParam();
+		
+	} else {					/* \input gnu */
+		name[0] = cNext;
+		for (i=1; i<50; i++){
+			name[i] = getTexChar();
+			if (isspace((int)name[i])) {name[i]='\0';break;}
+		}
+		s = strdup(name);
+	}
+			
+	if (strstr(s, ".tex") == NULL) { /* append .tex if missing*/
+		t = strdup_together(s, ".tex");
+		free(s);
+		s = t;
+	}
+
+	if (PushSource(s,NULL))
+		diagnostics(1, "Including file <%s>",t);
+	free(s);
 }

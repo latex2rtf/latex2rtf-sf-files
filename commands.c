@@ -1,4 +1,4 @@
-/*  $Id: commands.c,v 1.40 2001/11/28 06:36:04 prahl Exp $
+/*  $Id: commands.c,v 1.51 2002/04/04 03:11:24 prahl Exp $
  
     Defines subroutines to translate LaTeX commands to RTF
 */
@@ -21,6 +21,7 @@
 #include "ignore.h"
 #include "lengths.h"
 #include "definitions.h"
+#include "graphics.h"
 
 typedef struct commandtag {
 	char           *cpCommand;			/* LaTeX command name without \ */
@@ -182,6 +183,8 @@ static CommandArray commands[] = {
 	{"includegraphics*", CmdGraphics, 0},
 	{"moveleft", CmdLength, 0},
 	{"moveright", CmdLength, 0},
+	{"hsize", CmdLength, 0},
+	{"letterspace", CmdLength, 0},
 	{"footnotemark", CmdIgnoreParameter, One_Opt_No_NormParam},
 	{"label", CmdLabel, LABEL_LABEL},
 	{"ref", CmdLabel, LABEL_REF},
@@ -255,15 +258,22 @@ static CommandArray commands[] = {
 	{"cline", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"multicolumn", CmdMultiCol, 0},
 	{"frac", CmdFraction, 0},
+	{"dfrac", CmdFraction, 0},
     {"Frac", CmdFraction, 0},
 	{"sqrt", CmdRoot, 0},
     {"int",  CmdIntegral, 0},
+    {"iint",  CmdIntegral, 3},
+    {"iiint",  CmdIntegral, 4},
     {"sum",  CmdIntegral, 1},
     {"prod",  CmdIntegral, 2},
     {"left", CmdLeftRight, 0},
     {"right", CmdLeftRight, 1},
+    {"stackrel", CmdStackrel, 0},
 	{"nonumber",CmdNonumber, EQN_NO_NUMBER},
 	{"char",CmdChar,0},
+	{"htmladdnormallink",CmdHtml,LABEL_HTMLADDNORMALREF},
+	{"htmlref",CmdHtml, LABEL_HTMLREF},
+	{"nobreakspace", CmdNonBreakSpace, 0},
 	{"", NULL, 0}
 };
 
@@ -299,7 +309,7 @@ static CommandArray PreambleCommands[] = {
 	{"renewcommand", CmdNewDef, DEF_RENEW},
 	{"newenvironment", CmdNewEnvironment, DEF_NEW},
 	{"renewenvironment", CmdNewEnvironment, DEF_RENEW},
-	{"newtheorem", CmdIgnoreParameter, One_Opt_Two_NormParam},
+	{"newtheorem", CmdNewTheorem, 0},
 	{"renewtheorem", CmdIgnoreParameter, One_Opt_Two_NormParam},
 	{"pagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"thispagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},
@@ -325,6 +335,11 @@ static CommandArray PreambleCommands[] = {
 	{"oddsidemargin",CmdSetTexLength, SL_ODDSIDEMARGIN},
 	{"evensidemargin",CmdSetTexLength, SL_EVENSIDEMARGIN},
 	{"footnotetext", CmdFootNote, FOOTNOTE_TEXT},
+	{"include", CmdInclude, 0},
+	{"input", CmdInclude, 0},
+	{"htmladdnormallink",CmdHtml, LABEL_HTMLADDNORMALREF},
+	{"htmlref",CmdHtml, LABEL_HTMLREF},
+	{"nobreakspace", CmdNonBreakSpace, 0},
 	{"", NULL, 0}
 };				/* end of list */
 
@@ -408,7 +423,7 @@ static CommandArray params[] = {
 	{"tabbing", CmdTabbing, TABBING},
 	{"figure", CmdFigure, FIGURE},
 	{"figure*", CmdFigure, FIGURE_1},
-	{"picture", CmdIgnoreEnviron, IGNORE_PICTURE},
+	{"picture", CmdPicture, 0},
 	{"minipage", CmdMinipage, 0},
 
 	{"quote", CmdQuote, QUOTE},
@@ -425,12 +440,14 @@ static CommandArray params[] = {
 	{"longtable*", CmdTabular, TABULAR_1},
 	{"array", CmdArray, 1},
 
+	{"displaymath", CmdEquation, EQN_DISPLAYMATH},
+	{"equation", CmdEquation, EQN_EQUATION},
+	{"equation*", CmdEquation, EQN_EQUATION_STAR},
+	{"eqnarray*", CmdEquation, EQN_ARRAY_STAR},
+	{"eqnarray", CmdEquation, EQN_ARRAY},
+	{"math", CmdEquation, EQN_MATH},
+
 	{"multicolumn", CmdMultiCol, 0},
-	{"displaymath", CmdDisplayMath, EQN_DISPLAYMATH},
-	{"equation", CmdDisplayMath, EQN_EQUATION},
-	{"equation*", CmdDisplayMath, EQN_EQUATION_STAR},
-	{"eqnarray*", CmdDisplayMath, EQN_ARRAY_STAR},
-	{"eqnarray", CmdDisplayMath, EQN_ARRAY},
 	{"letter", CmdLetter, 0},
 	{"table", CmdTable, TABLE},
 	{"table*", CmdTable, TABLE_1},
@@ -438,7 +455,6 @@ static CommandArray params[] = {
 	{"abstract", CmdAbstract, 0},
 	{"titlepage", CmdTitlepage, 0},
 	
-	{"math", CmdMath, EQN_MATH},
 	{"em", CmdEmphasize, F_EMPHASIZE_3},
 	{"rmfamily", CmdFontFamily, F_FAMILY_ROMAN_3},
 	{"sffamily", CmdFontFamily, F_FAMILY_SANSSERIF_3},
@@ -489,12 +505,16 @@ globals: command-functions have side effects or recursive calls
  ****************************************************************************/
 {
 	int             i, j;
-
+	char * macro_string;
+	
 	diagnostics(5,"CallCommandFunc <%s>, iEnvCount = %d",cCommand,iEnvCount);
 	
 	i=existsDefinition(cCommand);
 	if (i>-1) {
-		expandDefinition(i);
+		macro_string=expandDefinition(i);
+	    diagnostics(3,"CallCommandFunc <%s> expanded to <%s>", cCommand, macro_string);
+		ConvertString(macro_string);
+		free(macro_string);
 		return TRUE;
 	}
 

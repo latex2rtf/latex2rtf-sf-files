@@ -1,26 +1,24 @@
-<html lang="en"><head>
+<html lang="en">
+<head>
 <title>LaTeX2rtf</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name=description content="LaTeX2rtf">
-<meta name=generator content="makeinfo 4.0">
+<meta name=generator content="makeinfo 4.1">
 <link href="http://texinfo.org/" rel=generator-home>
-</head><body>
-
+</head>
+<body>
+<h1>LaTeX2rtf</h1>
 <p><hr>
 Node:<a name="Top">Top</a>,
-Next:<a rel=next href="#History">History</a>,
-Previous:<a rel=previous href="#(dir)">(dir)</a>,
-Up:<a rel=up href="#(dir)">(dir)</a>
+Next:<a rel=next href="#History">History</a>
 <br>
 
-<h1>LaTeX2RTF
-</h1>
+<h2>LaTeX2RTF
+</h2>
 
 <p>This file documents LaTeX2RTF
-, a converter from the LaTeX
- markup
-language for document typesetting into rtf, which does the same thing,
-but in another way and mood.
+, a converter that translates LaTeX
+ to RTF.
 
 <ul>
 <li><a href="#History">History</a>: 
@@ -30,9 +28,9 @@ but in another way and mood.
 <li><a href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>: 
 <li><a href="#Features">Features</a>: 
 <li><a href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF </a>: 
-<li><a href="#Error%20Messages%20and%20Logging%20of%20LaTeX2RTF%20Activity">Error Messages and Logging of LaTeX2RTF Activity </a>: 
+<li><a href="#Error%20Messages%20and%20Logging">Error Messages and Logging </a>: 
 <li><a href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development </a>: 
-<li><a href="#Index%20of%20Commandline%20and%20Configuration%20file%20Options">Index of Commandline and Configuration file Options </a>: 
+<li><a href="#Index%20for%20LaTeX2RTF">Index for LaTeX2RTF </a>: 
 </ul>
 
 <p><hr>
@@ -42,7 +40,7 @@ Previous:<a rel=previous href="#Top">Top</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>History &amp; Copyright</h1>
+<h2>History &amp; Copyright</h2>
 
 <p>In 1994 the first Version of LaTeX2RTF
  was written by Fernando Dorner and Andreas Granzer of
@@ -63,17 +61,18 @@ one-semester course by Friedrich Polzer and Gerhard Trisko. The result was LaTeX
 <a href="http://tug.org/utilities/texconv/index.html">TeX Conversion Webpage</a>  of
 <a href="mailto:W.Hennings@fz-juelich.de">Wilfried Hennings</a> and added some functionality and took
 over the maintainence of the program.  The last version release by Georg is 1.8aa. 
+The bulk of development post 1.8aa was done by Scott Prahl. 
 Wilfried Hennings now coordinates the development of the program and maintains the project
 on <a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a> where there are also
 (low volume) mailing lists for users <a href="mailto:latex2rtf-users@lists.sourceforge.net">latex2rtf-users@lists.sourceforge.net</a>
 and developers
 <a href="mailto:latex2rtf-developers@lists.sourceforge.net">latex2rtf-developers@lists.sourceforge.net</a>. 
 For subscription to these lists:
-<a href="mailto:mail_to_latex2rtf-users-request@lists.sourceforge.net?subject=subscribe">mail_to_latex2rtf-users-request@lists.sourceforge.net?subject=subscribe</a>
+<a href="mailto:latex2rtf-users-request@lists.sourceforge.net?subject=subscribe">latex2rtf-users-request@lists.sourceforge.net?subject=subscribe</a>
 or
-<a href="mailto:mail_to_latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe">mail_to_latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe</a>
+<a href="mailto:latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe">latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe</a>
 
-<p>As of December 2001, version 1.9.12 of LaTeX2RTF
+<p>As of April 2002, version 1.9.13 of LaTeX2RTF
  is available. 
 One day there shall be a jump to Version 2.0, but this is not history but future ...
 
@@ -87,23 +86,23 @@ Previous:<a rel=previous href="#History">History</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Introduction</h1>
+<h2>Introduction</h2>
 
 <p>LaTeX2RTF
  is a translator program from LaTeX
  text into "rich text format" files.  These
 files are commonly referred to as RTF files.  RTF is a published standard format by
-Microsoft.  This standard is somewhat ambiguous in places and Microsoft ignores various
-parts of the standard that are inconvenient, but RTF is widely used by many WYSIWIG text
-editors and is supported by Microsoft Word and Word for Windows. RTF can be exported
-and/or imported by several textprocessors.
+Microsoft.  This standard can be ambiguous in places and Microsoft ignores
+parts of the standard it finds inconvenient, but RTF is widely used by many WYSIWIG text
+editors and is supported by Microsoft Word and most text processors.
 
 <p>LaTeX2RTF
- translates the text and much of the formatting information from LaTeX
- to RTF,
-but the typeset output is not nearly as good as what you would get from using LaTeX
-
-<p>directly.  So, why bother translating? There are three purposes:
+ translates the text and as much of the formatting information from LaTeX
+ to RTF. 
+Be forewarned that the typeset output is not nearly as good as what you would get
+from using LaTeX
+ directly. 
+So, why bother translating? Consider,
 
 <ol type=1 start=1>
 </p><li>You use LaTeX
@@ -116,16 +115,6 @@ MS-<small>...</small>.
 you are "on the other side" and need to import her files, steal some part, and then
 desktop publish it in your fine MS-<small>...</small> environment.
 
-<li>You maybe have both things, LaTeX
- and MS-<small>...</small>, or you don't. But you like the way
-how LaTeX
- and friends work, and you don't want to type in a letter to your friends with
-about 345 characters and end up with a <code>.doc</code> file of 32,845 byte. So you edit your
-documents either with <code>edit.com</code> or <code>edlin</code> in the structured form that LaTeX
-
-<p>encourages, and then you use MS-<small>...</small>, or MS-<small>...</small>-Viewer or any other RTF-rendering
-software to print out your file.  Yes, this somewhat bizarre, but we are all somewhat
-bizarre, are we not?
 </ol>
 
 <p>There are drawbacks to the conversion process. In fact, don't expect any LaTeX
@@ -154,9 +143,9 @@ See <a href="#Unimplemented%20Features">Unimplemented Features</a>.
  are restricted in scope or buggy. See <a href="#Known%20Bugs">Known Bugs</a>.
 
 <p>RTF is a moving target, because Microsoft does not stop inventing new extensions and
-features for it. So you cannot view newer RTF files with older word Processors.  LaTeX2RTF
-
-<p>eventually will generate RTF output that is unreadable with your Program.  The syntax and
+features for it. So you cannot view newer RTF files with older word processors. 
+LaTeX2RTF
+ eventually will generate RTF output that is unreadable with your Program.  The syntax and
 semantics of RTF are somewhat artistic, i.e., you can generate a syntactically correct RTF
 file that cannot be displayed by some/most word processors.
 
@@ -170,7 +159,7 @@ Previous:<a rel=previous href="#Introduction">Introduction</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Availability</h1>
+<h2>Availability</h2>
 
 <p>LaTeX2RTF
  is available for many Unix Platforms, for the Macintosh, and for MS-DOS, including
@@ -182,16 +171,17 @@ an i386 processor or better. The Win32 Version requires
 up) will also run under all MS windows versions, the Win32 version has been discontinued.
 
 <p>Subsequent to 1.8aa, <a href="mailto:prahl@ece.ogi.edu">Scott Prahl</a> has fixed many bugs, improved
-handling of tabular environments, significantly improve handling of
-equations, added macro expansion of <code>\newcommand</code> definitions, improved handling of
-cross references, and added some support for <code>\includegraphics</code> files.
+handling of tabular environments, significantly improved handling of
+equations, added macro expansion, improved handling of
+cross references, added bitmap rendering of equations,
+and added some support for <code>\includegraphics</code> files.
 
 <p>You find the latest version on
 <a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a> and - with some delay - on
 CTAN sites: e.g., <a href="http://www.dante.de">http://www.dante.de</a> or <a href="http://www.ctan.org">http://www.ctan.org</a>.
 
-<p>There are a couple of persons working on the LaTeX2RTF
- revival, coordinated by
+<p>There are a couple of people working on the LaTeX2RTF
+, coordinated by
 <a href="mailto:W.Hennings@fz-juelich.de">Wilfried Hennings</a>. Contact the mailing_list for the
 latest news.
 
@@ -202,96 +192,162 @@ Previous:<a rel=previous href="#Availability">Availability</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Installing LaTeX2RTF</h1>
+<h2>Installing LaTeX2RTF</h2>
 
 <ul>
 <li><a href="#General">General </a>: 
-<li><a href="#%3csmall%3eUNIX%3c%2fsmall%3e"><small>UNIX</small> </a>: 
-<li><a href="#Windows">Windows </a>: 
+<li><a href="#UNIX">UNIX </a>: 
+<li><a href="#DOS%20or%20Windows">DOS or Windows </a>: 
 <li><a href="#Macintosh">Macintosh </a>: 
 <li><a href="#Problems%20Compiling">Problems Compiling </a>: 
-<li><a href="#Problems%20with%20make%20test">Problems with make test </a>: 
+<li><a href="#Problems%20with%20make%20check">Problems with make check </a>: 
 </ul>
 
 <p><hr>
 Node:<a name="General">General</a>,
-Next:<a rel=next href="#%3csmall%3eUNIX%3c%2fsmall%3e"><small>UNIX</small></a>,
+Next:<a rel=next href="#UNIX">UNIX</a>,
 Previous:<a rel=previous href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2>General</h2>
+<h3>General</h3>
+
+<p>The documentation of the program is found in the <code>doc/</code> directory in the
+file <code>latex2rtf.texi</code> in the GNU TeXInfo format.  For your convenience, you
+can find <small>HTML</small> and <small>PDF</small> versions of the manual there as well.
 
 <p><hr>
-Node:<a name="%3csmall%3eUNIX%3c%2fsmall%3e"><small>UNIX</small></a>,
-Next:<a rel=next href="#Windows">Windows</a>,
+Node:<a name="UNIX">UNIX</a>,
+Next:<a rel=next href="#DOS%20or%20Windows">DOS or Windows</a>,
 Previous:<a rel=previous href="#General">General</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2><small>UNIX</small></h2>
+<h3>UNIX</h3>
 
-<p>The documentation of the program is found in the <code>doc/</code> directory in the
-file <code>latex2rtf.info</code> in the GNU info format.  For your convenience, you
-can find <code>.html</code> and <code>.pdf</code> versions of the manual there as well.
-
-<p>To install (on a <small>UNIX</small> system)
+<p>To install,
 <ol type=1 start=1>
-</p><li>Edit  <code>Makefile</code> for your local configuration. The install part supports
-multiple directories to install to, you will normally only need one. Be
-sure to correctly configure the <code>LIBDIR</code> variable to the directory where
-support files (ending in <code>.cfg</code>) will be found by the program. This is
-normally the same as the <code>LIBINSTALL</code> variable.
+</p><li>Edit <code>Makefile</code> for your local configuration.  In particular, pay attention
+to the <code>PREFIX</code> variable.  If you do not have root access you might wish
+to set the makefile variable <code>PREFIX</code> to be your home directory.
+
+<li>As of version 1.9.13, LaTeX2RTF
+ supports conversion of LaTeX
+ equations to
+bitmaps using the shell script <code>latex2png</code>, found in <code>scripts/</code>. 
+<code>latex2png</code> requires that
+both LaTeX
+ and <code>ImageMagick</code> are installed. 
+LaTeX2RTF
+ will translate documents without a working <code>latex2png</code>, but some
+features will be missing.
 
 <li><code>make</code>
 
-<li>If this is not your first time installation, you may want to preserve
+<p>If this is not your first time installation, you may want to preserve
   your old configuration (<code>*.cfg</code>) files. Copy them to a safe place before
   installing.
 
-<li><code>make install</code>
+</p><li><code>make check</code>
 
-<li>If you have problems with make install (for example if your <code>mkdir</code>
-  doesn't support the <code>-p</code> option) and you do not need multiple install
-  targets, try:
-  <code>make simple_install</code>
+<p>[OPTIONAL] This tests LaTeX2RTF
+ on a variety of LaTeX
+ files.  Expect
+a whole lot of warnings, but no outright errors.
 
-<li>Define the environment variable <code>RTFPATH</code>. This is typically
-<code>/usr/local/lib/latex2rtf</code>
+</p><li><code>make install</code>
 
-<li>Run <code>make test</code> to test your installation
+<p>If your <code>mkdir</code> doesn't support the <code>-p</code> option, then create
+  the necessary directories by hand and remove the option from the <code>$MKDIR</code> variable. 
+  If you have other problems, just copy <code>latex2rtf</code> and <code>latex2png</code> to
+  a binary directory, and move the contents of the <code>cfg/</code> directory to
+  the location specified by <code>$CFG_INSTALL</code>.
+
+</p><li><code>make install-info</code>
+
+<p>[OPTIONAL] This installs <code>.info</code> files for use with the <code>info</code>
+program.
+
 </ol>
 
-<p>Open the <code>latex2rtf</code> directory and type
-<pre>make
-make test
-sudo make install
-</pre>
+<p>You no longer need to define the environment variable <code>RTFPATH</code>. This
+is only necessary if you move the directory containing the <code>.cfg</code> files. 
+Just define <code>RTFPATH</code> to be the path to the new location.
 
 <p><hr>
-Node:<a name="Windows">Windows</a>,
+Node:<a name="DOS%20or%20Windows">DOS or Windows</a>,
 Next:<a rel=next href="#Macintosh">Macintosh</a>,
-Previous:<a rel=previous href="#%3csmall%3eUNIX%3c%2fsmall%3e"><small>UNIX</small></a>,
+Previous:<a rel=previous href="#UNIX">UNIX</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2>Windows</h2>
+<h3>DOS or Windows</h3>
 
-<p>The file <code>L2R.BAT</code> is for use with the <small>DJGPP</small> generated version
-<code>LATEX2RT.EXE</code>.
+<p>The <small>UNIX</small> and Mac distributions do not contain an executable for DOS
+or Windows. Instead, get the DOS port as file <code>latex2rtf-x.xx_dos.zip</code>
+(where x.xx is the version number) from
+<a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a>
 
-<p>The <small>UNIX</small> and Mac distributions do not contain an executable for DOS / Windows. 
-Instead, get the DOS / Windows port as file <code>latex2rtf-x.xx_dos.zip</code>
-(where x.xx is the version number) from  <a href="http://sourceforge.net/projects/latex2rtf/">http://sourceforge.net/projects/latex2rtf/</a>
+<p>The DOS distribution contains a precompiled executable which should run
+under plain DOS and also under any MS Windows system.
+
+<p>To install latex2rtf, extract all files from the zip archive to C:\l2r
+or to another folder (i.e. directory) of your choice,
+preserving the folder structure (winzip: check "use folder names"). 
+If you extracted them to another folder,
+edit the files <code>L2R.BAT</code> and <code>L2RSEM.BAT</code> and change the pathes
+to <code>LATEX2RT.EXE</code> and to the cfg files to the folder where you put them.
+
+<p>Make sure that the folder containing the files
+<code>L2R.BAT</code>, <code>L2RSEM.BAT</code> and <code>LATEX2PNG.BAT</code>
+is in your search path
+(e.g. adding to your autoexcec.bat: "PATH=...;...;C:\l2r")
+or put these files into a folder which is in your search path.
+
+<p>The file <code>L2R.BAT</code> or <code>L2RSEM.BAT</code> will call
+the <small>DJGPP</small> generated version <code>LATEX2RT.EXE</code>.
+
+<p>If you want to use the option to convert equations to bitmaps (-M 12),
+you must have TeX, ImageMagick and Ghostscript installed. 
+This works only on win32 systems (win95, win98, winNT4, win2000, winXP)
+because ImageMagick is available only for win32, not for pure DOS.
+
+<ul>
+<li>Of TeX, you need a complete installation.
+
+<li>Of ImageMagick, get the version for Win2000. It will also work under win95 and win98. 
+You only need convert.exe.
+
+<li>Of Ghostscript, you only need gswin32c.exe and gsdll32.dll. 
+</ul>
+
+<p>Either the folders where TeX, ImageMagick and Ghostscript are installed
+must be in your search path, or you must edit the file <code>LATEX2PNG.BAT</code>
+and specify the folders where TeX, ImageMagick and Ghostscript are installed
+in the SET commands, e.g.
+
+<br><pre>...
+rem Set path to latex here (ending with \)
+rem     if it isn't in your search path:
+SET TEXDIR=C:\texmf\miktex\bin\
+
+rem Set path to ImageMagick's convert here (ending with \)
+rem     if it isn't in your search path:
+SET MAGICKDIR=C:\ImageMagick\
+
+rem Set path to Ghostscript's gswin32c.exe here (NOT ending with \)
+rem     if it isn't in your search path:
+SET GSDIR=C:\Aladdin\gs6.01\bin
+</pre>
 
 <p><hr>
 Node:<a name="Macintosh">Macintosh</a>,
 Next:<a rel=next href="#Problems%20Compiling">Problems Compiling</a>,
-Previous:<a rel=previous href="#Windows">Windows</a>,
+Previous:<a rel=previous href="#DOS%20or%20Windows">DOS or Windows</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2>Macintosh</h2>
+<h3>Macintosh</h3>
 
 <p>If you want a MacOS X version, make sure that you have installed the developer tools CD
 that is appropriate for your OS version, and then follow the directions above for
@@ -313,12 +369,12 @@ the <code>.tex</code> file to be converted.  These should be generated using LaT
 
 <p><hr>
 Node:<a name="Problems%20Compiling">Problems Compiling</a>,
-Next:<a rel=next href="#Problems%20with%20make%20test">Problems with make test</a>,
+Next:<a rel=next href="#Problems%20with%20make%20check">Problems with make check</a>,
 Previous:<a rel=previous href="#Macintosh">Macintosh</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2>Problems Compiling</h2>
+<h3>Problems Compiling</h3>
 
 <p>The code for LaTeX2RTF
  is standard <small>ANSI</small> C.  Some possible pitfalls
@@ -334,19 +390,20 @@ so may generate errors that were not found in a different development
 system.  Plese report these, but a quick fix is to remove all compiler
 options.
 
-<li>Not defining <code>RTFPATH</code>.
+<li>Not defining <code>RTFPATH</code> (either as environment variable or by
+the command line parameter -P).
 
 <li>Not defining <code>HAS_NO_STRDUP</code> in the Makefile when your system
 lacks this facility. 
 </ul>
 
 <p><hr>
-Node:<a name="Problems%20with%20make%20test">Problems with make test</a>,
+Node:<a name="Problems%20with%20make%20check">Problems with make check</a>,
 Previous:<a rel=previous href="#Problems%20Compiling">Problems Compiling</a>,
 Up:<a rel=up href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <br>
 
-<h2>Problems with <code>make test</code></h2>
+<h3>Problems with <code>make check</code></h3>
 
 <p>All the files in the <code>test</code> directory are converted (with more or less
 success) using LaTeX2RTF
@@ -370,22 +427,22 @@ Previous:<a rel=previous href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Using LaTeX2RTF</h1>
+<h2>Using LaTeX2RTF</h2>
 
 <ul>
-<li><a href="#General%20assumptions%20made%20by%20LaTeX2RTF">General assumptions made by LaTeX2RTF </a>: 
+<li><a href="#General%20Assumptions">General Assumptions </a>: 
 <li><a href="#LaTeX2RTF%20Options">LaTeX2RTF Options </a>: 
 <li><a href="#Debugging">Debugging</a>: 
 </ul>
 
 <p><hr>
-Node:<a name="General%20assumptions%20made%20by%20LaTeX2RTF">General assumptions made by LaTeX2RTF</a>,
+Node:<a name="General%20Assumptions">General Assumptions</a>,
 Next:<a rel=next href="#LaTeX2RTF%20Options">LaTeX2RTF Options</a>,
 Previous:<a rel=previous href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>,
 Up:<a rel=up href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
 <br>
 
-<h2>General assumptions made by LaTeX2RTF</h2>
+<h3>General Assumptions</h3>
 
 <p>LaTeX2RTF
  assumes that the <code>.tex</code> file you want to convert is a valid LaTeX
@@ -404,7 +461,7 @@ should be converted to RTF.  See <a href="#Font%20Configuration">Font Configurat
  variables and user
 defined commands are not evaluated. They will be simply ignored. To let LaTeX2RTF
  know the
-names of variables you can add them in the <code>ignore.cfg</code> file.  See <a href="#Ignore%20Command%20Configuration">Ignore Command Configuration</a>.
+names of variables you can add them in the <code>ignore.cfg</code> file.  See <a href="#Ignore%20Command">Ignore Command</a>.
 
 <p>The environment variable RTFPATH may contain a search path for the support files (all
 files ending in <code>.cfg</code>). If no file is found during the search in the search-path or
@@ -420,18 +477,18 @@ of RTFPATH.
 least <code>fonts.cfg</code>, <code>direct.cfg</code>, <code>ignore.cfg</code>, <code>english.cfg</code>. You may
 have to change one ore more of them to suit your needs. See <a href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>.
 
-<p>See <a href="#Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options</a>, for actual implementations irregularities.
+<p>See <a href="#Missing%20options">Missing options</a>, for actual implementations irregularities.
 
 <p>See <a href="#Reporting%20Bugs">Reporting Bugs</a>, for information on how to reach the maintainer.
 
 <p><hr>
 Node:<a name="LaTeX2RTF%20Options">LaTeX2RTF Options</a>,
 Next:<a rel=next href="#Debugging">Debugging</a>,
-Previous:<a rel=previous href="#General%20assumptions%20made%20by%20LaTeX2RTF">General assumptions made by LaTeX2RTF</a>,
+Previous:<a rel=previous href="#General%20Assumptions">General Assumptions</a>,
 Up:<a rel=up href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
 <br>
 
-<h2>LaTeX2RTF Options</h2>
+<h3>LaTeX2RTF Options</h3>
 
 <p>The LaTeX2RTF
  command converts a LaTeX
@@ -439,11 +496,10 @@ Up:<a rel=up href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
 much of the formatting information is translated to RTF making the new file
 look similar to the original.  The command line syntax is:
 
-<pre>latex2rtf [-options] inputfile.[tex]
+<br><pre>latex2rtf [-options] inputfile.[tex]
 </pre>
 
-<p>If inputfile is not specified, standard input is read. 
-The <code>-options</code> may consist of one or more of the following
+<p>The <code>-options</code> may consist of one or more of the following
 
 <dl>
 <dt><code>-a auxfile</code>
@@ -500,6 +556,48 @@ of the following code pages: ansinew, applemac, cp437, cp437de, cp850, cp852, cp
 decmulti, cp1250, cp1252, latin1, latin2, latin3, latin4, latin5, latin9, and next.  The
 default behavior is to use ansinew (code page 1252).
 
+<br><dt><code>-D dots_per_inch</code>
+<dd>used to specify the number of dots per inch for equations converted to bitmaps. 
+This value is also used when picture environments are converted to bitmaps as well
+as when EPS graphics are converted to png files.  The default value is 300 dots per
+inch.
+
+<br><dt><code>-M#</code>
+<dd>where # selects the type of equation conversion.  Use
+	
+<dl>
+	<br><dt><code>-M1</code>
+<dd>	convert displayed equations to RTF
+	<br><dt><code>-M2</code>
+<dd>	convert inline equations to RTF
+	<br><dt><code>-M4</code>
+<dd>	convert displayed equations to bitmap
+	<br><dt><code>-M8</code>
+<dd>	convert inline equations to bitmap
+	<br><dt><code>-M16</code>
+<dd>	insert Word comment field that the original equation text
+	</dl>
+These switches can be added together to get the desired conversion.  Handy examples are
+	
+<dl>
+	<br><dt><code>-M3</code>
+<dd>	convert both inline and displayed equations to RTF (default)
+	<br><dt><code>-M6</code>
+<dd>	convert inline equations to RTF and displayed equations to bitmaps
+	<br><dt><code>-M12</code>
+<dd>	convert both inline and displayed equations to bitmaps
+	</dl>
+Bitmap conversion requires that you have installed a working latex2png script. 
+Producing bitmaps is slow.
+
+<br><dt><code>-P /path/to/cfg</code>
+<dd>used to specify the directory that contains the <code>.cfg</code> files
+
+<br><dt><code>-S</code>
+<dd>used to specify that semicolons should be used to separate arguments in RTF fields
+(instead of commas).  Typically this is needed when the machine that opens the RTF file
+has a version of Windows that uses `,' for decimal points.
+
 <br><dt><code>-V</code>
 <dd>prints version information on standard output and exits.
 
@@ -513,13 +611,27 @@ is useful for files that are not cleanly converted by LaTeX2RTF
 
 </dl>
 
+<p>With no arguments other than switches starting with a "-",
+LaTeX2RTF
+ acts as a filter, i.e., it reads from <code>stdin</code> and writes to <code>stdout</code>. 
+In addition, diagnostic messages are sent to <code>stderr</code>. If these standard
+channels are not redirected using <code>&lt;</code> and <code>&gt;</code>, then the
+input is read from the command line, and both output and error
+messages are printed on the screen.
+
+<p>If a non-switch argument is present, LaTeX2RTF
+ assumes it is the name of
+the input file. The file must have extension ".tex" but the extension
+is optional. The output file is constructed from the input file name
+by removing the extension ".tex" and adding ".rtf".
+
 <p><hr>
 Node:<a name="Debugging">Debugging</a>,
 Previous:<a rel=previous href="#LaTeX2RTF%20Options">LaTeX2RTF Options</a>,
 Up:<a rel=up href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
 <br>
 
-<h2>Debugging</h2>
+<h3>Debugging</h3>
 
 <p>With the <code>-d</code> option you can specify how much processing information
 LaTeX2RTF
@@ -545,7 +657,7 @@ Previous:<a rel=previous href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Features</h1>
+<h2>Features</h2>
 
 <p>In this chapter you find what styles is LaTeX2RTF
  supposed to translate
@@ -570,7 +682,7 @@ Previous:<a rel=previous href="#Features">Features</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>LaTeX2e</h2>
+<h3>LaTeX2e</h3>
 
 <p>LaTeX2RTF
  understands most of the commands introduced with LaTeX2e
@@ -585,7 +697,7 @@ Previous:<a rel=previous href="#LaTeX2e">LaTeX2e</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Input Encoding</h2>
+<h3>Input Encoding</h3>
 
 <p>It is not necesary to specify the <code>-C</code> option if you use <code>\usepackage{isolatin1}</code>
 or <code>\documentstyle[isolatin1]{...}</code>. LaTeX2RTF
@@ -599,7 +711,7 @@ Previous:<a rel=previous href="#Input%20Encoding">Input Encoding</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Language Support</h2>
+<h3>Language Support</h3>
 
 <p>The following languages from the Babel package are supported: afrikaans,
 german, nynorsk, spanish, bahasa, dutch, icelandic, polish, swedish,
@@ -622,10 +734,10 @@ is not needed if your LaTeX
 <p>Encountering the <code>german</code> package or documentstyle option (by H. Partl of the
 Viena University) makes LaTeX2RTF
  behave like that: German Quotes, German
-Umlauts by <code>"a</code>, etc<small>...</small>.  This support is programmed directly into LaTeX2RTF
-
-<p>and supporting similar features for other languages will require patching the
-source code.
+Umlauts by <code>"a</code>, etc<small>...</small>.  This support is programmed directly
+into LaTeX2RTF
+ and supporting similar features for other languages will require
+patching the source code.
 
 <p>See <a href="#Language%20Configuration">Language Configuration</a>, for details on how to write a <code>language.cfg</code> file
 for your language by yourself.
@@ -637,41 +749,13 @@ Previous:<a rel=previous href="#Language%20Support">Language Support</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Cross References</h2>
+<h3>Cross References</h3>
 
 <p>Cross references include everything that you might expect and then some:
 bibliographic citations, equation references, table references, figure
-references, and section references.  Equation, table and figure references
+references, and section references.  Section, equation, table and figure references
 are implemented by placing RTF bookmarks around the equation number (or table
 number or figure number).
-
-<p>Ideally, section references would have been done the same way, but the
-crux of the problem is that LaTeX
- allows you to tag a section with
-<code>\label</code> anywhere in the section.  To bookmark the section number,
-we need to know if any <code>\label</code> occurs in that section before the
-section is processed. A plausible alternative would be to insert a
-bookmark when <code>\label</code> is encountered with the proper number, and
-then cross-reference these bookmarks. Unfortunately, if the bookmarks
-are hidden, then the cross-reference is also hidden.  So this did not
-work.
-
-<p>So the choices were
-<ol type=1 start=1>
-</p><li>to insert a visible bookmark in the document at the place where the <code>\label</code>
-<li>to use the cross-reference information available in the <code>.aux</code> file
-and lose the link.  This is not too bad when the section numbering is not automatic. 
-<li>to process the LaTeX
- file twice so that the section labels will be
-known when the section header is processed.  This is hard and breaks using
-LaTeX2RTF
- as pipe. 
-<li>to process each section, subsection, subsubsection as a unit.
-</ol>
-I opted for the last because this allows LaTeX2RTF
- to bookmark the number in
-the section header avoids the drawbacks of the other options.  This was harder
-to code, and possibly makes things a bit more fragile.
 
 <p>Page references work but are implemented as "warm" cross-references.  This
 means that Word does not automatically update the page references when the file
@@ -689,7 +773,7 @@ no <code>.aux</code> file, but LaTeX2RTF
 <p>Footnotes are implemented and appear at the bottom of each page.
 
 <p>Indexing is reasonable well supported.  The simple mark-up of <code>makeindex</code>
-<pre>\index{topic!subtopic@\textit{subtopic}}
+<br><pre>\index{topic!subtopic@\textit{subtopic}}
 </pre>
 is supported.  The rest of the fancy indexing stuff is not implemented. 
 The index is created at the location of the <code>\printindex</code> command. 
@@ -712,27 +796,26 @@ Previous:<a rel=previous href="#Cross%20References">Cross References</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Equations</h2>
+<h3>Equations</h3>
 
-<p>Equations are now converted to RTF fields.  This is an interim solution. 
-Ideally the equations would become OLE equation objects in the RTF file,
-but this needs to be implemented.
+<p>There are four separate levels of equation translation based on the -M switch,
+See <a href="#LaTeX2RTF%20Options">LaTeX2RTF Options</a>. 
+Each equation is now converted either to an EQ field or to a bitmap.
 
-<p>It would be nice to have four separate levels of equation translation
-<ol type=1 start=1>
-</p><li>The first level would just do a simple text translation without
-any special formatting
-<li>The second level (which is what is currently implemented) would be
-to translate equations using fields.  These are not readily editable and
-Word does not do a good job converting these to equation objects
-<li>The third level would be to fully convert the LaTeX
- equations
-to Word equation objects.  The API for this has been published, but
-is difficult because OLE encoding needs to be written. 
-<li>Finally, the fourth translation would be to convert the equations
-to images and embed these images in the RTF file.  This is what <code>ltx2rtf</code>
-does and the results are not bad.
-</ol>
+<p>This is an interim solution (for some definition of "interim"). 
+Ideally the equations would become OLE equation objects in the
+RTF file, but this needs to be implemented.
+
+<p>Some functions in the EQ fields have two or more parameters with a separator
+between each two. Unfortunately, the interpretation of these separators depends
+on the country specific settings in the MS Windows system in which the rtf file
+is opened. E.g. in English versions of MS Windows, the default parameter separator
+is the comma, in German versions the default is the semicolon. If the parameter
+in the RTF file does not match the Windows setting, some EQ fields are not
+interpreted correctly. You can check and set the separator in [Windows control panel
+- country settings - numbers - list separator]. By default, latex2rtf uses
+the comma as separator. If latex2rtf is called with the command line parameter -S ,
+the semicolon is inserted as parameter delimiter.
 
 <p><hr>
 Node:<a name="Tables">Tables</a>,
@@ -741,7 +824,7 @@ Previous:<a rel=previous href="#Equations">Equations</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Tables</h2>
+<h3>Tables</h3>
 
 <p>The table code is currently barely working.  It needs to be rewritten.
 
@@ -752,12 +835,12 @@ Previous:<a rel=previous href="#Tables">Tables</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Graphics</h2>
+<h3>Graphics</h3>
 
-<p>One day I will get around to encorporating all graphics formats into the
-RTF file.  This will probably be done using <code>imagemagick</code> to do
-the actual translation to formats that are supported by Word and then
-embedding the supported format in RTF.
+<p>There is now rudimentary support for <code>\includegraphics</code>.  Three file types
+will be inserted into the RTF file without needing conversion: .pict, .jpeg, and
+.png files.  EPS files are converted to PNG using <code>convert</code> from the ImageMagick
+package.
 
 <p><hr>
 Node:<a name="Pagestyles">Pagestyles</a>,
@@ -766,7 +849,7 @@ Previous:<a rel=previous href="#Graphics">Graphics</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Pagestyles</h2>
+<h3>Pagestyles</h3>
 
 <p>If there is no <code>\pagestyle</code> command, the RTF output is generated as with plain
 pagestyle, i.e. each page get's its page number centered at the bottom.
@@ -785,16 +868,16 @@ Previous:<a rel=previous href="#Pagestyles">Pagestyles</a>,
 Up:<a rel=up href="#Features">Features</a>
 <br>
 
-<h2>Hyperlatex</h2>
+<h3>Hyperlatex</h3>
 
-<p>Hyperlatex support is largely broken at the moment.
+<p>Hyperlatex support is largely broken at the moment, but continues to improve.
 
 <p>Otfried Schwarzkopf has created the "Hyperlatex Markup Language" which is a
 "little package that allows you to use LaTeX
  to prepare documents in HTML." 
 It brings an Emacs lisp program with it to convert the Hyperlatex file to HTML. 
 Hyperlatex can be obtained from the CTAN-sites, See <a href="#Availability">Availability</a>. 
-There are two handsome commands that avoid typing: \link and \xlink that
+There are two convenient commands that avoid typing: \link and \xlink that
 generate an "internal" label which then is used in the following \Ref and
 \Pageref commands.
 
@@ -810,18 +893,18 @@ there are a lot of HTML oriented commands in Hyperlatex that we simply can
 
 <p><hr>
 Node:<a name="Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>,
-Next:<a rel=next href="#Error%20Messages%20and%20Logging%20of%20LaTeX2RTF%20Activity">Error Messages and Logging of LaTeX2RTF Activity</a>,
+Next:<a rel=next href="#Error%20Messages%20and%20Logging">Error Messages and Logging</a>,
 Previous:<a rel=previous href="#Features">Features</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Configuring LaTeX2RTF</h1>
+<h2>Configuring LaTeX2RTF</h2>
 
 <ul>
 <li><a href="#Input%20processing">Input processing </a>: 
 <li><a href="#Output%20formatting">Output formatting </a>: 
-<li><a href="#Direct%20Conversion%20Configuration">Direct Conversion Configuration </a>: 
-<li><a href="#Ignore%20Command%20Configuration">Ignore Command Configuration </a>: 
+<li><a href="#Direct%20Conversion">Direct Conversion </a>: 
+<li><a href="#Ignore%20Command">Ignore Command </a>: 
 <li><a href="#Font%20Configuration">Font Configuration </a>: 
 <li><a href="#Language%20Configuration">Language Configuration </a>: 
 </ul>
@@ -833,7 +916,7 @@ Previous:<a rel=previous href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Input processing</h2>
+<h3>Input processing</h3>
 
 <p>On processing input LaTeX2RTF
  first converts the LaTeX
@@ -848,7 +931,7 @@ is looked up in the section <code>ignore.cfg</code>.  This file includes a lot o
 and the like), or that we are not able or willing to convert to RTF.
 
 <p>You can use <code>ignore.cfg</code> if you get tired of seeing
-<pre>WARNING: command: `foo' not found - ignored
+<br><pre>WARNING: command: `foo' not found - ignored
 </pre>
  and you don't need `foo' in your RTF document.  It would
 be nice to send your additions to the LaTeX2RTF
@@ -870,12 +953,12 @@ select the proper code page. See <a href="#Input%20Encoding">Input Encoding</a>.
 
 <p><hr>
 Node:<a name="Output%20formatting">Output formatting</a>,
-Next:<a rel=next href="#Direct%20Conversion%20Configuration">Direct Conversion Configuration</a>,
+Next:<a rel=next href="#Direct%20Conversion">Direct Conversion</a>,
 Previous:<a rel=previous href="#Input%20processing">Input processing</a>,
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Output formatting</h2>
+<h3>Output formatting</h3>
 
 <p>On writing output, LaTeX2RTF
  generates <code>\n</code> as line ending code. 
@@ -891,13 +974,13 @@ but it does offer some.  This flexibility resides in four files <code>direct.cfg
 are documented in the next four sections.
 
 <p><hr>
-Node:<a name="Direct%20Conversion%20Configuration">Direct Conversion Configuration</a>,
-Next:<a rel=next href="#Ignore%20Command%20Configuration">Ignore Command Configuration</a>,
+Node:<a name="Direct%20Conversion">Direct Conversion</a>,
+Next:<a rel=next href="#Ignore%20Command">Ignore Command</a>,
 Previous:<a rel=previous href="#Output%20formatting">Output formatting</a>,
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Direct Conversion Configuration</h2>
+<h3>Direct Conversion</h3>
 
 <p>The file <code>direct.cfg</code> is used for converting LaTeX
  commands by simple text
@@ -910,18 +993,18 @@ starting with a <code>#</code> character are ignored. After the <code>.</code> e
 to end of line. To select a specific font use <code>*fontname*</code>, where
 <code>fontname</code> be defined in <code>fonts.cfg</code>. 
 To write the <code>*</code> character use <code>**</code>.
-<pre>\alpha,{\f*Symbol* a}. #alpha in the Symbol Font
+<br><pre>\alpha,{\f*Symbol* a}. #alpha in the Symbol Font
 \copyright,\'a9.
 </pre>
 
 <p><hr>
-Node:<a name="Ignore%20Command%20Configuration">Ignore Command Configuration</a>,
+Node:<a name="Ignore%20Command">Ignore Command</a>,
 Next:<a rel=next href="#Font%20Configuration">Font Configuration</a>,
-Previous:<a rel=previous href="#Direct%20Conversion%20Configuration">Direct Conversion Configuration</a>,
+Previous:<a rel=previous href="#Direct%20Conversion">Direct Conversion</a>,
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Ignore Command Configuration</h2>
+<h3>Ignore Command</h3>
 
 <p>The file <code>ignore.cfg</code> is used for defining how to ignore specific commands. This
 file is used for recognition of LaTeX
@@ -962,20 +1045,20 @@ but a letter e.g., <code>\newbox\bak</code>
 <p>The types are in upper case exactly as above. Do not use spaces. Lines starting
 with a <code>#</code> character are ignored. After the <code>.</code> everything is ignored to end of
 line. Example:
-<pre>\pagelength,MEASURE.
+<br><pre>\pagelength,MEASURE.
 </pre>
 
 <p><hr>
 Node:<a name="Font%20Configuration">Font Configuration</a>,
 Next:<a rel=next href="#Language%20Configuration">Language Configuration</a>,
-Previous:<a rel=previous href="#Ignore%20Command%20Configuration">Ignore Command Configuration</a>,
+Previous:<a rel=previous href="#Ignore%20Command">Ignore Command</a>,
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Font Configuration</h2>
+<h3>Font Configuration</h3>
 
 <p>The file <code>fonts.cfg</code> contains the font name mapping.  For example, this
-file determine what font is used to represent <code>\rm</code> characters in the RTF file.
+file determines what font is used to represent <code>\rm</code> characters in the RTF file.
 
 <p>A line consists of a font name in LaTeX
  followed by comma and a font
@@ -997,7 +1080,7 @@ used as substitute for a LaTeX
  font -- for example a Symbol font used
 in <code>direct.cfg</code> -- use a dummy LaTeX
  name like in the following
-<pre>Dummy3,MathematicalSymbols.
+<br><pre>Dummy3,MathematicalSymbols.
 </pre>
 
 <p>Make sure you use the correct font name. Take care of spaces in font names. The
@@ -1010,7 +1093,7 @@ Previous:<a rel=previous href="#Font%20Configuration">Font Configuration</a>,
 Up:<a rel=up href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <br>
 
-<h2>Language Configuration</h2>
+<h3>Language Configuration</h3>
 
 <p>The file(s) <code>language.cfg</code> control the translation of LaTeX
 's "hardcoded"
@@ -1026,12 +1109,12 @@ However, just look at one of the existing files and follow the pattern.
 The format is really simple.
 
 <p><hr>
-Node:<a name="Error%20Messages%20and%20Logging%20of%20LaTeX2RTF%20Activity">Error Messages and Logging of LaTeX2RTF Activity</a>,
+Node:<a name="Error%20Messages%20and%20Logging">Error Messages and Logging</a>,
 Previous:<a rel=previous href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Error Messages and Logging of LaTeX2RTF Activity</h1>
+<h2>Error Messages and Logging</h2>
 
 <p>As stated in the Debugging section, LaTeX2RTF
  provides a means to control
@@ -1065,7 +1148,7 @@ file.
 
 <p>Error and Warning messages should follow the GNU Coding standards, i.e. they
 have the format
-<pre>inputfile':line: Error|Warning: message
+<br><pre>inputfile':line: Error|Warning: message
 </pre>
 
 <p>You can also control the level of debugging output by inserting <code>\verbositylevel{#}</code>
@@ -1073,7 +1156,7 @@ in the LaTeX
  file.  This is very handy if you have a large LaTeX
  file
 that is failing in only a small section.  For example,
-<pre>problem free latex file ....
+<br><pre>problem free latex file ....
 \verbositylevel{5}
 problematic code
 \verbositylevel{0}
@@ -1095,11 +1178,11 @@ Node:<a name="LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>LaTeX2RTF under Development</h1>
+<h2>LaTeX2RTF under Development</h2>
 
 <ul>
 <li><a href="#Unimplemented%20Features">Unimplemented Features </a>: 
-<li><a href="#Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options </a>: 
+<li><a href="#Missing%20options">Missing options </a>: 
 <li><a href="#Known%20Bugs">Known Bugs </a>: 
 <li><a href="#Reporting%20Bugs">Reporting Bugs </a>: 
 <li><a href="#Todo%20List">Todo List </a>: 
@@ -1107,42 +1190,41 @@ Up:<a rel=up href="#Top">Top</a>
 
 <p><hr>
 Node:<a name="Unimplemented%20Features">Unimplemented Features</a>,
-Next:<a rel=next href="#Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options</a>,
+Next:<a rel=next href="#Missing%20options">Missing options</a>,
 Previous:<a rel=previous href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>,
 Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <br>
 
-<h2>Unimplemented Features</h2>
+<h3>Unimplemented Features</h3>
 
 <ul>
 <li>LaTeX2RTF
  ignores some of the optional parameters of <code>\documentstyle</code>
-<li>Need to finish code page support.  Typically characters that need to be
+<li>Need to finish code page support.  Some characters that need to be
 	  constructed using RTF <code>\field</code> commands are not implemented. 
-<li>Add the code to produce the corresponding chapter, section informations
+<li>Add the code to produce the corresponding chapter, section,
       and page numbering with headings and myheadings pagestyles. Implement
       <code>\markboth</code> and <code>\markright</code>. 
 <li>To support <code>\tableofcontents</code> there would be two approaches: Transfer
-      sectioning information, title text and let produce pagenumber by the rtf-
+      sectioning information, title text and then produce page numbers by the rtf-
       reader. Scan and label all of the sectioning commands while reading and
       then construct the sectioning information using these labels. Needs two
       passes on LaTeX
  input. 
 <li>Include the GNU gettext package to internationalize LaTeX2RTF
 's Messages. 
-<li>Switch over to GNU getopt() and long options. 
 </ul>
 
 <p><hr>
-Node:<a name="Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options</a>,
+Node:<a name="Missing%20options">Missing options</a>,
 Next:<a rel=next href="#Known%20Bugs">Known Bugs</a>,
 Previous:<a rel=previous href="#Unimplemented%20Features">Unimplemented Features</a>,
 Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <br>
 
-<h2>Missing and faulty command line options</h2>
+<h3>Missing options</h3>
 
-<p>In this section you find comments about missing and buggy command line options.
+<p>Missing or buggy command line options.
 
 <dl>
 <dt><code>-V</code>
@@ -1168,19 +1250,20 @@ version greater than major,minor. Actually this is done at compile time.
 There are some Warning messages if "newer" RTF Code is generated, but it
 is not consistent at all.
 
+<br><dt><code>--long_names</code>
+<dd>It would be useful to implement the GNU long option names, e.g.: `-debug',
+`-output_file', `-quiet', etc.  This could be done by switching to the GNU
+getopt package. 
 </dl>
-
-<p>It would be useful to implement the GNU long option names, e.g.: `-debug',
-`-output_file', `-quiet', etc.
 
 <p><hr>
 Node:<a name="Known%20Bugs">Known Bugs</a>,
 Next:<a rel=next href="#Reporting%20Bugs">Reporting Bugs</a>,
-Previous:<a rel=previous href="#Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options</a>,
+Previous:<a rel=previous href="#Missing%20options">Missing options</a>,
 Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <br>
 
-<h2>Known Bugs</h2>
+<h3>Known Bugs</h3>
 
 <ol type=1 start=1>
 </p><li>The first parameter of a \link{anchor}[ltx]{label} is converted to the
@@ -1205,10 +1288,12 @@ Previous:<a rel=previous href="#Known%20Bugs">Known Bugs</a>,
 Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <br>
 
-<h2>Reporting Bugs</h2>
+<h3>Reporting Bugs</h3>
 
-<p>Report bugs to <a href="mailto:Jorge.Lehner@gmx.net">Georg Lehner)</a>. Ralf Schlatterbeck is no
-longer the maintainer. Please provide the following information and observe the following
+<p>Report bugs to to the bug tracking system at <a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a>. 
+Only report bugs for the latest version of LaTeX2RTF
+ that is available. 
+ Please provide the following information and observe the following
 guidelines when reporting a bug in the program:
 <ol type=1 start=1>
 </p><li>State the version of LaTeX2RTF
@@ -1243,15 +1328,15 @@ Previous:<a rel=previous href="#Reporting%20Bugs">Reporting Bugs</a>,
 Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <br>
 
-<h2>Todo List</h2>
+<h3>Todo List</h3>
 
 <p>Scott's ToDo list
 <ul>
-<li>Improve <code>\input</code>
+<li>Use lex/yacc to implement getSection
+<li>Rewrite table code
 <li>Add support for pagestyle
-<li>Add better graphic/graphicx support
-<li>Convert equations to MathType OLE objects
-<li>Create bitmaps of equations
+<li>Improve graphic/graphicx support
+<li>Better support for ignoring commands
 </ul>
 
 <p>Georg's todo list
@@ -1267,55 +1352,48 @@ Up:<a rel=up href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development
       partially functional, ...). 
 </ul>
 
-<p>The following comes from Ralf:
-<ul>
-<li>Redesign the input routines to not use lseek so that LaTeX2RTF
- can read from pipes. 
-<li>Change the Makefile to use default rules for generating .o files. 
-<li>Also use generic rules in some other places (clean target)
-<li>For ignored commands the number of arguments to ignore should also be given
-<li>Environment definition produced with <code>\newtheorem</code> should be supported
-<li>Change how the current version is
-computed (currently version.h defines the version of the whole package
-this should change to a CVS (or RCS) version tag from which a version.h
-file should automatically be generated). 
-</ul>
-
 <p><hr>
-Node:<a name="Index%20of%20Commandline%20and%20Configuration%20file%20Options">Index of Commandline and Configuration file Options</a>,
+Node:<a name="Index%20for%20LaTeX2RTF">Index for LaTeX2RTF</a>,
 Up:<a rel=up href="#Top">Top</a>
 <br>
 
-<h1>Index of Commandline and Configuration file Options</h1>
+<h2>Index for LaTeX2RTF</h2>
 
 <ul compact>
 <li>Copyright issues: <a href="#History">History</a>
 <li>History of the programm: <a href="#History">History</a>
 </ul>
 
-<h1>Table of Contents</h1>
+<h2>Table of Contents</h2>
 <ul>
-<li><a href="#Top">LaTeX2RTF
+<li><a name="toc_Top"></a>
+    <a href="#Top">LaTeX2RTF
 </a>
-<li><a href="#History">History &amp; Copyright</a>
-<li><a href="#Introduction">Introduction</a>
-<li><a href="#Availability">Availability</a>
-<li><a href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
+<li><a name="toc_History"></a>
+    <a href="#History">History &amp; Copyright</a>
+<li><a name="toc_Introduction"></a>
+    <a href="#Introduction">Introduction</a>
+<li><a name="toc_Availability"></a>
+    <a href="#Availability">Availability</a>
+<li><a name="toc_Installing%20LaTeX2RTF"></a>
+    <a href="#Installing%20LaTeX2RTF">Installing LaTeX2RTF</a>
 <ul>
 <li><a href="#General">General</a>
-<li><a href="#%3csmall%3eUNIX%3c%2fsmall%3e"><small>UNIX</small></a>
-<li><a href="#Windows">Windows</a>
+<li><a href="#UNIX">UNIX</a>
+<li><a href="#DOS%20or%20Windows">DOS or Windows</a>
 <li><a href="#Macintosh">Macintosh</a>
 <li><a href="#Problems%20Compiling">Problems Compiling</a>
-<li><a href="#Problems%20with%20make%20test">Problems with <code>make test</code></a>
+<li><a href="#Problems%20with%20make%20check">Problems with <code>make check</code></a>
 </ul>
-<li><a href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
+<li><a name="toc_Using%20LaTeX2RTF"></a>
+    <a href="#Using%20LaTeX2RTF">Using LaTeX2RTF</a>
 <ul>
-<li><a href="#General%20assumptions%20made%20by%20LaTeX2RTF">General assumptions made by LaTeX2RTF</a>
+<li><a href="#General%20Assumptions">General Assumptions</a>
 <li><a href="#LaTeX2RTF%20Options">LaTeX2RTF Options</a>
 <li><a href="#Debugging">Debugging</a>
 </ul>
-<li><a href="#Features">Features</a>
+<li><a name="toc_Features"></a>
+    <a href="#Features">Features</a>
 <ul>
 <li><a href="#LaTeX2e">LaTeX2e</a>
 <li><a href="#Input%20Encoding">Input Encoding</a>
@@ -1327,25 +1405,29 @@ Up:<a rel=up href="#Top">Top</a>
 <li><a href="#Pagestyles">Pagestyles</a>
 <li><a href="#Hyperlatex">Hyperlatex</a>
 </ul>
-<li><a href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
+<li><a name="toc_Configuring%20LaTeX2RTF"></a>
+    <a href="#Configuring%20LaTeX2RTF">Configuring LaTeX2RTF</a>
 <ul>
 <li><a href="#Input%20processing">Input processing</a>
 <li><a href="#Output%20formatting">Output formatting</a>
-<li><a href="#Direct%20Conversion%20Configuration">Direct Conversion Configuration</a>
-<li><a href="#Ignore%20Command%20Configuration">Ignore Command Configuration</a>
+<li><a href="#Direct%20Conversion">Direct Conversion</a>
+<li><a href="#Ignore%20Command">Ignore Command</a>
 <li><a href="#Font%20Configuration">Font Configuration</a>
 <li><a href="#Language%20Configuration">Language Configuration</a>
 </ul>
-<li><a href="#Error%20Messages%20and%20Logging%20of%20LaTeX2RTF%20Activity">Error Messages and Logging of LaTeX2RTF Activity</a>
-<li><a href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
+<li><a name="toc_Error%20Messages%20and%20Logging"></a>
+    <a href="#Error%20Messages%20and%20Logging">Error Messages and Logging</a>
+<li><a name="toc_LaTeX2RTF%20under%20Development"></a>
+    <a href="#LaTeX2RTF%20under%20Development">LaTeX2RTF under Development</a>
 <ul>
 <li><a href="#Unimplemented%20Features">Unimplemented Features</a>
-<li><a href="#Missing%20and%20faulty%20command%20line%20options">Missing and faulty command line options</a>
+<li><a href="#Missing%20options">Missing options</a>
 <li><a href="#Known%20Bugs">Known Bugs</a>
 <li><a href="#Reporting%20Bugs">Reporting Bugs</a>
 <li><a href="#Todo%20List">Todo List</a>
 </ul>
-<li><a href="#Index%20of%20Commandline%20and%20Configuration%20file%20Options">Index of Commandline and Configuration file Options</a>
+<li><a name="toc_Index%20for%20LaTeX2RTF"></a>
+    <a href="#Index%20for%20LaTeX2RTF">Index for LaTeX2RTF</a>
 </ul>
 
 

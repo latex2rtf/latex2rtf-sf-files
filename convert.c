@@ -1,7 +1,6 @@
-/* $Id: convert.c,v 1.23 2001/11/13 05:43:56 prahl Exp $ 
-	purpose: ConvertString(), Convert(), TranslateCommand() 
+/* $Id: convert.c,v 1.28 2002/04/04 03:11:24 prahl Exp $ 
 	
-TeX has six modes according to the TeX Book:
+TeX has six modes:
 	
 	MODE_VERTICAL              Building the main vertical list, from which the 
 	                           pages of output are derived
@@ -84,16 +83,18 @@ ConvertString(char *string)
 {
 	char            temp[51];
 	
+	if (string==NULL) return;
+	
 	strncpy(temp,string,50);
 
 	if (PushSource(NULL, string)) {
-		diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
+		diagnostics(4, "Entering Convert() from StringConvert() <%s>",temp);
 
 		while (StillSource())
 			Convert();
 			
 		PopSource();
-		diagnostics(5, "Exiting Convert() from StringConvert()");
+		diagnostics(4, "Exiting Convert() from StringConvert()");
 	}
 }
 
@@ -107,6 +108,8 @@ ConvertAllttString(char *s)
 ******************************************************************************/
 {	
 	char cThis;
+
+	if (s==NULL) return;
 	diagnostics(4, "Entering Convert() from StringAllttConvert()");
 
 	if (PushSource(NULL, s)) {
@@ -162,9 +165,9 @@ globals: fTex, fRtf and all global flags for convert (see above)
 	while ((cThis = getTexChar()) && cThis != '\0') {
 	
 		if (cThis == '\n')
-			diagnostics(5, "Current character is '\\n' mode = %d", GetTexMode());
+			diagnostics(5, "Current character is '\\n' mode = %d ret = %d level = %d", GetTexMode(), ret, RecursionLevel);
 		else
-			diagnostics(5, "Current character is '%c' mode = %d", cThis, GetTexMode());
+			diagnostics(5, "Current character is '%c' mode = %d ret = %d level = %d", cThis, GetTexMode(), ret, RecursionLevel);
 
 		mode = GetTexMode();
 		
@@ -178,9 +181,9 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			CleanStack();
 
 			if (ret > 0) {
+				diagnostics(5, "Exiting Convert via TranslateCommand ret = %d level = %d", ret, RecursionLevel);
 				ret--;
 				RecursionLevel--;
-				diagnostics(5, "Exiting Convert via TranslateCommand ret = %d", ret);
 				return;
 			}
 			break;
@@ -197,9 +200,9 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			ret = RecursionLevel - PopBrace();
 			fprintRTF("}");
 			if (ret > 0) {
+				diagnostics(5, "Exiting Convert via '}' ret = %d level = %d", ret, RecursionLevel);
 				ret--;
 				RecursionLevel--;
-				diagnostics(5, "Exiting Convert via '}' ret = %d", ret);
 				return;
 			}
 			break;
@@ -248,10 +251,10 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			diagnostics(5,"Processing $, next char <%c>",cNext);
 
 			if (cNext == '$' && GetTexMode() != MODE_MATH)
-				CmdDisplayMath(EQN_DOLLAR_DOLLAR);
+				CmdEquation(EQN_DOLLAR_DOLLAR | ON);
 			else {
 				ungetTexChar(cNext);
-				CmdMath(EQN_DOLLAR);
+				CmdEquation(EQN_DOLLAR | ON);
 			}
 
 			/* 
@@ -259,6 +262,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			   This works for \begin{equation} but not $$ since the BraceLevel
 			   and environments don't get pushed properly.  We do it explicitly here.
 			*/
+			/*
 			if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH)
 				PushBrace();
 			else {
@@ -270,12 +274,12 @@ globals: fTex, fRtf and all global flags for convert (see above)
 					return;
 				}
 			}
-			
+			*/
 			break;
 
 		case '&':
 			if (g_processing_arrays) {
-				fprintRTF("%c",FORMULASEP);
+				fprintRTF("%c",g_field_separator);
 				break;
 			}
 
@@ -365,7 +369,9 @@ globals: fTex, fRtf and all global flags for convert (see above)
 					ungetTexChar(cNext);
 					fprintRTF("<");
 				}
-			}
+			} else
+				fprintRTF("<");
+
 			break;
 
 		case '>':
@@ -378,7 +384,8 @@ globals: fTex, fRtf and all global flags for convert (see above)
 					ungetTexChar(cNext);
 					fprintRTF(">");
 				}
-			}
+			} else
+				fprintRTF(">");
 			break;
 
 		case '!':
@@ -423,7 +430,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 	
 				/* try to simulate double spaces after sentences */
 				cNext = getTexChar();
-				if (cNext == ' ' && (isalpha(cLast) && !isupper(cLast)))
+				if (cNext == ' ' && (isalpha((int)cLast) && !isupper((int) cLast)))
 					fprintRTF(" ");
 				ungetTexChar(cNext);
 			}
@@ -444,22 +451,33 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			cThis = ' ';
 			break;
 
-
-#ifdef SEMICOLONSEP
-		case ';':
+		case '(':
 			if (g_processing_fields)
+				fprintRTF("\\\\(");
+			else
+				fprintRTF("(");
+			break;
+			
+		case ')':
+			if (g_processing_fields)
+				fprintRTF("\\\\)");
+			else
+				fprintRTF(")");
+			break;
+
+		case ';':
+			if (g_field_separator == ';' && g_processing_fields)
 				fprintRTF("\\\\;");
 			else
 				fprintRTF(";");
 		break;
-#else
+
 		case ',':
-			if (g_processing_fields)
+			if (g_field_separator == ',' && g_processing_fields)
 				fprintRTF("\\\\,");
 			else
 				fprintRTF(",");
 			break;
-#endif
 			
 		default:
 			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH) {
@@ -627,20 +645,20 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		CmdUmlauteChar(0);
 		return TRUE;
 	case '(':
-		CmdMath(EQN_RND_OPEN);
-		PushBrace();
+		CmdEquation(EQN_RND_OPEN | ON);
+		/*PushBrace();*/
 		return TRUE;
 	case '[':
-		CmdDisplayMath(EQN_BRACKET_OPEN);
-		PushBrace();
+		CmdEquation(EQN_BRACKET_OPEN | ON);
+		/*PushBrace();*/
 		return TRUE;
 	case ')':
-		CmdMath(EQN_RND_CLOSE);
-		ret = RecursionLevel - PopBrace();
+		CmdEquation(EQN_RND_CLOSE | OFF);
+		/*ret = RecursionLevel - PopBrace();*/
 		return TRUE;
 	case ']':
-		CmdDisplayMath(EQN_BRACKET_CLOSE);
-		ret = RecursionLevel - PopBrace();
+		CmdEquation(EQN_BRACKET_CLOSE | OFF);
+		/*ret = RecursionLevel - PopBrace();*/
 		return TRUE;
 	case '/':
 		CmdIgnore(0);		/* italic correction */
@@ -668,7 +686,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
 	/* LEG180498 Commands consist of letters and can have an optional * at the end */
 	for (i = 0; i < MAXCOMMANDLEN; i++) {
-		if (!isalpha(cThis) && (cThis != '*')) {
+		if (!isalpha((int)cThis) && (cThis != '*')) {
 			bool            found_nl = FALSE;
 
 			if (cThis == '%'){			/* put the % back and get the next char */
@@ -713,6 +731,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		return TRUE;
 	if (TryVariableIgnore(cCommand))
 		return TRUE;
+		
 	diagnostics(WARNING, "Command \\%s not found - ignored", cCommand);
 	return FALSE;
 }

@@ -6,7 +6,6 @@
  * 070798 adapted Frank Barnes contribution to r2l coding conventions SAP
  */
 
-int 			CurrentLineNumber(void);
 char 		   *CurrentFileName(void);
 int 			PushSource(char * filename, char * string);
 int				StillSource(void);
@@ -30,7 +29,10 @@ char           *getSimpleCommand(void);
 char           *getTexUntil(char * target, int raw);
 int             getDimension(void);
 void			parseBrace(void);
-long 			ftellTex(void);
-void 			fseekTex(long pos);
 char           *getDelimitedText(char left, char right, bool raw);
 void			getSection(char **body, char **header, char **label);
+
+int 			CurrentLineNumber(void);
+void 			PushTrackLineNumber(int flag);
+void			PopTrackLineNumber(void);
+void 			UpdateLineNumber(char *s);
