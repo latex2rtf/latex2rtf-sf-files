@@ -1,11 +1,10 @@
-/* $Id: funct1.c,v 1.26 2001/10/08 02:43:19 prahl Exp $ 
+/* $Id: funct1.c,v 1.30 2001/10/12 05:45:07 prahl Exp $ 
  
 This file contains routines that interpret various LaTeX commands and produce RTF
 
 Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
 */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -27,6 +26,7 @@ Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
 extern int      indent;		/* includes the left margin e.g. for itemize-commands */
 extern enum     TexCharSetKind TexCharSet;
+int 			indent_right;
 
 static void     CmdLabel1_4(int code, char *text);
 static void     CmdLabelOld(int code, char *text);
@@ -52,6 +52,10 @@ CmdStartParagraph(int code)
 	diagnostics(4,"parindent  is %d", getLength("parindent"));
 
 	fprintRTF("\\q%c\\li%d ", alignment, indent);
+	if (indent!=0)
+		fprintRTF("\\li%d ", indent);
+	if (indent_right!=0)
+		fprintRTF("\\ri%d ", indent_right);
 
 	if (g_paragraph_no_indent || g_paragraph_inhibit_indent) 
 		parindent = 0;
@@ -98,12 +102,12 @@ CmdVspace(int code)
 	
 	switch (code) {
 		case -1 :
-			vspace = getDimension()/2;
+			vspace = getDimension();
 			break;
 			
 		case 0 :
 			while ((c = getTexChar()) && c != '{');
-			vspace = getDimension()/2;
+			vspace = getDimension();
 			parseBrace();
 			break;
 			
@@ -122,6 +126,7 @@ CmdVspace(int code)
 
 	diagnostics(4,"CmdVspace mode = %d, vspace=%d", GetTexMode(), vspace);
 
+	if (vspace<0) vspace =0;
 	fprintRTF("\\sa%d ", vspace);
 	if (mode == MODE_VERTICAL) 			
 		fprintRTF("\\par ");		/* forces \sa to take effect */
@@ -888,13 +893,14 @@ void
 CmdVerbatim(int code)
 /******************************************************************************
 	convert characters 1:1 until \end{verbatim} or \end{Verbatim} is reached
-	There has got to be a better way of doing this
+	VERBATIM_1	 for \begin{verbatim} ... \end{verbatim}
+	VERBATIM_2   for \begin{Verbatim} ... \end{Verbatim}
 ******************************************************************************/
 {
-	char            endstring[] = "\\end{verbatim}";
-	int             num, i = 0, j = 0;
-	char            cThis;
-
+	char			*verbatim_text, *vptr;
+	int				num;
+	int true_code = code & ~ON;
+	
 	if (code & ON) {
 		
 		diagnostics(4, "Entering CmdVerbatim");
@@ -903,30 +909,19 @@ CmdVerbatim(int code)
 		CmdStartParagraph(0);
 		num = TexFontNumber("Typewriter");
 		fprintRTF("\\b0\\i0\\scaps0\\f%d ", num);
-	
-		for (;;) {
-			cThis = getRawTexChar();
-			if ((cThis != endstring[i]) || ((i > 0) && (cThis == ' '))) {
-				if (i > 0) {
-					for (j = 0; j < i; j++) {
-						if (j == 0)
-							putRtfChar('\\');
-						else
-							putRtfChar(endstring[j]);
-					}
-					i = 0;
-				}
-				putRtfChar(cThis);
-			} else {
-				if (cThis != ' ')
-					++i;
-				if (i >=  strlen(endstring)) {               /* put \end{verbatim} back */
-					for (i=strlen(endstring)-1; i>=0; i--)
-						ungetTexChar(endstring[i]);
-					return;
-				}
-			}
-		}
+		
+		if (true_code == VERBATIM_2) 
+			verbatim_text = getTexUntil("\\end{Verbatim}", 1);
+		else
+			verbatim_text = getTexUntil("\\end{verbatim}", 1);
+
+		vptr = verbatim_text;
+		
+		while (*vptr) 
+			putRtfChar(*vptr++);
+		
+		free(verbatim_text);
+
 	} else {
 		diagnostics(4, "Exiting CmdVerbatim");
 		CmdEndParagraph(0);
@@ -970,12 +965,12 @@ CmdIgnoreDef( /* @unused@ */ int code)
 	      converted into Rtf and so they must be ignored
  ******************************************************************************/
 {
-	char            cThis, *temp;
+	char            cThis;
 
 	while ((cThis = getTexChar()) && cThis != '{');
-    ungetTexChar(cThis);
-	temp = getParam();
-	free(temp);
+    
+    parseBrace();
+    
 }
 
 void 
@@ -1135,29 +1130,40 @@ CmdLabel(int code)
   parameter : code  kind of label, passed through  *** BROKEN by SAP ***
  ******************************************************************************/
 {
-	char           *text;
+	char           *label;
 	char            cThis;
 
-	text=getParam();
-	free(text);
+	label=getParam();
+	
+	switch (code) {
+	
+		case REF:	
+			ScanAux("newlabel", label, 1);
+			break;
+		
+		default:
+			break;
+	}
+	
+	free(label);
 	return;
 	
 	if (code < HYPER) {
-		text = getParam();
-		ungetTexChar(text[strlen(text) - 1]);	/* somewhat screwy */
+		label = getParam();
+		ungetTexChar(label[strlen(label) - 1]);	/* somewhat screwy */
 	} else {
-		text = hyperref;
+		label = hyperref;
 	}
 
-	diagnostics(4, "Generating label/bookmark `%s'", text);
+	diagnostics(3, "Generating label/bookmark `%s'", label);
 
 	if (rtf_restrict(1, 1))
-		CmdLabelOld(code, text);
+		CmdLabelOld(code, label);
 	if (rtf_restrict(1, 4))
-		CmdLabel1_4(code, text);
+		CmdLabel1_4(code, label);
 
 	if (code >= HYPER)
-		free(text);
+		free(label);
 
 	cThis = getTexChar();
 
@@ -1227,25 +1233,6 @@ CmdLabelOld(int code, char *text)
 	}
 }
 
-void 
-IgnoreNewCmd( /* @unused@ */ int code)
-/******************************************************************************
-     purpose : ignore \newcmd
-   parameter : code  not used
- ******************************************************************************/
-{
-	char            cThis;
-
-	/* ignore first '{' */
-	cThis = getTexChar();
-	ungetTexChar(cThis);
-
-	if (cThis == '\\')
-		CmdIgnoreDef(0);
-	else
-		CmdIgnoreParameter(No_Opt_Two_NormParam);
-}
-
 void CmdQuad(int kk)
 /******************************************************************************
  purpose: inserts kk quad spaces (D. Taupin)
@@ -1294,11 +1281,11 @@ CmdIgnoreFigure(int code)
 	
 		switch (code & ~(ON)) {
 			case PICTURE:
-					getTexUntil("\\end{picture}");
+					getTexUntil("\\end{picture}",0);
 					break;
 			
 			case MINIPAGE:
-					getTexUntil("\\end{minipage}");
+					getTexUntil("\\end{minipage}",0);
 					break;
 		}
 	}
@@ -1451,21 +1438,26 @@ CmdAbstract(int code)
 {
 	static char     oldalignment;
 
-	fprintRTF("\n\\par\n\\par\\pard ");
+	CmdEndParagraph(0);
 	if (code == ON) {
-		if (!(g_document_type == FORMAT_ARTICLE) || !titlepage) 
-			fprintRTF("\\page");
+		if (g_document_type == FORMAT_REPORT || titlepage) 
+			fprintRTF("\\page ");
 
-		fprintRTF("\\pard\\qj ");
-		fprintRTF("{\\b\\fs%d ", CurrentFontSize());
+		CmdStartParagraph(0);
+		fprintRTF("\\qc{\\b ");
 		ConvertBabelName("ABSTRACTNAME");
-		fprintRTF("}\\par ");
+		fprintRTF("}");
+		CmdEndParagraph(0);
+		indent += 1024;
+		indent_right +=1024;
 		oldalignment = alignment;
 		alignment = JUSTIFIED;
 	} else {
-		fprintRTF("\\pard ");
+		CmdEndParagraph(0);
+		indent -= 1024;
+		indent_right -=1024;
 		alignment = oldalignment;
-		fprintRTF("\n\\par\\q%c ", alignment);
+		CmdVspace(2);				/* put \medskip after abstract */
 	}
 }
 

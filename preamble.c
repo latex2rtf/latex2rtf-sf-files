@@ -1,4 +1,4 @@
-/* $Id: preamble.c,v 1.15 2001/10/07 21:20:51 prahl Exp $
+/* $Id: preamble.c,v 1.18 2001/10/12 05:45:07 prahl Exp $
 
 purpose : Handles LaTeX commands that should only occur in the preamble.
           These are gathered together because the entire preamble must be
@@ -7,20 +7,16 @@ purpose : Handles LaTeX commands that should only occur in the preamble.
 		  When \begin{document} is encountered, then the RTF header is created.
 */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include "main.h"
 #include "convert.h"
 #include "preamble.h"
 #include "l2r_fonts.h"
 #include "cfg.h"
-#include "util.h"
 #include "encode.h"
 #include "parser.h"
 #include "funct1.h"
-#include "preamble.h"
 #include "lengths.h"
 #include "ignore.h"
 #include "commands.h"
@@ -752,12 +748,16 @@ WritePageSize(void)
 
 	n = getLength("hoffset") + 72*20 + getLength("oddsidemargin");
 	fprintRTF("\\margl%d", n);
+	diagnostics(4, "Writepagesize left margin   =%d pt", n/20);
 	n = getLength("pagewidth") - (n + getLength("textwidth"));
 	fprintRTF("\\margr%d", n);
+	diagnostics(4, "Writepagesize right margin  =%d pt", n/20);
 	n = getLength("voffset") + 72*20 + getLength("topmargin") + getLength("headheight")+getLength("headsep");
 	fprintRTF("\\margt%d", n);
+	diagnostics(4, "Writepagesize top    margin =%d pt", n/20);
 	n = getLength("pageheight") - (n + getLength("textheight") + getLength("footskip"));
 	fprintRTF("\\margb%d", n);
+	diagnostics(4, "Writepagesize bottom margin =%d pt", n/20);
 	
 	fprintRTF("\\pgnstart%d", getCounter("page"));
 	fprintRTF("\\widowctrl\\qj\n");

@@ -7,7 +7,6 @@ Scott Prahl, June 2001
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include "main.h"
 #include "lengths.h"
 #include "parser.h"
@@ -106,8 +105,9 @@ CmdSetTexLength(int code)
 		ungetTexChar(c);
 
 	d = getDimension();
+	diagnostics(4, "CmdSetTexLength size = %d",d);
 	
-	switch (code){
+		switch (code){
 	
 		case SL_HOFFSET:
 			setLength("hoffset",d);

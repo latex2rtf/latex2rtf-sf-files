@@ -1,4 +1,4 @@
-/*  $Id: parser.c,v 1.15 2001/10/08 01:59:03 prahl Exp $
+/*  $Id: parser.c,v 1.19 2001/10/12 05:45:07 prahl Exp $
 
    Contains declarations for a generic recursive parser for LaTeX code.
 */
@@ -29,6 +29,8 @@ extern FILE    *fTex;
 
 static void     parseBracket();	/* parse an open/close bracket sequence              */
 
+char 			ungetcharbuffer[512];
+int				ungetcounter = -1;
 
 #define CR (char) 0x0d
 #define LF (char) 0x0a
@@ -376,10 +378,17 @@ getParam(void)
 	int             closeBracesNeeded, size;
 
 	size = 0;
-
-	if ((cThis = getTexChar()) != '{') {
+	cThis = getNonBlank();
+	
+	if (cThis == '\\') {
+		ungetTexChar(cThis);
+		return getSimpleCommand();
+	}
+		
+	if (cThis != '{') {
 		buffer[0] = cThis;
 		size++;
+		
 	} else {
 		
 		closeBracesNeeded = 1;
@@ -407,31 +416,47 @@ getParam(void)
 	return strdup(buffer);
 }
 
+long ftellTex()
+{
+	return ftell(fTex);
+}
+
+void fseekTex(long pos)
+{
+	fseek(fTex, pos, SEEK_SET);
+}
+
 char *
-getTexUntil(char * target)
+getTexUntil(char * target, int raw)
 /**************************************************************************
      purpose: returns the portion of the file to the beginning of target
      returns: NULL if not found
+     
  **************************************************************************/
 {
 	char            buffer[4096];
 	int             i   = 0;                /* size of string that has been read */
 	int             j   = 0;                /* number of found characters */
 	int             len = strlen(target);
+	long			start_of_target=0;
+	
+	diagnostics(4, "getTexUntil target = <%s>", target);
 	
 	while (j < len && i < 4095) {
 	
-		buffer[i] = getTexChar();
+		buffer[i] = (raw) ? getRawTexChar() : getTexChar();
 		
 		if (buffer[i] != target[j]) {
-			while (j > 0) {			        /* false start, put back what was found */
-				ungetTexChar(buffer[i]);
-				j--;
-				i--;
+			if (j > 0) {			        /* false start, put back what was found */
+				fseekTex(start_of_target);
+				i-=j;
+				j=0;
 			}
-		} else 
+		} else {
+			if (j==0)
+				start_of_target = ftellTex();
 			j++;
-		
+		}
 		i++;
 	}
 	
@@ -442,11 +467,8 @@ getTexUntil(char * target)
 	
 	buffer[i-len] = '\0';
 
-	while(j>0) {					/* put the target back */
-		j--;
-		ungetTexChar(target[j]);
-	}
-		
+	fseekTex(start_of_target-1);	/* move to start of target */
+	
 	return strdup(buffer);
 }
 
@@ -515,7 +537,7 @@ getDimension(void)
 		diagnostics(WARNING, "Screwy number in TeX dimension");
 		return 0;
 	}
-	num *= 2;                   /* convert pts to twips */
+/*	num *= 2;                    convert pts to twips */
 	
 /* obtain unit of measure */
 	skipSpaces();

@@ -1,7 +1,5 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #include "main.h"
 #include "convert.h"
 #include "commands.h"
@@ -9,7 +7,6 @@
 #include "l2r_fonts.h"
 #include "cfg.h"
 #include "ignore.h"
-#include "util.h"
 #include "parser.h"
 #include "equation.h"
 #include "counters.h"
@@ -61,10 +58,8 @@ CmdNonumber(int code)
 /******************************************************************************
  purpose   : Handles \nonumber to suppress numbering in equations
  ******************************************************************************/
-{
-	int mode = GetTexMode();
-	
-	if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
+{	
+	if (g_processing_eqnarray || !g_processing_tabular)
 		g_suppress_equation_number = TRUE;
 }
 
