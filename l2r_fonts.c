@@ -161,6 +161,7 @@ CmdSetFontStyle(int code)
 		fprintf(fRtf, "}");
 
 	diagnostics(4, "Exiting CmdSetFontStyle");
+
 }
 
 void 
@@ -202,7 +203,7 @@ CmdSetFontSize(int code)
 		LatexSize[iEnvCount] = siHUGE;
 
 	scaled_code = (code * document_font_size) / 20;
-//	ConvertString("{");
+
 	fprintf(fRtf, "{\\fs%d ", scaled_code);
 	curr_fontsize[iEnvCount] = scaled_code;
 	sprintf(PointSize, "%dpt", code / 2);
@@ -216,8 +217,6 @@ CmdSetFontSize(int code)
 	 * Some text {\normalsize normal} yet more text} otherwise 'yet more
 	 * text' will not get processed correctly
 	 */
-//	Convert();
-//	ConvertString("}");
 }
 
 void 
@@ -255,22 +254,22 @@ parameter: code: includes the font-type
 		num = DefFont;
 	}
 	
+	fprintf(fRtf, "{");
+
+	if (code == F_ROMAN        || code == F_ROMAN_1   || code == F_ROMAN_2 || 
+		code == F_TYPEWRITER_1 || code == F_SLANTED_1 || code == F_SANSSERIF_1)
+		fprintf(fRtf, "\\plain");
+	
 	if (code == F_ROMAN_2      || code == F_SANSSERIF_2 || 
 	    code == F_TYPEWRITER_2 || code == F_SLANTED_2) {
 		char *s;
-		fprintf(fRtf, "{\\f%d ", num);
+		fprintf(fRtf, "\\f%d ", num);
 		s = getParam();
 		ConvertString(s);
 		free(s);
 
-	} else if (code == F_ROMAN_1      || code == F_SANSSERIF_1 || 
-	           code == F_TYPEWRITER_1 || code == F_SLANTED_1) {
-
-		fprintf(fRtf, "{\\plain\\f%d ", num);
-		Convert();
-
 	} else {
-		fprintf(fRtf, "{\\f%d ", num);
+		fprintf(fRtf, "\\f%d ", num);
 		Convert();
 	}
 	fprintf(fRtf, "}");

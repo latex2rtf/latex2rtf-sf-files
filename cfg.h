@@ -71,22 +71,4 @@ extern char *TranslateName(char *name);
 #define FALSE 0
 #endif
 
-/* Default to ':' for environment separator and something unlikely for classic MacOS */
-#ifndef ENVSEP
-  #ifdef __MWERKS__
-    #define ENVSEP '^'
-  #else
-    #define ENVSEP ':'
-  #endif
-#endif
-
-/* Defaults to '/' , use ':' for classic MacOS */
-#ifndef PATHSEP
-  #ifdef __MWERKS__
-    #define PATHSEP ':'
-  #else
-    #define PATHSEP '/'
-  #endif
-#endif
-
 #endif /* ndefined __CFG_H */

@@ -33,7 +33,20 @@
 
 #ifdef __MWERKS__
 #define HAS_NO_GETOPT
+#define HAS_NO_STRDUP
 #define DEFAULT_MAC_ENCODING
+#define ENVSEP '^'
+#define PATHSEP ':'
+char           *strdup(const char *str);
+#include "MainMain.h"
+#endif
+
+#ifndef ENVSEP
+#define ENVSEP ':'
+#endif
+
+#ifndef PATHSEP
+#define PATHSEP '/'
 #endif
 
 #include <assert.h>
@@ -132,8 +145,7 @@ extern int      headings;
 //extern bool     twoside;
 
 /* Global flags of Convert routine */
-extern int      RecursLevel;
-extern int      BracketLevel;
+extern int      RecursionLevel;
 extern bool     mbox;
 extern bool     bNewPar;
 extern int      indent;

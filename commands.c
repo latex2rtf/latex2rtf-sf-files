@@ -43,6 +43,7 @@
 #include "preamble.h"
 #include "funct1.h"
 #include "funct2.h"
+#include "equation.h"
 #include "letterformat.h"
 #include "commands.h"
 #include "parser.h"
@@ -77,7 +78,7 @@ static CommandArray commands[] = {
 	{"rm", CmdSetFont, F_ROMAN_1},
 	{"textrm", CmdSetFont, F_ROMAN_2},
 	{"rmfamily", CmdSetFont, F_ROMAN},
-	{"mathrm", CmdSetFont, F_ROMAN},
+	{"mathrm", CmdSetFont, F_ROMAN_2},
 	{"sf", CmdSetFont, F_SANSSERIF_1},
 	{"textsf", CmdSetFont, F_SANSSERIF_2},
 	{"sffamily", CmdSetFont, F_SANSSERIF},
@@ -166,6 +167,7 @@ static CommandArray commands[] = {
 	{"clearpage", CmdNewPage, NewPage},
 	{"cleardoublepage", CmdNewPage, NewPage},
 	{"newpage", CmdNewPage, NewColumn},
+	{"pagebreak", CmdNewPage, NewPage},
 	{"mbox", CmdBox, 0},
 	{"hbox", CmdBox, 0},
 	{"vbox", CmdBox, 0},
@@ -195,7 +197,8 @@ static CommandArray commands[] = {
 	{"newsavebox", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"usebox", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"fbox", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"hspace", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"quad", CmdQuad, 1},
+	{"qquad", CmdQuad, 2},
 	{"hspace*", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"vspace", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"vspace*", CmdIgnoreParameter, No_Opt_One_NormParam},
@@ -452,7 +455,7 @@ globals: command-functions have side effects or recursive calls
 	for (j = iEnvCount - 1; j >= 0; j--, i = 0) {
 		while (strcmp(Environments[j][i].cpCommand, "") != 0) {
 
-//			diagnostics(5,"CallCommandFunc Trying %s",Environments[j][i].cpCommand);
+/*			diagnostics(5,"CallCommandFunc Trying %s",Environments[j][i].cpCommand); */
 			
 			if (strcmp(Environments[j][i].cpCommand, cCommand) == 0) {
 				if (Environments[j][i].func == NULL)
@@ -492,8 +495,7 @@ globals: command-functions have side effects or recursive calls
 		++i;
 	}
 
-	/* unknown environment must be ignored !!! */
-	/* ======================================== */
+	/* unknown environment must be ignored */
 	if (AddParam == ON) {
 		sprintf(unknown_environment, "%s%s%s", "end{", cCommand, "}");
 		/* Ignore_Environment(unknown_environment); */

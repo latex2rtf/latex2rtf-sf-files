@@ -74,7 +74,6 @@ purpose : includes besides funct2.c all functions which are called from the prog
 #include "preamble.h"
 
 extern bool     bInDocument;	/* true if File-Pointer is in the document */
-extern int      RecursLevel;	/* counts returns occured by closing braces */
 extern bool     g_processing_equation;	/* true at a formula-convertion */
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
 extern bool     article;	/* true if article-mode is set */
@@ -85,19 +84,17 @@ extern bool     bNewPar;
 extern bool     mbox;
 extern int      DefFont;
 extern char    *language;
-extern enum TexCharSetKind TexCharSet;
+extern enum     TexCharSetKind TexCharSet;
 extern int      curr_fontbold[MAXENVIRONS];
 extern int      curr_fontital[MAXENVIRONS];
 extern int      curr_fontscap[MAXENVIRONS];
 extern int      curr_fontnumb[MAXENVIRONS];
 
-/***************************  prototypes     ********************************/
-void            ConvertFormula();
 static void     CmdLabel1_4(int code, char *text);
 static void     CmdLabelOld(int code, char *text);
 void            CmdPagestyle( /* @unused@ */ int code);
 void            CmdHeader(int code);
-
+void            putRtfChar(char cThis);
 
 void 
 CmdBeginEnd(int code)
@@ -187,7 +184,6 @@ Paragraph(int code)
 	}
 }
 
-/******************************************************************************/
 void 
 CmdToday( /* @unused@ */ int code)
 /******************************************************************************
@@ -198,81 +194,6 @@ CmdToday( /* @unused@ */ int code)
 	fprintf(fRtf, "\\chdate ");
 }
 
-
-void
-CmdFormula(int code)
-/******************************************************************************
- purpose   : sets the Math-Formula-Mode depending on the code-parameter
- parameter : type of braces which include the formula
- globals   : g_processing_equation
- ******************************************************************************/
-{
-
-	if (code & ON) {	/* this is only true if starting \begin{math} */
-		ConvertString("{");
-		fprintf(fRtf, "{\\i ");
-		g_processing_equation = TRUE;
-		diagnostics(4, "Switching g_processing_equation on with \\begin{math}");
-		return;
-	}
-	
-	switch (code) {
-	case FORM_NO_NUMBER:
-		if (g_processing_eqnarray)
-			g_suppress_equation_number = TRUE;
-		break;
-
-	case FORM_DOLLAR:
-		if (g_processing_equation) {
-			ConvertString("}");
-			fprintf(fRtf, "}");
-			g_processing_equation = FALSE;
-			diagnostics(4, "Switching g_processing_equation off with $");
-		} else {
-			ConvertString("{");
-			fprintf(fRtf, "{\\i ");
-			g_processing_equation = TRUE;
-			diagnostics(4, "Switching g_processing_equation on with $");
-		}
-		break;
-
-	case FORM_RND_OPEN:	/* \( */
-		ConvertString("{");
-		fprintf(fRtf, "{\\i ");
-		g_processing_equation = TRUE;
-		diagnostics(4, "Switching g_processing_equation on with \\(");
-		break;
-
-	case FORM_RND_CLOSE:	/* \) */
-		fprintf(fRtf, "}");
-		ConvertString("}");
-		g_processing_equation = FALSE;
-		diagnostics(4, "Switching g_processing_equation off with \\)");
-		break;
-
-	case FORM_ECK_OPEN:	/* \[ */
-		ConvertString("{");
-		fprintf(fRtf, "\n\\par{\\i  ");
-		g_processing_equation = TRUE;
-		diagnostics(4, "Switching g_processing_equation on with \\[");
-		break;
-
-	case FORM_ECK_CLOSE:	/* \] */
-		fprintf(fRtf, "}\n\\par ");
-		ConvertString("}");
-		g_processing_equation = FALSE;
-		bNewPar = TRUE;
-		diagnostics(4, "Switching g_processing_equation off with \\]");
-		break;
-
-	case FORM_MATH:	/* will only be encountered for \end{math} */
-		fprintf(fRtf, "}");
-		ConvertString("}");
-		g_processing_equation = FALSE;
-		diagnostics(4, "Switching g_processing_equation off with \\end{math}");
-		break;
-	}
-}
 
 void 
 CmdIgnore( /* @unused@ */ int code)
@@ -366,11 +287,11 @@ globals  : bIndocument
 		if (code == DOCUMENT) {
 			/* LEG Meanwhile commented out    ClearEnvironment(); */
 			bInDocument = TRUE;
-//			if (!pagestyledefined) {
-				//diagnostics(WARNING, "rtf 1.4 codes generated, funct1.c (Environment)");
-//				PlainPagestyle();
-//			}
-			ReadLg(language);
+/*			if (!pagestyledefined) {
+				diagnostics(WARNING, "rtf 1.4 codes generated, funct1.c (Environment)");
+				PlainPagestyle();
+			}
+*/			ReadLg(language);
 		}
 		PushEnvironment(code);
 	} else {		/* off switch */
@@ -660,7 +581,7 @@ parameter: code: QUOTE and QUOTATION On/Off
 	case (QUOTATION | ON):
 		case (QUOTE | ON):
 		diagnostics(4,"Entering CmdQuote");
-		ConvertString("{");
+		PushBrace();
 		indent += 512;
 		NoNewLine = TRUE;
 		fprintf(fRtf, "\n{\\par\\li%d ", indent);
@@ -669,7 +590,7 @@ parameter: code: QUOTE and QUOTATION On/Off
 	case (QUOTATION | OFF):
 	case (QUOTE | OFF):
 		diagnostics(4,"Exiting CmdQuote");
-		ConvertString("}");
+		(void) PopBrace();
 		indent -= 512;
 		NoNewLine = FALSE;
 		if (indent>0)
@@ -757,6 +678,8 @@ parameter : code : type of environment and on/off-state
 		item_number[g_enumerate_depth] = 1;
 		return;
 	}
+
+	diagnostics(4, "Entering CmdItem depth=%d item=%d",g_enumerate_depth,item_number[g_enumerate_depth]);
 	fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
 
 	if (getBracketParam(itemlabel, 99)) {	/* \item[label] */
@@ -769,6 +692,13 @@ parameter : code : type of environment and on/off-state
 		
 	}
 	
+/*	if (item_number[g_enumerate_depth]>1) {
+		PopBrace();
+		PushBrace();
+	} else
+		PushBrace();
+*/
+
 	switch (code) {
 	case ITEMIZE:
 		fprintf(fRtf, "\\bullet\\tab ");
@@ -802,7 +732,6 @@ parameter : code : type of environment and on/off-state
 		break;
 	}
 	
-	diagnostics(4, "Entering Convert() from CmdItem");
 	Convert();
 	diagnostics(4, "Exiting Convert() from CmdItem");
 	bNewPar = FALSE;
@@ -872,6 +801,10 @@ CmdInclude(int code)
 	if (strchr(fname, '.') == NULL)
 		strcat(fname, ".tex");
 
+/* 
+   this is needed in classic MacOS because of the weird way that directories
+   are handled under DropUnix
+*/
 #ifdef __MWERKS__
 	{
 	char            fullpath[1024];
@@ -1322,9 +1255,6 @@ CmdLabelOld(int code, char *text)
 	}
 }
 
-
-
-/******************************************************************************/
 void 
 ConvertString(char *string)
 /******************************************************************************
@@ -1339,8 +1269,6 @@ ConvertString(char *string)
 	int             test;
 	char            temp[31];
 	
-	//tmpname = tempnam(getenv("TMPDIR"), "l2r");
-	//if ((fp = fopen(tempname, "w+")) == NULL)
 	if ((fp = tmpfile()) == NULL) {
 		fprintf(stderr, "%s: Fatal Error: cannot create temporary file\n", progname);
 		exit(EXIT_FAILURE);
@@ -1360,7 +1288,7 @@ ConvertString(char *string)
 	fTex = fp;
 	diagnostics(5, "changing fTex file pointer in ConvertString");
 	oldlinenumber = linenumber;
-	linenumber = 1;
+/*	linenumber = 1;*/
 
 	strncpy(temp,string,30);
 	diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
@@ -1372,9 +1300,6 @@ ConvertString(char *string)
 	linenumber = oldlinenumber;
 	if (fclose(fp) != 0)
 		diagnostics(ERROR, "Could not close tempfile, (ConvertString).");
-	//if (remove(tmpname) != 0)
-		//diagnostics(ERROR, "Could not remove tempfile, (ConvertString).");
-	//free(tmpname);
 }
 
 /******************************************************************************/

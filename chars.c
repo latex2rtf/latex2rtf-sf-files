@@ -34,7 +34,7 @@ void            LaTeXlogo();
 void 
 CmdUmlauteChar(int code)
 /*****************************************************************************
- purpose : converts german symbols from LaTeX to Rtf
+ purpose : converts german symbols from LaTeX to RTF
  globals : fRtf
  ******************************************************************************/
 {
@@ -92,7 +92,7 @@ CmdUmlauteChar(int code)
 void 
 CmdLApostrophChar( /* @unused@ */ int code)
 /******************************************************************************
- purpose: converts special symbols from LaTex to Rtf
+ purpose: converts special symbols from LaTeX to RTF
  globals : fRtf
  ******************************************************************************/
 {
@@ -145,8 +145,7 @@ CmdLApostrophChar( /* @unused@ */ int code)
 void 
 CmdRApostrophChar( /* @unused@ */ int code)
 /******************************************************************************
- purpose: converts special symbols from LaTex to Rtf
- globals : fRtf
+ purpose: converts special symbols from LaTeX to RTF
  ******************************************************************************/
 {
 	char           *cParam = getParam();
@@ -203,7 +202,7 @@ CmdRApostrophChar( /* @unused@ */ int code)
 void 
 CmdMacronChar(int code)
 /******************************************************************************
- purpose: converts special symbols from LaTex to Rtf
+ purpose: converts special symbols from LaTeX to RTF
  ******************************************************************************/
 {
 	int             upsize;
@@ -249,8 +248,7 @@ CmdMacronChar(int code)
 void 
 CmdHatChar(int code)
 /******************************************************************************
- purpose: \^{o} and \hat{o} symbols from LaTex to Rtf
- globals : fRtf
+ purpose: \^{o} and \hat{o} symbols from LaTeX to RTF
  ******************************************************************************/
 {
 	int            num;
@@ -304,10 +302,9 @@ CmdHatChar(int code)
 void 
 CmdOaccentChar(int code)
 /******************************************************************************
- purpose: converts \r accents from LaTex to Rtf
+ purpose: converts \r accents from LaTeX to RTF
  ******************************************************************************/
 {
-	int            num;
 	char           *cParam;
 	
 	cParam = getParam();
@@ -330,45 +327,20 @@ CmdOaccentChar(int code)
 			fprintf(stderr, "Cannot put \\r on '%s'", cParam);
 		break;
 
-	case 'c':
-	case 'e':
-	case 'g':
-	case 'i':
-	case 'j':
-	case 'm':
-	case 'n':
-	case 'o':
-	case 'p':
-	case 'q':
-	case 'r':
-	case 's':
-	case 'u':
-	case 'v':
-	case 'w':
-	case 'x':
-	case 'y':
-	case 'z':
-		num = getTexFontNumber("MacRoman");
+	default:
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'fb ))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\'b0))}", cParam[0], FORMULASEP);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
-
-	default:
-		num = getTexFontNumber("MacRoman");
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'fb))}", cParam[0], FORMULASEP, num);
-		fprintf(fRtf, "{\\fldrslt }}");
 	}
 
 	free(cParam);
 }
 
 void 
-CmdTildeChar( /* @unused@ */ int code)
+CmdTildeChar( int code)
 /******************************************************************************
- purpose: converts \~{n} from LaTex to Rtf
- globals : fRtf
+ purpose: converts \~{n} from LaTeX to RTF
  ******************************************************************************/
 {
 	int             num;
@@ -407,11 +379,11 @@ CmdTildeChar( /* @unused@ */ int code)
 	free(cParam);
 }
 
-/*****************************************************************************
- purpose: converts \c{c} from LaTex to Rtf
- ******************************************************************************/
 void 
-CmdCedillaChar( /* @unused@ */ int code)
+CmdCedillaChar(int code)
+/*****************************************************************************
+ purpose: converts \c{c} from LaTeX to RTF
+ ******************************************************************************/
 {
 	char           *cParam = getParam();
 	if (cParam == NULL)
@@ -436,7 +408,7 @@ CmdCedillaChar( /* @unused@ */ int code)
 }
 
 /*****************************************************************************
- purpose: converts \vec{o} from LaTex to Rtf
+ purpose: converts \vec{o} from LaTeX to RTF
  ******************************************************************************/
 void 
 CmdVecChar( /* @unused@ */ int code)
@@ -484,15 +456,16 @@ CmdVecChar( /* @unused@ */ int code)
 }
 
 /*****************************************************************************
- purpose: converts \u{o} and \breve{o} from LaTex to Rtf
-          word 98 at least is broken and will not recognize \'28 properly
-          for now just fake it with a u
+ purpose: converts \u{o} and \breve{o} from LaTeX to RTF
+          this version works on a Macintosh.
+		  Cannot use breve accent \'28 from MT Extra because Word 
+		  always treats \'28 as a '(' 
+          we could just fake it with a u
  ******************************************************************************/
 void 
 CmdBreveChar( /* @unused@ */ int code)
 {
 	int             num;
-	int             upsize;
 	char           *cParam;
 	
 	cParam = getParam();
@@ -500,7 +473,6 @@ CmdBreveChar( /* @unused@ */ int code)
 		return;
 
 	num = getTexFontNumber("MacRoman");
-	upsize = CurrentFontSize();
 
 	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
 	fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'f9))}", cParam[0], FORMULASEP, num);
@@ -512,7 +484,7 @@ CmdBreveChar( /* @unused@ */ int code)
 void 
 CmdUnderdotChar(int code)
 /******************************************************************************
- purpose: converts cedillas from LaTex to Rtf
+ purpose: converts cedillas from LaTeX to RTF
  ******************************************************************************/
 {
 	int             dnsize;
@@ -532,8 +504,8 @@ CmdUnderdotChar(int code)
 void 
 CmdHacekChar(int code)
 /******************************************************************************
- purpose: converts \v from LaTex to Rtf
-          need something that looks like \\O(a,\\S(\f1\'da)) in rtf file
+ purpose: converts \v from LaTeX to RTF
+          need something that looks like \\O(a,\\S(\f1\'da)) in RTF file
  ******************************************************************************/
 {
 	int             num;
@@ -555,8 +527,8 @@ CmdHacekChar(int code)
 }
 
 /******************************************************************************
- purpose: converts \.{o} and \dot{o} from LaTex to Rtf
-          need something that looks like \\O(a,\\S(\f2\'26)) in rtf file
+ purpose: converts \.{o} and \dot{o} from LaTeX to RTF
+          need something that looks like \\O(a,\\S(\f2\'26)) in RTF file
  ******************************************************************************/
 void 
 CmdDotChar(int code)
@@ -578,8 +550,8 @@ CmdDotChar(int code)
 }
 
 /******************************************************************************
- purpose: converts \.{o} and \dot{o} from LaTex to Rtf
-          need something that looks like \\O(a,\\S(\f2\'26)) in rtf file
+ purpose: converts \.{o} and \dot{o} from LaTeX to RTF
+          need something that looks like \\O(a,\\S(\f2\'26)) in RTF file
  ******************************************************************************/
 void 
 CmdUnderbarChar(int code)
@@ -604,7 +576,7 @@ CmdUnderbarChar(int code)
 void 
 TeXlogo()
 /******************************************************************************
- purpose : prints the Tex logo in the Rtf-File (D Taupin)
+ purpose : prints the Tex logo in the RTF-File (D Taupin)
  ******************************************************************************/
 {
 	float           DnSize;
@@ -618,18 +590,17 @@ TeXlogo()
 void 
 LaTeXlogo()
 /******************************************************************************
- purpose : prints the LaTex logo in the Rtf-File (D Taupin)
+ purpose : prints the LaTeX logo in the RTF-File (D Taupin)
  ******************************************************************************/
 {
 	float           UpSize;
 	float           FloatFsize;
 	int             upsize, Asize;
 
-	if (CurrentFontSize() > 14) {
+	if (CurrentFontSize() > 14) 
 		FloatFsize = 0.8 * CurrentFontSize();
-	} else {
+	else
 		FloatFsize = 0.9 * CurrentFontSize();
-	};
 	Asize = FloatFsize + 0.45;
 
 	UpSize = 0.25 * CurrentFontSize();

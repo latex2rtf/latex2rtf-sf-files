@@ -46,9 +46,9 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "main.h"
 #include "cfg.h"
 #include "util.h"
-#include "main.h"
 /****************************************************************************/
 
 

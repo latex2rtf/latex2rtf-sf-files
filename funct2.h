@@ -54,7 +54,6 @@
 #define TABULAR_1 2
 #define TABULAR_2 3
 
-/*--------------------------------function prototypes----------------------*/
 void            CmdTabset(void);
 
 void            CmdTabjump(void);
@@ -92,8 +91,6 @@ void            CmdTitlepage(int code);
 
 void            CmdHyphenation(int code);
 
-void            CmdFormula2(int code);
-
 void            CmdAddress(int code);
 
 void            CmdSignature(int code);
@@ -118,10 +115,6 @@ void            CmdNoCite(int code);
 
 void            CmdCite(int code);
 
-void            CmdFraction(int code);
-void            CmdRoot(int code);
-void            CmdIntegral(int code);
-
 void 
 WriteRefList(void)
 /* @globals input, bCite @ */
@@ -136,3 +129,8 @@ void            CmdConvertBiblio( /* @unused@ */ int code);
 
 void            CmdGraphics(int code);
 void            GetRequiredParam(char *string, int size);
+
+
+void CmdQuad(int kk);
+void CmdSpace(float kk);
+
