@@ -74,6 +74,8 @@ extern void ReadLg(char *lang);
 extern const char *TranslateName(char *name);
 
 #define LIBDIR ""
+#ifndef TRUE
 #define TRUE 1
 #define FALSE 0
+#endif
 #endif /* ndefined __CFG_H */

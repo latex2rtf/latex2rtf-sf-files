@@ -76,11 +76,6 @@ void WriteTemp(FILE *f);
 
 bool rtf_restrict(int major, int minor);
 
-#ifndef __MWERKS__
-#define FALSE (bool) 0
-#define TRUE  !FALSE
-#endif
-
 #define MAXCOMMANDLEN 100
 
 

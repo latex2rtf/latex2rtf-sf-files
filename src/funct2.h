@@ -121,6 +121,8 @@ void CmdNoCite(int code);
 
 void CmdCite(int code);
 
+void CmdFraction(int code);
+
 void WriteRefList (void)
     /*@globals input, bCite @*/
 ;

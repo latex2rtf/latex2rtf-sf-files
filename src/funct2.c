@@ -567,7 +567,7 @@ bool read_one = FALSE;
     if ((c == '}') && (bracelevel == 0)) break;
   		 
     if (c == '%')
-    {
+{
        IgnoreTo('\n');
        continue;
     }
@@ -1543,6 +1543,13 @@ void CmdGraphics(int code)
 	    fclose(fp);
 	    fprintf (fRtf, "}\n");
     }
+}
+
+void CmdFraction(int code)
+{
+	Convert();
+	fprintf (fRtf, " / ");
+	Convert();
 }
 
 /******************************************************************************/

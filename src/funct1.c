@@ -562,6 +562,10 @@ void CmdTildeChar(/*@unused@*/ int code)
 	     break;
     case 'o':fprintf(fRtf, "{\\ansi\\'f5}");
 	     break;
+    case 'n':fprintf(fRtf, "{\\ansi\\'f1}");
+	     break;
+    case 'N':fprintf(fRtf, "{\\ansi\\'d1}");
+	     break;
   }
   free (cParam);
 }

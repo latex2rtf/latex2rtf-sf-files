@@ -230,6 +230,7 @@ static CommandArray commands[] = {
    { "newenvironment", CmdIgnoreParameter, 13 }, /* ditto */
    { "newtheorem", CmdIgnoreParameter, 12 }, /* one optional two required */
    { "newcounter", CmdIgnoreParameter, 11 }, /* one optional one required */
+   { "frac", CmdFraction,0},
    { "", NULL, 0 }
 };
 
