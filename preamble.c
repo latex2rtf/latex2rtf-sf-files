@@ -1,4 +1,4 @@
-/* $Id: preamble.c,v 1.18 2001/10/12 05:45:07 prahl Exp $
+/* $Id: preamble.c,v 1.28 2001/11/14 03:52:31 prahl Exp $
 
 purpose : Handles LaTeX commands that should only occur in the preamble.
           These are gathered together because the entire preamble must be
@@ -11,6 +11,7 @@ purpose : Handles LaTeX commands that should only occur in the preamble.
 #include <string.h>
 #include "main.h"
 #include "convert.h"
+#include "util.h"
 #include "preamble.h"
 #include "l2r_fonts.h"
 #include "cfg.h"
@@ -23,7 +24,6 @@ purpose : Handles LaTeX commands that should only occur in the preamble.
 #include "counters.h"
 
 extern bool   pagestyledefined;
-extern enum   TexCharSetKind TexCharSet;
 
 static bool   g_preambleTwoside  = FALSE;
 static bool   g_preambleTwocolumn= FALSE;
@@ -55,13 +55,14 @@ setPackageBabel(char * option)
 	    strcmp(option, "ngerman") == 0 ) {
 			GermanMode = TRUE;
 			PushEnvironment(GERMAN_MODE);
-			strcpy(g_language, "german");
+			ReadLanguage("german");
 	}
 	
 	if (strcmp(option, "french") == 0)
 	{
+		FrenchMode = TRUE;
 		PushEnvironment(FRENCH_MODE);
-		strcpy(g_language, "french");
+		ReadLanguage("french");
 	}
 		
 }
@@ -69,7 +70,7 @@ setPackageBabel(char * option)
 void
 setPackageInputenc(char * option)
 {
-	g_preambleEncoding = strdup(option);
+	g_preambleEncoding = strdup_noblanks(option);
 
 	if (strcmp(option, "ansinew") == 0)
 		strcpy(g_encoding, "cp1252");
@@ -314,7 +315,7 @@ setDocumentOptions(char *optionlist)
 
 	while (option) {
 
-		while (*option == ' ') option++;  /*skip leading blanks */
+/*		while (*option == ' ') option++;  skip leading blanks */
 		diagnostics(4, "                    option   <%s>", option);
 		if      (strcmp(option, "10pt"       ) == 0 ||
 			     strcmp(option, "11pt"       ) == 0 || 
@@ -359,13 +360,19 @@ CmdDocumentStyle(int code)
  purpose: parse \documentstyle[options]{format} or \documentclass[options]{format}
  ******************************************************************************/
 {
-	char            *format;
-	char            optionlist[100];
+	char            *format, *format_with_spaces;
+	char            *options,*options_with_spaces;
 
-	getBracketParam(optionlist, 99);
-	format = getParam();
-
-	diagnostics(4, "Documentstyle/class[%s]{%s}", optionlist,format);
+	options_with_spaces = getBracketParam();
+	format_with_spaces = getBraceParam();
+	
+	format = strdup_noblanks(format_with_spaces);
+	free(format_with_spaces);
+	
+	if (options_with_spaces)
+		diagnostics(4, "Documentstyle/class[%s]{%s}", options_with_spaces,format);
+	else
+		diagnostics(4, "Documentstyle/class{%s}",format);
 
 	g_document_type = FORMAT_ARTICLE;
 	if (strcmp(format, "book") == 0)
@@ -383,10 +390,15 @@ CmdDocumentStyle(int code)
 	else if (strcmp(format, "slides") == 0)
 		g_document_type = FORMAT_SLIDES;
 
-	else
+	else 
 		fprintf(stderr, "\nDocument format <%s> unknown, using article format", format);
-
-	setDocumentOptions(optionlist);
+	
+	if (options_with_spaces) {
+		options = strdup_noblanks(options_with_spaces);
+		free(options_with_spaces);
+		setDocumentOptions(options);
+		free(options);
+	}
 	free(format);
 }
 
@@ -396,22 +408,30 @@ CmdUsepackage(int code)
  purpose: handle \usepackage[option]{packagename}
 ******************************************************************************/
 {
-	char            *package;
-	char            optionlist[100];
+	char            *package,*package_with_spaces;
+	char            *options,*options_with_spaces;
 
-	getBracketParam(optionlist, 99);
-	package=getParam();
+	options = NULL;
+	options_with_spaces = getBracketParam();
+	package_with_spaces = getBraceParam();
+	package = strdup_noblanks(package_with_spaces);
+	free(package_with_spaces);
+	
+	if (options_with_spaces){
+		options = strdup_noblanks(options_with_spaces);
+		free(options_with_spaces);
+		diagnostics(4, "Package {%s} with options [%s]", package, options);
+	} else
+		diagnostics(4, "Package {%s} with no options", package);
 
-	diagnostics(4, "Package {%s} with options [%s] encountered", package, optionlist);
-
-	if (strcmp(package, "inputenc") == 0)
-		setPackageInputenc(optionlist);
+	if (strcmp(package, "inputenc") == 0  && options)
+		setPackageInputenc(options);
 		
 	else if (strcmp(package, "isolatin1") == 0)
 		setPackageInputenc("latin1");
 
-	else if (strcmp(package, "babel") == 0)
-		setPackageBabel(optionlist);
+	else if (strcmp(package, "babel") == 0 && options)
+		setPackageBabel(options);
 		
 	else if (strcmp(package, "german")  == 0 ||
 		     strcmp(package, "ngerman")  == 0 ||
@@ -430,7 +450,9 @@ CmdUsepackage(int code)
 		
 	else
 		setDocumentOptions(package);
-		
+	
+	if (options)
+		free(options);
 	free(package);
 }
 
@@ -442,15 +464,15 @@ CmdTitle(int code)
 {
 	switch (code) {
 	case TITLE_TITLE:
-		g_preambleTitle = getParam();
+		g_preambleTitle = getBraceParam();
 		break;
 
 	case TITLE_AUTHOR:
-		g_preambleAuthor = getParam();
+		g_preambleAuthor = getBraceParam();
 		break;
 
 	case TITLE_DATE:
-		g_preambleDate = getParam();
+		g_preambleDate = getBraceParam();
 		break;
 
 	case TITLE_TITLEPAGE:
@@ -473,6 +495,7 @@ CmdMakeTitle(int code)
 	sprintf(author_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 	sprintf(date_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 
+	alignment = CENTERED;
 	fprintRTF("\n\\par\\pard\\qc {%s ", title_begin);
 	if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0)
 		ConvertString(g_preambleTitle);
@@ -489,6 +512,7 @@ CmdMakeTitle(int code)
 	fprintRTF("}");
 	
 	fprintRTF("\n\\par\n\\par\\pard\\q%c ", alignment);
+	alignment = JUSTIFIED;
 	if (g_preambleTitlepage)
 		fprintRTF("\\page ");
 }
@@ -499,7 +523,7 @@ CmdPreambleBeginEnd(int code)
    purpose: catch missed \begin{document} command 
 ***************************************************************************/
 {
-	char           *cParam = getParam();
+	char           *cParam = getBraceParam();
 	
 	if (strcmp(cParam,"document"))
 		diagnostics(ERROR, "\\begin{%s} found before \\begin{document}.  Giving up.  Sorry", cParam);
@@ -554,7 +578,7 @@ Needs to be terminated for:
 	static char    *style = "";
 
 	pagestyledefined = TRUE;
-	style = getParam();
+	style = getBraceParam();
 	if (strcmp(style, "empty") == 0) {
 		if (pagenumbering) {
 			fprintRTF("{\\footer}");
@@ -564,11 +588,10 @@ Needs to be terminated for:
 		PlainPagestyle();
 	else if (strcmp(style, "headings") == 0) {
 		headings = TRUE;
-		/*--- but here code to put section information in header, pagenumbering
-		      in header */
+		/* insert code to put section information in header, pagenumbering in header */
 	} else if (strcmp(style, "myheadings") == 0) {
 		headings = TRUE;
-		/*--- but here code to put empty section information in header, will be
+		/*--- insert code to put empty section information in header, will be
 		      provided by markboth, markright
 		      pagenumbering in header */
 	} else {
@@ -645,7 +668,7 @@ CmdHyphenation(int code)
           used with TeX's hyphenation algorithms 
  ******************************************************************************/
 {
-	char           *hyphenparameter = getParam();
+	char           *hyphenparameter = getBraceParam();
 	free(hyphenparameter);
 }
 
@@ -760,7 +783,7 @@ WritePageSize(void)
 	diagnostics(4, "Writepagesize bottom margin =%d pt", n/20);
 	
 	fprintRTF("\\pgnstart%d", getCounter("page"));
-	fprintRTF("\\widowctrl\\qj\n");
+	fprintRTF("\\widowctrl\\qj\\ftnbj\n");
 }
 
 static void
@@ -821,7 +844,7 @@ void CmdHeadFoot(int code)
  adapted from code by Taupin in ltx2rtf
  ******************************************************************************/
 {
-  char *HeaderText = getParam();
+  char *HeaderText = getBraceParam();
   
   diagnostics(4,"CmdHeadFoot code=%d <%s>",code, HeaderText);
   switch(code)
@@ -842,6 +865,20 @@ void CmdHeadFoot(int code)
   
   if (!g_processing_preamble) 
   	WriteHeadFoot();
+}
+
+static void
+WriteColorTable(void)
+/****************************************************************************
+     <colortbl>          '{' \colortbl <colordef>+ '}'
+     <colordef>          \red ? & \green ? & \blue ? ';'
+ ***************************************************************************/
+{
+	fprintRTF("{\\colortbl");
+	fprintRTF("\\red255\\green0\\blue0;");
+	fprintRTF("\\red0\\green255\\blue0;");
+	fprintRTF("\\red0\\green0\\blue255;");
+	fprintRTF("}\n");
 }
 
 static void
@@ -876,6 +913,7 @@ purpose: writes header info for the RTF file
 
 	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family);
 	WriteFontHeader();
+	WriteColorTable();
 	WriteStyleHeader();
 	WriteInfo();
 	WriteHeadFoot();

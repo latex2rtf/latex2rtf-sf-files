@@ -1,4 +1,4 @@
-/* $Id: convert.c,v 1.11 2001/10/12 05:45:07 prahl Exp $ 
+/* $Id: convert.c,v 1.23 2001/11/13 05:43:56 prahl Exp $ 
 	purpose: ConvertString(), Convert(), TranslateCommand() 
 	
 TeX has six modes according to the TeX Book:
@@ -52,7 +52,6 @@ correctly, as well as vertical and horizontal space.
 
 static bool     TranslateCommand();	/* converts commands */
 
-extern enum   TexCharSetKind TexCharSet;
 static int    ret = 0;
 static int g_TeX_mode = MODE_VERTICAL;
 
@@ -81,46 +80,67 @@ void
 ConvertString(char *string)
 /******************************************************************************
      purpose : converts string in TeX-format to Rtf-format
-   parameter : string to be converted
-     globals : linenumber, fTex
  ******************************************************************************/
 {
-	FILE           *fp, *LatexFile;
-	long            oldlinenumber;
-	int             test;
 	char            temp[51];
 	
-	if ((fp = tmpfile()) == NULL) {
-		fprintf(stderr, "%s: Fatal Error: cannot create temporary file\n", progname);
-		exit(EXIT_FAILURE);
-	}
-	
-	test = fwrite(string, strlen(string), 1, fp);
-	if (test != 1)
-		diagnostics(WARNING,
-			    "(ConvertString): "
-			    "Could not write `%s' to tempfile %s, "
-			    "fwrite returns %d, should be 1",
-			    string, "tmpfile()", test);
-	if (fseek(fp, 0L, SEEK_SET) != 0)
-		diagnostics(ERROR, "Could not position to 0 in tempfile (ConvertString)");
-
-	LatexFile = fTex;
-	fTex = fp;
-	diagnostics(5, "changing fTex file pointer in ConvertString");
-	oldlinenumber = linenumber;
-
 	strncpy(temp,string,50);
-	diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
-	while (!feof(fTex))
-		Convert();
-	diagnostics(5, "Exiting Convert() from StringConvert()");
 
-	fTex = LatexFile;
-	diagnostics(5, "resetting fTex file pointer in ConvertString");
-	linenumber = oldlinenumber;
-	if (fclose(fp) != 0)
-		diagnostics(ERROR, "Could not close tempfile, (ConvertString).");
+	if (PushSource(NULL, string)) {
+		diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
+
+		while (StillSource())
+			Convert();
+			
+		PopSource();
+		diagnostics(5, "Exiting Convert() from StringConvert()");
+	}
+}
+
+void 
+ConvertAllttString(char *s)
+/******************************************************************************
+     purpose : converts string in TeX-format to Rtf-format
+			   according to the alltt environment, which is like
+			   verbatim environment except that \, {, and } have
+			   their usual meanings
+******************************************************************************/
+{	
+	char cThis;
+	diagnostics(4, "Entering Convert() from StringAllttConvert()");
+
+	if (PushSource(NULL, s)) {
+
+		while (StillSource()) {
+
+			cThis = getRawTexChar();   /* it is a verbatim like environment */
+			switch (cThis) {
+			
+				case '\\':
+					PushLevels();	
+					TranslateCommand();
+					CleanStack();
+					break;
+					
+				case '{':
+					PushBrace();
+					fprintRTF("{");
+					break;
+				
+				case '}':			
+					ret = RecursionLevel - PopBrace();
+					fprintRTF("}");
+					break;
+				
+				default:
+					putRtfChar(cThis);
+					break;
+			}
+		}
+		PopSource();
+	}
+
+	diagnostics(4, "Exiting Convert() from StringAllttConvert()");
 }
 
 void 
@@ -135,6 +155,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 	char            cNext;
 	int				mode, count;
 
+	diagnostics(3, "Entering Convert ret = %d", ret);
 	RecursionLevel++;
 	PushLevels();
 
@@ -152,29 +173,33 @@ globals: fTex, fRtf and all global flags for convert (see above)
 		case '\\':
 			PushLevels();
 			
-			(void) TranslateCommand();
+			TranslateCommand();
 
 			CleanStack();
 
 			if (ret > 0) {
 				ret--;
 				RecursionLevel--;
+				diagnostics(5, "Exiting Convert via TranslateCommand ret = %d", ret);
 				return;
 			}
 			break;
 			
 			
 		case '{':
+			CleanStack();
 			PushBrace();
 			fprintRTF("{");
 			break;
 			
 		case '}':
+			CleanStack();
 			ret = RecursionLevel - PopBrace();
 			fprintRTF("}");
 			if (ret > 0) {
 				ret--;
 				RecursionLevel--;
+				diagnostics(5, "Exiting Convert via '}' ret = %d", ret);
 				return;
 			}
 			break;
@@ -222,7 +247,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			cNext = getTexChar();
 			diagnostics(5,"Processing $, next char <%c>",cNext);
 
-			if (cNext == '$')
+			if (cNext == '$' && GetTexMode() != MODE_MATH)
 				CmdDisplayMath(EQN_DOLLAR_DOLLAR);
 			else {
 				ungetTexChar(cNext);
@@ -241,6 +266,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 				if (ret > 0) {
 					ret--;
 					RecursionLevel--;
+					diagnostics(5, "Exiting Convert via Math ret = %d", ret);
 					return;
 				}
 			}
@@ -248,9 +274,14 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			break;
 
 		case '&':
+			if (g_processing_arrays) {
+				fprintRTF("%c",FORMULASEP);
+				break;
+			}
+
 			if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) {	/* in eqnarray */
 				fprintRTF("\\tab ");
-				actCol++;
+				g_equation_column++;
 				break;
 			}
 			
@@ -324,6 +355,32 @@ globals: fTex, fRtf and all global flags for convert (see above)
 				fprintRTF("\"");
 			break;
 
+		case '<':
+			if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
+			if (GetTexMode() == MODE_HORIZONTAL && FrenchMode ){
+				cNext = getTexChar();
+				if (cNext == '<')
+					fprintRTF("\\'ab");
+				else {
+					ungetTexChar(cNext);
+					fprintRTF("<");
+				}
+			}
+			break;
+
+		case '>':
+			if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
+			if (GetTexMode() == MODE_HORIZONTAL && FrenchMode ){
+				cNext = getTexChar();
+				if (cNext == '>')
+					fprintRTF("\\'bb");
+				else {
+					ungetTexChar(cNext);
+					fprintRTF(">");
+				}
+			}
+			break;
+
 		case '!':
 			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
 				fprintRTF("!");	
@@ -371,28 +428,6 @@ globals: fTex, fRtf and all global flags for convert (see above)
 				ungetTexChar(cNext);
 			}
 			break;
-
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-		case '(':
-		case ')':
-		case '[':
-		case ']':
-			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
-				fprintRTF("{\\i0 %c}", cThis);	
-			else {
-				SetTexMode(MODE_HORIZONTAL);
-				fprintRTF("%c", cThis);
-			}
-			break;
 			
 		case '\t':
 			diagnostics(WARNING, "This should not happen, ignoring \\t");
@@ -409,14 +444,35 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			cThis = ' ';
 			break;
 
-		default:
-			if (mode != MODE_MATH && mode != MODE_DISPLAYMATH)
-				SetTexMode(MODE_HORIZONTAL);
-				
-			if ((int) cThis < 0)
-				WriteEightBitChar(cThis);
+
+#ifdef SEMICOLONSEP
+		case ';':
+			if (g_processing_fields)
+				fprintRTF("\\\\;");
 			else
+				fprintRTF(";");
+		break;
+#else
+		case ',':
+			if (g_processing_fields)
+				fprintRTF("\\\\,");
+			else
+				fprintRTF(",");
+			break;
+#endif
+			
+		default:
+			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH) {
+				if (('a' <= cThis && cThis <= 'z') || ('A' <= cThis && cThis <= 'Z'))
+					fprintRTF("{\\i %c}", cThis);	
+				else
+					fprintRTF("%c", cThis);	
+
+			} else {
+			
+				SetTexMode(MODE_HORIZONTAL);
 				fprintRTF("%c", cThis);
+			}
 			break;
 		}
 
@@ -424,6 +480,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 		cLast = cThis;
 	}
 	RecursionLevel--;
+	diagnostics(5, "Exiting Convert via exhaustion ret = %d", ret);
 }
 
 bool 
@@ -439,13 +496,13 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 	char            cCommand[MAXCOMMANDLEN];
 	int             i,mode;
 	int            cThis;
-	char            option_string[100];
 
-	diagnostics(5, "Beginning TranslateCommand()");
 
 	cThis = getTexChar();
 	mode = GetTexMode();
 	
+	diagnostics(5, "Beginning TranslateCommand() \\%c", cThis);
+
 	switch (cThis) {
 	case '}':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
@@ -477,55 +534,9 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		return TRUE;
 		
 	case '\\':		/* \\[1mm] or \\*[1mm] possible */
-
-		cThis = getTexChar();
-		if (cThis != '*')
-			ungetTexChar(cThis);
-
-		getBracketParam(option_string, 99);	
-
-		if (g_processing_eqnarray) {	/* eqnarray */
-
-			if (g_show_equation_number && !g_suppress_equation_number) {
-				for (; actCol < 3; actCol++)
-					fprintRTF("\\tab ");
-				incrementCounter("equation");
-				
-				fprintRTF("\\tab {\\i0 (%d)}", getCounter("equation"));
-			}
-			fprintRTF("\\par\n\\tab ");
-			g_suppress_equation_number = FALSE;
-			actCol = 1;
-			return TRUE;
-		}
-		
-		if (g_processing_tabular) {	/* tabular or array environment */
-			if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) {	/* array */
-				fprintRTF("\\par\n\\tab ");
-				return TRUE;
-			}
-			for (; actCol < colCount; actCol++) {
-				fprintRTF("\\cell\\pard\\intbl");
-			}
-			actCol = 1;
-			fprintRTF("\\cell\\pard\\intbl\\row\n\\pard\\intbl\\q%c ", colFmt[1]);
-			return TRUE;
-		}
-
-		if (tabbing_on){
-			PopBrace();
-			PushBrace();
-		}
-
-		/* simple end of line ... */
-		CmdEndParagraph(0);
-		CmdIndent(INDENT_INHIBIT);
-		
-		tabcounter = 0;
-		if (tabbing_on)
-			pos_begin_kill= ftell(fRtf);
+		CmdSlashSlash(0);
 		return TRUE;
-
+		
 	case ' ':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
 		fprintRTF(" ");	/* ordinary interword space */
@@ -660,6 +671,11 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		if (!isalpha(cThis) && (cThis != '*')) {
 			bool            found_nl = FALSE;
 
+			if (cThis == '%'){			/* put the % back and get the next char */
+				ungetTexChar('%');
+				cThis=getTexChar();
+			}
+
 			/* all spaces after commands are ignored, a single \n may occur */
 			while (cThis == ' ' || (cThis == '\n' && !found_nl)) {
 				if (cThis == '\n')
@@ -672,7 +688,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		} else
 			cCommand[i] = cThis;
 
-		cThis = getTexChar();
+		cThis = getRawTexChar();	/* Necessary because % ends a command */
 	}
 
 	cCommand[i] = '\0';	/* mark end of string with zero */

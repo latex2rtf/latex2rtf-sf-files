@@ -20,3 +20,5 @@ void            CmdIntegral(int code);
 void            CmdSuperscript(int code);
 void            CmdSubscript(int code);
 void            CmdNonumber(int code);
+void			CmdArray(int code);
+void			CmdLeftRight(int code);

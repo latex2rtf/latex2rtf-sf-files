@@ -4,12 +4,46 @@
 # Erick Branderhorst. Parts are written by Ian Jackson and Ian Murdock.
 # Recent changes by Scott Prahl
 
-CC=gcc    # C-Compiler 
-CFLAGS=-g -Wall -ansi -pedantic $(XCFLAGS)
-#CFLAGS=$(XCFLAGS) # Use -O here if you want it optimized
-#CFLAGS=
+CC=gcc
 COPY=cp
 INSTALL=install
+
+# Additional system libraries if needed
+# LIBS=libdebug_malloc.a
+LIBS=
+
+CFLAGS:=-DUNIX
+#CFLAGS:=-DMSDOS
+#CFLAGS:=-DMACINTOSH
+
+#Uncomment if MS Word uses ',' as a decimal point 
+#CFLAGS:=$(CFLAGS) -DSEMICOLONSEP
+
+#Uncomment if strdup() is not defined in string.h
+#CFLAGS:=$(CFLAGS) -DHAS_NO_STRDUP
+
+#Uncomment if getopt() is not available
+#CFLAGS:=$(CFLAGS) -DHAS_NO_GETOPT
+
+#Comment out if you don't want warnings
+#CFLAGS:=$(CFLAGS) -g -Wall -ansi -pedantic
+
+#Base directory
+PREFIX=/usr/local
+
+# Location of .cfg files needed by executable
+LIBDIR=$(PREFIX)/lib/latex2rtf
+
+# Location of executable
+BININSTALL=$(PREFIX)/bin
+
+# Location of man files
+MANINSTALL=$(PREFIX)/man/man1
+
+# Multiple .cfg locations.  Usually just $(LIBDIR), but handy for mirrored images
+#LIBINSTALL=/quasi/local/lib/latex2rtf:/oberon/local/lib/latex2rtf
+LIBINSTALL=$(LIBDIR)
+
 DIR_MODE=755
 BIN_MODE=755
 DAT_MODE=644
@@ -46,73 +80,17 @@ CHMOD_DAT=true
 #
 # Note: If install doesn't work for you, use simple_install instead.
 #
-# Where support files are searched for by the executable
-# prefix defaults to /usr/local, but may be set on the command line
-prefix=/usr/local
-LIBDIR=$(prefix)/lib/latex2rtf
-# You can give several Directories separated by ':' for the following
-# install targets
-#
-# Where supportfiles are installed should normally be the same as LIBDIR
-# If you specify SEVERAL directories here, the files will get installed
-# into EVERY directory. This is rather useful if you have mirrored images
-# that you want to update, but is normally not necessary for a normal
-# installation.
-#LIBINSTALL=/quasi/local/lib/latex2rtf:/oberon/local/lib/latex2rtf
-LIBINSTALL=$(LIBDIR)
-# Where Binaries are installed
-#BININSTALL=/quasi/local/bin:/oberon/local/bin
-BININSTALL=$(prefix)/bin
-MANINSTALL=$(prefix)/man/man1
-
-# It seems that MS Word allows different forms for the separator
-# used in the formula commands.  For US systems the default is
-# for FORMULASEP should be ',' in Germany and in perhaps other
-# European systems, it should be ';' 
-
-# The following should fix compatibility problems on some machines, you
-# may add the following option to XCFLAGS
-# -DHAS_NO_FPOS for SunOs 4.1.3 (Thanks to Ulrich Schmid schmid@dkrz.d400.de)
-#
-# If you are using MSDOS, the environment separator ENVSEP shoud be
-# ';' and PATHSEP '\'.
-# If not specified it defaults to ':' and '/' (UNIX standard)
-#
-# It seems that MS Word allows different forms for the separator
-# used in the formula commands.  For US systems the default is
-# The default for FORMULASEP is ',' 
-# In Germany at least SEMICOLONSEP should be defined so that 
-# FORMULASEP becomes ';'
-
-# If your target/system has no getopt() function, use Vladimir Menkov's
-# instead, found in mygetopt.c.
-# Add -DHAS_NO_FPOS
-
-# If your system does not have strdup() defined in string.h
-# then you should add -DHAS_NO_STRDUP
-
-XCFLAGS=
-#XCFLAGS=-DENVSEP="';'"
-#XCFLAGS=-DSEMICOLONSEP
-#XCFLAGS=-DHAS_NO_FPOS
-#XCFLAGS=-DHAS_NO_GETOPT
-#XCFLAGS=-DHAS_NO_STRDUP
-
-# Sometimes additional system libraries are needed, they can be defined
-# here
-# LIBS=libdebug_malloc.a
-LIBS=
 
 # Nothing to change below this line
 SOURCES=commands.c commands.h chars.c chars.h direct.c direct.h encode.c encode.h l2r_fonts.c \
     l2r_fonts.h funct1.c funct1.h tables.c tables.h ignore.c ignore.h main.c \
     main.h stack.c stack.h version.h cfg.c cfg.h util.c util.h parser.c parser.h \
     lengths.c lengths.h counters.c counters.h letterformat.c letterformat.h \
-    preamble.c preamble.h equation.c equation.h convert.c convert.h biblio.c biblio.h\
+    preamble.c preamble.h equation.c equation.h convert.c convert.h xref.c xref.h\
     Makefile README README.DOS README.Mac Copyright\
     mygetopt.c optind.c version \
     debian.README debian.control debian.rules ChangeLog l2r.bat\
-    encode_tables.h
+    encode_tables.h definitions.c definitions.h
 
 SUPPORT=cfg/fonts.cfg     cfg/direct.cfg   cfg/ignore.cfg \
     cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
@@ -125,9 +103,13 @@ SUPPORT=cfg/fonts.cfg     cfg/direct.cfg   cfg/ignore.cfg \
     cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg 
 
 MANUALS=latex2rtf.1
+
 MSDOS=l2r.bat l2r.exe
-DOCS= doc/l2r.html doc/credits doc/copying.txt doc/Makefile
-TEST=   test/Makefile \
+
+DOCS= doc/latex2rtf.texi doc/latex2rtf.html doc/latex2rtf.pdf doc/latex2rtf.txt \
+	  doc/latex2rtf.info doc/credits doc/copying.txt doc/Makefile
+
+TEST=   test/Makefile test/bracecheck \
 	test/accentchars.tex test/array.tex test/cite.tex test/cite.bib \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
@@ -137,64 +119,29 @@ TEST=   test/Makefile \
 	test/enc_applemac.tex test/enc_cp437.tex test/enc_cp865.tex test/enc_latin2.tex \
 	test/enc_latin5.tex test/enc_cp1250.tex test/enc_cp850.tex test/enc_decmulti.tex  \
 	test/enc_latin3.tex test/enc_latin9.tex test/enc_cp1252.tex test/enc_cp852.tex \
-	test/enc_latin1.tex test/enc_latin4.tex test/enc_next.tex
+	test/enc_latin1.tex test/enc_latin4.tex test/enc_next.tex test/ttgfsr7.tex \
+	test/defs.tex test/proffois.tex test/excalibur.tex test/qualisex.tex test/include.tex \
+	test/include1.tex test/include2.tex test/include3.tex test/ch.tex
 
 OBJS=l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o util.o parser.o mygetopt.o lengths.o counters.o \
-	preamble.o letterformat.o equation.o convert.o biblio.o
+	preamble.o letterformat.o equation.o convert.o xref.o definitions.o
 
 ARCH="`dpkg --print-architecture`"
 
 # Some defines for versions
 VERSION="`./version`"
 
-all build stamp-build: checkdir latex2rtf
+all build stamp-build: checkdir latex2rtf doc
 	touch stamp-build
 
 latex2rtf: $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS)	$(LIBS) -o latex2rtf
 
-l2r_fonts.o: l2r_fonts.c main.h l2r_fonts.h cfg.h
-	$(CC) $(CFLAGS) -c l2r_fonts.c -o l2r_fonts.o
-
-direct.o: direct.c main.h direct.h l2r_fonts.h cfg.h
-	$(CC) $(CFLAGS) -c direct.c -o direct.o
-
-stack.o: stack.c stack.h
-	$(CC) $(CFLAGS) -c stack.c -o stack.o
-
-funct1.o: funct1.c main.h funct1.h tables.h commands.h stack.h l2r_fonts.h cfg.h ignore.h util.h encode.h
-	$(CC) $(CFLAGS) -c funct1.c -o funct1.o
-
-ignore.o: ignore.c main.h direct.h l2r_fonts.h cfg.h ignore.h util.h
-	$(CC) $(CFLAGS) -c ignore.c -o ignore.o
-
-encode.o: encode.c encode.h main.h funct1.h l2r_fonts.h
-	$(CC) $(CFLAGS) -c encode.c -o encode.o
-
 cfg.o: cfg.c cfg.h util.h
 	$(CC) $(CFLAGS) -DLIBDIR=\"$(LIBDIR)\" -c cfg.c -o cfg.o
 
-util.o: util.c util.h
-	$(CC) $(CFLAGS) -c util.c -o util.o
-
-main.o: main.c main.h commands.h funct1.h l2r_fonts.h stack.h \
-	direct.h ignore.h version.h cfg.h encode.h util.h
-	$(CC) $(CFLAGS) -c main.c -o main.o
-
-commands.o: commands.c main.h funct1.h commands.h 
-	$(CC) $(CFLAGS) -c commands.c -o commands.o
-
-parser.o: parser.c parser.h main.h
-	$(CC) $(CFLAGS) -c parser.c  -o parser.o
-
-mygetopt.o: mygetopt.c main.h
-	$(CC) $(CFLAGS) -c mygetopt.c  -o mygetopt.o
-
-change.log: ChangeLog
-	cp ChangeLog change.log
-
-doc:	checkdir change.log
+doc:	checkdir doc/latex2rtf.texi
 	cd doc && $(MAKE) -k
 
 test: latex2rtf
@@ -206,15 +153,12 @@ clean: checkdir
 	    *.deb
 	rm -rf latex2rtf latex2rtf-$(VERSION)
 	rm -rf debian-tmp
-	cd doc && $(MAKE) almostclean
+	cd doc && $(MAKE) clean
 	cd test && $(MAKE) clean
-
-#$(SOURCES) $(SUPPORT) $(MANUALS):
-#	co $@
 
 checkout checkdir: $(SOURCES) $(SUPPORT) $(MANUALS) $(TEST)
 
-dist source: $(SOURCES) $(SUPPORT) $(MANUALS) $(DOCS) $(TEST) clean
+dist source: $(SOURCES) $(SUPPORT) $(MANUALS) $(DOCS) $(TEST)
 	mkdir latex2rtf-$(VERSION)
 	mkdir latex2rtf-$(VERSION)/cfg
 	mkdir latex2rtf-$(VERSION)/doc
@@ -302,3 +246,43 @@ binary: checkroot debian.README install install_and_delete_old_cfg
 	dpkg --build debian-tmp
 	mv debian-tmp.deb latex2rtf-$(VERSION).$(ARCH).deb
 	rm -rf debian-tmp	
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+cfg.o: cfg.h convert.h funct1.h main.h util.h
+chars.o: cfg.h chars.h commands.h convert.h encode.h funct1.h ignore.h
+chars.o: l2r_fonts.h main.h parser.h
+commands.o: cfg.h chars.h commands.h convert.h definitions.h equation.h
+commands.o: funct1.h ignore.h l2r_fonts.h lengths.h letterformat.h main.h
+commands.o: parser.h preamble.h tables.h xref.h
+convert.o: cfg.h chars.h commands.h convert.h counters.h direct.h encode.h
+convert.o: equation.h funct1.h ignore.h l2r_fonts.h lengths.h main.h parser.h
+convert.o: preamble.h stack.h tables.h util.h
+counters.o: counters.h main.h util.h
+definitions.o: convert.h definitions.h funct1.h main.h parser.h util.h
+direct.o: cfg.h direct.h l2r_fonts.h main.h
+encode.o: encode.h encode_tables.h funct1.h l2r_fonts.h main.h
+equation.o: cfg.h commands.h convert.h counters.h equation.h funct1.h
+equation.o: ignore.h l2r_fonts.h lengths.h main.h parser.h stack.h
+funct1.o: cfg.h commands.h convert.h counters.h definitions.h encode.h
+funct1.o: funct1.h ignore.h l2r_fonts.h lengths.h main.h parser.h preamble.h
+funct1.o: stack.h util.h
+ignore.o: cfg.h commands.h direct.h funct1.h ignore.h l2r_fonts.h main.h
+ignore.o: parser.h
+l2r_fonts.o: cfg.h commands.h convert.h funct1.h l2r_fonts.h main.h parser.h
+l2r_fonts.o: stack.h
+lengths.o: lengths.h main.h parser.h util.h
+letterformat.o: cfg.h commands.h convert.h funct1.h letterformat.h main.h
+letterformat.o: parser.h
+main.o: cfg.h chars.h commands.h convert.h counters.h direct.h encode.h
+main.o: funct1.h ignore.h l2r_fonts.h lengths.h main.h parser.h preamble.h
+main.o: stack.h version.h xref.h
+mygetopt.o: main.h
+parser.o: cfg.h l2r_fonts.h lengths.h main.h parser.h stack.h util.h
+preamble.o: cfg.h commands.h convert.h counters.h encode.h funct1.h ignore.h
+preamble.o: l2r_fonts.h lengths.h main.h parser.h preamble.h util.h
+stack.o: main.h stack.h
+tables.o: cfg.h commands.h convert.h counters.h funct1.h l2r_fonts.h main.h
+tables.o: parser.h stack.h tables.h util.h
+util.o: main.h parser.h util.h
+xref.o: cfg.h commands.h convert.h funct1.h l2r_fonts.h lengths.h main.h
+xref.o: parser.h preamble.h util.h xref.h

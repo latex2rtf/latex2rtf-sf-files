@@ -1,54 +1,22 @@
-# $Id: Makefile,v 1.1 2001/08/12 21:15:46 prahl Exp $
-# History:
-# $Log: Makefile,v $
-# Revision 1.1  2001/08/12 21:15:46  prahl
-#         Removed last two // comments
-#         Explicitly cast char to int in isalpha() and isdigit()
-#         Began the process of supporting Babel better
-#
-# Revision 1.2  1998/11/12 16:48:35  glehner
-# Updated and added r2l.txt target. Adapted for MS-DOS filenames
-#
-# Revision 1.1  1998/07/03 06:34:41  glehner
-# Initial revision
-#
+# $Id: Makefile,v 1.4 2001/11/10 19:31:56 prahl Exp $
 
-all:	l2r.html latex2rtf.info l2r.pdf l2r.txt latex2rtf.dvi almostclean
+all:	latex2rtf.html latex2rtf.info latex2rtf.pdf latex2rtf.txt almostclean
 
+latex2rtf.html:	latex2rtf.texi
+	makeinfo --html latex2rtf
 
-%.html:	%.texi
-	texi2html -monolithic $<
+latex2rtf.info: latex2rtf.texi
+	makeinfo latex2rtf
 
-%.info: %.texi
-	makeinfo $<
+latex2rtf.txt:  latex2rtf.texi
+	makeinfo --no-headers latex2rtf > latex2rtf.txt
 
-l2r.texi:	latex2rtf.texi
-	sed -e"s/@ltor{}/LaTeX2rtf/" -e"s/@LaTeX{}/LaTeX/" \
-	    -e"s/@ltor/LaTeX2rtf/" -e"s/@LaTeX/LaTeX/" \
-	$< >l2r.texi
-
-l2r.txt: latex2rtf.texi
-	makeinfo --no-headers --no-split --no-validate -o- $< | pr -f > l2r.txt
-
-l2r.dvi: latex2rtf.texi
-	tex $<
-	mv latex2rtf.dvi l2r.dvi
-
-%.ps:	%.dvi
-	dvips $< -o
-
-%.pdf:	%.ps
-	gs -sDEVICE=pdfwrite -dNOPAUSE -sOutputFile=$*.pdf -c -- $<
-
+latex2rtf.pdf : latex2rtf.texi
+	texi2dvi --pdf latex2rtf.texi
 
 almostclean:
-	rm -rf *.ps  core *~ ./#* \
-	*.aux *.toc *.fn *.fns *.ky *.log *.pg *.tp *.vr *.vrs \
-	*.cp *.cps \
-	l2r.texi
+	rm -f *.aux *.toc *.fn *.fns *.ky *.log *.pg *.tp *.vr *.vrs \
+	*.cp *.cps *.ind *.ilg *.tmp
 
 clean:	almostclean
-	rm -rf *.pdf *.info* *.html *.dvi l2r.txt
-
-
-
+	rm -f latex2rtf.pdf latex2rtf.info* latex2rtf.html latex2rtf.txt

@@ -1,4 +1,4 @@
-/*  $Id: commands.c,v 1.29 2001/10/12 05:45:07 prahl Exp $
+/*  $Id: commands.c,v 1.40 2001/11/28 06:36:04 prahl Exp $
  
     Defines subroutines to translate LaTeX commands to RTF
 */
@@ -17,11 +17,10 @@
 #include "letterformat.h"
 #include "commands.h"
 #include "parser.h"
-#include "biblio.h"
+#include "xref.h"
 #include "ignore.h"
 #include "lengths.h"
-
-void            error(char *);
+#include "definitions.h"
 
 typedef struct commandtag {
 	char           *cpCommand;			/* LaTeX command name without \ */
@@ -36,7 +35,7 @@ static CommandArray commands[] = {
 	{"begin", CmdBeginEnd, CMD_BEGIN},
 	{"end", CmdBeginEnd, CMD_END},
 	{"today", CmdToday, 0},
-	{"footnote", CmdFootNote, FOOTN},
+	{"footnote", CmdFootNote, FOOTNOTE},
 
 	{"rmfamily", CmdFontFamily, F_FAMILY_ROMAN  },
 	{"rm",       CmdFontFamily, F_FAMILY_ROMAN_1},
@@ -136,25 +135,33 @@ static CommandArray commands[] = {
 	{"r", CmdOaccentChar, 0},
 	{"b", CmdUnderbarChar, 0},
 	{"c", CmdCedillaChar, 0},
+	{"i", CmdDotlessChar, 0},
+	{"j", CmdDotlessChar, 1},
+
+/* sectioning commands */
+	{"part", CmdSection, SECT_PART},
+	{"part*", CmdSection, SECT_PART_STAR},
+	{"chapter", CmdSection, SECT_CHAPTER},
+	{"chapter*", CmdSection, SECT_CHAPTER_STAR},
+	{"section", CmdSection, SECT_NORM},
+	{"section*", CmdSection, SECT_NORM_STAR},
+	{"subsection", CmdSection, SECT_SUB},
+	{"subsection*", CmdSection, SECT_SUB_STAR},
+	{"subsubsection", CmdSection, SECT_SUBSUB},
+	{"subsubsection*", CmdSection, SECT_SUBSUB_STAR},
+	{"paragraph", CmdSection, SECT_SUBSUBSUB},
+	{"paragraph*", CmdSection, SECT_SUBSUBSUB_STAR},
+	{"subparagraph", CmdSection, SECT_SUBSUBSUBSUB},
+	{"subparagraph*", CmdSection, SECT_SUBSUBSUBSUB_STAR},
 
 	{"ldots", CmdLdots, 0},
 	{"maketitle", CmdMakeTitle, 0},
 	{"par", CmdEndParagraph, 0},
 	{"noindent", CmdIndent, INDENT_NONE},
 	{"indent", CmdIndent, INDENT_USUAL},
-	{"section", CmdSection, SECT_NORM},
-	{"section*", CmdSection, SECT_NORM},
 	{"caption", CmdCaption, 0},
-	{"chapter", CmdSection, SECT_CHAPTER},
-	{"subsection", CmdSection, SECT_SUB},
-	{"subsection*", CmdSection, SECT_SUB},
-	{"subsubsection", CmdSection, SECT_SUBSUB},
-	{"subsubsection*", CmdSection, SECT_SUBSUB},
-	{"part", CmdSection, SECT_PART},
 	{"appendix", CmdIgnore, 0},
 	{"protect", CmdIgnore, 0},
-	{"paragraph", CmdSection, SECT_SUB},
-	{"subparagraph", CmdSection, SECT_SUBSUB},
 	{"clearpage", CmdNewPage, NewPage},
 	{"cleardoublepage", CmdNewPage, NewPage},
 	{"newpage", CmdNewPage, NewColumn},
@@ -164,10 +171,11 @@ static CommandArray commands[] = {
 	{"vbox", CmdBox, 0},
 	{"frenchspacing", CmdIgnore, 0},
 	{"nonfrenchspacing", CmdIgnore, 0},
-	{"include", CmdInclude, 0},	/* include Latex file */
-	{"input", CmdInclude, 0},	/* include Latex file */
-	{"verb", CmdVerb, 0},
-	{"verb*", CmdVerb, AST_FORM},
+	{"include", CmdIgnoreParameter, No_Opt_One_NormParam},	/* should not happen*/
+	{"input", CmdIgnoreParameter, No_Opt_One_NormParam},	/* should not happen*/
+	{"verb", CmdVerb, VERB_VERB},
+	{"verb*", CmdVerb, VERB_STAR},
+	{"url", CmdVerb, VERB_URL},
 	{"onecolumn", CmdColumn, One_Column},
 	{"twocolumn", CmdColumn, Two_Column},
 	{"includegraphics", CmdGraphics, 0},
@@ -175,10 +183,10 @@ static CommandArray commands[] = {
 	{"moveleft", CmdLength, 0},
 	{"moveright", CmdLength, 0},
 	{"footnotemark", CmdIgnoreParameter, One_Opt_No_NormParam},
-	{"footnotetext", CmdIgnoreParameter, One_Opt_One_NormParam},
-	{"label", CmdLabel, LABEL},
-	{"ref", CmdLabel, REF},
-	{"pageref", CmdLabel, PAGEREF},
+	{"label", CmdLabel, LABEL_LABEL},
+	{"ref", CmdLabel, LABEL_REF},
+	{"pageref", CmdLabel, LABEL_PAGEREF},
+	{"cite", CmdLabel, LABEL_CITE},
 	{"bibliography", CmdBibliography, 0},
 	{"bibitem", CmdBibitem, 0},
 	{"newblock", CmdNewblock, 0},
@@ -202,7 +210,8 @@ static CommandArray commands[] = {
 	{"numberline", CmdIgnoreParameter, No_Opt_Two_NormParam},
 	{"stretch", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"typeaout", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"index", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"index", CmdIndex, 0},
+	{"printindex",CmdPrintIndex, 0},
 	{"indexentry", CmdIgnoreParameter, No_Opt_Two_NormParam},
 	{"glossary", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"glossaryentry", CmdIgnoreParameter, No_Opt_Two_NormParam},
@@ -235,13 +244,12 @@ static CommandArray commands[] = {
 	{"linebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
 	{"nolinebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
 	{"typein", CmdIgnoreParameter, One_Opt_One_NormParam},
-	{"cite", CmdCite, 0},
 	{"marginpar", CmdIgnoreParameter, One_Opt_One_NormParam},
 	{"baselineskip", Cmd_OptParam_Without_braces, 0},
 	{"lineskip", Cmd_OptParam_Without_braces, 0},
 	{"vsize", Cmd_OptParam_Without_braces, 0},
 	{"setbox", Cmd_OptParam_Without_braces, 0},
-	{"thanks", CmdFootNote, THANKS},
+	{"thanks", CmdFootNote, FOOTNOTE_THANKS},
 	{"bibliographystyle", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"let", CmdIgnoreLet, 0},
 	{"cline", CmdIgnoreParameter, No_Opt_One_NormParam},
@@ -250,7 +258,12 @@ static CommandArray commands[] = {
     {"Frac", CmdFraction, 0},
 	{"sqrt", CmdRoot, 0},
     {"int",  CmdIntegral, 0},
+    {"sum",  CmdIntegral, 1},
+    {"prod",  CmdIntegral, 2},
+    {"left", CmdLeftRight, 0},
+    {"right", CmdLeftRight, 1},
 	{"nonumber",CmdNonumber, EQN_NO_NUMBER},
+	{"char",CmdChar,0},
 	{"", NULL, 0}
 };
 
@@ -281,11 +294,11 @@ static CommandArray PreambleCommands[] = {
     {"lhead", CmdHeadFoot, LHEAD},
     {"thepage", CmdThePage, 0},
 	{"hyphenation", CmdHyphenation, 0},
-	{"def", CmdIgnoreDef, 0},
-	{"newcommand", CmdIgnoreParameter, One_Opt_Three_NormParam},
-	{"renewcommand", CmdIgnoreParameter, One_Opt_Two_NormParam},
-	{"newenvironment", CmdIgnoreParameter, One_Opt_Three_NormParam},
-	{"renewenvironment", CmdIgnoreParameter, One_Opt_Three_NormParam},
+	{"def", CmdNewDef, DEF_DEF},
+	{"newcommand", CmdNewDef, DEF_NEW},
+	{"renewcommand", CmdNewDef, DEF_RENEW},
+	{"newenvironment", CmdNewEnvironment, DEF_NEW},
+	{"renewenvironment", CmdNewEnvironment, DEF_RENEW},
 	{"newtheorem", CmdIgnoreParameter, One_Opt_Two_NormParam},
 	{"renewtheorem", CmdIgnoreParameter, One_Opt_Two_NormParam},
 	{"pagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},
@@ -311,6 +324,7 @@ static CommandArray PreambleCommands[] = {
 	{"textwidth",CmdSetTexLength, SL_TEXTWIDTH},
 	{"oddsidemargin",CmdSetTexLength, SL_ODDSIDEMARGIN},
 	{"evensidemargin",CmdSetTexLength, SL_EVENSIDEMARGIN},
+	{"footnotetext", CmdFootNote, FOOTNOTE_TEXT},
 	{"", NULL, 0}
 };				/* end of list */
 
@@ -394,8 +408,8 @@ static CommandArray params[] = {
 	{"tabbing", CmdTabbing, TABBING},
 	{"figure", CmdFigure, FIGURE},
 	{"figure*", CmdFigure, FIGURE_1},
-	{"picture", CmdIgnoreFigure, PICTURE},
-	{"minipage", CmdIgnoreFigure, MINIPAGE},
+	{"picture", CmdIgnoreEnviron, IGNORE_PICTURE},
+	{"minipage", CmdMinipage, 0},
 
 	{"quote", CmdQuote, QUOTE},
 	{"quotation", CmdQuote, QUOTATION},
@@ -404,13 +418,12 @@ static CommandArray params[] = {
 	{"itemize", CmdList, ITEMIZE},
 	{"description", CmdList, DESCRIPTION},
 	{"verbatim", CmdVerbatim, VERBATIM_1},
-	{"Verbatim", CmdVerbatim, VERBATIM_2},
 	{"verse", CmdVerse, 0},
 	{"tabular", CmdTabular, TABULAR},
 	{"tabular*", CmdTabular, TABULAR_1},
 	{"longtable", CmdTabular, TABULAR},
 	{"longtable*", CmdTabular, TABULAR_1},
-	{"array", CmdTabular, TABULAR_2},
+	{"array", CmdArray, 1},
 
 	{"multicolumn", CmdMultiCol, 0},
 	{"displaymath", CmdDisplayMath, EQN_DISPLAYMATH},
@@ -442,6 +455,12 @@ static CommandArray params[] = {
 	{"sf", CmdFontFamily, F_FAMILY_ROMAN_4},
 	{"tt", CmdFontFamily, F_FAMILY_SANSSERIF_4},
 	{"rm", CmdFontFamily, F_FAMILY_TYPEWRITER_4},
+	{"Verbatim", CmdVerbatim, VERBATIM_2},
+	{"alltt", CmdVerbatim, VERBATIM_3},
+	{"latexonly", CmdIgnore, 0},
+	{"htmlonly",CmdIgnoreEnviron,IGNORE_HTMLONLY},
+	{"rawhtml",CmdIgnoreEnviron,IGNORE_RAWHTML},
+	{"theindex",CmdIgnoreEnviron,0},
 	{"", NULL, 0}
 };				/* end of list */
 
@@ -452,9 +471,9 @@ purpose: commands for hyperlatex package
 static CommandArray hyperlatex[] = {
 	{"link", CmdLink, 0},
 	{"xlink", CmdLink, 0},
-	{"Cite", CmdCite, HYPERLATEX},
-	{"Ref", CmdLabel, HYPERREF},
-	{"Pageref", CmdLabel, HYPERPAGEREF},
+	{"Cite", CmdLabel, LABEL_HYPERCITE},
+	{"Ref", CmdLabel, LABEL_HYPERREF},
+	{"Pageref", CmdLabel, LABEL_HYPERPAGEREF},
 	{"S", CmdColsep, 0},
 	{"", NULL, 0}
 };				/* end of list */
@@ -469,10 +488,16 @@ returns: success or failure
 globals: command-functions have side effects or recursive calls
  ****************************************************************************/
 {
-	int             i = 0, j;
+	int             i, j;
 
-	diagnostics(5,"CallCommandFunc %s, iEnvCount = %d",cCommand,iEnvCount);
+	diagnostics(5,"CallCommandFunc <%s>, iEnvCount = %d",cCommand,iEnvCount);
 	
+	i=existsDefinition(cCommand);
+	if (i>-1) {
+		expandDefinition(i);
+		return TRUE;
+	}
+
 	for (j = iEnvCount - 1; j >= 0; j--) {
 		i = 0;
 		while (strcmp(Environments[j][i].cpCommand, "") != 0) {
@@ -600,7 +625,7 @@ globals: changes Environment - array of active environments
 		break;
 
 	default:
-		error("assertion failed at function PushEnvironment");
+		diagnostics(ERROR,"assertion failed at function PushEnvironment");
 	}
 
 	iEnvCount++;

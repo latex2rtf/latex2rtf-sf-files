@@ -1,4 +1,4 @@
-/* $Id: funct1.c,v 1.30 2001/10/12 05:45:07 prahl Exp $ 
+/* $Id: funct1.c,v 1.50 2001/11/23 21:43:48 prahl Exp $ 
  
 This file contains routines that interpret various LaTeX commands and produce RTF
 
@@ -21,17 +21,16 @@ Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
 #include "parser.h"
 #include "counters.h"
 #include "lengths.h"
+#include "definitions.h"
 #include "preamble.h"
 
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
 extern int      indent;		/* includes the left margin e.g. for itemize-commands */
-extern enum     TexCharSetKind TexCharSet;
 int 			indent_right;
 
-static void     CmdLabel1_4(int code, char *text);
-static void     CmdLabelOld(int code, char *text);
 void            CmdPagestyle( /* @unused@ */ int code);
 void            CmdHeader(int code);
+char 			*roman_item(int n);
 
 static bool  g_paragraph_no_indent = FALSE;
 static bool  g_paragraph_inhibit_indent = FALSE;
@@ -46,10 +45,10 @@ CmdStartParagraph(int code)
 {
 	int parindent;
 	
-	diagnostics(4,"CmdStartParagraph mode = %d", GetTexMode());
-	diagnostics(4,"Noindent is %d", (int) g_paragraph_no_indent);
-	diagnostics(4,"Inhibit  is %d", (int) g_paragraph_inhibit_indent);
-	diagnostics(4,"parindent  is %d", getLength("parindent"));
+	diagnostics(5,"CmdStartParagraph mode = %d", GetTexMode());
+	diagnostics(5,"Noindent is %d", (int) g_paragraph_no_indent);
+	diagnostics(5,"Inhibit  is %d", (int) g_paragraph_inhibit_indent);
+	diagnostics(5,"parindent  is %d", getLength("parindent"));
 
 	fprintRTF("\\q%c\\li%d ", alignment, indent);
 	if (indent!=0)
@@ -77,7 +76,7 @@ CmdEndParagraph(int code)
 {
 	int mode = GetTexMode();
 
-	diagnostics(4,"CmdEndParagraph mode = %d", GetTexMode());
+	diagnostics(5,"CmdEndParagraph mode = %d", GetTexMode());
 	if (mode != MODE_VERTICAL) {
 		fprintRTF("\\par\n");
 		SetTexMode(MODE_VERTICAL);
@@ -139,6 +138,93 @@ CmdVspace(int code)
 }
 
 void
+CmdNewDef(int code)
+/******************************************************************************
+     purpose : handles \def \newcommand \renewcommand
+ ******************************************************************************/
+{
+	char * name, *def, cThis;
+	char * params=NULL;
+	int param=0;
+	
+	if (code == DEF_DEF){
+
+		name = getSimpleCommand();
+		if (name == NULL) {
+			diagnostics(WARNING,"Definition does not start with '\\' skipping");
+			return;
+		}
+		
+		/* handle simple parameters (discard delimiters) e.g., #1#2#3*/
+		while ( (cThis=getTexChar()) && cThis != '{' ){
+			if (isdigit(cThis)) param++;
+		}		
+		ungetTexChar('{');
+		
+		def = getBraceParam();
+		newDefinition(name+1,def,param);		
+	}
+	
+	if (code == DEF_NEW || code == DEF_RENEW) {
+		name = getBraceParam();
+		params = getBracketParam();
+		def = getBraceParam();
+		param = 0;
+		if (params) {
+			if ('0' <= *params && *params <= '9')
+				param = *params - '0';
+			else
+				diagnostics(ERROR, "non-numeric number of parameters in newcommand");
+		}
+		
+
+		if (code == DEF_NEW)
+			newDefinition(name+1,def,param);
+		else
+			renewDefinition(name+1,def,param);
+		
+	}
+
+	diagnostics(3,"CmdNewDef name=<%s> param=%d def=<%s>", name,param,def);
+	free(name);
+	free(def);
+	if (params) free(params);
+}
+
+void
+CmdNewEnvironment(int code)
+{
+	char * name, *begdef, *enddef, *params;
+	int param;
+	
+	name = getBraceParam();
+	params = getBracketParam();
+	begdef = getBraceParam();
+	enddef = getBraceParam();
+	param = 0;
+	if (params) {
+		if ('0' <= *params && *params <= '9')
+			param = *params - '0';
+		else
+			diagnostics(ERROR, "non-numeric number of parameters in newcommand");
+	}
+	
+	diagnostics(3,"CmdNewEnvironment name=<%s> param=%d", name,param);
+	diagnostics(3,"CmdNewEnvironment begdef=<%s>", begdef);
+	diagnostics(3,"CmdNewEnvironment enddef=<%s>", enddef);
+
+	if (code == DEF_NEW)
+		newEnvironment(name,begdef,enddef,param);
+	else
+		renewEnvironment(name,begdef,enddef,param);
+	
+	free(name);
+	free(begdef);
+	free(enddef);
+	if (params) free(params);
+	
+}
+void
 CmdIndent(int code)
 /******************************************************************************
  purpose : set flags so that CmdStartParagraph() does the right thing
@@ -151,7 +237,7 @@ CmdIndent(int code)
            INDENT_USUAL has CmdStartParagraph() uses the value of \parindent
  ******************************************************************************/
 {
-	diagnostics(4,"CmdIndent mode = %d", GetTexMode());
+	diagnostics(5,"CmdIndent mode = %d", GetTexMode());
 	if (code == INDENT_NONE)
 		g_paragraph_no_indent = TRUE;
 	
@@ -162,33 +248,116 @@ CmdIndent(int code)
 		g_paragraph_no_indent = FALSE;
 		g_paragraph_inhibit_indent = FALSE;
 	}
-	diagnostics(4,"Noindent is %d", (int) g_paragraph_no_indent);
-	diagnostics(4,"Inhibit  is %d", (int) g_paragraph_inhibit_indent);
+	diagnostics(5,"Noindent is %d", (int) g_paragraph_no_indent);
+	diagnostics(5,"Inhibit  is %d", (int) g_paragraph_inhibit_indent);
+}
+
+void 
+CmdSlashSlash(int code)
+/***************************************************************************
+ purpose: handle \\, \\[1pt], \\*[1pt] 
+ ***************************************************************************/
+{
+	char cThis, *vertical_space;
+		
+	if (g_processing_arrays) {		/* array */
+		cThis=getNonBlank();
+		ungetTexChar(cThis);
+		fprintRTF("%c",FORMULASEP);
+		return;
+	}
+		
+	cThis = getTexChar();
+	if (cThis != '*')
+		ungetTexChar(cThis);
+
+	vertical_space = getBracketParam();	
+	if (vertical_space) 				/* ignore for now */
+		free(vertical_space);
+
+	if (g_processing_eqnarray) {	/* eqnarray */
+
+		if (g_show_equation_number && !g_suppress_equation_number) {
+			for (; g_equation_column < 3; g_equation_column++)
+				fprintRTF("\\tab ");
+			incrementCounter("equation");
+			
+			fprintRTF("\\tab(");
+			if (g_equation_label) 
+				fprintRTF("{\\*\\bkmkstart LBL_%s}",g_equation_label);
+			fprintRTF("%d", getCounter("equation"));
+			if (g_equation_label) 
+				fprintRTF("{\\*\\bkmkend LBL_%s}",g_equation_label);
+			fprintRTF(")");
+			if (g_equation_label) 
+				free(g_equation_label);				
+			g_equation_label = NULL;
+		}
+
+		fprintRTF("\\par\n\\tab ");
+		g_suppress_equation_number = FALSE;
+		g_equation_column = 1;
+		return;
+	}
+	
+	if (g_processing_tabular) {	/* tabular or array environment */
+		if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) {	/* array */
+			fprintRTF("\\par\n\\tab ");
+			return;
+		}
+		for (; actCol < colCount; actCol++) {
+			fprintRTF("\\cell\\pard\\intbl");
+		}
+		actCol = 1;
+		fprintRTF("\\cell\\pard\\intbl\\row\n\\pard\\intbl\\q%c ", colFmt[1]);
+		return;
+	}
+
+	if (tabbing_on){
+		PopBrace();
+		PushBrace();
+	}
+
+	/* simple end of line ... */
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_INHIBIT);
+	
+	tabcounter = 0;
+	if (tabbing_on)
+		pos_begin_kill= ftell(fRtf);
 }
 
 void 
 CmdBeginEnd(int code)
 /***************************************************************************
- purpose: reads the parameter after the \begin or \end-command; ( see also getParam )
+ purpose: reads the parameter after the \begin or \end-command; ( see also getBraceParam )
 	      after reading the parameter the CallParamFunc-function calls the
 	      handling-routine for that special environment
  parameter: code: CMD_BEGIN: start of environment
 		          CMD_END:   end of environment
  ***************************************************************************/
 {
-/*	char            c;*/
-	char           *s = getParam();
+	int i;
+	char           *s = getBraceParam();
 
-	switch (code) {
-	case CMD_BEGIN:
-		(void) CallParamFunc(s, ON);
-		break;
-	case CMD_END:
-		(void) CallParamFunc(s, OFF);
-		CmdIndent(INDENT_INHIBIT);
-		break;
-	default:
-		assert(0);
+	i=existsEnvironment(s);
+	if (i>-1) 
+	
+		expandEnvironment(i,code);
+
+	else {
+	
+		switch (code) {
+		case CMD_BEGIN:
+			diagnostics(4, "\\begin{%s}", s);
+			(void) CallParamFunc(s, ON);
+			break;
+		case CMD_END:
+			diagnostics(4, "\\end{%s}", s);
+			(void) CallParamFunc(s, OFF);
+			CmdIndent(INDENT_INHIBIT);
+			break;
+		}
 	}
 	free(s);
 }
@@ -208,7 +377,7 @@ CmdAlign(int code)
 	static char     old_alignment_before_centerline = JUSTIFIED;
 
 	if (code == PAR_VCENTER){
-		s = getParam();
+		s = getBraceParam();
 		free(s);
 		return;
 	}
@@ -273,10 +442,9 @@ CmdToday( /* @unused@ */ int code)
 
 
 void 
-CmdIgnore( /* @unused@ */ int code)
+CmdIgnore(int code)
 /******************************************************************************
- purpose: LaTeX-commands which can't be converted in Rtf-commands are overread
-	  as such
+ purpose: allows handling of constructs that do not require changes to RTF
  ******************************************************************************/
 {
 }
@@ -316,110 +484,210 @@ CmdSection(int code)
 parameter: code: type of section-recursion-level
  ******************************************************************************/
 {
-	char            optparam[100] = "";
+	char            *toc_entry;
 	char            *heading;
+	char			section_label[20];
 /*	char			c;
 	int				DefFont = DefaultFontFamily();
 */	
-	getBracketParam(optparam, 99);
-	heading = getParam();
-	diagnostics(4,"entering CmdSection [%s]{%s}",optparam,heading);
+	toc_entry = getBracketParam();
+	heading = getBraceParam();
 	
+	if (toc_entry) {
+		diagnostics(4,"entering CmdSection [%s]{%s}",toc_entry,heading);
+		free(toc_entry);
+	} else
+		diagnostics(4,"entering CmdSection {%s}",heading);
+
 	CmdEndParagraph(0);
 	CmdIndent(INDENT_NONE);
 	CmdStartParagraph(0);
 	
 	switch (code) {
 	case SECT_PART:
-		incrementCounter("part");
+	case SECT_PART_STAR:
 		fprintRTF("\\page");
 		fprintRTF("{\\qc\\b\\fs40 ");
 		ConvertBabelName("PARTNAME");
-		fprintRTF("%d\\par ", getCounter("part"));
+		if (code == SECT_PART) {
+			incrementCounter("part");
+			sprintf(section_label, "%d", getCounter("part"));
+			fprintRTF("%s\\par ", section_label);
+		}
+		ConvertString(heading);
+		CmdEndParagraph(0);
+		fprintRTF("}\n\\page");
 		break;
 
 	case SECT_CHAPTER:
-		incrementCounter("chapter");
-		setCounter("section",0);
-		setCounter("subsection",0);
-		setCounter("subsubsection",0);
-/*		fprintRTF("\\pard\\page\\pard{\\pntext\\pard\\plain\\b\\fs32\\kerning28 ");
-		fprintRTF("%d\\par \\par }\\pard\\plain\n", getCounter("chapter"));
-		fprintRTF("%s\\f%d%s{", HEADER11, DefFont, HEADER12);
-*/
-		fprintRTF("\\page{\\plain\\b\\fs32\\kerning28 ");
+	case SECT_CHAPTER_STAR:
+		fprintRTF("\\page{\\plain\\b\\fs40\\kerning28 ");
 		ConvertBabelName("CHAPTERNAME");
-		fprintRTF(" %d\\par}", getCounter("chapter"));
-		fprintRTF("{\\fi0\\plain\\b\\fs40\\kerning28 ");
+		if (code == SECT_CHAPTER && getCounter("secnumdepth")>=-1) {
+			incrementCounter("chapter");
+			setCounter("section",0);
+			setCounter("subsection",0);
+			setCounter("subsubsection",0);
+			setCounter("paragraph",0);
+			setCounter("subparagraph",0);
+			sprintf(section_label, "%d", getCounter("chapter"));
+			fprintRTF(" ");
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+		}
+		fprintRTF("\\par\\par}{\\fi0\\plain\\b\\fs40\\kerning28 ");
+		ConvertString(heading);
+		CmdEndParagraph(0);
+		fprintRTF("}");
 		break;
 
 	case SECT_NORM:
-		incrementCounter("section");
-		setCounter("subsection",0);
-		setCounter("subsubsection",0);
-/*
-		fprintRTF("{\\pard\\pntext\\plain\\b");
-		if (g_document_type == FORMAT_ARTICLE) {
-			fprintRTF("\\fs32\\kerning28 %d\\tab}\\pard\\plain\n", getCounter("section"));
-			fprintRTF("%s%s{", HEADER11, HEADER12);
-		} else {
-			fprintRTF("\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("chapter"),getCounter("section"));
-			fprintRTF("%s%s{", HEADER21, HEADER22);
+	case SECT_NORM_STAR:
+		CmdVspace(3);
+		fprintRTF("{\\plain\\b ");
+		if(code == SECT_NORM && getCounter("secnumdepth")>=0) {		
+			incrementCounter("section");
+			setCounter("subsection",0);
+			setCounter("subsubsection",0);
+			setCounter("paragraph",0);
+			setCounter("subparagraph",0);
+			if (g_document_type == FORMAT_ARTICLE) {
+				fprintRTF("\\fs32 ");
+				sprintf(section_label, "%d.", getCounter("section"));
+			} else {
+				fprintRTF("\\fs32 ");
+				sprintf(section_label, "%d.%d", getCounter("chapter"),getCounter("section"));
+			}
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			fprintRTF("  ");
 		}
-*/
-		fprintRTF("{\\plain\\b");
-		if (g_document_type == FORMAT_ARTICLE) {
-			fprintRTF("\\fs32 %d.  ", getCounter("section"));
-		} else {
-			fprintRTF("\\fs24 %d.%d  ", getCounter("chapter"),getCounter("section"));
-		}
-
+		ConvertString(heading);
+		CmdEndParagraph(0);
+		fprintRTF("}");
+		CmdVspace(1);
 		break;
 
 	case SECT_SUB:
-		incrementCounter("subsection");
-		setCounter("subsubsection",0);
-/*		fprintRTF("{\\par\\pard\\pntext\\pard\\plain\\b");
-		if (g_document_type == FORMAT_ARTICLE) {
-			fprintRTF("\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"));
-			fprintRTF("%s\\f%d%s{", HEADER21, DefFont, HEADER22);
-		} else {
-			fprintRTF("\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"));
-			fprintRTF("%s\\f%d%s{", HEADER31, DefFont, HEADER32);
-		}
-*/
+	case SECT_SUB_STAR:
+		CmdVspace(2);
 		fprintRTF("{\\plain\\b\\fs24 ");
-		if (g_document_type != FORMAT_ARTICLE) 
-			fprintRTF("%d.", getCounter("chapter"));
-		fprintRTF("%d.%d  ", getCounter("section"), getCounter("subsection"));
+		if (code == SECT_SUB && getCounter("secnumdepth")>=1) {
+			incrementCounter("subsection");
+			setCounter("subsubsection",0);
+			setCounter("paragraph",0);
+			setCounter("subparagraph",0);
+			if (g_document_type == FORMAT_ARTICLE)
+				sprintf(section_label, "%d.%d", getCounter("section"),
+				        getCounter("subsection"));
+			else
+				sprintf(section_label, "%d.%d.%d", getCounter("chapter"),
+				        getCounter("section"), getCounter("subsection"));
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{\\v{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			fprintRTF("  ");
+		}
+		ConvertString(heading);
+		CmdEndParagraph(0);
+		fprintRTF("}");
+		CmdVspace(1);
 		break;
 
 	case SECT_SUBSUB:
-		incrementCounter("subsubsection");
-/*		fprintRTF("{\\par\\pard\\pntext\\pard\\plain\\b");
-		if (g_document_type == FORMAT_ARTICLE) {
-			fprintRTF("\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
-			fprintRTF("%s\\f%d%s{", HEADER31, DefFont, HEADER32);
-		} else {
-			fprintRTF("\\fs24 %d.%d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
-			fprintRTF("%s\\f%d%s{", HEADER41, DefFont, HEADER42);
-		}
-*/
+	case SECT_SUBSUB_STAR:
+		CmdVspace(2);
 		fprintRTF("{\\plain\\b\\fs24 ");
-		if (g_document_type != FORMAT_ARTICLE) 
-			fprintRTF("%d.", getCounter("chapter"));
-		fprintRTF("%d.%d", getCounter("section"), getCounter("subsection"));
-		fprintRTF(".%d  ", getCounter("subsubsection"));
+		if (code == SECT_SUBSUB && getCounter("secnumdepth")>=2) {
+			incrementCounter("subsubsection");
+			setCounter("paragraph",0);
+			setCounter("subparagraph",0);
+			if (g_document_type == FORMAT_ARTICLE)
+				sprintf(section_label, "%d.%d.%d", getCounter("section"), 
+						getCounter("subsection"), getCounter("subsubsection"));
+			else
+				sprintf(section_label, "%d.%d.%d.%d", getCounter("chapter"), 
+				        getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			fprintRTF("  ");
+		}
+		ConvertString(heading);
+		CmdEndParagraph(0);
+		fprintRTF("}");
+		CmdVspace(1);
 		break;
+
+	case SECT_SUBSUBSUB:
+	case SECT_SUBSUBSUB_STAR:
+		CmdVspace(2);
+		fprintRTF("{\\plain\\b ");
+		if (code == SECT_SUBSUBSUB && getCounter("secnumdepth")>=3) {
+			incrementCounter("paragraph");
+			setCounter("subparagraph",0);
+			if (g_document_type == FORMAT_ARTICLE)
+				sprintf(section_label, "%d.%d.%d.%d", getCounter("section"), 
+						getCounter("subsection"), getCounter("subsubsection"),
+						getCounter("paragraph"));
+			else
+				sprintf(section_label, "%d.%d.%d.%d.%d", getCounter("chapter"), 
+				        getCounter("section"), getCounter("subsection"), 
+				        getCounter("subsubsection"),getCounter("paragraph"));
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			fprintRTF("  ");
+		}
+		ConvertString(heading);
+		fprintRTF("}  ");
+		break;
+
+	case SECT_SUBSUBSUBSUB:
+	case SECT_SUBSUBSUBSUB_STAR:
+		CmdVspace(2);
+		fprintRTF("{\\plain\\b ");
+		if (code == SECT_SUBSUBSUBSUB && getCounter("secnumdepth")>=4) {
+			incrementCounter("subparagraph");
+			if (g_document_type == FORMAT_ARTICLE)
+				sprintf(section_label, "%d.%d.%d.%d.%d", getCounter("section"), 
+						getCounter("subsection"),  getCounter("subsubsection"),
+						getCounter("paragraph"),   getCounter("subparagraph"));
+			else
+				sprintf(section_label, "%d.%d.%d.%d.%d.%d", getCounter("chapter"), 
+				        getCounter("section"),        getCounter("subsection"), 
+				        getCounter("subsubsection"),  getCounter("paragraph"),
+				        getCounter("subparagraph"));
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart LBL_%s}",g_section_label);
+			fprintRTF("%s", section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend LBL_%s}}",g_section_label);
+			if (g_section_label) fprintRTF("{{\\*\\bkmkstart PR_%s}",g_section_label);
+			if (g_section_label) fprintRTF("{\\*\\bkmkend PR_%s}}",g_section_label);
+			fprintRTF("  ");
+		}
+		break;
+		ConvertString(heading);
+		fprintRTF("}  ");
 	}
-	
-	ConvertString(heading);
-	CmdEndParagraph(0);
-	fprintRTF("}");
-	if (code == SECT_PART)
-		fprintRTF("\\page");
 
 	if (heading) free(heading);
+	if (g_section_label) {
+		free(g_section_label); 
+		g_section_label = NULL;
+	}
 	CmdIndent(INDENT_NONE);
 }
 
@@ -431,16 +699,20 @@ CmdCaption(int code)
  ******************************************************************************/
 {
 	char           *thecaption;
-	char            lst_entry[300];
+	char           *lst_entry;
 	int				n;
 	char   			old_align;
 	
 	old_align = alignment;
 	alignment = CENTERED;
 
-	getBracketParam(lst_entry,299);  /* discard entry for list of tables or figures */
+	lst_entry = getBracketParam();
 	
-	diagnostics(4, "entering CmdCaption [%s]", lst_entry);
+	if (lst_entry) {
+		diagnostics(4, "entering CmdCaption [%s]", lst_entry);
+		free(lst_entry);
+	} else
+		diagnostics(4, "entering CmdCaption");
 
 	CmdEndParagraph(0);
 	CmdIndent(INDENT_NONE);
@@ -458,11 +730,24 @@ CmdCaption(int code)
 	}
 
 	fprintRTF(" ");
+	if (g_processing_figure && g_figure_label)
+		fprintRTF("{\\*\\bkmkstart LBL_%s}",g_figure_label);
+
+	if (g_processing_table && g_table_label)
+		fprintRTF("{\\*\\bkmkstart LBL_%s}",g_table_label);
+
 	if (g_document_type != FORMAT_ARTICLE) 
 		fprintRTF("%d.", getCounter("chapter"));
-	fprintRTF("%d:  ", n);
+	fprintRTF("%d", n);
 
-	thecaption = getParam();
+	if (g_processing_figure && g_figure_label)
+		fprintRTF("{\\*\\bkmkend LBL_%s}",g_figure_label);
+
+	if (g_processing_table && g_table_label)
+		fprintRTF("{\\*\\bkmkend LBL_%s}",g_table_label);
+
+	fprintRTF(":  ");
+	thecaption = getBraceParam();
 	diagnostics(4, "in CmdCaption [%s]", thecaption);
 	ConvertString(thecaption);
 	free(thecaption);
@@ -481,13 +766,13 @@ CmdCounter(int code)
 	char            *s, *s2, *s3, *s4;
 	int              num;
 	
-	s = getParam();
+	s = getBraceParam();
 		
 	diagnostics(4,"Entering CmdCounter(), <%s>", s);
 	
 	if (code == COUNTER_ADD || code == COUNTER_SET) {
 	
-		s2 = getParam();
+		s2 = getBraceParam();
 
 		if ((s3 = strchr(s2,'{')) && (s4 = strchr(s2,'}')) ) {
 			s3++;
@@ -528,7 +813,7 @@ CmdLength(int code)
 	
 
 	if (code == LENGTH_ADD || code == LENGTH_SET || code == LENGTH_NEW) {
-		s = getParam();
+		s = getBraceParam();
 		if (strlen(s)<=1) {
 			free(s);
 			fprintf(stderr,"missing argument in \\newlength \\addtolength or \\setlength");
@@ -567,41 +852,6 @@ CmdLength(int code)
 			
 		num = getDimension();      /* discard for now */
 	}
-}
-
-void 
-CmdFootNote(int code)
-/******************************************************************************
- purpose: converts footnotes from LaTeX to Rtf
- params : code specifies whether it is a footnote or a thanks-mark
- ******************************************************************************/
-{
-	char            number[255];
-	static int      thankno = 1;
-	int             text_ref_upsize, foot_ref_upsize;
-	int				DefFont = DefaultFontFamily();
-	
-	diagnostics(4,"Entering ConvertFootNote");
-	getBracketParam(number, 254);	/* is ignored because of the
-					 * automatic footnumber-generation */
-
-	text_ref_upsize = (6 * CurrentFontSize()) / 20;
-	foot_ref_upsize = (6 * CurrentFontSize()) / 20;
-
-	if (code == THANKS) {
-		thankno++;
-		fprintRTF("{\\up%d %d}\n", text_ref_upsize, thankno);
-		fprintRTF("{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
-		fprintRTF("\\fs%d {\\up%d %d}", CurrentFontSize(), foot_ref_upsize, thankno);
-	} else {
-		fprintRTF("{\\up%d\\chftn}\n", text_ref_upsize);
-		fprintRTF("{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
-		fprintRTF("\\fs%d {\\up%d\\chftn}", CurrentFontSize(), foot_ref_upsize);
-	}
-
-	Convert();
-	diagnostics(4,"Exiting CmdFootNote");
-	fprintRTF("}\n ");
 }
 
 void 
@@ -681,7 +931,7 @@ CmdItem(int code)
            this routine will get called recursively.
  ******************************************************************************/
 {
-	char            itemlabel[100];
+	char           *itemlabel;
 	static int      item_number[4];
 
 	if (code == RESET_ITEM_COUNTER) {
@@ -695,14 +945,15 @@ CmdItem(int code)
 	CmdIndent(INDENT_NONE);
 	CmdStartParagraph(0);
 	
-	if (getBracketParam(itemlabel, 99)) {	/* \item[label] */
+	itemlabel = getBracketParam();
+	if (itemlabel) {	/* \item[label] */
 
 		fprintRTF("{\\b ");	/* bold on */
 		diagnostics(5,"Entering ConvertString from CmdItem");
 		ConvertString(itemlabel);
 		diagnostics(5,"Exiting ConvertString from CmdItem");
 		fprintRTF("}\\tab ");	/* bold off */
-		
+		free(itemlabel);
 	}
 	
 	switch (code) {
@@ -721,8 +972,7 @@ CmdItem(int code)
 			break;
 
 		case 3:
-			roman_item(item_number[g_enumerate_depth], itemlabel);
-			fprintRTF("%s.", itemlabel);
+			fprintRTF("%s.", roman_item(item_number[g_enumerate_depth]));
 			break;
 
 		case 4:
@@ -768,120 +1018,49 @@ CmdBox(int code)
 	diagnostics(4, "Exited CmdBox()");
 }
 
-void
-CmdInclude(int code)
-/******************************************************************************
- purpose: reads an extern-LaTeX-File from the into the actual document and converts it to
-	  an similar Rtf-style
- globals: GermanMode: is set if germanstyles are included
-          fTex
-          progname
- ******************************************************************************/
-{
-	char            *fname;
-	FILE *fp;
-	FILE *LatexFile;
-	char           *olatexname;
-	long            oldlinenumber;
-
-	strcpy(fname, "");
-
-	fname = getParam();
-	if (strstr(fname, "german.sty") != NULL) {
-		GermanMode = TRUE;
-		PushEnvironment(GERMAN_MODE);
-		return;
-	}
-
-	if (strstr(fname, "french.sty") != NULL) {
-		PushEnvironment(FRENCH_MODE);
-		return;
-	}
-	assert(fname != NULL);
-
-	if (strcmp(fname, "") == 0) {
-		diagnostics(WARNING, "Empty or invalid filename in \\include{filename}");
-		return;
-	}
-	/* extension .tex is appended automatically */
-	if (strchr(fname, '.') == NULL)
-		strcat(fname, ".tex");
-
-/* 
-   this is needed in classic MacOS because of the weird way that directories
-   are handled under DropUnix
-*/
-#ifdef __MWERKS__
-	{
-	char            fullpath[1024];
-		char           *dp;
-		strcpy(fullpath, latexname);
-		dp = strrchr(fullpath, ':');
-		if (dp != NULL) {
-			dp++;
-			*dp = '\0';
-		} else
-			strcpy(fullpath, "");
-		strcat(fullpath, fname);
-		strcpy(fname, fullpath);
-	}
-#endif
-
-	if (g_processing_include) {
-		diagnostics(WARNING, "Cannot process nested \\include{%s}", latexname);
-		return;
-	}
-	g_processing_include = TRUE;
-
-	if ((fp = (fopen(fname, "rb"))) == NULL) {
-		diagnostics(WARNING, "Cannot open \\include file: %s", latexname);
-		return;
-	}
-	fprintf(stderr, "\nProcessing include file: %s\n", latexname);
-
-	LatexFile = fTex;	/* Save current file pointer */
-	diagnostics(5, "changing fTex file pointer in CmdInclude");
-	fTex = fp;
-	oldlinenumber = linenumber;
-	linenumber = 1;
-	olatexname = latexname;
-	latexname = fname;
-
-	diagnostics(4, "Entering Convert() from CmdInclude");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdInclude");
-
-	if (fclose(fp) != 0)
-		diagnostics(ERROR, "Could not close include file.");
-
-	diagnostics(5, "resetting fTex file pointer in CmdInclude");
-	fTex = LatexFile;
-	latexname = olatexname;
-	linenumber = oldlinenumber;
-	g_processing_include = FALSE;
-	free(fname);
-}
-
 void 
 CmdVerb(int code)
 /******************************************************************************
  purpose: converts the LaTeX-verb-environment to a similar Rtf-style
+ 		  \url probably does not handle line feeds properly
  ******************************************************************************/
 {
-	char            cThis;
-	char            markingchar = '\177';
+	char            cThis, *text, *s;
+	char            markingchar;
 	int             num;
-
-	while ((cThis = getRawTexChar())) {
-		if ((cThis != ' ') && (cThis != '*') && !isalpha((int)cThis)) {
-			markingchar = cThis;
-			break;
-		}
-	}
 
 	SetTexMode(MODE_HORIZONTAL);
 	num = TexFontNumber("Typewriter");
 	fprintRTF("{\\b0\\i0\\scaps0\\f%d ", num);
+
+	if (code == VERB_URL) {	
+		cThis = getNonSpace();
+		if (cThis == '{') {				/* \url{http://} */
+			text = getDelimitedText('{','}',TRUE);
+			s = text;
+			diagnostics(4, "CmdVerbatim \\url{%s}",text);
+			while (*s) {
+				putRtfChar(*s);
+				s++;
+			}
+			fprintRTF("}");
+			free(text);
+			return;
+		} else 
+			markingchar = cThis;		/* \url|http://| */
+
+	} 
+	
+	if (code == VERB_STAR || code == VERB_VERB) {	
+	
+		while ((cThis = getRawTexChar())) {
+			if ((cThis != ' ') && (cThis != '*') && !isalpha((int)cThis)) {
+				markingchar = cThis;
+				break;
+			}
+		}
+	}
+
 
 	while ((cThis = getRawTexChar()) && cThis != markingchar) 
 		putRtfChar(cThis);
@@ -908,17 +1087,30 @@ CmdVerbatim(int code)
 		CmdIndent(INDENT_NONE);
 		CmdStartParagraph(0);
 		num = TexFontNumber("Typewriter");
-		fprintRTF("\\b0\\i0\\scaps0\\f%d ", num);
+		fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
 		
 		if (true_code == VERBATIM_2) 
 			verbatim_text = getTexUntil("\\end{Verbatim}", 1);
+			
+		else if (true_code == VERBATIM_3) 
+			verbatim_text = getTexUntil("\\end{alltt}", 1);
+			
 		else
 			verbatim_text = getTexUntil("\\end{verbatim}", 1);
 
 		vptr = verbatim_text;
+				
+		if (true_code == VERBATIM_3)   /* alltt environment */
+
+			ConvertAllttString(verbatim_text);
+
+		else {
 		
-		while (*vptr) 
-			putRtfChar(*vptr++);
+			while (*vptr) {
+				diagnostics(5, "Verbatim character <%c>", *vptr);
+				putRtfChar(*vptr++);
+			}
+		}
 		
 		free(verbatim_text);
 
@@ -986,16 +1178,25 @@ purpose: called on active german-mode and " character in input file to
 
 	switch (cThis) {
 	case 'a':
-		fprintRTF("{\\'e4}");
+		fprintRTF("\\'e4");
 		break;
 	case 'o':
-		fprintRTF("{\\'f6}");
+		fprintRTF("\\'f6");
 		break;
 	case 'u':
-		fprintRTF("{\\'fc}");
+		fprintRTF("\\'fc");
 		break;
 	case 's':
-		fprintRTF("{\\'df}");
+		fprintRTF("\\'df");
+		break;
+	case 'A':
+		fprintRTF("\\'c4");
+		break;
+	case 'O':
+		fprintRTF("\\'d6");
+		break;
+	case 'U':
+		fprintRTF("\\'dc");
 		break;
 	case '|':
 		break;		/* ignore */
@@ -1058,181 +1259,6 @@ CmdIgnoreLet( /* @unused@ */ int code)
 	}
 }
 
-
-/*************************************************************************
- *LEG250498
- * purpose: opens existing aux-file and scans for token, with value
- * reference.  Then outputs the corresponding ref-information to the
- * rtf-file parameters: 
- * code 0 = get the first parameter {refnumber} -> refnumber)
- *      1 = get the first par. of the first {{{sectref}{line}} } -> sectref 
- * 
- * globals: input (name of LaTeX-Inputfile) fRtf rtf-Outputfile
- * returns 1 if target is found otherwise 0
- ************************************************************************/
-
-int 
-ScanAux(char *token, char *reference, int code)
-{
-	static FILE    *fAux = NULL;
-	static char     openbrace = '{';
-	static char     closebrace = '}';
-	char            tokenref[255];	/* should really be allocated dynmically */
-	char            AuxLine[1024];
-	char           *s;
-
-	if (g_aux_file_missing || strlen(reference) == 0) {
-		fprintRTF("?");
-		return 0;
-	}
-	
-	if (fAux == NULL && (fAux = fopen(AuxName, "r")) == NULL) {	/* open .aux file if not
-									 * opened before */
-		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", AuxName);
-		g_aux_file_missing = TRUE;
-		fprintRTF("?");
-		return 0;
-	}
-	
-	rewind(fAux);
-	sprintf(tokenref, "\\%s{%s}", token, reference);
-
-	while (fgets(AuxLine, 1023, fAux) != NULL) {
-
-		if ((s = strstr(AuxLine, tokenref)) != NULL) {
-			s += strlen(tokenref);
-
-			for (; code >= 0; code--) {	/* Do once or twice depending on code */
-				s = strchr(s, openbrace);
-				if (s == NULL) {	/* no parameter found, print '?' and return */
-					fprintRTF("?");
-					return 0;
-				}
-				s++;
-			}
-
-			while (*s != closebrace && *s != '\0')	/* print the number and exit */
-				fprintRTF("%c", *s++);
-
-			return 1;
-		}
-	}
-
-	diagnostics(WARNING, "\\%s{%s} not found in %s", token, reference, AuxName);
-	fprintRTF("?");
-	return 0;
-}
-
-void
-CmdLabel(int code)
-/******************************************************************************
-  purpose : label, produce rtf-output in dependency of the rtfversion.
-  parameter : code  kind of label, passed through  *** BROKEN by SAP ***
- ******************************************************************************/
-{
-	char           *label;
-	char            cThis;
-
-	label=getParam();
-	
-	switch (code) {
-	
-		case REF:	
-			ScanAux("newlabel", label, 1);
-			break;
-		
-		default:
-			break;
-	}
-	
-	free(label);
-	return;
-	
-	if (code < HYPER) {
-		label = getParam();
-		ungetTexChar(label[strlen(label) - 1]);	/* somewhat screwy */
-	} else {
-		label = hyperref;
-	}
-
-	diagnostics(3, "Generating label/bookmark `%s'", label);
-
-	if (rtf_restrict(1, 1))
-		CmdLabelOld(code, label);
-	if (rtf_restrict(1, 4))
-		CmdLabel1_4(code, label);
-
-	if (code >= HYPER)
-		free(label);
-
-	cThis = getTexChar();
-
-	cThis = getNonSpace();
-
-	cThis = getTexChar();
-
-	if (cThis != '\n')
-		ungetTexChar(cThis);
-
-	/* LEG190498 */
-}
-
-void
-CmdLabel1_4(int code, char *text)
-/******************************************************************************
-  purpose : label
-  parameter : code  kind of label, text name of the label
- ******************************************************************************/
-{
-	switch (code) {
-		case LABEL:
-		/*
-		 * Note that Hyperlabels do not exist, if they are
-		 * encountered it's a severe bug
-		 */
-
-		fprintRTF("{\\*\\bkmkstart %s} {\\*\\bkmkend %s}", text, text);
-		break;
-	case REF:
-	case HYPERREF:
-		fprintRTF("{\\field\\fldlock{\\*\\fldinst REF %s  \\\\n}{\\fldrslt ", text);
-		ScanAux("newlabel", text, 1);
-		fprintRTF("}}");
-		break;
-	case PAGEREF:
-	case HYPERPAGEREF:
-		fprintRTF("{\\field{\\*\\fldinst PAGEREF %s}{\\fldrslt ?}}", text);
-		break;
-	default:
-		diagnostics(ERROR, "Called CmdLabel with wrong Code %d", code);
-	}
-}
-
-
-void
-CmdLabelOld(int code, char *text)
-/******************************************************************************
-     purpose : label
-   parameter : code  kind of label
- ******************************************************************************/
-{
-	switch (code) {
-		case LABEL:
-		fprintRTF("{\\v[LABEL: %s]}", text);
-		break;
-	case REF:
-	case HYPERREF:
-		fprintRTF("{\\v[REF: %s]}", text);
-		break;
-	case PAGEREF:
-	case HYPERPAGEREF:
-		fprintRTF("{\\v[PAGEREF: %s]}", text);
-		break;
-	default:
-		diagnostics(ERROR, "Called CmdLabel with wrong Code %d", code);
-	}
-}
-
 void CmdQuad(int kk)
 /******************************************************************************
  purpose: inserts kk quad spaces (D. Taupin)
@@ -1257,37 +1283,59 @@ void
 CmdFigure(int code)
 /******************************************************************************
   purpose: Process \begin{figure} ... \end{figure} environment
+  		   This is only complicated because we need to know what to
+  		   label the caption before the caption is processed.  So 
+  		   we just slurp the figure environment, extract the tag, and
+  		   the process the environment as usual.
  ******************************************************************************/
 {
-	char            loc[5];
+	char            *loc, *figure_contents;
 
 	if (code & ON) {
-		getBracketParam(loc,4);
+		loc = getBracketParam();
 		diagnostics(4, "entering CmdFigure [%s]", loc);
 		g_processing_figure = TRUE;
+		if (loc) free(loc);
+		figure_contents = getTexUntil("\\end{figure}", FALSE);
+		g_figure_label = ExtractLabelTag(figure_contents);
+		ConvertString(figure_contents);	
+		free(figure_contents);		
 	} else {
+		if (g_figure_label) free(g_figure_label);
 		g_processing_figure = FALSE;
 		diagnostics(4, "exiting CmdFigure");
 	}
 }
 
 void 
-CmdIgnoreFigure(int code)
+CmdIgnoreEnviron(int code)
 /******************************************************************************
-  purpose: function to ignore Picture and Minipage Environment
+  purpose: function to ignore \begin{environ} ... \end{environ}
  ******************************************************************************/
 {
+	char *s = NULL;
+	
 	if (code & ON) {
 	
 		switch (code & ~(ON)) {
-			case PICTURE:
-					getTexUntil("\\end{picture}",0);
+			case IGNORE_PICTURE:
+					s= getTexUntil("\\end{picture}",0);
 					break;
 			
-			case MINIPAGE:
-					getTexUntil("\\end{minipage}",0);
+			case IGNORE_MINIPAGE:
+					s=getTexUntil("\\end{minipage}",0);
+					break;
+
+			case IGNORE_HTMLONLY:
+					s=getTexUntil("\\end{htmlonly}",0);
+					break;
+
+			case IGNORE_RAWHTML:
+					s=getTexUntil("\\end{rawhtml}",0);
 					break;
 		}
+
+		if (s) free(s);
 	}
 }
 
@@ -1321,7 +1369,7 @@ void
 CmdLink(int code)
 {
 	char           *param2;
-	char            optparam[255] = "";
+	char           *optparam;
 
 	diagnostics(4, "Entering hyperlatex \\link command");
 	Convert();		/* convert routine is called again for
@@ -1329,11 +1377,13 @@ CmdLink(int code)
 				 * parameter */
 	diagnostics(4, "  Converted first parameter");
 
-	getBracketParam(optparam, 255);
+	optparam = getBracketParam();
+	if (optparam) free(optparam);
+	
 	/* LEG190498 now should come processing of the optional parameter */
 	diagnostics(4, "  Converted optional parameter");
 
-	param2 = getParam();
+	param2 = getBraceParam();
 	diagnostics(4, "  Converted second parameter");
 
 	if (hyperref != NULL)
@@ -1341,7 +1391,7 @@ CmdLink(int code)
 
 	hyperref = (char *) malloc((strlen(param2) + 1));
 	if (hyperref == NULL)
-		error(" malloc error -> out of memory!\n");
+		diagnostics(ERROR, " malloc error -> out of memory!\n");
 
 	strcpy(hyperref, param2);
 	free(param2);
@@ -1470,97 +1520,41 @@ CmdTitlepage(int code)
 {
 	switch (code) {
 		case ON:
-		fprintRTF("\n\\par\\pard \\page ");	/* new page */
-		fprintRTF("\n\\par\\q%c ", alignment);
-		break;
-	case OFF:
-		fprintRTF("\\pard ");
-		fprintRTF("\n\\par\\q%c \\page ", alignment);
-		break;
-	}			/* switch */
+			fprintRTF("\n\\par\\pard \\page ");	/* new page */
+			fprintRTF("\n\\par\\q%c ", alignment);
+			break;
+		case OFF:
+			fprintRTF("\\pard ");
+			fprintRTF("\n\\par\\q%c \\page ", alignment);
+			break;
+	}
 }
 
-void 
-CmdMultiCol( /* @unused@ */ int code)
+void
+CmdMinipage(int code)
 /******************************************************************************
- purpose: converts the LaTex-Multicolumn to a similar Rtf-style
-	  this converting is only partially
-	  so the user has to convert some part of the Table-environment by hand
+  purpose: recognize and parse Minipage parameters
+  		   currently this does nothing
  ******************************************************************************/
 {
-	char            inchar[10];
-	char            numColStr[100];
-	long            numCol, i, toBeInserted;
-	char            colFmtChar = 'u';
-	char           *eptr;	/* for srtol   */
-	static bool     bWarningDisplayed = FALSE;
-
-	if (!bWarningDisplayed) {
-		diagnostics(WARNING, "Multicolumn: Cells must be merged by hand!");
-		bWarningDisplayed = TRUE;
-	}
-	i = 0;
-	do {
-		inchar[0] = getTexChar();
-		if (isdigit((unsigned char) inchar[0]))
-			numColStr[i++] = inchar[0];
-	}
-	while (inchar[0] != '}');
-	numColStr[i] = '\0';
-	numCol = strtol(numColStr, &eptr, 10);
-	if (eptr == numColStr)
-		error(" multicolumn: argument num invalid\n");
-
-
-	do {
-		inchar[0] = getTexChar();
-		switch (inchar[0]) {
-		case 'c':
-		case 'r':
-		case 'l':
-			if (colFmtChar == 'u')
-				colFmtChar = inchar[0];
+	char * v_align, *width;
+	switch (code) {
+		case ON:
+			v_align = getBracketParam();
+			width   = getBraceParam();
+			if (v_align) free(v_align);
+			free(width);
 			break;
-		default:
+		case OFF:
 			break;
-		}
 	}
-	while (inchar[0] != '}');
-	if (colFmtChar == 'u')
-		colFmtChar = 'l';
-
-	switch (colFmtChar) {
-	case 'r':
-		toBeInserted = numCol;
-		break;
-	case 'c':
-		toBeInserted = (numCol + 1) / 2;
-		break;
-	default:
-		toBeInserted = 1;
-		break;
-	}
-
-	for (i = 1; i < toBeInserted; i++, actCol++) {
-		fprintRTF(" \\cell \\pard \\intbl ");
-	}
-	fprintRTF("\\q%c ", colFmtChar);
-
-	diagnostics(4, "Entering Convert() from CmdMultiCol()");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdMultiCol()");
-
-	for (i = toBeInserted; (i < numCol) && (actCol < colCount); i++, actCol++) {
-		fprintRTF(" \\cell \\pard \\intbl ");
-	}
-
-
 }
 
 void 
 CmdColsep(int code)
 /***************************************************************************
  * purpose: hyperlatex support, handles '&' as in Convert() in convert.c
+ only called by \S
  ***************************************************************************/
 {
 	if (!g_processing_tabular) {
@@ -1583,7 +1577,7 @@ CmdColsep(int code)
 void 
 CmdGraphics(int code)
 {
-	char            options[255];
+	char           *options;
 	char            fullpath[1023];
 	char           *filename;
 	int             cc, i;
@@ -1592,9 +1586,13 @@ CmdGraphics(int code)
 
 	/* could be \includegraphics*[0,0][5,5]{file.pict} */
 
-	getBracketParam(options, 255);
-	getBracketParam(options, 255);
-	filename = getParam();
+	options = getBracketParam();
+	if (options) free(options);
+
+	options = getBracketParam();
+	if (options) free(options);
+	
+	filename = getBraceParam();
 
 	if (strstr(filename, ".pict") || strstr(filename, ".PICT")) {
 		/* SAP fixes for Mac Platform */
@@ -1651,8 +1649,54 @@ CmdVerbosityLevel(int code)
             in the LaTeX file!
  ***************************************************************************/
 {
-	char * s = getParam();
+	char * s = getBraceParam();
 	g_verbosity_level = atoi(s);
 	free(s);
 
+}
+
+
+/* convert integer to roman number --- only works up correctly up to 39 */
+
+char * 
+roman_item(int n)
+{
+	char            s[50];
+	int             i = 0;
+
+	while (n >= 10) {
+		n -= 10;
+		s[i] = 'x';
+		i++;
+	}
+
+	if (n == 9) {
+		s[i] = 'i';
+		i++;
+		s[i] = 'x';
+		i++;
+		s[i] = '\0';
+		return strdup(s);
+	}
+	if (n >= 5) {
+		n -= 5;
+		s[i] = 'v';
+		i++;
+	}
+	if (n == 4) {
+		s[i] = 'i';
+		i++;
+		s[i] = 'v';
+		i++;
+		s[i] = '\0';
+		return strdup(s);
+	}
+	while (n >= 1) {
+		n -= 1;
+		s[i] = 'i';
+		i++;
+	}
+
+	s[i] = '\0';
+	return strdup(s);
 }

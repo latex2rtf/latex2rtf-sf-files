@@ -1,4 +1,4 @@
-/* $Id: l2r_fonts.c,v 1.20 2001/10/12 05:45:07 prahl Exp $
+/* $Id: l2r_fonts.c,v 1.22 2001/10/17 02:48:31 prahl Exp $
 
 	All changes to font size, font style, and font face are 
 	handled in this file.  Explicit changing of font characteristics
@@ -193,7 +193,7 @@ CmdFontFamily(int code)
 		case F_FAMILY_TYPEWRITER_2:
 		case F_FAMILY_CALLIGRAPHIC_2:
 			fprintRTF("{\\f%d ", num);          
-			s = getParam();
+			s = getBraceParam();
 			ConvertString(s);
 			free(s);
 			fprintRTF("}");
@@ -270,7 +270,7 @@ CmdFontShape(int code)
 	    true_code == F_SHAPE_SLANTED_2 || true_code == F_SHAPE_CAPS_2)
 	{
 		char *s;
-		s = getParam();
+		s = getBraceParam();
 		ConvertString(s);
 		fprintRTF("}");
 		free(s);
@@ -336,7 +336,7 @@ CmdFontSeries(int code)
 	
 	if (true_code == F_SERIES_BOLD_2 || true_code == F_SERIES_MEDIUM_2){
 		char *s; 
-		s = getParam();
+		s = getBraceParam();
 		ConvertString(s);
 		fprintRTF("}");
 		free(s);
@@ -435,7 +435,7 @@ CmdUnderline(int code)
 	diagnostics(4,"Entering CmdUnderline");
 	
 	fprintRTF("{\\ul ");          
-	s = getParam();
+	s = getBraceParam();
 	ConvertString(s);
 	free(s);
 	fprintRTF("}");
@@ -481,7 +481,7 @@ CmdTextNormal(int code)
 
 	if (code==F_TEXT_NORMAL_2) {
 		char *s;
-		s = getParam();
+		s = getBraceParam();
 		ConvertString(s);
 		free(s);
 		fprintRTF("}");
@@ -627,7 +627,7 @@ void
 PushFontSettings(void)
 {
 	if (FontInfoDepth == MAX_FONT_INFO_DEPTH)
-		error("FontInfoDepth too large, cannot PushFontSettings()!");
+		diagnostics(ERROR, "FontInfoDepth too large, cannot PushFontSettings()!");
 	
 	RtfFontInfo[FontInfoDepth+1].size = RtfFontInfo[FontInfoDepth].size;
 	RtfFontInfo[FontInfoDepth+1].family = RtfFontInfo[FontInfoDepth].family;
@@ -645,7 +645,7 @@ void
 PopFontSettings(void)
 {
 	if (FontInfoDepth == 0)
-		error("FontInfoDepth = 0, cannot PopFontSettings()!");
+		diagnostics(ERROR, "FontInfoDepth = 0, cannot PopFontSettings()!");
 	
 	FontInfoDepth--;
 	diagnostics(6,"PopFontSettings depth=%d, family=%d, size=%d, shape=%d, series=%d",\

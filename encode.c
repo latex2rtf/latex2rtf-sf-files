@@ -1,4 +1,4 @@
-/* $Id: encode.c,v 1.6 2001/10/12 05:45:07 prahl Exp $ 
+/* $Id: encode.c,v 1.8 2001/10/27 14:19:31 prahl Exp $ 
    Translate high bit characters into RTF assuming that
    the default codepage is ansi (1252)
    
@@ -13,6 +13,60 @@
 #include "encode.h"
 #include "encode_tables.h"
 
+static void put_breve_char(char c)
+{
+	int num = RtfFontNumber("MT Extra");	
+	int upsize = CurrentFontSize()/2;
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\up%d\\f%d \\\\())}", FORMULASEP, upsize, num);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_acute_char(char c)
+{
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\'b4))}", FORMULASEP);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_cedilla_char(char c)
+{
+	int down = CurrentFontSize() / 4;
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\dn%d\\'b8))}", FORMULASEP,down);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_ring_char(char c)
+{
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\'b0))}", FORMULASEP);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_macron_char(char c)
+{
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\'af))}", FORMULASEP);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_tilde_char(char c)
+{
+	int num = RtfFontNumber("MT Extra");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\f%d\\'25))}", FORMULASEP, num);
+	fprintRTF("{\\fldrslt }}");
+}
+
+static void put_dot_char(char c)
+{
+	int num = RtfFontNumber("MT Extra");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O(%c",c);
+	fprintRTF("%c\\\\S(\\f%d\\'26))}", FORMULASEP, num);
+	fprintRTF("{\\fldrslt }}");
+}
+
 static void applemac_enc(int index)
 {
 char *s;
@@ -23,8 +77,8 @@ char *s;
 	}
 	s = applemac_2_sym[index];
 	if (s[0]!='0'){
-		int sym=RtfFontNumber("Symbol");
-		fprintRTF("{\\f%d\\'%s}",sym,s);
+		int num=RtfFontNumber("Symbol");
+		fprintRTF("{\\f%d\\'%s}",num,s);
 		return;
 	}
 	if (0xDE) { /* U+64257 LATIN SMALL LIGATURE FI */ 
@@ -44,15 +98,16 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF9) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xFA) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 	if (index + 128 == 0xFB) { /* U+730 RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char(' ');
 		return;
 	}
 	if (index + 128 == 0xFD) { /* U+733 DOUBLE ACUTE ACCENT */ 
@@ -188,7 +243,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFA) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+9632 BLACK SQUARE */ 
@@ -212,11 +267,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x85) { /* U+367 LATIN SMALL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('u');
 		return;
 	}
 	if (index + 128 == 0x86) { /* U+263 LATIN SMALL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('c');
 		return;
 	}
 	if (index + 128 == 0x88) { /* U+322 LATIN SMALL LETTER L WITH STROKE */ 
@@ -232,19 +287,19 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x8D) { /* U+377 LATIN CAPITAL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('Z');
 		return;
 	}
 	if (index + 128 == 0x8F) { /* U+262 LATIN CAPITAL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('C');
 		return;
 	}
 	if (index + 128 == 0x91) { /* U+313 LATIN CAPITAL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('L');
 		return;
 	}
 	if (index + 128 == 0x92) { /* U+314 LATIN SMALL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('l');
 		return;
 	}
 	if (index + 128 == 0x95) { /* U+317 LATIN CAPITAL LETTER L WITH CARON */ 
@@ -256,11 +311,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x97) { /* U+346 LATIN CAPITAL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('S');
 		return;
 	}
 	if (index + 128 == 0x98) { /* U+347 LATIN SMALL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('s');
 		return;
 	}
 	if (index + 128 == 0x9B) { /* U+356 LATIN CAPITAL LETTER T WITH CARON */ 
@@ -308,7 +363,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAB) { /* U+378 LATIN SMALL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('z');
 		return;
 	}
 	if (index + 128 == 0xAC) { /* U+268 LATIN CAPITAL LETTER C WITH CARON */ 
@@ -316,7 +371,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAD) { /* U+351 LATIN SMALL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('s');
 		return;
 	}
 	if (index + 128 == 0xB0) { /* U+9617 LIGHT SHADE */ 
@@ -336,23 +391,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xB8) { /* U+350 LATIN CAPITAL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('S');
 		return;
 	}
 	if (index + 128 == 0xBD) { /* U+379 LATIN CAPITAL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('Z');
 		return;
 	}
 	if (index + 128 == 0xBE) { /* U+380 LATIN SMALL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('z');
 		return;
 	}
 	if (index + 128 == 0xC6) { /* U+258 LATIN CAPITAL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('A');
 		return;
 	}
 	if (index + 128 == 0xC7) { /* U+259 LATIN SMALL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('a');
 		return;
 	}
 	if (index + 128 == 0xD0) { /* U+273 LATIN SMALL LETTER D WITH STROKE */ 
@@ -388,11 +443,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xDD) { /* U+354 LATIN CAPITAL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('T');
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+366 LATIN CAPITAL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('U');
 		return;
 	}
 	if (index + 128 == 0xDF) { /* U+9600 UPPER HALF BLOCK */ 
@@ -400,11 +455,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xE3) { /* U+323 LATIN CAPITAL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('N');
 		return;
 	}
 	if (index + 128 == 0xE4) { /* U+324 LATIN SMALL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('n');
 		return;
 	}
 	if (index + 128 == 0xE5) { /* U+328 LATIN SMALL LETTER N WITH CARON */ 
@@ -412,11 +467,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xE8) { /* U+340 LATIN CAPITAL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('R');
 		return;
 	}
 	if (index + 128 == 0xEA) { /* U+341 LATIN SMALL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('r');
 		return;
 	}
 	if (index + 128 == 0xEB) { /* U+368 LATIN CAPITAL LETTER U WITH DOUBLE ACUTE */ 
@@ -424,7 +479,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xEE) { /* U+355 LATIN SMALL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('t');
 		return;
 	}
 	if (index + 128 == 0xF1) { /* U+733 DOUBLE ACUTE ACCENT */ 
@@ -436,7 +491,8 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF4) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xF7) { /* U+731 OGONEK */ 
@@ -444,7 +500,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFA) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 	if (index + 128 == 0xFB) { /* U+369 LATIN SMALL LETTER U WITH DOUBLE ACUTE */ 
@@ -568,7 +624,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x8C) { /* U+346 LATIN CAPITAL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('S');
 		return;
 	}
 	if (index + 128 == 0x8D) { /* U+356 LATIN CAPITAL LETTER T WITH CARON */ 
@@ -580,7 +636,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x8F) { /* U+377 LATIN CAPITAL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('Z');
 		return;
 	}
 	if (index + 128 == 0x90) { /* U+65535 unknown */ 
@@ -592,7 +648,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x9C) { /* U+347 LATIN SMALL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('s');
 		return;
 	}
 	if (index + 128 == 0x9D) { /* U+357 LATIN SMALL LETTER T WITH CARON */ 
@@ -604,7 +660,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0x9F) { /* U+378 LATIN SMALL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('z');
 		return;
 	}
 	if (index + 128 == 0xA1) { /* U+711 CARON */ 
@@ -612,7 +668,8 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA2) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xA3) { /* U+321 LATIN CAPITAL LETTER L WITH STROKE */ 
@@ -624,7 +681,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAA) { /* U+350 LATIN CAPITAL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('S');
 		return;
 	}
 	if (index + 128 == 0xAC) { /* U+65535 unknown */ 
@@ -632,7 +689,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAF) { /* U+379 LATIN CAPITAL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('Z');
 		return;
 	}
 	if (index + 128 == 0xB2) { /* U+731 OGONEK */ 
@@ -648,7 +705,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBA) { /* U+351 LATIN SMALL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('s');
 		return;
 	}
 	if (index + 128 == 0xBC) { /* U+317 LATIN CAPITAL LETTER L WITH CARON */ 
@@ -664,23 +721,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBF) { /* U+380 LATIN SMALL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('z');
 		return;
 	}
 	if (index + 128 == 0xC0) { /* U+340 LATIN CAPITAL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('R');
 		return;
 	}
 	if (index + 128 == 0xC3) { /* U+258 LATIN CAPITAL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('A');
 		return;
 	}
 	if (index + 128 == 0xC5) { /* U+313 LATIN CAPITAL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('L');
 		return;
 	}
 	if (index + 128 == 0xC6) { /* U+262 LATIN CAPITAL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('C');
 		return;
 	}
 	if (index + 128 == 0xC8) { /* U+268 LATIN CAPITAL LETTER C WITH CARON */ 
@@ -704,7 +761,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD1) { /* U+323 LATIN CAPITAL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('N');
 		return;
 	}
 	if (index + 128 == 0xD2) { /* U+327 LATIN CAPITAL LETTER N WITH CARON */ 
@@ -720,7 +777,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD9) { /* U+366 LATIN CAPITAL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('U');
 		return;
 	}
 	if (index + 128 == 0xDB) { /* U+368 LATIN CAPITAL LETTER U WITH DOUBLE ACUTE */ 
@@ -728,23 +785,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+354 LATIN CAPITAL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('T');
 		return;
 	}
 	if (index + 128 == 0xE0) { /* U+341 LATIN SMALL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('r');
 		return;
 	}
 	if (index + 128 == 0xE3) { /* U+259 LATIN SMALL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('a');
 		return;
 	}
 	if (index + 128 == 0xE5) { /* U+314 LATIN SMALL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('l');
 		return;
 	}
 	if (index + 128 == 0xE6) { /* U+263 LATIN SMALL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('c');
 		return;
 	}
 	if (index + 128 == 0xE8) { /* U+269 LATIN SMALL LETTER C WITH CARON */ 
@@ -768,7 +825,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF1) { /* U+324 LATIN SMALL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('n');
 		return;
 	}
 	if (index + 128 == 0xF2) { /* U+328 LATIN SMALL LETTER N WITH CARON */ 
@@ -784,7 +841,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF9) { /* U+367 LATIN SMALL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('u');
 		return;
 	}
 	if (index + 128 == 0xFB) { /* U+369 LATIN SMALL LETTER U WITH DOUBLE ACUTE */ 
@@ -792,11 +849,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+355 LATIN SMALL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('t');
 		return;
 	}
 	if (index + 128 == 0xFF) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 }
@@ -960,7 +1017,8 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA2) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xA3) { /* U+321 LATIN CAPITAL LETTER L WITH STROKE */ 
@@ -972,11 +1030,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA6) { /* U+346 LATIN CAPITAL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('S');
 		return;
 	}
 	if (index + 128 == 0xAA) { /* U+350 LATIN CAPITAL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('S');
 		return;
 	}
 	if (index + 128 == 0xAB) { /* U+356 LATIN CAPITAL LETTER T WITH CARON */ 
@@ -984,7 +1042,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAC) { /* U+377 LATIN CAPITAL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('Z');
 		return;
 	}
 	if (index + 128 == 0xAE) { /* U+381 LATIN CAPITAL LETTER Z WITH CARON */ 
@@ -992,7 +1050,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAF) { /* U+379 LATIN CAPITAL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('Z');
 		return;
 	}
 	if (index + 128 == 0xB1) { /* U+261 LATIN SMALL LETTER A WITH OGONEK */ 
@@ -1012,7 +1070,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xB6) { /* U+347 LATIN SMALL LETTER S WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('s');
 		return;
 	}
 	if (index + 128 == 0xB7) { /* U+711 CARON */ 
@@ -1020,7 +1078,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBA) { /* U+351 LATIN SMALL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('s');
 		return;
 	}
 	if (index + 128 == 0xBB) { /* U+357 LATIN SMALL LETTER T WITH CARON */ 
@@ -1028,7 +1086,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBC) { /* U+378 LATIN SMALL LETTER Z WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('z');
 		return;
 	}
 	if (index + 128 == 0xBD) { /* U+733 DOUBLE ACUTE ACCENT */ 
@@ -1040,23 +1098,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBF) { /* U+380 LATIN SMALL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('z');
 		return;
 	}
 	if (index + 128 == 0xC0) { /* U+340 LATIN CAPITAL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('R');
 		return;
 	}
 	if (index + 128 == 0xC3) { /* U+258 LATIN CAPITAL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('A');
 		return;
 	}
 	if (index + 128 == 0xC5) { /* U+313 LATIN CAPITAL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('L');
 		return;
 	}
 	if (index + 128 == 0xC6) { /* U+262 LATIN CAPITAL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('C');
 		return;
 	}
 	if (index + 128 == 0xC8) { /* U+268 LATIN CAPITAL LETTER C WITH CARON */ 
@@ -1080,7 +1138,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD1) { /* U+323 LATIN CAPITAL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('N');
 		return;
 	}
 	if (index + 128 == 0xD2) { /* U+327 LATIN CAPITAL LETTER N WITH CARON */ 
@@ -1096,7 +1154,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD9) { /* U+366 LATIN CAPITAL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('U');
 		return;
 	}
 	if (index + 128 == 0xDB) { /* U+368 LATIN CAPITAL LETTER U WITH DOUBLE ACUTE */ 
@@ -1104,23 +1162,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+354 LATIN CAPITAL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('T');
 		return;
 	}
 	if (index + 128 == 0xE0) { /* U+341 LATIN SMALL LETTER R WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('r');
 		return;
 	}
 	if (index + 128 == 0xE3) { /* U+259 LATIN SMALL LETTER A WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('a');
 		return;
 	}
 	if (index + 128 == 0xE5) { /* U+314 LATIN SMALL LETTER L WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('l');
 		return;
 	}
 	if (index + 128 == 0xE6) { /* U+263 LATIN SMALL LETTER C WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('c');
 		return;
 	}
 	if (index + 128 == 0xE8) { /* U+269 LATIN SMALL LETTER C WITH CARON */ 
@@ -1144,7 +1202,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF1) { /* U+324 LATIN SMALL LETTER N WITH ACUTE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_acute_char('n');
 		return;
 	}
 	if (index + 128 == 0xF2) { /* U+328 LATIN SMALL LETTER N WITH CARON */ 
@@ -1160,7 +1218,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF9) { /* U+367 LATIN SMALL LETTER U WITH RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char('u');
 		return;
 	}
 	if (index + 128 == 0xFB) { /* U+369 LATIN SMALL LETTER U WITH DOUBLE ACUTE */ 
@@ -1168,11 +1226,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+355 LATIN SMALL LETTER T WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('t');
 		return;
 	}
 	if (index + 128 == 0xFF) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 }
@@ -1196,7 +1254,8 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA2) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xA5) { /* U+65535 unknown */ 
@@ -1208,15 +1267,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA9) { /* U+304 LATIN CAPITAL LETTER I WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('I');
 		return;
 	}
 	if (index + 128 == 0xAA) { /* U+350 LATIN CAPITAL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('S');
 		return;
 	}
 	if (index + 128 == 0xAB) { /* U+286 LATIN CAPITAL LETTER G WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('G');
 		return;
 	}
 	if (index + 128 == 0xAC) { /* U+308 LATIN CAPITAL LETTER J WITH CIRCUMFLEX */ 
@@ -1228,7 +1287,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xAF) { /* U+379 LATIN CAPITAL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('Z');
 		return;
 	}
 	if (index + 128 == 0xB1) { /* U+295 LATIN SMALL LETTER H WITH STROKE */ 
@@ -1244,11 +1303,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBA) { /* U+351 LATIN SMALL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('s');
 		return;
 	}
 	if (index + 128 == 0xBB) { /* U+287 LATIN SMALL LETTER G WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('g');
 		return;
 	}
 	if (index + 128 == 0xBC) { /* U+309 LATIN SMALL LETTER J WITH CIRCUMFLEX */ 
@@ -1260,7 +1319,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBF) { /* U+380 LATIN SMALL LETTER Z WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('z');
 		return;
 	}
 	if (index + 128 == 0xC3) { /* U+65535 unknown */ 
@@ -1268,7 +1327,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xC5) { /* U+266 LATIN CAPITAL LETTER C WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('C');
 		return;
 	}
 	if (index + 128 == 0xC6) { /* U+264 LATIN CAPITAL LETTER C WITH CIRCUMFLEX */ 
@@ -1280,7 +1339,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD5) { /* U+288 LATIN CAPITAL LETTER G WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('G');
 		return;
 	}
 	if (index + 128 == 0xD8) { /* U+284 LATIN CAPITAL LETTER G WITH CIRCUMFLEX */ 
@@ -1288,7 +1347,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xDD) { /* U+364 LATIN CAPITAL LETTER U WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('U');
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+348 LATIN CAPITAL LETTER S WITH CIRCUMFLEX */ 
@@ -1300,7 +1359,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xE5) { /* U+267 LATIN SMALL LETTER C WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('c');
 		return;
 	}
 	if (index + 128 == 0xE6) { /* U+265 LATIN SMALL LETTER C WITH CIRCUMFLEX */ 
@@ -1312,7 +1371,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF5) { /* U+289 LATIN SMALL LETTER G WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('g');
 		return;
 	}
 	if (index + 128 == 0xF8) { /* U+285 LATIN SMALL LETTER G WITH CIRCUMFLEX */ 
@@ -1320,7 +1379,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFD) { /* U+365 LATIN SMALL LETTER U WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('u');
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+349 LATIN SMALL LETTER S WITH CIRCUMFLEX */ 
@@ -1328,7 +1387,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFF) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 }
@@ -1356,23 +1415,23 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xA3) { /* U+342 LATIN CAPITAL LETTER R WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('R');
 		return;
 	}
 	if (index + 128 == 0xA5) { /* U+296 LATIN CAPITAL LETTER I WITH TILDE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_tilde_char('I');
 		return;
 	}
 	if (index + 128 == 0xA6) { /* U+315 LATIN CAPITAL LETTER L WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('L');
 		return;
 	}
 	if (index + 128 == 0xAA) { /* U+274 LATIN CAPITAL LETTER E WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('E');
 		return;
 	}
 	if (index + 128 == 0xAB) { /* U+290 LATIN CAPITAL LETTER G WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('G');
 		return;
 	}
 	if (index + 128 == 0xAC) { /* U+358 LATIN CAPITAL LETTER T WITH STROKE */ 
@@ -1392,15 +1451,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xB3) { /* U+343 LATIN SMALL LETTER R WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('r');
 		return;
 	}
 	if (index + 128 == 0xB5) { /* U+297 LATIN SMALL LETTER I WITH TILDE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_tilde_char('i');
 		return;
 	}
 	if (index + 128 == 0xB6) { /* U+316 LATIN SMALL LETTER L WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('l');
 		return;
 	}
 	if (index + 128 == 0xB7) { /* U+711 CARON */ 
@@ -1408,11 +1467,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xBA) { /* U+275 LATIN SMALL LETTER E WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('e');
 		return;
 	}
 	if (index + 128 == 0xBB) { /* U+291 LATIN SMALL LETTER G WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('g');
 		return;
 	}
 	if (index + 128 == 0xBC) { /* U+359 LATIN SMALL LETTER T WITH STROKE */ 
@@ -1432,7 +1491,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xC0) { /* U+256 LATIN CAPITAL LETTER A WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('A');
 		return;
 	}
 	if (index + 128 == 0xC7) { /* U+302 LATIN CAPITAL LETTER I WITH OGONEK */ 
@@ -1448,11 +1507,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xCC) { /* U+278 LATIN CAPITAL LETTER E WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('E');
 		return;
 	}
 	if (index + 128 == 0xCF) { /* U+298 LATIN CAPITAL LETTER I WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('I');
 		return;
 	}
 	if (index + 128 == 0xD0) { /* U+272 LATIN CAPITAL LETTER D WITH STROKE */ 
@@ -1460,15 +1519,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD1) { /* U+325 LATIN CAPITAL LETTER N WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('N');
 		return;
 	}
 	if (index + 128 == 0xD2) { /* U+332 LATIN CAPITAL LETTER O WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('O');
 		return;
 	}
 	if (index + 128 == 0xD3) { /* U+310 LATIN CAPITAL LETTER K WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('K');
 		return;
 	}
 	if (index + 128 == 0xD9) { /* U+370 LATIN CAPITAL LETTER U WITH OGONEK */ 
@@ -1476,15 +1535,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xDD) { /* U+360 LATIN CAPITAL LETTER U WITH TILDE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_tilde_char('U');
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+362 LATIN CAPITAL LETTER U WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('U');
 		return;
 	}
 	if (index + 128 == 0xE0) { /* U+257 LATIN SMALL LETTER A WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('a');
 		return;
 	}
 	if (index + 128 == 0xE7) { /* U+303 LATIN SMALL LETTER I WITH OGONEK */ 
@@ -1500,11 +1559,11 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xEC) { /* U+279 LATIN SMALL LETTER E WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('e');
 		return;
 	}
 	if (index + 128 == 0xEF) { /* U+299 LATIN SMALL LETTER I WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('i');
 		return;
 	}
 	if (index + 128 == 0xF0) { /* U+273 LATIN SMALL LETTER D WITH STROKE */ 
@@ -1512,15 +1571,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xF1) { /* U+326 LATIN SMALL LETTER N WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('n');
 		return;
 	}
 	if (index + 128 == 0xF2) { /* U+333 LATIN SMALL LETTER O WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('o');
 		return;
 	}
 	if (index + 128 == 0xF3) { /* U+311 LATIN SMALL LETTER K WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('k');
 		return;
 	}
 	if (index + 128 == 0xF9) { /* U+371 LATIN SMALL LETTER U WITH OGONEK */ 
@@ -1528,15 +1587,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFD) { /* U+361 LATIN SMALL LETTER U WITH TILDE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_tilde_char('u');
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+363 LATIN SMALL LETTER U WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('u');
 		return;
 	}
 	if (index + 128 == 0xFF) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 }
@@ -1556,15 +1615,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xD0) { /* U+286 LATIN CAPITAL LETTER G WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('G');
 		return;
 	}
 	if (index + 128 == 0xDD) { /* U+304 LATIN CAPITAL LETTER I WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('I');
 		return;
 	}
 	if (index + 128 == 0xDE) { /* U+350 LATIN CAPITAL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('S');
 		return;
 	}
 	if (index + 128 == 0xEA) { /* U+281 LATIN SMALL LETTER E WITH OGONEK */ 
@@ -1572,15 +1631,15 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xEC) { /* U+279 LATIN SMALL LETTER E WITH DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char('e');
 		return;
 	}
 	if (index + 128 == 0xEF) { /* U+299 LATIN SMALL LETTER I WITH MACRON */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_macron_char('i');
 		return;
 	}
 	if (index + 128 == 0xF0) { /* U+287 LATIN SMALL LETTER G WITH BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_breve_char('g');
 		return;
 	}
 	if (index + 128 == 0xFD) { /* U+305 LATIN SMALL LETTER DOTLESS I */ 
@@ -1588,7 +1647,7 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xFE) { /* U+351 LATIN SMALL LETTER S WITH CEDILLA */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_cedilla_char('s');
 		return;
 	}
 }
@@ -1648,15 +1707,16 @@ char *s;
 		return;
 	}
 	if (index + 128 == 0xC6) { /* U+728 BREVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		int num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\f%d\\'28}", num);
 		return;
 	}
 	if (index + 128 == 0xC7) { /* U+729 DOT ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_dot_char(' ');
 		return;
 	}
 	if (index + 128 == 0xCA) { /* U+730 RING ABOVE */ 
-/*		fprintRTF("TRANSLATION");*/
+		put_ring_char(' ');
 		return;
 	}
 	if (index + 128 == 0xCD) { /* U+733 DOUBLE ACUTE ACCENT */ 

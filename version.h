@@ -1,1 +1,1 @@
-char *Version = "$Revision: 1.9k $ $Date: 2001/10/12 04:27:12 $";
+char *Version = "1.9.12 $Date: 2001/11/12 04:50:05 $";

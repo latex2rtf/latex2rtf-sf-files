@@ -1,4 +1,4 @@
-/* $Id: main.c,v 1.27 2001/10/12 05:45:07 prahl Exp $ */
+/* $Id: main.c,v 1.43 2001/11/16 05:16:27 prahl Exp $ */
 
 #include <stdio.h>
 #include <ctype.h>
@@ -18,15 +18,13 @@
 #include "funct1.h"
 #include "cfg.h"
 #include "encode.h"
+#include "util.h"
 #include "parser.h"
 #include "lengths.h"
 #include "counters.h"
 #include "preamble.h"
-#include "biblio.h"
+#include "xref.h"
 
-long           linenumber = 1;	        /* lines in the LaTex-document */
-char           *currfile;	            /* current file name */
-FILE           *fTex = (FILE *) NULL;	/* file pointer to Latex file */
 FILE           *fRtf = (FILE *) NULL;	/* file pointer to RTF file */
 char           *input = NULL;
 static char    *output = NULL;
@@ -34,18 +32,13 @@ char           *AuxName = NULL;
 char           *BblName = NULL;
 
 char           *progname;	            /* name of the executable file */
-char           *latexname = "stdin";	/* name of LaTex-File */
 bool            GermanMode = FALSE;	    /* support germanstyle */
+bool            FrenchMode = FALSE;	    /* support frenchstyle */
 
-char            g_language[20] = "english";	/* before \begin{document} "g_language".cfg is read in */
 char            g_encoding[20] = "cp1252";
 bool            twoside = FALSE;
 int      		g_verbosity_level = WARNING;
 static FILE    *logfile = NULL;
-
-/* flags indicating to which rtf-version output is restricted */
-static int      rtf_major = 1;
-static int      rtf_minor = 5;
 
 /* Holds the last referenced "link" value, used by \Ref and \Pageref */
 char           *hyperref = NULL;
@@ -58,7 +51,6 @@ bool            pagestyledefined = FALSE;	/* flag, set to true by
 
 bool            g_processing_preamble = TRUE;	/* flag set until \begin{document} */
 bool            g_processing_figure = FALSE;	/* flag, set for figures and not tables */
-bool            g_processing_include = FALSE;	/* flag set when include file is being processed */
 bool            g_processing_eqnarray = FALSE;	/* flag set when in an eqnarry */
 
 bool            g_show_equation_number = FALSE;
@@ -66,34 +58,29 @@ int             g_enumerate_depth = 0;
 bool            g_suppress_equation_number = FALSE;
 bool            g_aux_file_missing = FALSE;	/* assume that it exists */
 
+int				g_safety_braces = 0;
 bool            g_processing_equation = FALSE;
 bool            g_document_type = FORMAT_ARTICLE;
 bool            g_processing_tabular = FALSE;
+int				g_processing_arrays = 0;
+int 			g_processing_fields = 0;
+bool			g_RTF_warnings = FALSE;
 
 int             indent = 0;
 char            alignment = JUSTIFIED;	/* default for justified: */
 
 int             RecursionLevel = 0;
-int             tabcounter = 0;
 bool            twocolumn = FALSE;
 bool            titlepage = FALSE;
-bool            tabbing_on = FALSE;
-bool            tabbing_return = FALSE;
-bool            tabbing_on_itself = FALSE;
-long          pos_begin_kill;
 
-int             colCount;			/* number of columns in a tabular environment */
-int             actCol;				/* actual column in the tabular environment */
-char           *colFmt = NULL;
-
-static void     OpenTexFile(const char *filename ,FILE ** f);
 static void     OpenRtfFile(char *filename, FILE ** f);
-static void     CloseTex(FILE ** f);
 static void     CloseRtf(FILE ** f);
 static void     ConvertLatexPreamble(void);
 static void     InitializeLatexLengths(void);
+static void		printhelp(void);
 
 void           *GetCommandFunc(char *cCommand);
+static void 	ConvertWholeDocument(void);
 
 extern char *optarg;
 extern int   optind;
@@ -102,7 +89,7 @@ extern int getopt(int ac, char *const av[], const char *optstring);
 /****************************************************************************
 purpose: checks parameter and starts convert routine
 params:  command line arguments argc, argv
-globals: initializes in- and outputfile fTex, fRtf,
+globals: initializes in- and outputfile fRtf,
  ****************************************************************************/
 	int
 	                main(int argc, char **argv)
@@ -110,41 +97,58 @@ globals: initializes in- and outputfile fTex, fRtf,
 	int             c;
 	bool            errflag = FALSE;
 
-	fTex = stdin;		/* default input/output */
 	fRtf = stdout;
 
 	progname = argv[0];
 	optind = 1;
-	while ((c = getopt(argc, argv, "Vlo:a:b:v:i:")) != EOF) {
+	while ((c = getopt(argc, argv, "lhvVWZ:o:a:b:d:i:")) != EOF) {
 		switch (c) {
-		case 'V':
-			printf("%s: %s\n", progname, Version);
-			return (0);
 		case 'a':
 			AuxName = optarg;
 			break;
 		case 'b':
 			BblName = optarg;
 			break;
-		case 'o':
-			output = optarg;
+		case 'd':
+			g_verbosity_level = *optarg - '0';
+			if (g_verbosity_level < 0 || g_verbosity_level > 7) {
+				printhelp();
+				diagnostics(ERROR, "debug level must be 0--6");
+			}
 			break;
-		case 'l':
-			setPackageInputenc("latin1");
-			break;
+		case 'h':
+			printhelp();
+			return(1);
 		case 'i':
 			setPackageBabel(optarg);
 			break;
+		case 'l':
+			setPackageBabel("latin1");
+			break;
+		case 'o':
+			output = optarg;
+			break;
 		case 'v':
-			{
-				char           *endptr;
-				g_verbosity_level = (int) strtol(optarg, &endptr, 10);
-				if (g_verbosity_level < 0)
-					diagnostics(ERROR, "g_verbosity_level should be a positive integer 0--6");
-				if ((*endptr != '\0') || (endptr == optarg))
-					diagnostics(ERROR, "argument to -v option malformed: %s",
-						    optarg);
+			fprintf(stderr, "%s: %s\n", progname, Version);
+			return (0);
+		case 'C':
+			setPackageInputenc(optarg);
+			break;
+		case 'V':
+			fprintf(stderr, "%s: %s\n", progname, Version);
+			fprintf(stderr, "RTFPATH = '%s'\n", getenv("RTFPATH"));
+			return (0);
+		case 'W':
+			g_RTF_warnings = TRUE;
+			break;
+		case 'Z':
+			g_safety_braces = FALSE;
+			g_safety_braces = *optarg - '0';
+			if (g_safety_braces < 0 || g_safety_braces > 9) {
+				printhelp();
+				diagnostics(ERROR, "Added number of braces must be 0--9");
 			}
+			break;
 			break;
 		default:
 			errflag = TRUE;
@@ -152,11 +156,7 @@ globals: initializes in- and outputfile fTex, fRtf,
 	}
 
 	if (argc > optind + 1 || errflag) {
-		fprintf(stderr, "%s: Usage: %s [-V] [-l] [-o outfile]"
-		" [-a auxfile] [-b bblfile] [ -i languagefile ] inputfile\n",
-			progname, progname);
-		fprintf(stderr, "-l\t Latin-1 (= ISO 8859-1) special characters will be\n");
-		fprintf(stderr, "\t converted into RTF-Commands!\n");
+		printhelp();
 		return (1);
 	}
 	
@@ -169,20 +169,19 @@ globals: initializes in- and outputfile fTex, fRtf,
 
 		if ((s = strrchr(s, '.')) == NULL) {
 			if ((input = malloc(strlen(argv[optind]) + 4)) == NULL)
-				error(" malloc error -> out of memory!\n");
+				diagnostics(ERROR, " malloc error -> out of memory!\n");
 			strcpy(input, argv[optind]);
 			strcat(input, ".tex");
 		} else if (strcmp(s, ".tex"))
-			error("latex files must end with .tex");
+			diagnostics(ERROR, "latex files must end with .tex");
 		else
 			input = argv[optind];
 
-		latexname = input;
 		diagnostics(3, "latex filename is %s\n", input);
 
 		/* create the .rtf filename */
 		if ((newrtf = malloc(strlen(input) + 5)) == NULL)
-			error(" malloc error -> out of memory!\n");
+			diagnostics(ERROR, " malloc error -> out of memory!\n");
 		strcpy(newrtf, input);
 		if ((s = strrchr(newrtf, '.')) == NULL || strcmp(s, ".tex") != 0)
 			strcat(newrtf, ".rtf");
@@ -196,7 +195,7 @@ globals: initializes in- and outputfile fTex, fRtf,
 		char           *s;
 		if (input != NULL) {
 			if ((AuxName = malloc(strlen(input) + 5)) == NULL)
-				error(" malloc error -> out of memory!\n");
+				diagnostics(ERROR, " malloc error -> out of memory!\n");
 			strcpy(AuxName, input);
 			if ((s = strrchr(AuxName, '.')) == NULL || strcmp(s, ".tex") != 0)
 				strcat(AuxName, ".aux");
@@ -204,7 +203,7 @@ globals: initializes in- and outputfile fTex, fRtf,
 				strcpy(s, ".aux");
 		} else {
 			if ((AuxName = malloc(1)) == NULL)
-				error(" malloc error -> out of memory!\n");
+				diagnostics(ERROR, " malloc error -> out of memory!\n");
 			*AuxName = '\0';
 		}
 	}
@@ -213,7 +212,7 @@ globals: initializes in- and outputfile fTex, fRtf,
 		char           *s;
 		if (input != NULL) {
 			if ((BblName = malloc(strlen(input) + 5)) == NULL)
-				error(" malloc error -> out of memory!\n");
+				diagnostics(ERROR, " malloc error -> out of memory!\n");
 			strcpy(BblName, input);
 			if ((s = strrchr(BblName, '.')) == NULL || strcmp(s, ".tex") != 0)
 				strcat(BblName, ".bbl");
@@ -221,147 +220,145 @@ globals: initializes in- and outputfile fTex, fRtf,
 				strcpy(s, ".bbl");
 		} else {
 			if ((BblName = malloc(1)) == NULL)
-				error(" malloc error -> out of memory!\n");
+				diagnostics(ERROR, " malloc error -> out of memory!\n");
 			BblName = '\0';
 		}
 	}
 
 	ReadCfg();
-	OpenTexFile(input, &fTex);
-	OpenRtfFile(output, &fRtf);
-
+	if (PushSource(input, NULL)) {
+		OpenRtfFile(output, &fRtf);
+		
+		InitializeStack();
+		InitializeLatexLengths();
+		InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
 	
-	InitializeStack();
-	InitializeLatexLengths();
-	InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
-
-	PushEnvironment(PREAMBLE);
-	SetTexMode(MODE_VERTICAL);
-    ConvertLatexPreamble(); 
-	WriteRtfHeader();
-	
-	ReadLanguage(g_language);
-
-	g_processing_preamble = FALSE;
-	diagnostics(4,"Entering Convert from main");
-	Convert();
-	diagnostics(4,"Exiting Convert from main");
-
-	CloseTex(&fTex);
-	CloseRtf(&fRtf);
-	printf("\n");
-	return (0);
+		ConvertWholeDocument();	
+		PopSource();
+		CloseRtf(&fRtf);
+		printf("\n");
+		return 0;
+	} else
+		return 1;
 }
 
-/***********************************************************************
- * not zero if major and minor are under the prefixed rtf-version to
- * generate (established by -rm.m option).  Purpose: check if you want
- * to generate the following rtf-tokens or if you have to output a
- * diagnostic message.
- **********************************************************************/
-bool
-rtf_restrict(int major, int minor)
+static void
+ConvertWholeDocument(void)
 {
-	return ((major <= rtf_major) && (minor <= rtf_minor));
+char * body, *sec_head, *sec_head2, *label;
+
+		PushEnvironment(PREAMBLE);
+		SetTexMode(MODE_VERTICAL);
+		ConvertLatexPreamble(); 
+		WriteRtfHeader();
+		
+		g_processing_preamble = FALSE;
+		getSection(&body,&sec_head,&label);
+		
+		diagnostics(2,"*******************\nbody=%s",body);
+		diagnostics(2,"*******************\nsec_head=%s",sec_head);
+		diagnostics(2,"*******************\nlabel=%s",g_section_label);
+		ConvertString(body);
+		free(body);
+		if (label) free(label);
+		
+		while(sec_head) {
+			getSection(&body,&sec_head2,&g_section_label);
+			label = ExtractLabelTag(sec_head);
+			if (label) {
+				if (g_section_label) free(g_section_label);
+				g_section_label = label;
+			} 
+		diagnostics(2,"\n========this section head==========\n%s",sec_head);
+		diagnostics(2,"\n============ label ================\nlabel=%s",g_section_label);
+		diagnostics(2,"\n==============body=================\n%s\n=========end  body=================",body);
+		diagnostics(2,"\n========next section head==========\n%s",sec_head2);
+			ConvertString(sec_head);
+			ConvertString(body);
+			free(body);
+			free(sec_head);
+			sec_head = sec_head2;
+		}
 }
 
-void 
-error(char *text)
-/****************************************************************************
-purpose: writes error message
-globals: reads progname;
- ****************************************************************************/
+static void
+printhelp(void)
 {
-	fprintf(stderr, "\nERROR at line %ld: %s", linenumber, text);
-	fprintf(stderr, "\nprogram aborted\n");
-	exit(EXIT_FAILURE);
+    	fprintf(stderr, "Usage:\n\t %s [options] input[.tex]\n", progname);
+		fprintf(stderr, "Options:\n");
+		fprintf(stderr, "\t -a auxfile    : use LaTeX auxfile rather than input.aux\n");
+		fprintf(stderr, "\t -b bblfile    : use BibTex bblfile rather than input.bbl)\n");
+		fprintf(stderr, "\t -d#           : debug level (# is 0-6)\n");
+		fprintf(stderr, "\t -h            : display this help\n");
+		fprintf(stderr, "\t -i language   : babel idiom (german, french)\n");
+		fprintf(stderr, "\t -l            : use latin1 encoding (default)\n");
+		fprintf(stderr, "\t -o outputfile : RTF output other than input.rtf\n");
+		fprintf(stderr, "\t -v            : version information\n");
+		fprintf(stderr, "\t -C codepage   : input encoding (latin1, cp850, etc.)\n");
+		fprintf(stderr, "\t -V            : version information\n");
+		fprintf(stderr, "\t -W            : include warnings in RTF\n");
+		fprintf(stderr, "\t -Z#           : add # of '}'s at end of rtf file (# is 0-9)\n\n");
+		fprintf(stderr, "RTFPATH designates the directory for configuration files (*.cfg)\n");
+		fprintf(stderr, "\t RTFPATH = '%s'\n\n", getenv("RTFPATH"));
 }
 
-void 
-numerror(int num)
-/****************************************************************************
-purpose: writes error message identified by number - for messages on many
-	 places in code. Calls function error.
-globals: progname; latexname; linenumber;
- ****************************************************************************/
-{
-
-	char            text[1024];
-
-	switch (num) {
-	case ERR_EOF_INPUT:
-		if (g_processing_include)
-			return;	/* SAP - HACK end of file ok in include files */
-		sprintf(text, "%s%s%s%ld%s", "unexpected end of input file in: ", latexname, " at linenumber: ", linenumber, "\n");
-		error(text);
-		/* @notreached@ */
-		break;
-	case ERR_WRONG_COMMAND:
-		sprintf(text, "%s%s%s%ld%s", "unexpected command or character in: ", latexname, " at linenumber: ", linenumber, "\n");
-		error(text);
-		/* @notreached@ */
-		break;
-
-	case ERR_NOT_IN_DOCUMENT:
-		sprintf(text, "\nNot in document %s at line %ld.  Missing \\begin{document}?\n", latexname, linenumber);
-		error(text);
-		/* @notreached@ */
-		break;
-	case ERR_Param:
-		error("wrong number of parameters\n");
-		/* @notreached@ */
-		break;
-	case ERR_WRONG_COMMAND_IN_TABBING:
-		sprintf(text, "%s%s%s%ld%s", "wrong command in Tabbing-kill-command-line in: ", latexname, " at linenumber: ", linenumber, "\n");
-		error(text);
-		/* @notreached@ */
-		break;
-	default:
-		error("internal error");
-		/* @notreached@ */
-		break;
-	}
-}
-
-/*
- * Writes the given warning message in format, ... if global g_verbosity_level is
- * higher or equal then level.  If ??? option is given, i.e. logfile is not
- * null, everything is logged to the logfile -vn Flag (g_verbosity_level)	0 ...
- * only errors = -q 1 ... (default) Translation Warnings 2 ... conditions on
- * output e.g. (rtf1.5 options) 3 ... complete logging of what's going on.
- */
 void
 diagnostics(int level, char *format,...)
+/*
+purpose : Writes the message to errfile depending on debugging level
+*/
 {
+	char           buffer[512], *buff_ptr;
 	va_list        apf;
 	FILE           *errfile;
-	int            i;
+	int            i,linenumber, iEnvCount;
+	char          *input;
 	
+	buff_ptr = buffer;
 	if (logfile != NULL)
 		errfile = logfile;
 	else
 		errfile = stderr;
 
-
 	va_start(apf, format);
 
 	if (level <= g_verbosity_level) {
-		int iEnvCount=CurrentEnvironmentCount();
+
+		linenumber = CurrentLineNumber();
+		input      = CurrentFileName();
+		iEnvCount  = CurrentEnvironmentCount();
+		
 		switch (level) {
 		case 0:
-			fprintf(errfile, "\nError! line=%ld ", linenumber);
+			fprintf(errfile, "\nError! line=%d ", linenumber);
+			CloseRtf(&fRtf);
+			exit(0);
 			break;
 		case 1:
-			fprintf(errfile, "\nWarning line=%ld ", linenumber);
+			fprintf(errfile, "\nWarning line=%d ", linenumber);
+			if (g_RTF_warnings) {
+				vsprintf(buffer, format, apf);
+				fprintRTF("{\\plain\\cf2 [latex2rtf:");
+				while (*buff_ptr){putRtfChar(*buff_ptr);buff_ptr++;}
+				fprintRTF("]}");
+			}
 			break;
+		case 2:
+		case 3:
 		case 4:
 		case 5:
-		    fprintf(errfile, "\n%s %4ld bra=%d rec=%d env=%d ", input, linenumber, BraceLevel, RecursionLevel, iEnvCount);
-			for (i=0; i<RecursionLevel; i++)
+		case 6:
+		    fprintf(errfile, "\n%s %4d rec=%d ", input, linenumber, RecursionLevel);
+			for (i=0; i<BraceLevel; i++)
+				fprintf(errfile, "{");
+			for (i=8; i>BraceLevel; i--)
 				fprintf(errfile, " ");
+			
+			for (i=0; i<RecursionLevel; i++)
+				fprintf(errfile, "  ");
 			break;
 		default:
-			fprintf(errfile, "\nline=%ld ", linenumber);
+			fprintf(errfile, "\nline=%d ", linenumber);
 			break;
 		}
 		vfprintf(errfile, format, apf);
@@ -416,6 +413,7 @@ InitializeLatexLengths(void)
 	setCounter("equation",      0);
 	setCounter("footnote",      0);
 	setCounter("mpfootnote",    0);
+	setCounter("secnumdepth",   2);
 	
  }
 
@@ -461,46 +459,11 @@ params: filename - name of outputfile, possibly NULL for already open file
 		 * --V.Menkov
 		 */
 
-		if ((*f = fopen(filename, "w")) == NULL) {	/* open file */
-			fprintf(stderr, "Error opening RTF file %s\n", filename);
-			exit(EXIT_FAILURE);
-		}
+		if ((*f = fopen(filename, "w")) == NULL) 	/* open file */
+			diagnostics(ERROR,  "Error opening RTF file %s\n", filename);
+		
 	}
 }
-
-
-void 
-OpenTexFile(const char *filename, FILE ** f)
-/****************************************************************************
-purpose: opens input file.
-params: filename - name of inputfile, possibly NULL
-	f - pointer to filepointer to store file ID
- ****************************************************************************/
-{
-	if (filename != NULL) {
-		if ((*f = fopen(filename, "r")) == NULL) {	/* open file */
-			fprintf(stderr, "Error opening LaTeX file %s\n", filename);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	diagnostics(4,"Opened LaTeX file %s, (%p)",filename, *f);
-
-}
-
-void 
-CloseTex(FILE ** f)
-/****************************************************************************
-purpose: closes input file.
-params: f - pointer to filepointer to invalidate
- ****************************************************************************/
-{
-	if (*f != stdin  && *f != NULL)
-		fclose(*f);
-	*f = NULL;
-	diagnostics(4,"Closed LaTeX file");
-}
-
 
 void
 CloseRtf(FILE ** f)
@@ -510,8 +473,11 @@ params: f - pointer to filepointer to invalidate
 globals: progname;
  ****************************************************************************/
 {
+	int i;
 	CmdEndParagraph(0);
-	fprintf(*f, "}\n}}}}}");
+	fprintf(*f, "}\n");
+	for (i=0; i<g_safety_braces; i++)
+		fprintf(*f, "}");
 	if (*f != stdout) {
 		if (fclose(*f) == EOF) {
 			diagnostics(WARNING, "Error closing RTF-File");

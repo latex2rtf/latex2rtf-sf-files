@@ -13,6 +13,8 @@
 #include "funct1.h"
 #include "lengths.h"
 
+int g_equation_column = 1;
+
 void
 CmdSuperscript(int code)
 /******************************************************************************
@@ -22,7 +24,7 @@ CmdSuperscript(int code)
 	char           *s = NULL;
 	int  size, newsize, upsize;
 
-	if ((s = getMathParam())) {
+	if ((s = getBraceParam())) {
 		size = CurrentFontSize();
 		newsize = size / 1.2;
 		upsize = size / 3;
@@ -42,7 +44,7 @@ CmdSubscript(int code)
 	char           *s = NULL;
 	int  size, newsize, upsize;
 
-	if ((s = getMathParam())) {
+	if ((s = getBraceParam())) {
 		size = CurrentFontSize();
 		newsize = size / 1.2;
 		upsize = size / 3;
@@ -50,6 +52,78 @@ CmdSubscript(int code)
 		ConvertString(s);
 		fprintRTF("}");
 		free(s);
+	}
+}
+
+void
+CmdLeftRight(int code)
+/******************************************************************************
+ purpose   : Handles \left \right
+ 			 to properly handle \left. or \right. would require prescanning the
+ 			 entire equation.  
+ ******************************************************************************/
+{ 
+	char delim;
+
+	delim = getTexChar();
+	if (delim == '\\')			/* might be \{ or \} */
+		delim = getTexChar();
+	
+	if (code == 0) {
+		diagnostics(4, "CmdLeftRight() ... \\left <%c>", delim);
+
+		if (delim == '.')
+			diagnostics(WARNING, "\\left. not supported");
+		g_processing_fields++;
+		
+		fprintRTF("{\\field{\\*\\fldinst{EQ \\\\b ");
+		if (delim == '(' || delim == '.')
+			fprintRTF("(");
+		else if (delim == '{')
+			fprintRTF("\\\\bc\\\\\\{ (");
+		else 
+			fprintRTF("\\\\bc\\\\%c (", delim);
+
+	} else {
+		g_processing_fields--;
+		fprintRTF(")}}{\\fldrslt{0}}}");
+		if (delim == '.')
+			diagnostics(WARNING, "\\right. not supported");
+		diagnostics(4, "CmdLeftRight() ... \\right <%c>", delim);
+	}
+}
+
+void
+CmdArray(int code)
+/******************************************************************************
+ purpose   : Handles \begin{array}[c]{ccc} ... \end{array}
+ ******************************************************************************/
+{
+char * v_align, * col_align, *s;
+int n=0;
+
+	if (code & ON) {
+		v_align = getBracketParam();
+		col_align = getBraceParam();
+		diagnostics(4, "CmdArray() ... \\begin{array}[%s]{%s}", v_align?v_align:"", col_align);
+		if (v_align) free(v_align);
+		
+		s = col_align;
+		while (*s) {
+			if (*s == 'c' || *s == 'l' || *s == 'r' ) n++;
+			s++;
+		}
+		free(col_align);
+		
+		fprintRTF("{\\field{\\*\\fldinst{EQ \\\\a \\\\ac \\\\co%d (", n);
+		g_processing_fields++;
+		g_processing_arrays++;
+		
+	} else {
+		fprintRTF(")}}{\\fldrslt{0}}}");
+		diagnostics(4, "CmdArray() ... \\end{array}");
+		g_processing_fields--;
+		g_processing_arrays--;
 	}
 }
 
@@ -77,7 +151,6 @@ CmdMath(int code)
 		case EQN_MATH:
 			if (code & ON) {
 				diagnostics(4, "CmdMath() ... \\begin{math}");
-				fprintRTF("\\i ");
 				SetTexMode(MODE_MATH);
 			} else {
 				diagnostics(4, "CmdMath() ... \\end{math}");
@@ -87,11 +160,11 @@ CmdMath(int code)
 	
 		case EQN_DOLLAR:
 			if (GetTexMode() != MODE_MATH) {
-				diagnostics(4, "Exiting CmdMath() ... $");
-				fprintRTF("{\\i ");
+				diagnostics(4, "Entering CmdMath() ... $");
+				fprintRTF("{");
 				SetTexMode(MODE_MATH);
 			} else {
-				diagnostics(4, "Entering CmdMath() ... $");
+				diagnostics(4, "Exiting CmdMath() ... $");
 				fprintRTF("}");
 				SetTexMode(MODE_HORIZONTAL);
 			}
@@ -99,7 +172,7 @@ CmdMath(int code)
 	
 		case EQN_RND_OPEN:	/* \( */
 			diagnostics(4, "CmdMath() ... \\(");
-			fprintRTF("{\\i ");
+			fprintRTF("{");
 			SetTexMode(MODE_MATH);
 			break;
 	
@@ -133,7 +206,7 @@ CmdDisplayMath(int code)
 			CmdEndParagraph(0);
 			SetTexMode(MODE_DISPLAYMATH);
 			g_show_equation_number = FALSE;
-			fprintRTF("{\\pard\\i\\tqc\\tx%d\\tab ", mid);
+			fprintRTF("{\\pard\\tqc\\tx%d\\tab ", mid);
 		} else {
 			diagnostics(4,"Exiting CmdDisplayMath -- $$");
 			CmdEndParagraph(0);
@@ -147,7 +220,7 @@ CmdDisplayMath(int code)
 		diagnostics(4,"Entering CmdDisplayMath -- \\[");
 		SetTexMode(MODE_DISPLAYMATH);
 		g_show_equation_number = TRUE;
-		fprintRTF("\\par\\par\n{\\pard\\i\\tqc\\tx%d\\tqr\\tx%d\n\\tab ", mid, width);
+		fprintRTF("\\par\\par\n{\\pard\\tqc\\tx%d\\tqr\\tx%d\n\\tab ", mid, width);
 		return;
 	}
 
@@ -162,10 +235,10 @@ CmdDisplayMath(int code)
 
 		g_suppress_equation_number = FALSE;
 		
-		a = 0.25 *width;
-		b = 0.3 * width;
-		c = 0.35 * width;
-		fprintRTF("\\par\\par\n\\pard\\i");
+		a = 0.45 *width;
+		b = 0.5 * width;
+		c = 0.55 * width;
+		fprintRTF("\\par\\par\n\\pard");
 		switch (true_code) {
 		case EQN_DISPLAYMATH:
 			diagnostics(4,"Entering CmdDisplayMath -- displaymath");
@@ -181,7 +254,7 @@ CmdDisplayMath(int code)
 
 		case EQN_EQUATION:
 			diagnostics(4,"Entering CmdDisplayMath -- equation");
-			actCol = 5;							/* avoid adding \tabs when finishing */
+			g_equation_column = 5;				/* avoid adding \tabs when finishing */
 			g_show_equation_number = TRUE;
 			fprintRTF("\\tqc\\tx%d\\tqr\\tx%d", mid, width);
 			break;
@@ -191,7 +264,7 @@ CmdDisplayMath(int code)
 			g_show_equation_number = FALSE;
 			g_processing_eqnarray = TRUE;
 			g_processing_tabular = TRUE;
-			actCol = 1;
+			g_equation_column = 1;
 			fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d", a, b, c);
 			break;
 
@@ -200,11 +273,11 @@ CmdDisplayMath(int code)
 			g_show_equation_number = TRUE;
 			g_processing_eqnarray = TRUE;
 			g_processing_tabular = TRUE;
-			actCol = 1;
-			fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d\\tqr\\tx%d ", a, b, c, width);
+			g_equation_column = 1;
+			fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d\\tqr\\tx%d", a, b, c, width);
 			break;
 		}
-		fprintRTF("\n\\tab ");
+		fprintRTF("\\tab ");
 		SetTexMode(MODE_DISPLAYMATH);
 		
 	} else {
@@ -213,9 +286,18 @@ CmdDisplayMath(int code)
 		
 		if (g_show_equation_number && !g_suppress_equation_number) {
 			incrementCounter("equation");
-			for (; actCol < 3; actCol++)
+			for (; g_equation_column < 3; g_equation_column++)
 					fprintRTF("\\tab ");
-			fprintRTF("\\tab{\\i0 (%d)}", getCounter("equation"));
+			fprintRTF("\\tab{\\b0 (");
+			if (g_equation_label) 
+				fprintRTF("{\\*\\bkmkstart LBL_%s}",g_equation_label);
+			fprintRTF("%d", getCounter("equation"));
+			if (g_equation_label) 
+				fprintRTF("{\\*\\bkmkend LBL_%s}",g_equation_label);
+			fprintRTF(")}");
+			if (g_equation_label) 
+				free(g_equation_label);
+			g_equation_label = NULL;
 		}
 
 		CmdEndParagraph(0);
@@ -235,16 +317,20 @@ CmdRoot(int code)
 ******************************************************************************/
 {
 	char           *root;
-	char           power[50];
+	char           *power;
 
-	getBracketParam(power, 49);
-	root = getParam();
+	power = getBracketParam();
+	root = getBraceParam();
+	g_processing_fields++;
 	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\R(");
-	if (strlen(power)>0)
+	if (power && strlen(power)>0)
 		ConvertString(power);
 	fprintRTF("%c", FORMULASEP);
 	ConvertString(root);
 	fprintRTF(")}{\\fldrslt }}");
+	g_processing_fields--;
+	
+	if (power) free(power);
 	free(root);
 }
 
@@ -256,18 +342,20 @@ CmdFraction(int code)
 {
 	char           *denominator, *numerator;
 
-	numerator = getParam();
+	numerator = getBraceParam();
 	skipSpaces();
-	denominator = getParam();
+	denominator = getBraceParam();
 
 	diagnostics(4,"CmdFraction -- numerator   = <%s>", numerator);
 	diagnostics(4,"CmdFraction -- denominator = <%s>", denominator);
 
+	g_processing_fields++;
 	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\F(");
 	ConvertString(numerator);
 	fprintRTF("%c", FORMULASEP);
 	ConvertString(denominator);
 	fprintRTF(")}{\\fldrslt }}");
+	g_processing_fields--;
 
 	free(numerator);
 	free(denominator);
@@ -288,29 +376,30 @@ parameter: type of operand
 	cThis = getNonBlank();
 
 	if (cThis == '_')
-		lower_limit = getMathParam();
+		lower_limit = getBraceParam();
 	else if (cThis == '^')
-		upper_limit = getMathParam();
+		upper_limit = getBraceParam();
 	else
 		ungetTexChar(cThis);
 
 	if (upper_limit || lower_limit) {
 		cThis = getNonBlank();
 		if (cThis == '_')
-			lower_limit = getMathParam();
+			lower_limit = getBraceParam();
 		else if (cThis == '^')
-			upper_limit = getMathParam();
+			upper_limit = getBraceParam();
 		else
 			ungetTexChar(cThis);
 	}
 
+	g_processing_fields++;
 	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\I");
 	  switch(code)
 	  {
 		case 0 : fprintRTF("\\\\in("); break;	
 		case 1 : fprintRTF("\\\\su("); break;
 		case 2 : fprintRTF("\\\\pr("); break;
-		default: error("Illegal code to CmdIntegral");
+		default: diagnostics(ERROR, "Illegal code to CmdIntegral");
 	  }
 
 	if (lower_limit)
@@ -318,7 +407,8 @@ parameter: type of operand
 	fprintRTF("%c", FORMULASEP);
 	if (upper_limit)
 		ConvertString(upper_limit);
-	fprintRTF("%c)}{\\fldrslt }}", FORMULASEP);
+	fprintRTF("%c )}{\\fldrslt }}", FORMULASEP);
+	g_processing_fields--;
 
 	if (lower_limit)
 		free(lower_limit);

@@ -4,10 +4,13 @@
  * 
  * 26th June 1998 - Created initial version - fb                            LEG
  * 070798 adapted Frank Barnes contribution to r2l coding conventions SAP
- * Added several more routines
  */
 
-#define POSSTACKSIZE   256	/* Size of stack to save positions              */
+int 			CurrentLineNumber(void);
+char 		   *CurrentFileName(void);
+int 			PushSource(char * filename, char * string);
+int				StillSource(void);
+void 			PopSource(void);
 
 char            getRawTexChar(void);
 char            getTexChar(void);
@@ -21,12 +24,13 @@ void            skipToEOL(void);
 void            skipSpaces(void);
 
 void            CmdIgnoreParameter(int);
-char           *getParam(void);
-char           *getMathParam(void);
+char           *getBraceParam(void);
+char           *getBracketParam(void);
 char           *getSimpleCommand(void);
-bool            getBracketParam(char *string, int size);
 char           *getTexUntil(char * target, int raw);
 int             getDimension(void);
 void			parseBrace(void);
 long 			ftellTex(void);
 void 			fseekTex(long pos);
+char           *getDelimitedText(char left, char right, bool raw);
+void			getSection(char **body, char **header, char **label);

@@ -1,65 +1,11 @@
 /*
- * $Id: util.c,v 1.11 2001/10/12 05:45:07 prahl Exp $ 
+ * $Id: util.c,v 1.18 2001/11/23 21:43:48 prahl Exp $ 
  */
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include "main.h"
 #include "util.h"
-
- /* @null@ *//* @owned@ */ static char *buffer;
-static size_t   bufsize = 0;
-
-#define CR (char) 0x0d
-#define LF (char) 0x0a
-/*
- * This function assumes there are no '\0' characters in the input.
- * if there are any, they are ignored.
- */
-char           *
-ReadUptoMatch(FILE * infile, /* @observer@ */ const char *scanchars)
-{
-	size_t          bufindex = 0;
-	int             c;
-
-	if (feof(infile) != 0) {
-		return NULL;
-	}
-	if (buffer == NULL) {
-		if ((buffer = malloc(BUFFER_INCREMENT)) == NULL) {
-			Fatal("Cannot allocate memory for input buffer\n");
-		}
-		bufsize = BUFFER_INCREMENT;
-	}
-	while ((c = getc(infile)) != EOF ) {
-	
-		if (c == CR || c == LF)
-			c = '\n';
-		
-		if (strchr(scanchars, c))
-			break;
-			
-		if (c == (int) '\0') {
-			continue;
-		}
-/*		if (c == (int) '\n') {
-			linenumber++;
-		}
-*/		buffer[bufindex++] = (char) c;
-		if (bufindex >= bufsize) {
-			if ((buffer = realloc(buffer, bufsize += BUFFER_INCREMENT)) == NULL) {
-				Fatal("Cannot allocate memory for input buffer\n");
-			}
-		}
-	}
-	buffer[bufindex] = '\0';
-	if (c != EOF) {
-		ungetc(c, infile);	/* LEG210698*** lclint, GNU libc
-					 * doesn't say what's the return
-					 * value */
-	}
-	return buffer;
-}
+#include "parser.h"
 
 #ifdef HAS_NO_STRDUP
 char           *
@@ -68,80 +14,92 @@ strdup(const char *str)
 	char           *s;
 
 	if ((s = malloc(strlen(str) + 1)) == NULL) {
-		Fatal("Cannot allocate memory for string\n");
+		diagnostics(ERROR,"Cannot allocate memory for string\n");
 	}
 	strcpy(s, str);
 	return s;
 }
 #endif
 
-/* @exits@ */
-void 
-ParseError(const char *fmt,...)
+char *  
+strdup_together(char *s, char *t)
+/******************************************************************************
+ purpose:  returns a new string consisting of s+t
+******************************************************************************/
 {
-	va_list         ap;
+	char * both;
+	
+	both = malloc(strlen(s) + strlen(t) + 1);
+	if (both == NULL)
+		diagnostics(ERROR, "Could not allocate memory for both strings.");
 
-	fprintf(stderr, "%s: %s %4ld: ", progname, currfile, linenumber);
-	va_start(ap, fmt);
-	(void) vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-	exit(EXIT_FAILURE);
+	strcpy(both, s);
+	strcat(both, t);
+	return both;
 }
 
-void 
-Fatal(const char *fmt,...)
+char *
+strdup_noblanks(char *s)
+/******************************************************************************
+ purpose:  duplicates a string without including spaces or newlines
+******************************************************************************/
 {
-	va_list         ap;
+char *p, *dup;
+	while (*s == ' ' || *s == '\n') s++;	/* skip to non blank */
+	dup = malloc(strlen(s) + 1);
+	p = dup;
+	while (*s) {
+		*p = *s;
+		if (*p != ' ' && *p != '\n') p++;	/* increment if non-blank */
+		s++;
+	}
+	*p = '\0';		
+	return dup;
+}
 
-	fprintf(stderr, "%s: Fatal error: ", progname);
-	va_start(ap, fmt);
-	(void) vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "\n");
-	exit(EXIT_FAILURE);
+char * 
+strdup_nobadchars(char * text)
+/*************************************************************************
+purpose: duplicate text with only a..z A..Z 0..9 and _
+ ************************************************************************/
+{
+	char *dup, *s;
+	
+	dup = strdup_noblanks(text);
+	s = dup;
+	
+	while (*s) {
+		if (!('a' <= *s && *s <= 'z') &&
+		    !('A' <= *s && *s <= 'Z') &&
+		    !('0' <= *s && *s <= '9'))
+			*s = '_';
+		s++;
+	}
+
+	return dup;
+}
+
+char *
+ExtractLabelTag(char *text)
+/******************************************************************************
+  purpose: return a copy of tag from \label{tag} in the string text
+ ******************************************************************************/
+{
+	char *s, *label_with_spaces, *label;
+	
+	s = strstr(text,"\\label{");
+	if (!s) s = strstr(text,"\\label ");
+	if (!s) return NULL;
+	
+	s += strlen("\\label");
+	PushSource(NULL,s);
+	label_with_spaces = getBraceParam();
+	PopSource();
+	label = strdup_nobadchars(label_with_spaces);
+	free(label_with_spaces);
+
+	diagnostics(4, "LabelTag = <%s>", (label) ? label : "missing");
+	return label;
 }
 
 
-/* convert integer to roman number --- only works up correctly up to 39 */
-
-void 
-roman_item(int n, char *s)
-{
-	int             i = 0;
-
-	while (n >= 10) {
-		n -= 10;
-		s[i] = 'x';
-		i++;
-	}
-
-	if (n == 9) {
-		s[i] = 'i';
-		i++;
-		s[i] = 'x';
-		i++;
-		s[i] = '\0';
-		return;
-	}
-	if (n >= 5) {
-		n -= 5;
-		s[i] = 'v';
-		i++;
-	}
-	if (n == 4) {
-		s[i] = 'i';
-		i++;
-		s[i] = 'v';
-		i++;
-		s[i] = '\0';
-		return;
-	}
-	while (n >= 1) {
-		n -= 1;
-		s[i] = 'i';
-		i++;
-	}
-
-	s[i] = '\0';
-}

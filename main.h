@@ -1,33 +1,31 @@
-/* $Id: main.h,v 1.22 2001/10/12 05:45:07 prahl Exp $ */
+/* $Id: main.h,v 1.32 2001/11/13 05:43:57 prahl Exp $ */
+#ifndef __MAIN_H
+#define __MAIN_H
 
-#undef HAS_NO_GETOPT
+#ifdef UNIX
+#ifndef ENVSEP
+#define ENVSEP ':'
+#endif
+#ifndef PATHSEP
+#define PATHSEP '/'
+#endif 
+#endif
 
-#ifdef __MWERKS__
+#ifdef MSDOS
+#ifndef ENVSEP
+#define ENVSEP ';'
+#endif
+#ifndef PATHSEP
+#define PATHSEP '\\'
+#endif 
+#endif
+
+#ifdef MACINTOSH || __MWERKS__
 #define HAS_NO_GETOPT
 #define HAS_NO_STRDUP
 #define ENVSEP '^'
 #define PATHSEP ':'
-char           *strdup(const char *str);
 #include "MainMain.h"
-#endif
-
-#ifndef ENVSEP
-#define ENVSEP ':'
-#endif
-
-#ifndef PATHSEP
-#define PATHSEP '/'
-#endif 
-
-#include <assert.h>
-#include <stdio.h>
-
-#ifndef __MAIN_H
-#define __MAIN_H
-
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#define SEEK_CUR 1
 #endif
 
 #ifdef HAS_NO_GETOPT
@@ -40,96 +38,80 @@ char           *strdup(const char *str);
 #define FORMULASEP ','
 #endif
 
-typedef int     bool;
-
-void            IgnoreTo(char cEnd);
- /* @exits@ */ void numerror(int num);
- /* @exits@ */ void error(char *text);
- /* @dependent@ */ FILE *open_cfg(const char *);
-long            getLinenumber(void);
-void            diagnostics(int level, char *format,...);
-/* level values */
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#endif
 
 #define ERROR 0
 #define WARNING 1
 
-bool            rtf_restrict(int major, int minor);
-
 #define MAXCOMMANDLEN 100
-#define MAXENVIRONS 100
-
-
-/*** error constants ***/
-#define ERR_EOF_INPUT 1
-#define ERR_WRONG_COMMAND 2
-#define ERR_Param 3
-#define ERR_WRONG_COMMAND_IN_TABBING 4
-#define ERR_NOT_IN_DOCUMENT 5
 
 /* available values for alignment */
-#define LEFT 'l'
-#define RIGHT 'r'
-#define CENTERED 'c'
+#define LEFT      'l'
+#define RIGHT     'r'
+#define CENTERED  'c'
 #define JUSTIFIED 'j'
-
-enum TexCharSetKind {
-	SEVEN_BIT, ISO_8859_1
-};
 
 #define PATHMAX 255
 
-/********************************* global variables *************************/
-extern long     linenumber;	/* lines in the LaTex-document */
-extern				/* @null@ */
- /* @observer@ */ char *currfile;	/* current file name */
-extern /* @dependent@ */ FILE *fTex;	/* file pointer to Latex file */
+/*** error constants ***/
+#include <assert.h>
+#include <stdio.h>
+
+typedef int     bool;
+
+void            diagnostics(int level, char *format,...);
+
 extern /* @dependent@ */ FILE *fRtf;	/* file pointer to RTF file */
-extern				/* @null@ */
- /* @observer@ */ char *input;
-extern				/* @null@ */
- /* @only@ */ char *AuxName;	/* LEG220698*** lclint error? */
-extern				/* @null@ */
- /* @only@ */ char *BblName;
-extern /* @observer@ */ char *progname;	/* name of the executable file */
-extern /* @only@ */ char *latexname;	/* name of LaTex-File */
-extern char     alignment;	/* default for justified: */
-extern long   pos_begin_kill;
+extern			char *AuxName;
+extern			char *BblName;
+extern 			char *progname;			/* name of the executable file */
+
 extern bool     GermanMode;
-extern				/* @only@ */
- /* @null@ */ char *colFmt;
-/* @null@ */
+extern bool     FrenchMode;
 extern char    *hyperref;
 extern bool     pagenumbering;
 extern int      headings;
 
-/* Global flags of Convert routine */
+extern int      g_verbosity_level;
 extern int      RecursionLevel;
 extern int      indent;
+extern char     alignment;
+
+/* table/tabbing variables */
+extern char 	*colFmt;
+extern long   	pos_begin_kill;
 extern int      tabcounter;
 extern bool     tabbing_on;
 extern bool     g_processing_tabular;
 extern int      colCount;
 extern int      actCol;
+extern int 		g_equation_column;
 extern int      tabcounter;
+
 extern bool     twocolumn;
 extern bool     titlepage;
 extern bool     g_processing_equation;
-extern long     linenumber;
-extern bool     tabbing_on_itself;	/* LEG220698*** lclint - really used? */
-extern bool     tabbing_return;	/* LEG220698*** lclint - really used? */
 extern bool     g_processing_preamble;
 extern bool     g_processing_figure;
-extern bool     g_processing_include;	
+extern bool 	g_processing_table;
 extern bool     g_processing_eqnarray;
+extern int		g_processing_arrays;
+extern int 		g_processing_fields;
+
 extern int      g_equation_number;
 extern bool     g_show_equation_number;
 extern int      g_enumerate_depth;
 extern bool     g_suppress_equation_number;
 extern bool     g_aux_file_missing;
 extern int    	g_document_type;
-extern char     g_language[20];
 extern char     g_encoding[20];
-extern int      g_verbosity_level;
+extern char		*g_figure_label;
+extern char		*g_table_label;
+extern char		*g_equation_label;
+extern char  	*g_section_label;
 
 void fprintRTF(char *format, ...);
 void putRtfChar(char cThis);

@@ -1,10 +1,5 @@
-/* $Id: funct1.h,v 1.20 2001/10/12 05:45:07 prahl Exp $ */
+/* $Id: funct1.h,v 1.27 2001/11/23 21:43:48 prahl Exp $ */
 
-#define AST_FORM 100
-#define EMPHASIZE 1
-void            Format(int code);
-
-#define FOOTN 1
 #define THANKS 2
 
 #define CMD_BEGIN 1
@@ -23,11 +18,23 @@ void            CmdBeginEnd(int code);
 
 #define VERBATIM_1	 1
 #define VERBATIM_2   2
+#define VERBATIM_3   3
+
+#define VERB_VERB    1
+#define VERB_STAR    2
+#define VERB_URL     3
 
 void            CmdStartParagraph(int code);
 void            CmdEndParagraph(int code);
 void            CmdIndent(int code);
 void			CmdVspace(int code);
+void			CmdSlashSlash(int code);
+
+#define DEF_NEW    1
+#define DEF_RENEW  2
+#define DEF_DEF    3
+void  			CmdNewDef(int code);
+void			CmdNewEnvironment(int code);
 
 void            CmdAlign(int code);
 void            CmdToday(int code);
@@ -35,15 +42,24 @@ void            CmdIgnore(int code);
 void            CmdLdots(int code);
 void            Environment(int code);
 
-#define SECT_NORM 1
-#define SECT_SUB 2
-#define SECT_SUBSUB 3
-#define SECT_CAPTION 4
-#define SECT_CHAPTER 5
-#define SECT_PART 6
-void            CmdSection(int code);
+#define SECT_PART               1
+#define SECT_CHAPTER            2
+#define SECT_NORM               3
+#define SECT_SUB                4
+#define SECT_SUBSUB             5
+#define SECT_SUBSUBSUB          6
+#define SECT_SUBSUBSUBSUB       7
 
-void            CmdFootNote(int code);
+#define SECT_PART_STAR         11
+#define SECT_CHAPTER_STAR      12
+#define SECT_NORM_STAR         13
+#define SECT_SUB_STAR          14
+#define SECT_SUBSUB_STAR       15
+#define SECT_SUBSUBSUB_STAR    16
+#define SECT_SUBSUBSUBSUB_STAR 17
+
+#define SECT_CAPTION            8
+void            CmdSection(int code);
 
 #define QUOTE 1
 #define QUOTATION 2
@@ -67,7 +83,6 @@ void            CmdCounter(int code);
 void            CmdLength(int code);
 void            CmdCaption(int code);
 void            CmdBox(int code);
-void            CmdInclude(int code);
 void            CmdVerb(int code);
 void            CmdVerbatim(int code);
 void            CmdVerse(int code);
@@ -81,20 +96,9 @@ void            GermanPrint(int code);
 #define GP_RDBL 5
 
 void            CmdIgnoreLet(int code);
-
-#define LABEL 1
-#define REF 2
-#define PAGEREF 3
-
-/* LEG190498 Start */
-#define HYPER 100
-#define HYPERREF HYPER+REF
-#define HYPERPAGEREF HYPER+PAGEREF
-/* LEG190498 End */
-
-void            CmdLabel(int code);
 void            CmdIgnoreDef(int code);
 void            CmdItem(int code);
+void			CmdMinipage(int code);
 
 /* LEG030598 Start */
 #define RIGHT_SIDE 347
@@ -102,12 +106,13 @@ void            CmdItem(int code);
 #define LEFT_SIDE  349
 /* LEG030598 End */
 
-int             ScanAux(char *token, char *reference, int code);
-
 #define FIGURE 1
-#define PICTURE 2
-#define MINIPAGE 3
 #define FIGURE_1 5
+
+#define IGNORE_HTMLONLY  1
+#define IGNORE_PICTURE   2
+#define IGNORE_MINIPAGE  3
+#define IGNORE_RAWHTML   4
 
 #define No_Opt_One_NormParam 01
 #define No_Opt_Two_NormParam 02
@@ -127,12 +132,7 @@ int             ScanAux(char *token, char *reference, int code);
 #define NewPage 1
 #define NewColumn 2
 
-#define ARRAY 1
-#define TABLE 2
-#define TABLE_1 3
-
-
-void            CmdIgnoreFigure(int code);
+void            CmdIgnoreEnviron(int code);
 
 void            CmdFigure(int code);
 
