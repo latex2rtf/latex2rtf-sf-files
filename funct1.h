@@ -30,6 +30,7 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define PAR_CENTERLINE 4
 #define PAR_VCENTER    5
 #define PAR_RAGGEDRIGHT 6
+#define PAR_CENTERING  7
 
 #define BOX_HBOX       1
 #define BOX_VBOX       2
@@ -174,6 +175,7 @@ void            CmdNewPage(int code);
 void            GetInputParam(char *, int);
 void            CmdBottom(int code);
 void            CmdAbstract(int code);
+void            CmdAcknowledgments(int code);
 void            CmdTitlepage(int code);
 void            CmdAnnotation(int code);
 void            CmdLink(int code);

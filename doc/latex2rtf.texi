@@ -1,5 +1,7 @@
 \def\LaTeX{L\kern-.36em\raise.3ex\hbox{\sc a}\kern-.15em\TeX}
 \def\LaTeXe{\LaTeX\kern.15em 2$_\varepsilon$}
+\def\BibTeX{B\kern-.05em{\sc i\kern-.025em b}\kern-.08em\TeX}
+
 \input texinfo  
 @c -*-texinfo-*-
 @c %**start of header
@@ -8,12 +10,27 @@
 @setchapternewpage odd
 @c %**end of header
 
+@ignore Permission is granted to process this file through TeX and print
+the results, provided the printed document carries a copying permission
+notice identical to this one except for the removal of this paragraph
+(this paragraph not being relevant to the printed manual).
+@end ignore 
+
 @macro latex {}
 @ifnottex
 LaTeX
 @end ifnottex
 @iftex
 @LaTeX{}
+@end iftex
+@end macro
+
+@macro bibtex {}
+@ifnottex
+BibTeX
+@end ifnottex
+@iftex
+@BibTeX{}
 @end iftex
 @end macro
 
@@ -35,49 +52,19 @@ LaTeX2RTF
 @end iftex
 @end macro
 
-@ifinfo
-This file documents @ltor{}, a converter that translates @latex{} to RTF.
-
-Copyright 1998-2002 Georg Lehner, 
-updates Copyright 1999-2003 by Wilfried Hennings and Scott Prahl, 
-with contributions by Mikhail Polianski.
-
-Permission is granted to make and distribute verbatim copies of this
-manual provided the copyright notice and this permission notice are
-preserved on all copies.
-
-@ignore Permission is granted to process this file through TeX and print
-the results, provided the printed document carries a copying permission
-notice identical to this one except for the removal of this paragraph
-(this paragraph not being relevant to the printed manual).
-
-@end ignore Permission is granted to copy and distribute modified
-versions of this manual under the conditions for verbatim copying,
-provided also that the sections entitled ``Copying'' and ``GNU General
-Public License'' are included exactly as in the original, and provided
-that the entire resulting derived work is distributed under the terms of
-a permission notice identical to this one.
-
-Permission is granted to copy and distribute translations of this manual
-into another language, under the above conditions for modified versions,
-except that this permission notice may be stated in a translation
-approved by the Free Software Foundation.
-
-@end ifinfo
-
 @titlepage 
 @title @ltor{}
 @subtitle 
 A converter from @latex{} to RTF
 
-Edition 0.7
+Edition 0.7.1
 @author Georg Lehner,
 updated by Wilfried Hennings and Scott Prahl,
 with contributions by Mikhail Polianski
 
 @page
 @vskip 0pt plus 1 filll
-Copyright @copyright{} 1998-2003 Georg Lehner, Wilfried Hennings, Scott Prahl
+Copyright @copyright{} 1998-2004 Georg Lehner, Wilfried Hennings, Scott Prahl
 
 Permission is granted to make and distribute verbatim copies of this
 manual provided the copyright notice and this permission notice are
@@ -101,8 +88,6 @@ approved by the Free Software Foundation.
 @top LaTeX2RTF
 
 This file documents @ltor{}, a converter that translates @latex{} to RTF.
-
-@c This document applies to version 1.9.15 of @ltor{}.
 @end ifnottex
 
 @menu
@@ -116,6 +101,31 @@ This file documents @ltor{}, a converter that translates @latex{} to RTF.
 * History::                     
 * Index::  
 @end menu
+@ifnottex
+
+Copyright 1998-2002 Georg Lehner,@* 
+updates Copyright 1999-2004 by Wilfried Hennings and Scott Prahl,@* 
+with contributions by Mikhail Polianski.
+
+Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+Permission is granted to copy and distribute modified
+versions of this manual under the conditions for verbatim copying,
+provided also that the sections entitled ``Copying'' and ``GNU General
+Public License'' are included exactly as in the original, and provided
+that the entire resulting derived work is distributed under the terms of
+a permission notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation
+approved by the Free Software Foundation.
+
+@c This document applies to version 1.9.16 of @ltor{}.
+@end ifnottex
+
 
 @node Introduction, Installation, Top, Top
 @chapter  Introduction
@@ -142,6 +152,10 @@ You know somebody who frequently sends you very fine @latex{} documents. Unfortu
 you are ``on the other side'' and need to import her files, steal some part, and then
 desktop publish it in your fine MS-@dots{} environment.
       
+@item
+You like @latex{} and @bibtex{}.  You interact with the rest of the world.  You
+know someone that wants to include your writing in a her Word document.
+
 @end enumerate
 
 There are drawbacks to the conversion process. In fact, don't expect any @latex{} file to
@@ -208,8 +222,8 @@ an i386 processor or better.
 The Win32 distribution (starting from @ltor{} 1.9.15) is the MS-DOS version 
 plus Win32 GUI program (l2rshell).
 
-There are a couple of people working on the @ltor{}, coordinated by
-@email{W.Hennings@@fz-juelich.de, Wilfried Hennings}. 
+There is one person working on @ltor{}, coordinated by
+Wilfried Hennings (W.Hennings "at" fz-juelich.de). 
 See the @uref{http://sourceforge.net/projects/latex2rtf/,SourceForge} 
 project pages for the latest news.
 
@@ -245,7 +259,7 @@ On IBM AIX, the IBM make utility does not support some of the commands
 used in Makefile. In this case use @code{gmake} (from GNU) instead.
 
 Sun has decided to support the XPG4 standard on Solaris by an
-alternative set of binaries.  So allow bitmap conversion of equations, two
+alternative set of binaries.  To allow bitmap conversion of equations, two
 things are needed.  First, change the first line of latex2png to @code{#!/usr/xpg4/bin/sh}
 Second, define the XPG4_GREP environment variable accordingly,
 for bash-like shells @code{XPG4_GREP=/usr/xpg4/bin/grep; export XPG4_GREP} or
@@ -275,22 +289,26 @@ program.
 
 You no longer need to define the environment variable @env{RTFPATH}. This
 is only necessary if you move the directory containing the @file{.cfg} files.  
-Just define @env{RTFPATH} to be the path to the new location.
+Just define @env{RTFPATH} to be the path for the new location of the @file{cfg}
+directory.
 
 
 @node DOS or Windows, Win32 systems, UNIX, Installation
 @section DOS or Windows
 
 The @acronym{UNIX} and Mac distributions do not contain an executable for DOS 
-or Windows. Instead, get the DOS port as file @file{latex2rtf-x.xx_dos.zip}
-(where x.xx is the version number) from  
-@uref{http://sourceforge.net/projects/latex2rtf/,SourceForge}
+or Windows. Instead, get the DOS port as file @file{latex2rtf-x.x.x_dos.zip}
+or the Windows (Win32 = Win95, Win98, WinME, WinNT, Win2000, WinXP) version as 
+file @file{latex2rtf-x.x.x_win.exe} (where x.x.x is the version number) from  
+@uref{http://sourceforge.net/projects/latex2rtf/,SourceForge}@*
 
 The DOS distribution contains a precompiled executable which should run 
-under plain DOS and also under any MS Windows system.
+under plain DOS and also in the command prompt (or "console") 
+of any MS Windows system.@*
 
-The MS-DOS version starting from 1.9.14a has an optional Win32 GUI interface 
-(LaTeX2RTF Shell), @xref{Win32 systems}.
+The Win32 version starting from 1.9.14a has the same executable but 
+additionally an optional Win32 GUI interface (LaTeX2RTF Shell) 
+and is wrapped in an automatic installer, @xref{Win32 systems}.@*
 
 To install latex2rtf, extract all files from the zip archive to @file{C:\l2r}
 or to another folder (i.e. directory) of your choice,
@@ -332,7 +350,7 @@ with Notepad (Windows).
 At the end of that file, add the line @*
 @file{PATH=C:\l2r;%PATH%} 
 @item
-Save the file to its original location.
+Save the file to its original location. Shutdown and reboot the PC.
 @end itemize
 @item
 WinNT, Win2000, WinXP
@@ -392,14 +410,23 @@ The other fix is now hardcoded in latex2rt.exe, making sure the DOS environment
 space in which latex2pn.bat is executed is large enough to store the needed 
 variables.
 
+If you get the message "Out of environment space" (should occur only under plain
+DOS, Windows 3.1, Windows 95, Windows 98 or Windows ME) then@*
+add to your config.sys a line like the following@*
+@code{SHELL=C:\COMMAND.COM C:\ /E:4096 /P}@*
+or, if there already is such a line, modify it so that it supplies a 
+sufficiently large environment space @code{/E:}.  
+Shutdown and reboot the PC.
 
 @node Win32 systems, Macintosh, DOS or Windows, Installation
 @section Win32 systems
 
-To install @ltor{} on a Win32 system (Win9x, WinME, WinNT, Win2000, WinXP), execute the 
-@file{latex2rtf-x.x.x_win.exe} and follow the instructions.
+To install @ltor{} on a Win32 system (Win9x, WinME, WinNT, Win2000, WinXP), 
+download and execute the @file{latex2rtf-x.x.x_win.exe} 
+(where x.x.x is the version number) and follow the instructions.
 
-To start the program double-click the @ltor{} icon, or drag and drop a @file{.tex} file onto the icon.
+To start the program double-click the @ltor{} icon, 
+or drag and drop a @file{.tex} file onto the icon.
 
 If your @latex{} document refers to external graphic files, e.g. eps, 
 or you want to use the option to convert equations to bitmaps,
@@ -407,23 +434,31 @@ you must have LaTeX, ImageMagick and Ghostscript installed. These programs are
 freely available for download at @uref{http://www.miktex.org/}, 
 @uref{http://www.imagemagick.org} and @uref{http://www.ghostscript.com}
 
-Paths to LaTeX, ImageMagick and Ghostscript executables have to be specified in the 
-"Environment" tab of the @ltor{} window.
+If MikTeX, ImageMagick and Ghostscript are installed before installing @ltor{},
+the pathes to the executables are automatically found in the windows registry 
+by the installer. Otherwise, these pathes may have to be specified manually 
+in the "Environment" tab of the @ltor{} window.
+
+If you get the message "Out of environment space" (should occur only under 
+Windows 95, Windows 98 or Windows ME) then@*
+add to your config.sys a line like the following@*
+@code{SHELL=C:\COMMAND.COM C:\ /E:4096 /P}@*
+or, if there already is such a line, modify it so that it supplies a 
+sufficiently large environment space @code{/E:}.  
+Shutdown and reboot the PC.
 
 
 @node Macintosh, Problems Compiling, Win32 systems, Installation
 @section Macintosh
 
 If you want a MacOS X version, make sure that you have installed the developer tools CD
-that is appropriate for your OS version, and then follow the directions above for
-@acronym{UNIX} installation.
+that is appropriate for your OS version, and then follow the directions above for a
+@acronym{UNIX} installation.  Alternatively you can install using fink
+@uref{http://fink.sourceforge.net/} or as an i-installer package 
+@uref{http://www.rna.nl/ii.html}.
 
-There is a classic MacOS PPC port of the 1.9k of @ltor{} and I have made a binary
-distribution of this application.  Unfortunately, because I (Scott Prahl) do all
-development under MacOS X, the binaries for the Classic version often lag (far) behind the
-current @acronym{UNIX} version.
-
-To convert a @latex{} file, just drag the file onto the @ltor{} application icon.  The
+There is a PPC port of an old version 1.9k for Classic MacOS @ltor{}. 
+To convert a @latex{} file using this version,  drag the file onto the @ltor{} icon.  The
 translation is best if there are @file{.aux} and @file{.bbl} files in the same folder as
 the @file{.tex} file to be converted.  These should be generated using @latex{} and
 @file{bibtex}.
@@ -745,6 +780,10 @@ Umlauts by @code{"a}, etc@enddots{}  This support is programmed directly
 into @ltor{} and supporting similar features for other languages will require 
 patching the source code.
 
+There is similar support for @option{french} packages.
+
+There is reasonable support for english, latin1, latin2, and cyrillic languages.
+
 @xref{Language Configuration}, for details on how to write a @file{language.cfg} file
 for your language by yourself.
 
@@ -767,6 +806,20 @@ present.  This is where @ltor{} obtains the reference numbers.  It would be
 nice if @ltor{} just automatically numbered the references when there was
 no @file{.aux} file, but @ltor{} does not do this yet.
  
+@ltor{} relies on @bibtex{} to convert and format bibliographic
+entries.  Usually the style file for a particular @bibtex{} format
+does not use any special @latex{} commands and therefore the
+bibliography file @file{file.bbl} can be processed by @ltor{}
+without difficulty.  As a consequence, @ltor{} can handle most
+bibliography styles without problem.
+
+There are several latex style packages that add additional
+latex commands to enhance bibliographic formatting.
+@ltor{} currently supports the following bibliographic packages:@*
+apacite, apalike, authordate, harvard, natbib (also with apanat1b).
+These packages have many, many options and you may encounter
+problems with formatting in special cases.
+
 Footnotes are implemented and appear at the bottom of each page.  
 
 Indexing is reasonable well supported.  The simple mark-up of @code{makeindex}
@@ -1079,7 +1132,7 @@ one-semester course by Friedrich Polzer and Gerhard Trisko. The result was @ltor
 
 In 1998 @email{jorge_lehner@@gmx.net,Georg Lehner} found the reference to @ltor{} on the
 @uref{http://tug.org/utilities/texconv/index.html, TeX Conversion Webpage}  of
-@email{W.Hennings@@fz-juelich.de,Wilfried Hennings} and added some functionality and took
+Wilfried Hennings and added some functionality and took
 over the maintainence of the program.  The last version release by Georg is 1.8aa.
 The bulk of development post 1.8aa was done by Scott Prahl.  
 Wilfried Hennings now coordinates the development of the program and maintains the project
@@ -1092,7 +1145,7 @@ For subscription to these lists:
 or
 @email{latex2rtf-developers-request@@lists.sourceforge.net?subject=subscribe}
 
-As of October 2002, version 1.9.14 of @ltor{} is available. 
+As of October 2004, version 1.9.16 of @ltor{} is available. 
 One day there shall be a jump to Version 2.0, but this is not history but future ...
 
 The contents of this manual were composed by copying shamelessly what was
@@ -1113,9 +1166,7 @@ available in the original sources and documentation.
 @section Unimplemented Features
 
 @itemize @bullet
-@item @ltor{} ignores some of the optional parameters of @code{\documentstyle} 
-@item Need to finish code page support.  Some characters that need to be
-      constructed using RTF @code{\field} commands are not implemented.
+@item @ltor{} ignores some optional parameters of @code{\documentstyle} 
 @item Add the code to produce the corresponding chapter, section,
       and page numbering with headings and myheadings pagestyles. Implement
       @code{\markboth} and @code{\markright}.
@@ -1124,7 +1175,6 @@ available in the original sources and documentation.
       reader. Scan and label all of the sectioning commands while reading and
       then construct the sectioning information using these labels. Needs two
       passes on @latex{} input.
-@item Include the GNU gettext package to internationalize @ltor{}'s Messages.
 @end itemize
 
 @node Missing options, Known Bugs, Unimplemented Features, LaTeX2RTF under Development
@@ -1133,34 +1183,16 @@ available in the original sources and documentation.
 Missing or buggy command line options.
 
 @table @option
-@item -V
-The version information output is not compatible with the GNU Coding
-Standards.
 
 @item -d
 Information logging and Error reporting is not implemented consistently.
 Need to test and track problems with the linenumber and with the file name.
-
-@item -?
-There should be an option to intersperse RTF-Output with the @latex{} input
-that produced it to aid debugging.
-
-@item -q
-There should be a @option{-q} (quiet) option, to suppress Warning Messages. By
-now this can be achieved by the @option{-d0} option.
-
-@item -rmajor.minor
-There should be an option that restrict the generation of RTF code with
-version greater than major,minor. Actually this is done at compile time.
-There are some Warning messages if ``newer'' RTF Code is generated, but it
-is not consistent at all.
 
 @item --long_names
 It would be useful to implement the GNU long option names, e.g.: `--debug',
 `--output_file', `--quiet', etc.  This could be done by switching to the GNU
 getopt package.
 @end table
-
 
 @node Known Bugs, Reporting Bugs, Missing options, LaTeX2RTF under Development
 @section Known Bugs 

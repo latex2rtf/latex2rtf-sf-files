@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.101 2004/02/09 02:12:03 prahl Exp $
+# $Id: Makefile,v 1.109 2004/11/08 01:47:45 prahl Exp $
 
 CC=gcc
 MKDIR=mkdir -p
@@ -37,7 +37,16 @@ CFLAGS:=$(CFLAGS) -g -Wall -fsigned-char
 LIBS=
 #LIBS=-lMallocDebug -force_flat_namespace
 
-VERSION="`scripts/version`"
+VERSION:="`scripts/version`"
+
+# Locations for MacOS X packaging
+PWD := $(shell pwd)
+PKG_DIR := "$(PWD)/macosx/pkgdir"
+PKG_CONTENTS="$(PKG_DIR)/Package_contents"
+PKG_RESOURCES="$(PKG_DIR)/Install_resources"
+PKG_NAME:="$(PWD)/macosx/dmg/latex2rtf-$(VERSION)/latex2rtf.pkg"
+PKG_MAKER=/Developer/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
+DMG_DIR := "$(PWD)/macosx/dmg/latex2rtf-$(VERSION)"
 
 SRCS=commands.c chars.c direct.c encode.c l2r_fonts.c funct1.c tables.c ignore.c \
 	main.c stack.c cfg.c util.c parser.c lengths.c counters.c letterformat.c \
@@ -63,36 +72,40 @@ DOCS= doc/latex2rtf.1   doc/latex2png.1    doc/latex2rtf.texi doc/latex2rtf.pdf 
       doc/latex2rtf.txt doc/latex2rtf.info doc/latex2rtf.html doc/credits \
       doc/copying.txt   doc/Makefile       doc/latex2pn.txt  doc/latex2rt.txt
 
-README= README README.DOS README.Mac README.OS2 README.Solaris Copyright ChangeLog
+README= README README.DOS README.Mac README.OS2 README.Solaris README.VMS README.OSX \
+        Copyright ChangeLog
 
 SCRIPTS= scripts/version scripts/latex2png scripts/latex2png_1 scripts/latex2png_2 \
 	scripts/latex2pn.bat scripts/README \
 	scripts/Makefile scripts/test1.tex scripts/test2.tex scripts/test3.tex \
 	scripts/test3a.tex scripts/test4.tex scripts/test1fig.eps
 
-TEST=   test/Makefile test/bracecheck \
-	test/accentchars.tex test/array.tex test/bib_simple.tex test/bib_simple.bib \
-	test/bib_apacite.tex test/bib_apalike.tex test/bib_apalike2.tex \
-	test/bib_natbib1.tex test/bib_natbib2.tex test/bib_natbib3.tex test/bib_apanat.tex \
+TEST=   test/Makefile test/bracecheck test/accentchars.tex test/array.tex  \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
 	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty \
 	test/misc3.tex test/misc4.tex test/fancy.tex test/align.tex \
-	test/german.tex test/box.tex test/ttgfsr7.tex \
+	test/box.tex test/ttgfsr7.tex \
+	test/defs.tex test/excalibur.tex test/qualisex.tex test/include.tex \
+	test/include1.tex test/include2.tex test/include3.tex test/ch.tex test/spago1.tex \
+	test/theorem.tex test/picture.tex test/eqns-koi8.tex test/tabbing.tex \
+	test/chem.tex test/linux.tex test/color.tex test/subsup.tex \
+	test/babel_german.tex  test/babel_russian.tex test/babel_french.tex \
+	test/babel_frenchb.tex test/babel_czech.tex test/babel_spanish.tex \
+	test/bib_apacite.tex    test/bib_apalike.tex test/bib_apalike2.tex \
+	test/bib_natbib1.tex    test/bib_natbib2.tex test/bib_natbib3.tex test/bib_apanat.tex \
+	test/bib_authordate.tex test/bib_simple.tex test/bib_simple.bib\
 	test/enc_applemac.tex test/enc_cp437.tex test/enc_cp865.tex test/enc_latin2.tex \
 	test/enc_latin5.tex test/enc_cp1250.tex test/enc_cp850.tex test/enc_decmulti.tex  \
 	test/enc_latin3.tex test/enc_latin9.tex test/enc_cp1252.tex test/enc_cp852.tex \
 	test/enc_latin1.tex test/enc_latin4.tex test/enc_next.tex  \
 	test/enc_cp1251.tex test/enc_cp855.tex  test/enc_cp866.tex  test/enc_koi8-r.tex \
 	test/enc_koi8-u.tex test/enc_maccyr.tex test/enc_macukr.tex \
-	test/defs.tex test/excalibur.tex test/qualisex.tex test/include.tex \
-	test/include1.tex test/include2.tex test/include3.tex test/ch.tex test/spago1.tex \
-	test/theorem.tex test/picture.tex test/russian.tex test/eqns-koi8.tex \
-	test/tabbing.tex test/figtest.tex test/figtest.eps test/figtestb.pdf test/chem.tex \
-	test/linux.tex test/figtest2.tex test/figtestc.ps test/figtestc.pdf test/figtestd.ps \
-	test/figtestd.pdf test/color.tex test/subsup.tex \
-	test/figtest3.tex test/head_book.tex test/head_report.tex test/head_article.tex \
-	test/bib_authordate.tex
+	test/fig_test.eps test/fig_testb.pdf test/fig_test.tex \
+	test/fig_test2.tex test/fig_testc.ps test/fig_testc.pdf test/fig_testd.ps \
+	test/fig_testd.pdf test/fig_test3.tex test/fig_size.tex \
+	test/head_book.tex test/head_report.tex test/head_article.tex \
+	test/endnote.tex   test/bib_harvard.tex test/report.tex
 
 OBJS=l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o util.o parser.o lengths.o counters.o \
@@ -115,7 +128,7 @@ check test: latex2rtf
 	cd test && $(MAKE) 
 	cd test && $(MAKE) check
 
-checkdir: $(README) $(SRCS) $(HDRS) $(CFGS) $(SCRIPTS) $(TEST) doc/latex2rtf.texi
+checkdir: $(README) $(SRCS) $(HDRS) $(CFGS) $(SCRIPTS) $(TEST) doc/latex2rtf.texi Makefile vms_make.com
 
 clean: checkdir
 	rm -f $(OBJS) core $(BINARY_NAME)
@@ -124,7 +137,7 @@ depend: $(SRCS)
 	$(CC) -MM $(SRCS) >makefile.depend
 	@echo "***** Append makefile.depend to Makefile manually ******"
 
-dist: checkdir uptodate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile $(SCRIPTS) $(DOCS) $(TEST)
+dist: checkdir releasedate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile vms_make.com $(SCRIPTS) $(DOCS) $(TEST)
 	$(MKDIR) latex2rtf-$(VERSION)
 	$(MKDIR) latex2rtf-$(VERSION)/cfg
 	$(MKDIR) latex2rtf-$(VERSION)/doc
@@ -134,6 +147,7 @@ dist: checkdir uptodate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile
 	ln $(HDRS)         latex2rtf-$(VERSION)
 	ln $(README)       latex2rtf-$(VERSION)
 	ln Makefile        latex2rtf-$(VERSION)
+	ln vms_make.com    latex2rtf-$(VERSION)
 	ln $(CFGS)         latex2rtf-$(VERSION)/cfg
 	ln $(DOCS)         latex2rtf-$(VERSION)/doc
 	ln $(SCRIPTS)      latex2rtf-$(VERSION)/scripts
@@ -145,6 +159,10 @@ dist: checkdir uptodate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile
 uptodate:
 	perl -pi.bak -e '$$date=scalar localtime; s/\(.*/($$date)";/' version.h
 	rm version.h.bak
+
+releasedate:
+#	perl -pi.bak -e '$$date=scalar localtime; s/\(.*/(released $$date)";/; s/d ..../d /;s/\d\d:\d\d:\d\d //;' version.h
+#	rm version.h.bak
 
 doc: doc/latex2rtf.texi doc/Makefile
 	cd doc && $(MAKE) -k
@@ -188,6 +206,36 @@ realclean: checkdir clean
 
 splint: 
 	splint -weak $(SRCS) $(HDRS)
+
+pkg:
+	$(MKDIR) $(PKG_CONTENTS)/$(BIN_INSTALL)
+	$(MKDIR) $(PKG_CONTENTS)/$(MAN_INSTALL)
+	$(MKDIR) $(PKG_CONTENTS)/$(CFG_INSTALL)
+	$(MKDIR) $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
+	$(MKDIR) $(PKG_RESOURCES)
+	$(MKDIR) $(DMG_DIR)
+
+	cp $(BINARY_NAME)     $(PKG_CONTENTS)/$(BIN_INSTALL)
+	cp scripts/latex2png  $(PKG_CONTENTS)/$(BIN_INSTALL)
+	cp doc/latex2rtf.1    $(PKG_CONTENTS)/$(MAN_INSTALL)
+	cp doc/latex2png.1    $(PKG_CONTENTS)/$(MAN_INSTALL)
+	cp $(CFGS)            $(PKG_CONTENTS)/$(CFG_INSTALL)
+	cp doc/latex2rtf.html $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
+	cp doc/latex2rtf.pdf  $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
+	cp doc/latex2rtf.txt  $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
+
+	cp macosx/License.rtf $(PKG_RESOURCES)
+	cp macosx/ReadMe.html $(PKG_RESOURCES)
+	cp macosx/Welcome.html $(PKG_RESOURCES)
+	
+	-$(PKG_MAKER) -build -p $(PKG_NAME) -r $(PKG_RESOURCES) -f $(PKG_CONTENTS)
+	mkdmg $(DMG_DIR)
+	
+	rm -rf $(PKG_DIR)
+	
+	mkdmg 
+	
+	
 	
 .PHONY: all check checkdir clean depend dist doc install install_info realclean latex2rtf uptodate splint
 
