@@ -66,6 +66,7 @@
 #include "cfg.h"
 #include "util.h"
 #include "parser.h"
+#include "counters.h"
 
 static int      tabstoparray[100];
 static int      number_of_tabstops = 0;
@@ -277,7 +278,6 @@ CmdLink(int code)
 	/* LEG210698*** better? hyperref = param2 */
 }
 
-/******************************************************************************/
 void 
 Ignore_Environment(char *searchstring)
 /******************************************************************************
@@ -340,8 +340,6 @@ parameter: searchstring : includes the string to search for
 	return;
 }
 
-
-/******************************************************************************/
 void 
 CmdIgnoreEnvironment(int code)
 /******************************************************************************
@@ -367,11 +365,10 @@ parameter: code: type of environment & ON/OFF
 	}			/* switch */
 }
 
-/******************************************************************************/
 void 
 CmdColumn(int code)
 /******************************************************************************
-  purpose: chooses beetween one/two-columns
+  purpose: chooses between one/two-columns
 parameter: number of columns
  globals: twocolumn: true if twocolumn-mode is set
  ******************************************************************************/
@@ -388,7 +385,6 @@ parameter: number of columns
 	}			/* switch */
 }
 
-/******************************************************************************/
 void 
 CmdNewPage(int code)
 /******************************************************************************
@@ -409,7 +405,6 @@ parameter: code: newpage or newcolumn-option
 	}			/* switch */
 }
 
-/******************************************************************************/
 void 
 Cmd_OptParam_Without_braces( /* @unused@ */ int code)
 /******************************************************************************
@@ -441,47 +436,6 @@ Cmd_OptParam_Without_braces( /* @unused@ */ int code)
 }
 
 
-/******************************************************************************/
-void 
-GetInputParam(char *string, int size)
-/******************************************************************************
-  purpose: gets the parameter followed the \include or \input -command
-parameter: string: returnvalue of the input/include-parameter
-	   size: max. size of the returnvalue
-		 must be determined by the calling-function
- ******************************************************************************/
-{
-	char            cThis;
-	int             i, PopLevel, PopBrack;
-	bool            readuntilnewline = FALSE;
-
-	cThis = getTexChar();
-
-	if (cThis == '{') {
-		++BracketLevel;
-		(void) Push(RecursLevel, BracketLevel);
-	} else {
-		readuntilnewline = TRUE;
-		ungetTexChar(cThis);	/* reread last character */
-	}
-
-	for (i = 0;; i++) {	/* get param from input stream */
-		cThis = getTexChar();
-		if (cThis == '}') {
-			--BracketLevel;
-			(void) Pop(&PopLevel, &PopBrack);
-			break;
-		}
-		if ((readuntilnewline) && ((cThis == ' ') || (cThis == '\n'))) 
-			break;
-		
-		if (size-- > 0)
-			string[i] = cThis;
-	}
-	string[i] = '\0';
-}
-
-/******************************************************************************/
 void 
 ConvertTabbing(void)
 /******************************************************************************
@@ -574,7 +528,6 @@ ConvertTabbing(void)
 }				/* ConvertTabbing */
 
 
-/******************************************************************************/
 void 
 Convert_Tabbing_with_kill(void)
 /******************************************************************************
@@ -640,19 +593,15 @@ Convert_Tabbing_with_kill(void)
 }				/* Convert_Tabbing_with_kill */
 
 
-/******************************************************************************/
 void 
-CmdBottom( /* @unused@ */ int code)
-/******************************************************************************/
+CmdBottom(int code)
+/******************************************************************************
+  purpose: ignore raggedbottom command
+ ******************************************************************************/
 {
-	/*
-	 * it's conventional for the height of the text to be the same on all
-	 * full pages
-	 */
 }
 
 /******************************************************************************
-  purpose: converts the LaTex-abstract-command to an similar Rtf-style
 parameter: code: on/off-option
  globals : article and titlepage from the documentstyle
  ******************************************************************************/
@@ -688,15 +637,11 @@ CmdAbstract(int code)
 	}			/* switch */
 }
 
-
-
-/******************************************************************************/
 void 
 CmdTitlepage(int code)
 /******************************************************************************
-  purpose: converts the LaTex-Titlepage-command to an similar Rtf-style
-parameter: on/off option
- globals : alignment: is used for the default-alignment-setting after this environment
+  purpose: \begin{titlepage} ... \end{titlepage}
+           add pagebreaks before and after this environment
  ******************************************************************************/
 {
 	switch (code) {
@@ -711,35 +656,6 @@ parameter: on/off option
 	}			/* switch */
 }
 
-/******************************************************************************/
-void 
-CmdHyphenation( /* @unused@ */ int code)
-/******************************************************************************
- purpose: the parameter surrrounded by braces after the hyphenation-command
-	  won't be seperated at a line-end.
- ******************************************************************************/
-{
-	char           *hyphenparameter;
-
-	hyphenparameter = getParam();
-
-	/*
-	 * In a future version we may correctly hyphenate all occurencies of
-	 * hyphenation-words
-	 */
-#ifdef notdef
-	for (i = 0; i < (strlen(hyphenparameter) - 1); i++) {
-		if (hyphenparameter[i] != '-')
-			fprintf(fRtf, "%c", hyphenparameter[i]);
-		else
-			fprintf(fRtf, "\\-");
-	}			/* for */
-#endif				/* notdef */
-
-	free(hyphenparameter);
-}
-
-/******************************************************************************/
 void 
 CmdFormula2(int code)
 /******************************************************************************
@@ -809,8 +725,8 @@ CmdFormula2(int code)
 		ConvertString("}");
 
 		if (g_show_equation_number && !g_suppress_equation_number) {
-			g_equation_number++;
-			fprintf(fRtf, "\\tab (%d)", g_equation_number);
+			incrementCounter("equation");
+			fprintf(fRtf, "\\tab (%d)", getCounter("equation"));
 		}
 		fprintf(fRtf, "\n\\par\n\\par");
 
@@ -819,136 +735,6 @@ CmdFormula2(int code)
 			g_processing_eqnarray = FALSE;
 		}
 	}
-}
-
-/******************************************************************************/
-void 
-CmdLetter(int code)
-/******************************************************************************
-  purpose: pushes all necessary letter-commands on a stack
-parameter: code: on/off-option for environment
- ******************************************************************************/
-{
-	if (code & ON) {	/* on switch */
-		code &= ~(ON);	/* mask MSB */
-		if (code == LETTER) {
-			PushEnvironment(code);
-		}
-	} else {		/* off switch */
-		PopEnvironment();
-	}
-}
-
-/******************************************************************************/
-void 
-CmdAddress( /* @unused@ */ int code)
-/******************************************************************************
- purpose: prints the address in a letter
- globals: alignment
- ******************************************************************************/
-{
-	static char     oldalignment = JUSTIFIED;
-
-	oldalignment = alignment;
-	alignment = RIGHT;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);	/* address will be
-								 * printed on the right
-								 * top */
-
-	diagnostics(4, "Entering Convert() from CmdAddress");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdAddress");
-
-	alignment = oldalignment;
-	fprintf(fRtf, "\\par\\chdate ");	/* additional to the address
-						 * the actual date is printed */
-
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);
-}
-
-
-/******************************************************************************/
-void 
-CmdSignature( /* @unused@ */ int code)
-/******************************************************************************
- purpose: prints the signature in a letter
- globals: alignment
- ******************************************************************************/
-{
-	static char     oldalignment = JUSTIFIED;
-
-	oldalignment = alignment;
-	alignment = RIGHT;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);	/* signature will be
-								 * printed on the right
-								 * top */
-
-	diagnostics(4, "Entering Convert() from CmdSignature");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdSignature");
-
-	alignment = oldalignment;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);
-}
-
-/******************************************************************************/
-void 
-CmdOpening( /* @unused@ */ int code)
-/******************************************************************************
- purpose: special command in the LaTex-letter-environment will be converted to a
-	  similar Rtf-style
- globals: alignment
- ******************************************************************************/
-{
-	static char     oldalignment;
-
-	oldalignment = alignment;
-	alignment = LEFT;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);	/* opening will be
-								 * printed on the right
-								 * top */
-
-	diagnostics(4, "Entering Convert() from CmdOpening");
-	Convert();	
-	diagnostics(4, "Exiting Convert() from CmdOpening");
-
-	alignment = oldalignment;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);
-}
-
-/******************************************************************************/
-void 
-CmdClosing( /* @unused@ */ int code)
-/******************************************************************************
- purpose: special command in the LaTex-letter-environment will be converted to a
-	  similar Rtf-style
- globals: alignment
- ******************************************************************************/
-{
-	static char     oldalignment;
-
-	oldalignment = alignment;
-	alignment = LEFT;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);	/* closing will be
-								 * printed on the right
-								 * top */
-
-	diagnostics(4, "Entering Convert() from CmdClosing");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdClosing");
-
-	alignment = oldalignment;
-	fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);
-}
-
-void 
-CmdPs( /* @unused@ */ int code)
-{
-	/*
-	 * additional text to the \ps-command will be converted by the basic
-	 * convert-routine
-	 */
-	/* but you'll have to type the 'P.S.:'-text yourself */
 }
 
 /******************************************************************************/
@@ -969,7 +755,7 @@ parameter: unused
 	static bool     bWarningDisplayed = FALSE;
 
 	if (!bWarningDisplayed) {
-		fprintf(stderr, "\nWARNING - Multicolumn: Cells must be merged by hand!\n");
+		diagnostics(WARNING, "Multicolumn: Cells must be merged by hand!");
 		bWarningDisplayed = TRUE;
 	}
 	i = 0;
@@ -1071,7 +857,7 @@ parameter: type of array-environment
 		diagnostics(4, "Entering CmdTabular() with options {%s}\n",dummy); 
 
 		if (!bWarningDisplayed) {
-			fprintf(stderr, "\nWARNING - tabular or array environment: May need resizing.\n");
+			diagnostics(WARNING, "Tabular or array environment: May need resizing");
 			bWarningDisplayed = TRUE;
 		}
 		assert(colFmt == NULL);
@@ -1100,14 +886,14 @@ parameter: type of array-environment
 				openBracesInParam--;
 				break;
 			case 'p':
-				fprintf(stderr, "\nWARNING - 'p{width}' not fully supported.\n");
+				diagnostics(WARNING, " 'p{width}' not fully supported");
 				colFmt[n++] = 'l';
 				break;
 			case '*':
-				fprintf(stderr, "\nWARNING - '*{num}{cols}' not supported.\n");
+				diagnostics(WARNING, " '*{num}{cols}' not supported.\n");
 				break;
 			case '@':
-				fprintf(stderr, "\nWARNING - '@{text}' not supported.\n");
+				diagnostics(WARNING, " '@{text}' not supported.\n");
 				break;
 			default:
 				break;
@@ -1291,13 +1077,18 @@ CmdGraphics(int code)
 void 
 CmdRoot(int code)
 /******************************************************************************
- purpose: converts \sqrt{x}
+ purpose: converts \sqrt{x} or \root[\alpha]{x+y}
 ******************************************************************************/
 {
 	char           *root;
+	char           power[50];
 
+	getBracketParam(power, 49);
 	root = getParam();
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\R(%c", FORMULASEP);
+	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\R(");
+	if (strlen(power)>0)
+		ConvertString(power);
+	fprintf(fRtf,"%c", FORMULASEP);
 	ConvertString(root);
 	fprintf(fRtf, ")}{\\fldrslt }}");
 	free(root);

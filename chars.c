@@ -38,7 +38,7 @@ CmdUmlauteChar(int code)
  globals : fRtf
  ******************************************************************************/
 {
-	size_t          num;
+	int            num;
 	char           *cParam = getParam();
 	if (cParam == NULL)
 		return;
@@ -81,7 +81,7 @@ CmdUmlauteChar(int code)
 	default:
 		num = GetFontNumber("MT Extra");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'26\\'26))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'26\\'26))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
 
@@ -96,7 +96,7 @@ CmdLApostrophChar( /* @unused@ */ int code)
  globals : fRtf
  ******************************************************************************/
 {
-	size_t          num;
+	int            num;
 	char           *cParam = getParam();
 	if (cParam == NULL)
 		return;
@@ -135,7 +135,7 @@ CmdLApostrophChar( /* @unused@ */ int code)
 	default:
 		num = GetFontNumber("MT Extra");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'23))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'23))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
 	}
@@ -253,7 +253,7 @@ CmdHatChar(int code)
  globals : fRtf
  ******************************************************************************/
 {
-	size_t          num;
+	int            num;
 	char           *cParam = getParam();
 	if (cParam == NULL)
 		return;
@@ -293,7 +293,7 @@ CmdHatChar(int code)
 	default:
 		num = GetFontNumber("MT Extra");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'24))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'24))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
 	}
@@ -307,9 +307,10 @@ CmdOaccentChar(int code)
  purpose: converts \r accents from LaTex to Rtf
  ******************************************************************************/
 {
-	size_t          num;
-
-	char           *cParam = getParam();
+	int            num;
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -349,14 +350,14 @@ CmdOaccentChar(int code)
 	case 'z':
 		num = getTexFontNumber("MacRoman");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'fb ))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'fb ))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
 
 	default:
 		num = getTexFontNumber("MacRoman");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'fb))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'fb))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 	}
 
@@ -370,8 +371,10 @@ CmdTildeChar( /* @unused@ */ int code)
  globals : fRtf
  ******************************************************************************/
 {
-	size_t          num;
-	char           *cParam = getParam();
+	int             num;
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -397,7 +400,7 @@ CmdTildeChar( /* @unused@ */ int code)
 	default:
 		num = GetFontNumber("MT Extra");
 		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'25))}", cParam[0], FORMULASEP, num);
+		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'25))}", cParam[0], FORMULASEP, num);
 		fprintf(fRtf, "{\\fldrslt }}");
 		break;
 	}
@@ -438,10 +441,11 @@ CmdCedillaChar( /* @unused@ */ int code)
 void 
 CmdVecChar( /* @unused@ */ int code)
 {
-	size_t          num;
+	int             num;
 	int             upsize;
-
-	char           *cParam = getParam();
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -474,7 +478,7 @@ CmdVecChar( /* @unused@ */ int code)
 	num = GetFontNumber("MT Extra");
 
 	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%ld\\'72))}", cParam[0], FORMULASEP, upsize, num);
+	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%d\\'72))}", cParam[0], FORMULASEP, upsize, num);
 	fprintf(fRtf, "{\\fldrslt }}");
 	free(cParam);
 }
@@ -487,9 +491,11 @@ CmdVecChar( /* @unused@ */ int code)
 void 
 CmdBreveChar( /* @unused@ */ int code)
 {
-	size_t          num;
+	int             num;
 	int             upsize;
-	char           *cParam = getParam();
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -497,7 +503,7 @@ CmdBreveChar( /* @unused@ */ int code)
 	upsize = CurrentFontSize();
 
 	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'f9))}", cParam[0], FORMULASEP, num);
+	fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'f9))}", cParam[0], FORMULASEP, num);
 	fprintf(fRtf, "{\\fldrslt }}");
 
 	free(cParam);
@@ -530,9 +536,11 @@ CmdHacekChar(int code)
           need something that looks like \\O(a,\\S(\f1\'da)) in rtf file
  ******************************************************************************/
 {
-	size_t          num;
+	int             num;
 	int             upsize;
-	char           *cParam = getParam();
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -540,7 +548,7 @@ CmdHacekChar(int code)
 	num = GetFontNumber("Symbol");
 
 	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%ld\\'da))}", cParam[0], FORMULASEP, upsize, num);
+	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%d\\'da))}", cParam[0], FORMULASEP, upsize, num);
 	fprintf(fRtf, "{\\fldrslt }}");
 
 	free(cParam);
@@ -553,15 +561,17 @@ CmdHacekChar(int code)
 void 
 CmdDotChar(int code)
 {
-	size_t          num;
-	char           *cParam = getParam();
+	int             num;
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
 	num = GetFontNumber("MT Extra");
 
 	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\f%ld\\'26))}", cParam[0], FORMULASEP, num);
+	fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'26))}", cParam[0], FORMULASEP, num);
 	fprintf(fRtf, "{\\fldrslt }}");
 
 	free(cParam);
@@ -574,8 +584,10 @@ CmdDotChar(int code)
 void 
 CmdUnderbarChar(int code)
 {
-	size_t          num;
-	char           *cParam = getParam();
+	int             num;
+	char           *cParam;
+	
+	cParam = getParam();
 	if (cParam == NULL)
 		return;
 
@@ -629,13 +641,16 @@ LaTeXlogo()
 void 
 CmdLogo(int code)
 /******************************************************************************
- purpose : prints the LaTex, Tex, SLiTex and BibTex-Logos as an ordinary text
-           in the Rtf-File (D Taupin)
+ purpose : converts the LaTeX, TeX, SLiTex, etc logos to RTF 
  ******************************************************************************/
 {
 	int             font_num, dnsize;
 	float           FloatFsize;
 	float           DnSize;
+
+	font_num = GetFontNumber("Roman");
+	fprintf(fRtf, "{\\plain\\f%d ",font_num);
+	
 	switch (code) {
 	case CMD_TEX:
 		TeXlogo();
@@ -644,11 +659,11 @@ CmdLogo(int code)
 		LaTeXlogo();
 		break;
 	case CMD_SLITEX:
-		fprintf(fRtf, "SLI");
+		fprintf(fRtf, "{\\scaps Sli}");  
 		TeXlogo();
 		break;
 	case CMD_BIBTEX:
-		fprintf(fRtf, "BIB");
+		fprintf(fRtf, "{\\scaps Bib}");
 		TeXlogo();
 		break;
 	case CMD_LATEXE:
@@ -663,5 +678,15 @@ CmdLogo(int code)
 		font_num = GetFontNumber("Symbol");
 		fprintf(fRtf, "2{\\dn%d\\f%d e}", dnsize, font_num);
 		break;
+	case CMD_AMSTEX:
+		fprintf(fRtf, "{\\ i AmS}-"); /* should be calligraphic */
+		TeXlogo();
+		break;
+		
+	case CMD_AMSLATEX:
+		fprintf(fRtf, "{\\i AmS}-");  /* should be calligraphic */ 
+		LaTeXlogo();
+		break;
 	}
+	fprintf(fRtf,"}");
 }

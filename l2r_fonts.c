@@ -62,7 +62,7 @@ static char     sihuge[20] = "\\huge";
 static char     siHuge[20] = "\\Huge";
 static char     siHUGE[20] = "\\HUGE";
 
-extern size_t   DefFont;
+extern int      DefFont;
 extern enum     TexCharSetKind TexCharSet;
 extern int      curr_fontbold[MAXENVIRONS];
 extern int      curr_fontital[MAXENVIRONS];
@@ -73,69 +73,7 @@ extern char     PointSize[10];
 
 #define MAXLEN 80
 
-void 
-WriteFontHeader(FILE * fRtf)
-/****************************************************************************
- *   purpose: writes fontnumbers and styles for headers into Rtf-File
- * parameter: fRtf: File-Pointer to Rtf-File
- *   globals:
- *            DefFont (default font number)
- *   note;
-
- \fcharset0:    ANSI coding
- \fcharset1:    MAC coding
- \fcharset2:    PC coding (implies CodePage 437)
- \fcharset3:    PCA coding (implies CodePage 850)
- ****************************************************************************/
-{
-	size_t          num = 0;
-	const ConfigEntryT **config_handle;
-
-	fprintf(fRtf, "{\\fonttbl");
-
-	config_handle = CfgStartIterate(FONT_A);
-	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
-		if (strstr((*config_handle)->TexCommand, "MacRoman"))
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset1 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
-		else if (strstr((*config_handle)->RtfCommand, "Symbol"))
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset2 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
-		else
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset0 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
-		++num;
-	}
-
-	fprintf(fRtf, "}\\f%u\n", (unsigned int) (DefFont = GetFontNumber("Roman")));
-	fprintf(fRtf, "{\\stylesheet{\\fs%d\\lang1031\\snext0 Normal;}", CurrentFontSize());
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 1;}\n"
-		,HEADER11, (unsigned int) DefFont, HEADER12);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 2;}\n"
-		,HEADER21, (unsigned int) DefFont, HEADER22);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 3;}\n"
-		,HEADER31, (unsigned int) DefFont, HEADER32);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 4;}\n"
-		,HEADER41, (unsigned int) DefFont, HEADER42);
-
-	fprintf(fRtf, "%s\n", HEADER03);
-	fprintf(fRtf, "%s\n", HEADER13);
-	fprintf(fRtf, "%s\n", HEADER23);
-	fprintf(fRtf, "%s\n", HEADER33);
-	fprintf(fRtf, "%s\n", HEADER43);
-}
-
-
-size_t 
+int 
 GetFontNumber(char *Fname)
 /****************************************************************************
  *   purpose: gets the font number from an Rtf font name
@@ -143,8 +81,8 @@ GetFontNumber(char *Fname)
  *    return: font number
  ****************************************************************************/
 {
-	size_t          num = 0;
-	const ConfigEntryT **config_handle = CfgStartIterate(FONT_A);
+	int          num = 0;
+	ConfigEntryT **config_handle = CfgStartIterate(FONT_A);
 
 	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
 		if (strcmp((*config_handle)->RtfCommand, Fname) == 0) {
@@ -157,7 +95,7 @@ GetFontNumber(char *Fname)
 }
 
 
-size_t 
+int 
 getTexFontNumber(char *Fname)
 /****************************************************************************
   purpose: gets the RTF font number from given LaTex font
@@ -174,11 +112,10 @@ CmdSetFontStyle(int code)
 /****************************************************************************
      purpose : sets the font to bold, italic, underlined...
    parameter : code includes the character-format-style
-     globals : fRtf: Rtf-File-Pointer
+     globals : fRtf
  ****************************************************************************/
 {
 		diagnostics(4, "Entering CmdSetFontStyle");
-//		ConvertString("{");
 		
 		if (code == CMD_BOLD_1 || code == CMD_ITALIC_1 || code == CMD_CAPS_1)
 			fprintf(fRtf, "{\\plain");
@@ -186,16 +123,19 @@ CmdSetFontStyle(int code)
 			fprintf(fRtf, "{");
 
 		switch (code) {
+		case CMD_BOLD_2:
 		case CMD_BOLD_1:
 		case CMD_BOLD:
 			fprintf(fRtf, "\\b ");
 			break;
 
+		case CMD_ITALIC_2:
 		case CMD_ITALIC_1:
 		case CMD_ITALIC:
 			fprintf(fRtf, "\\i ");
 			break;
 
+		case CMD_CAPS_2:
 		case CMD_CAPS_1:
 		case CMD_CAPS:
 			fprintf(fRtf, "\\scaps ");
@@ -210,10 +150,16 @@ CmdSetFontStyle(int code)
 			break;
 		}
 
-		Convert();
+		if (code == CMD_BOLD_2 || code == CMD_ITALIC_2 || code == CMD_CAPS_2){
+			char *s;
+			s = getParam();
+			ConvertString(s);
+			free(s);
+		} else
+			Convert();
+
 		fprintf(fRtf, "}");
-//		Convert();
-//		ConvertString("}");
+
 	diagnostics(4, "Exiting CmdSetFontStyle");
 }
 
@@ -281,22 +227,26 @@ CmdSetFont(int code)
 parameter: code: includes the font-type
  ******************************************************************************/
 {
-	size_t          num;
+	int          num;
 
 	diagnostics(4, "Entering CmdSetFont");
 	switch (code) {
+	case F_ROMAN_2:
 	case F_ROMAN_1:
 	case F_ROMAN:
 		num = getTexFontNumber("Roman");
 		break;
+	case F_SLANTED_2:
 	case F_SLANTED_1:
 	case F_SLANTED:
 		num = getTexFontNumber("Slanted");
 		break;
+	case F_SANSSERIF_2:
 	case F_SANSSERIF_1:
 	case F_SANSSERIF:
 		num = getTexFontNumber("Sans Serif");
 		break;
+	case F_TYPEWRITER_2:
 	case F_TYPEWRITER_1:
 	case F_TYPEWRITER:
 		num = getTexFontNumber("Typewriter");
@@ -305,18 +255,26 @@ parameter: code: includes the font-type
 		num = DefFont;
 	}
 	
-	if (code == F_ROMAN_1 || code == F_SANSSERIF_1 || code == F_TYPEWRITER_1 || code == F_SLANTED_1)
-		fprintf(fRtf, "{\\plain");
-	else
-		fprintf(fRtf, "{");
+	if (code == F_ROMAN_2      || code == F_SANSSERIF_2 || 
+	    code == F_TYPEWRITER_2 || code == F_SLANTED_2) {
+		char *s;
+		fprintf(fRtf, "{\\f%d ", num);
+		s = getParam();
+		ConvertString(s);
+		free(s);
 
-	fprintf(fRtf, "\\f%ld ", num);
-//	ungetTexChar('{');
-	Convert();
+	} else if (code == F_ROMAN_1      || code == F_SANSSERIF_1 || 
+	           code == F_TYPEWRITER_1 || code == F_SLANTED_1) {
+
+		fprintf(fRtf, "{\\plain\\f%d ", num);
+		Convert();
+
+	} else {
+		fprintf(fRtf, "{\\f%d ", num);
+		Convert();
+	}
 	fprintf(fRtf, "}");
-//	ConvertString("}");
 
-//	Convert();
 	diagnostics(4, "Exiting CmdSetFont");
 }
 

@@ -46,21 +46,10 @@ extern void ReadCfg (void)
 /*@modifies configinfo@*/
 ;
 
-/*@null@*//*@dependent@*/
-extern size_t SearchRtfIndex ( /*@in@*/ const char *theCommand
-                              ,                int WhichArray
-                              );
-/*@null@*/ 
-extern const char *SearchRtfCmd ( /*@in@*/ const char *theCommand
-                                ,                int WhichArray
-	                        );
-/*@null@*/
-extern const ConfigEntryT **CfgStartIterate (/*@unused@*/ int WhichCfg);
-
-/*@null@*/
-extern const ConfigEntryT **CfgNext (                  int            WhichCfg
-                                    , /*@null@*/ const ConfigEntryT **last
-				    );
+extern size_t SearchRtfIndex (const char *theCommand, int WhichArray);
+extern char *SearchRtfCmd (const char *theCommand, int WhichArray);
+extern ConfigEntryT **CfgStartIterate (int WhichCfg);
+extern ConfigEntryT **CfgNext (int WhichCfg, ConfigEntryT **last);
 
 
 /* Values for WhichArray */
@@ -71,7 +60,7 @@ extern const ConfigEntryT **CfgNext (                  int            WhichCfg
 
 extern void ReadLg(char *lang);
 /*@null@*/ 
-extern const char *TranslateName(char *name);
+extern char *TranslateName(char *name);
 
 #ifndef LIBDIR
 #define LIBDIR ""

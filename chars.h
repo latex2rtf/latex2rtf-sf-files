@@ -3,6 +3,8 @@
 #define CMD_SLITEX 3
 #define CMD_BIBTEX 4
 #define CMD_LATEXE 5
+#define CMD_AMSTEX 6
+#define CMD_AMSLATEX 7
 
 void            CmdCedillaChar(int code);
 void            CmdUmlauteChar(int code);

@@ -54,7 +54,6 @@
 purpose : includes besides funct2.c all functions which are called from the programm commands.c;
  ****************************************************************************/
 
-/********************************* includes *********************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,41 +69,36 @@ purpose : includes besides funct2.c all functions which are called from the prog
 #include "util.h"
 #include "encode.h"
 #include "parser.h"
-/*****************************************************************************/
+#include "counters.h"
+#include "lengths.h"
+#include "preamble.h"
 
-/**************************** extern variables ******************************/
 extern bool     bInDocument;	/* true if File-Pointer is in the document */
 extern int      RecursLevel;	/* counts returns occured by closing braces */
 extern bool     g_processing_equation;	/* true at a formula-convertion */
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
-extern bool     titlepage;	/* true if titlepage-mode is set */
 extern bool     article;	/* true if article-mode is set */
 extern int      indent;		/* includes the left margin e.g. for
 				 * itemize-commands */
 static bool     NoNewLine;
 extern bool     bNewPar;
-extern bool     TITLE_AUTHOR_ON;
 extern bool     mbox;
-extern size_t   DefFont;
+extern int      DefFont;
 extern char    *language;
 extern enum TexCharSetKind TexCharSet;
 extern int      curr_fontbold[MAXENVIRONS];
 extern int      curr_fontital[MAXENVIRONS];
 extern int      curr_fontscap[MAXENVIRONS];
 extern int      curr_fontnumb[MAXENVIRONS];
-/***************************************************************************/
 
 /***************************  prototypes     ********************************/
 void            ConvertFormula();
 static void     CmdLabel1_4(int code, char *text);
 static void     CmdLabelOld(int code, char *text);
-static void     RtfHeader(int where, /* @null@ */ char *what);
-static void     PlainPagestyle(void);
 void            CmdPagestyle( /* @unused@ */ int code);
 void            CmdHeader(int code);
 
 
-/***************************************************************************/
 void 
 CmdBeginEnd(int code)
 /***************************************************************************
@@ -280,7 +274,6 @@ CmdFormula(int code)
 	}
 }
 
-/******************************************************************************/
 void 
 CmdIgnore( /* @unused@ */ int code)
 /******************************************************************************
@@ -290,7 +283,6 @@ CmdIgnore( /* @unused@ */ int code)
 {
 }
 
-/******************************************************************************/
 void 
 CmdLdots( /* @unused@ */ int code)
 /******************************************************************************
@@ -301,13 +293,13 @@ CmdLdots( /* @unused@ */ int code)
 	fprintf(fRtf, "...");
 }
 
+void 
+CmdEmphasize( /* @unused@ */ int code)
 /****************************************************************************
 CmdEmphasize
  purpose: turn on/off the emphasized style for characters
  globals : fRtf
  ******************************************************************************/
-void 
-CmdEmphasize( /* @unused@ */ int code)
 {
 	if (!tabbing_on) {	/* tabbing-environment ignores
 				 * emphasized-style */
@@ -370,171 +362,23 @@ globals  : bIndocument
 {
 	if (code & ON) {	/* on switch */
 		code &= ~(ON);	/* mask MSB */
+		diagnostics(4,"Entering Environment");
 		if (code == DOCUMENT) {
 			/* LEG Meanwhile commented out    ClearEnvironment(); */
 			bInDocument = TRUE;
-			if (!pagestyledefined) {
+//			if (!pagestyledefined) {
 				//diagnostics(WARNING, "rtf 1.4 codes generated, funct1.c (Environment)");
-				PlainPagestyle();
-			}
+//				PlainPagestyle();
+//			}
 			ReadLg(language);
 		}
 		PushEnvironment(code);
 	} else {		/* off switch */
+		diagnostics(4,"Exiting Environment");
 		PopEnvironment();
 	}
 }
 
-/******************************************************************************
-  purpose: converts the tite, author and date-information from LaTex to Rtf
-parameter: code includes which type of the information listed above will be converted
- globals : fRtf
-           TITLE_AUTHOR_ON
-           alignment
-           titlepage: if true a page-break is inserted
- ******************************************************************************/
-void
-CmdTitle( /* @unused@ */ int code)
-{
-	char            title_begin[10];
-	char            author_begin[10];
-	char            date_begin[10];
-
-	static			/* @owned@ */
-	 /* @null@ */ char *title = NULL;
-	static			/* @owned@ */
-	 /* @null@ */ char *author = NULL;
-	static			/* @owned@ */
-	 /* @null@ */ char *date = NULL;
-
-
-	switch (code) {
-	case TITLE_TITLE:
-		title = getParam();
-		break;
-	case TITLE_AUTHOR:
-		TITLE_AUTHOR_ON = TRUE;	/* is used for the \and command */
-		author = getParam();
-		TITLE_AUTHOR_ON = FALSE;
-		break;
-	case TITLE_DATE:
-		date = getParam();
-		break;
-	case TITLE_MAKE:
-		sprintf(title_begin, "%s%2d", "\\fs", (30 * CurrentFontSize()) / 20);
-		sprintf(author_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
-		sprintf(date_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
-
-		fprintf(fRtf, "\n\\par\\pard\\qc {%s ", title_begin);
-		if (title != NULL && strcmp(title, "") != 0)
-			ConvertString(title);
-		fprintf(fRtf, "}");
-
-		fprintf(fRtf, "\n\\par\\qc {%s ", author_begin);
-		if (author != NULL && strcmp(author, "") != 0)
-			ConvertString(author);
-		fprintf(fRtf, "}");
-		
-		fprintf(fRtf, "\n\\par\\qc {%s ", date_begin);
-		if (date != NULL && strcmp(date, "") != 0)
-			ConvertString(date);
-		fprintf(fRtf, "}");
-		
-		fprintf(fRtf, "\n\\par\n\\par\\pard\\q%c ", alignment);
-		if (titlepage)
-			fprintf(fRtf, "\\page ");
-		break;
-	}
-}
-
-static void 
-setDocumentOptions(char *optionlist)
-{
-	char           *option;
-
-	option = strtok(optionlist, ",");
-
-	while (option) {
-		diagnostics(4, "                    option   %s", option);
-		if (strcmp(option, "11pt") == 0)
-			SetDocumentFontSize(22);
-		else if (strcmp(option, "12pt") == 0)
-			SetDocumentFontSize(24);
-		else if (strcmp(option, "german") == 0) {
-			GermanMode = TRUE;
-			PushEnvironment(GERMANMODE);
-			language = strdup(option);
-		} else if (strcmp(option, "spanish") == 0 || strcmp(option, "french") == 0) {
-			language = strdup(option);
-		} else if (strcmp(option, "twoside") == 0) {
-			twoside = TRUE;
-			fprintf(stderr, "\n  rtf1.5 token `\\facingp' used");	/* LEG diag(1,) */
-			fprintf(fRtf, "\\facingp");
-		} else if (strcmp(option, "twocolumn") == 0) {
-			fprintf(fRtf, "\\cols2\\colsx709 ");	/* two columns -- space
-								 * between columns 709 */
-			twocolumn = TRUE;
-		} else if (strcmp(option, "titlepage") == 0) {
-			titlepage = TRUE;
-		} else if (strcmp(option, "isolatin1") == 0) {
-			TexCharSet = ISO_8859_1;
-			fprintf(stderr, "\nisolatin1 style option encountered.");
-			fprintf(stderr, "\nLatin-1 (= ISO 8859-1) special characters will be ");
-			fprintf(stderr, "converted into RTF-Commands!\n");
-		} else if (strcmp(option, "hyperlatex") == 0) {
-			PushEnvironment(HYPERLATEX);
-		} else if (!TryVariableIgnore(option, fTex)) {
-			fprintf(stderr, "\n%s: WARNING: unknown style option %s ignored", progname, option);
-		}
-		option = strtok(NULL, ",");
-	}
-}
-
-void 
-CmdDocumentStyle( /* @unused@ */ int code)
-/******************************************************************************
- purpose: reads the information from the LaTeX \documentstyle command and
-	  converts it to a similar Rtf-information
- ******************************************************************************/
-{
-	char            format[100];
-	char            optionlist[100];
-
-	getBracketParam(optionlist, 99);
-	getBraceParam(format, 99);
-
-	diagnostics(4, "Documentstyle/class options [%s]", optionlist);
-	diagnostics(4, "Documentstyle/class format  {%s}", format);
-
-	setDocumentOptions(optionlist);
-
-	if (strcmp(format, "article") == 0)
-		article = TRUE;
-	else
-		article = FALSE;
-}
-
-void 
-CmdUsepackage( /* @unused@ */ int code)
-/******************************************************************************
- purpose: reads the LaTex2e-usepackage-command parameters and
-	  converts it to a similar Rtf-information
-	  styled after CmdDocumentStyle
- ******************************************************************************/
-{
-	char            package[100];
-	char            optionlist[100];
-
-	getBracketParam(optionlist, 99);
-	getBraceParam(package, 99);
-
-	diagnostics(4, "Package {%s} with options [%s] encountered", package, optionlist);
-
-	if (strcmp(package, "inputenc") == 0 || strcmp(package, "babel") == 0)
-		setDocumentOptions(optionlist);
-	else
-		setDocumentOptions(package);
-}
 
 void 
 CmdSection(int code)
@@ -547,11 +391,6 @@ parameter: code: type of section-recursion-level
            bBlankLine
  ******************************************************************************/
 {
-	static int      part = 0;
-	static int      chapter = 0;
-	static int      section = 0;
-	static int      subsection = 0;
-	static int      subsubsection = 0;
 	char            optparam[100] = "";
 	char            *heading;
 	
@@ -560,78 +399,78 @@ parameter: code: type of section-recursion-level
 	diagnostics(4,"entering CmdSection [%s]{%s}",optparam,heading);
 	switch (code) {
 	case SECT_PART:
-		part++;
+		incrementCounter("part");
 		fprintf(fRtf, "\\par\\pard\\page");
 		fprintf(fRtf, "{\\qc\\b\\fs40 ");
-		fprintf(fRtf, "%s %d\\par ", TranslateName("PART"), part);
+		fprintf(fRtf, "%s %d\\par ", TranslateName("PART"), getCounter("part"));
 		ConvertString(heading);
 		fprintf(fRtf, "\\par}\n\\page\\par \\pard\\q%c", alignment);
 		break;
 
 	case SECT_CHAPTER:
-		chapter++;
-		section = 0;
-		subsection = 0;
-		subsubsection = 0;
+		incrementCounter("chapter");
+		setCounter("section",0);
+		setCounter("subsection",0);
+		setCounter("subsubsection",0);
 		fprintf(fRtf, "\\par\\pard\\page\\pard{\\pntext\\pard\\plain\\b\\fs32\\kerning28 ");
-		fprintf(fRtf, "%d\\par \\par }\\pard\\plain\n", chapter);
-		fprintf(fRtf, "%s%ld%s{", HEADER11, DefFont, HEADER12);
+		fprintf(fRtf, "%d\\par \\par }\\pard\\plain\n", getCounter("chapter"));
+		fprintf(fRtf, "%s%d%s{", HEADER11, DefFont, HEADER12);
 		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%ld\\q%c\n", DefFont, alignment);
+		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
 		bNewPar = FALSE;
 		bBlankLine = TRUE;
 		break;
 
 	case SECT_NORM:
-		section++;
-		subsection = 0;
-		subsubsection = 0;
+		incrementCounter("section");
+		setCounter("subsection",0);
+		setCounter("subsubsection",0);
 		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
 		if (article) {
-			fprintf(fRtf, "\\fs32\\kerning28 %d\\tab}\\pard\\plain\n", section);
-			fprintf(fRtf, "%s%ld%s{", HEADER11, DefFont, HEADER12);
+			fprintf(fRtf, "\\fs32\\kerning28 %d\\tab}\\pard\\plain\n", getCounter("section"));
+			fprintf(fRtf, "%s%d%s{", HEADER11, DefFont, HEADER12);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", chapter,section);
-			fprintf(fRtf, "%s%ld%s{", HEADER21, DefFont, HEADER22);
+			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("chapter"),getCounter("section"));
+			fprintf(fRtf, "%s%d%s{", HEADER21, DefFont, HEADER22);
 		}
 
 		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%ld\\q%c\n", DefFont, alignment);
+		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
 		bNewPar = FALSE;
 		bBlankLine = TRUE;
 		break;
 
 	case SECT_SUB:
-		subsection++;
-		subsubsection = 0;
+		incrementCounter("subsection");
+		setCounter("subsubsection",0);
 		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
 		if (article) {
-			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", section, subsection);
-			fprintf(fRtf, "%s%ld%s{", HEADER21, DefFont, HEADER22);
+			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"));
+			fprintf(fRtf, "%s%d%s{", HEADER21, DefFont, HEADER22);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", chapter, section, subsection);
-			fprintf(fRtf, "%s%ld%s{", HEADER31, DefFont, HEADER32);
+			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"));
+			fprintf(fRtf, "%s%d%s{", HEADER31, DefFont, HEADER32);
 		}
 
 		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%ld\\q%c\n", DefFont, alignment);
+		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
 		bNewPar = FALSE;
 		bBlankLine = TRUE;
 		break;
 
 	case SECT_SUBSUB:
-		subsubsection++;
+		incrementCounter("subsubsection");
 		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
 		if (article) {
-			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", section, subsection, subsubsection);
-			fprintf(fRtf, "%s%ld%s{", HEADER31, DefFont, HEADER32);
+			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+			fprintf(fRtf, "%s%d%s{", HEADER31, DefFont, HEADER32);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d.%d.%d\\tab}\\pard\\plain\n", chapter, section, subsection, subsubsection);
-			fprintf(fRtf, "%s%ld%s{", HEADER41, DefFont, HEADER42);
+			fprintf(fRtf, "\\fs24 %d.%d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+			fprintf(fRtf, "%s%d%s{", HEADER41, DefFont, HEADER42);
 		}
 
 		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%ld\\q%c\n",DefFont, alignment);
+		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%d\\q%c\n",DefFont, alignment);
 		bNewPar = FALSE;
 		bBlankLine = TRUE;
 		break;
@@ -646,8 +485,6 @@ CmdCaption(int code)
  purpose: converts \caption from LaTeX to Rtf
  ******************************************************************************/
 {
-	static int      table_caption = 0;
-	static int      figure_caption = 0;
 	char           *thecaption;
 	char            lst_entry[300];
 	
@@ -656,11 +493,11 @@ CmdCaption(int code)
 	diagnostics(4, "entering CmdCaption [%s]", lst_entry);
 
 	if (g_processing_figure) {
-		figure_caption++;
-		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("FIGURE"), figure_caption);
+		incrementCounter("figure");
+		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("FIGURE"), getCounter("figure"));
 	} else {
-		table_caption++;
-		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("TABLE"), table_caption);
+		incrementCounter("table");
+		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("TABLE"), getCounter("table"));
 	}
 
 	thecaption = getParam();
@@ -668,6 +505,104 @@ CmdCaption(int code)
 	ConvertString(thecaption);
 	free(thecaption);
 	fprintf(fRtf, "}\n\\par\\pard\\q%c\n", alignment);
+	diagnostics(4, "exiting CmdCaption");
+}
+
+void
+CmdCounter(int code)
+/******************************************************************************
+ purpose: handles \newcounter, \setcounter, \addtocounter, \value
+ ******************************************************************************/
+{
+	char            *s, *s2, *s3, *s4;
+	int              num;
+	
+	s = getParam();
+		
+	diagnostics(4,"Entering CmdCounter(), <%s>", s);
+	
+	if (code == COUNTER_ADD || code == COUNTER_SET) {
+	
+		s2 = getParam();
+
+		if ((s3 = strchr(s2,'{')) && (s4 = strchr(s2,'}')) ) {
+			s3++;
+			*s4 = '\0';
+			diagnostics(4,"CmdCounter() processing \\value{%s}", s3);
+			num = getCounter(s3);
+
+		} else if (sscanf(s2, "%d", &num) != 1) {
+
+			fprintf(stderr, "\nBad parameter in set/addcounter{%s}{%s}\n", s,s2);
+			free(s2);
+			free(s);
+			return;
+		}
+		
+		free(s2);
+		if (code == COUNTER_ADD)
+			setCounter(s, getCounter(s)+num);
+		else
+			setCounter(s, num);
+			
+	} else if (code == COUNTER_NEW)
+		setCounter(s,0);
+		
+	free(s);
+}
+
+void
+CmdLength(int code)
+/******************************************************************************
+ purpose: handles \newlength, \setlength, \addtolength
+ purpose: handle \textwidth=0.8in or \moveright0.1\textwidth
+ ******************************************************************************/
+{
+	char            *s, *s1;
+	char             cThis;
+	int              num;
+	
+
+	if (code == LENGTH_ADD || code == LENGTH_SET || code == LENGTH_NEW) {
+		s = getParam();
+		if (strlen(s)<=1) {
+			free(s);
+			fprintf(stderr,"missing argument in \\newlength \\addtolength or \\setlength");
+			return;
+		}
+		s1 = s + 1; /* skip initial '//' */
+		diagnostics(4,"Entering CmdLength(), <%s>", s1);
+		if (code == LENGTH_ADD || code == LENGTH_SET) {
+		
+			cThis = getNonSpace();
+			
+			if (cThis=='{') {
+				num = getDimension();
+				while ((cThis=getTexChar()) != '}');
+						
+				if (code == LENGTH_ADD)
+					setLength(s1, getLength(s1)+num);
+				else
+					setLength(s1, num);
+			} else 
+				fprintf(stderr,"bad parameter to \\addtolength or \\setlength");
+				
+		} else
+			setLength(s1,0);
+			
+		free(s);
+	
+	} else {
+		skipSpaces();
+		cThis = getTexChar();
+		
+		if (cThis == '=')			/* optional '=' */
+			skipSpaces();
+		else
+			ungetTexChar(cThis);
+			
+		num = getDimension();      /* discard for now */
+	}
 }
 
 void 
@@ -684,6 +619,7 @@ CmdFootNote(int code)
 	int             text_ref_upsize, foot_ref_upsize;
 	char            *footnote;
 
+	diagnostics(4,"Entering ConvertFootNote");
 	getBracketParam(number, 254);	/* is ignored because of the
 					 * automatic footnumber-generation */
 
@@ -693,149 +629,22 @@ CmdFootNote(int code)
 	if (code == THANKS) {
 		thankno++;
 		fprintf(fRtf, "{\\up%d %d}\n", text_ref_upsize, thankno);
-		fprintf(fRtf, "{\\*\\footnote \\pard\\plain\\s246\\f%ld",DefFont);
+		fprintf(fRtf, "{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
 		fprintf(fRtf, "\\fs%d {\\up%d %d}", CurrentFontSize(), foot_ref_upsize, thankno);
 	} else {
 		fprintf(fRtf, "{\\up%d\\chftn}\n", text_ref_upsize);
-		fprintf(fRtf, "{\\*\\footnote\\pard\\plain\\s246");
-		fprintf(fRtf, "\\s246\\f%ld\\fs%d {\\up%d\\chftn}", DefFont, CurrentFontSize(), foot_ref_upsize);
+		fprintf(fRtf, "{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
+		fprintf(fRtf, "\\fs%d {\\up%d\\chftn}", CurrentFontSize(), foot_ref_upsize);
 	}
 
-	diagnostics(4,"Entering ConvertString from CmdFootNote");
 	footnote = getParam();
 	if (footnote) {
 		ConvertString(footnote);
 		free(footnote);
 	}
-	diagnostics(4,"Exiting ConvertString from CmdFootNote");
+	diagnostics(4,"Exiting CmdFootNote");
 	fprintf(fRtf, "}\n ");
 }
-
-
-/******************************************************************************
-  LEG030598
-  purpose: sets centered page numbering at bottom in rtf-output
-
-  globals : pagenumbering set to TRUE if pagenumbering is to occur, default
- ******************************************************************************/
-void
-PlainPagestyle(void)
-{
-	int fn = getTexFontNumber("Roman");
-	pagenumbering = TRUE;
-	
-	if (twoside) {
-		fprintf(fRtf, "\n{\\footerr");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
-		fprintf(fRtf, "\n{\\footerl");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
-	} else {
-		fprintf(fRtf, "\n{\\footer");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
-	}
-}
-
-/******************************************************************************
- * LEG030598
- purpose: sets page numbering in rtf-output
- parameter:
-
- globals : headings  set to TRUE if the pagenumber is to go into the header
-           pagenumbering set to TRUE if pagenumbering is to occur- default
-	   pagestyledefined, flag, set to true
-
-Produces latex-like headers and footers.
-Needs to be terminated for:
-- headings chapter, section informations and page numbering
-- myheadings page nunmbering, combined with markboth, markright.
-
- ******************************************************************************/
-void
-CmdPagestyle( /* @unused@ */ int code)
-{
-	static char    *style = "";
-
-	pagestyledefined = TRUE;
-	style = getParam();
-	if (strcmp(style, "empty") == 0) {
-		if (pagenumbering) {
-			fprintf(fRtf, "{\\footer}");
-			pagenumbering = FALSE;
-		}
-	} else if (strcmp(style, "plain") == 0)
-		PlainPagestyle();
-	else if (strcmp(style, "headings") == 0) {
-		headings = TRUE;
-		/*--- but here code to put section information in header, pagenumbering
-		      in header */
-	} else if (strcmp(style, "myheadings") == 0) {
-		headings = TRUE;
-		/*--- but here code to put empty section information in header, will be
-		      provided by markboth, markright
-		      pagenumbering in header */
-	} else {
-		fprintf(stderr, "\nWarning: unknown \\pagestyle{%s} ignored", style);
-	}
-}
-
-
-
-/******************************************************************************
- * LEG030598
- purpose: converts the \markboth and \markright Command in Header information
- parameter: code: BOTH_SIDES, RIGHT_SIDE
-
- globals : twoside,
- ******************************************************************************/
-void
-CmdHeader(int code)
-{
-	if (code == BOTH_SIDES) {
-		if (twoside) {
-			RtfHeader(LEFT_SIDE, NULL);
-			RtfHeader(RIGHT_SIDE, NULL);
-		} else
-			fprintf(stderr, "\nWarning: \\markboth used in onesided documentstyle");
-	} else
-		RtfHeader(BOTH_SIDES, NULL);
-}
-
-/******************************************************************************
-  LEG030598
-  purpose: generates the header command in the rtf-output
-  parameter: where: RIGHT_SIDE, LEFT_SIDE -handed page, BOTH_SIDES
-           what:  NULL - Convert from LaTeX input, else put "what" into rtf
-                  output
- ******************************************************************************/
-void
-RtfHeader(int where, char *what)
-{
-	int fn = getTexFontNumber("Roman");
-	switch (where) {
-		case RIGHT_SIDE:
-		fprintf(fRtf, "\n{\\headerr \\pard\\plain\\f%d ",fn);
-		break;
-	case LEFT_SIDE:
-		fprintf(fRtf, "\n{\\headerl \\pard\\plain\\f%d ",fn);
-		break;
-	case BOTH_SIDES:
-		fprintf(fRtf, "\n{\\header \\pard\\plain\\f%d ",fn);
-		break;
-	default:
-		error("\n error -> called RtfHeader with illegal parameter\n ");
-	}
-	if (what == NULL) {
-		diagnostics(4, "Entering Convert() from RtfHeader");
-		Convert();
-		diagnostics(4, "Exiting Convert() from RtfHeader");
-		fprintf(fRtf, "}");
-	} else
-		fprintf(fRtf, "%s}", what);
-}
-
 
 void 
 CmdQuote(int code)
@@ -951,15 +760,11 @@ parameter : code : type of environment and on/off-state
 	fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
 
 	if (getBracketParam(itemlabel, 99)) {	/* \item[label] */
-		int             i;
 
 		fprintf(fRtf, "{\\b ");	/* bold on */
-		for (i = 0; itemlabel[i] != '\0'; i++) {
-			if (TexCharSet == ISO_8859_1)
-				Write_ISO_8859_1(itemlabel[i]);
-			else
-				Write_Default_Charset(itemlabel[i]);
-		}
+		diagnostics(5,"Entering ConvertString from CmdItem");
+		ConvertString(itemlabel);
+		diagnostics(5,"Exiting ConvertString from CmdItem");
 		fprintf(fRtf, "}\\tab ");	/* bold off */
 		
 	}
@@ -1004,26 +809,32 @@ parameter : code : type of environment and on/off-state
 }
 
 void 
-CmdMbox( /* @unused@ */ int code)
+CmdBox( /* @unused@ */ int code)
 /******************************************************************************
-  purpose: converts the LaTeX \mbox-command into  an similar Rtf-style
+  purpose: converts the LaTeX \box-commands into  an similar Rtf-style
   globals: mbox
  ******************************************************************************/
 {
-	bool            was_processing_equation = g_processing_equation;
+	char           *s;
+	
 	if (g_processing_equation) {
 		g_processing_equation = FALSE;
-		fprintf(fRtf, "}");	/* close italics */
-	}
-	mbox = TRUE;
-	diagnostics(4, "Entering Convert() from CmdMbox");
-	Convert();
-	diagnostics(4, "Exiting Convert() from CmdMbox");
-	mbox = FALSE;
+		fprintf(fRtf, "}");	/* close math italics */
 
-	if (was_processing_equation) {
+		mbox = TRUE;
+		s = getParam();
+		diagnostics(4, "Entering ConvertString(%s) from CmdBox",s);
+		ConvertString(s);
+		diagnostics(4, "Exiting Convert() from CmdBox");
+		free(s);
+		
+		mbox = FALSE;
 		g_processing_equation = TRUE;
 		fprintf(fRtf, "{\\i ");	/* reopen math italics */
+	} else {
+		mbox = TRUE;
+		Convert();
+		mbox = FALSE;
 	}
 }
 
@@ -1037,17 +848,15 @@ CmdInclude(int code)
           progname
  ******************************************************************************/
 {
-	char            fname[1024];
-	char            fullpath[1024];
-
-	 /* @dependent@ */ FILE *fp;
-	 /* @dependent@ */ FILE *LatexFile;
+	char            *fname;
+	FILE *fp;
+	FILE *LatexFile;
 	char           *olatexname;
 	long            oldlinenumber;
 
 	strcpy(fname, "");
 
-	GetInputParam(fname, 99);
+	fname = getParam();
 	if (strstr(fname, "german.sty") != NULL) {
 		GermanMode = TRUE;
 		PushEnvironment(GERMANMODE);
@@ -1056,7 +865,7 @@ CmdInclude(int code)
 	assert(fname != NULL);
 
 	if (strcmp(fname, "") == 0) {
-		fprintf(stderr, "\n%s: WARNING: invalid filename after \\include: %s\n", progname, fname);
+		diagnostics(WARNING, "Empty or invalid filename in \\include{filename}");
 		return;
 	}
 	/* extension .tex is appended automatically */
@@ -1065,6 +874,7 @@ CmdInclude(int code)
 
 #ifdef __MWERKS__
 	{
+	char            fullpath[1024];
 		char           *dp;
 		strcpy(fullpath, latexname);
 		dp = strrchr(fullpath, ':');
@@ -1079,19 +889,19 @@ CmdInclude(int code)
 #endif
 
 	if (g_processing_include) {
-		fprintf(stderr, "\nWARNING: cannot process nested include file: %s\n", fullpath);
+		diagnostics(WARNING, "Cannot process nested \\include{%s}", latexname);
 		return;
 	}
 	g_processing_include = TRUE;
 
-
 	if ((fp = (fopen(fname, "rb"))) == NULL) {
-		fprintf(stderr, "\nWARNING: cannot open include file: %s\n", fullpath);
+		diagnostics(WARNING, "Cannot open \\include file: %s", latexname);
 		return;
 	}
-	fprintf(stderr, "\nProcessing include file: %s\n", fullpath);
+	fprintf(stderr, "\nProcessing include file: %s\n", latexname);
 
 	LatexFile = fTex;	/* Save current file pointer */
+	diagnostics(5, "changing fTex file pointer in CmdInclude");
 	fTex = fp;
 	oldlinenumber = linenumber;
 	linenumber = 1;
@@ -1105,10 +915,12 @@ CmdInclude(int code)
 	if (fclose(fp) != 0)
 		diagnostics(ERROR, "Could not close include file.");
 
+	diagnostics(5, "resetting fTex file pointer in CmdInclude");
 	fTex = LatexFile;
 	latexname = olatexname;
 	linenumber = oldlinenumber;
 	g_processing_include = FALSE;
+	free(fname);
 }
 
 void
@@ -1137,7 +949,7 @@ CmdVerb(int code)
 {
 	char            cThis;
 	char            markingchar = '\177';
-	size_t          num;
+	int             num;
 
 	while ((cThis = getRawTexChar())) {
 		if ((cThis != ' ') && (cThis != '*') && !isalpha(cThis)) {
@@ -1147,7 +959,7 @@ CmdVerb(int code)
 	}
 
 	num = getTexFontNumber("Typewriter");
-	fprintf(fRtf, "{\\f%ld ", num);
+	fprintf(fRtf, "{\\f%d ", num);
 
 	while ((cThis = getRawTexChar()) && cThis != markingchar) 
 		putRtfChar(cThis);
@@ -1229,13 +1041,13 @@ parameter: code: turns on/off handling routine
 void 
 CmdIgnoreDef( /* @unused@ */ int code)
 /*****************************************************************************
- purpose: newenvironments or newcommands which are defined by the user can't
-	  be converted into Rtf and so they must be ignored
+ purpose: newenvironments or newcommands which are defined by the user aren't
+	      converted into Rtf and so they must be ignored
  ******************************************************************************/
 {
 	char            cThis, *temp;
 
-	while ((cThis = getTexChar()) && cThis == '{');
+	while ((cThis = getTexChar()) && cThis != '{');
     ungetTexChar(cThis);
 	temp = getParam();
 	free(temp);
@@ -1339,6 +1151,7 @@ CmdIgnoreLet( /* @unused@ */ int code)
 	}
 }
 
+
 /*************************************************************************
  *LEG250498
  * purpose: opens existing aux-file and scans for token, with value
@@ -1402,22 +1215,17 @@ ScanAux(char *token, char *reference, int code)
 		}
 	}
 
-	fprintf(stderr, "Warning: \\%s{%s} not found in %s\n", token, reference, AuxName);
+	diagnostics(WARNING, "\\%s{%s} not found in %s", token, reference, AuxName);
 	fprintf(fRtf, "?");
 	return 0;
 }
 
-
-
-
-/******************************************************************************
-  purpose : label, produce rtf-output in dependency of the rtfversion.
-  parameter : code  kind of label, passed through
-
-  LEG250498
- ******************************************************************************/
 void
 CmdLabel(int code)
+/******************************************************************************
+  purpose : label, produce rtf-output in dependency of the rtfversion.
+  parameter : code  kind of label, passed through  *** BROKEN by SAP ***
+ ******************************************************************************/
 {
 	char           *text;
 	char            cThis;
@@ -1550,15 +1358,17 @@ ConvertString(char *string)
 
 	LatexFile = fTex;
 	fTex = fp;
+	diagnostics(5, "changing fTex file pointer in ConvertString");
 	oldlinenumber = linenumber;
 	linenumber = 1;
 
 	strncpy(temp,string,30);
-	diagnostics(4, "Entering Convert() from StringConvert() <%s>",temp);
+	diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
 	Convert();
-	diagnostics(4, "Exiting Convert() from StringConvert()");
+	diagnostics(5, "Exiting Convert() from StringConvert()");
 
 	fTex = LatexFile;
+	diagnostics(5, "resetting fTex file pointer in ConvertString");
 	linenumber = oldlinenumber;
 	if (fclose(fp) != 0)
 		diagnostics(ERROR, "Could not close tempfile, (ConvertString).");

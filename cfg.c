@@ -319,7 +319,6 @@ search_rtf(const char *theTexCommand, int WhichCfg)
 		);
 }
 
-/***/
 size_t 
 SearchRtfIndex(const char *theTexCommand, int WhichCfg)
 /****************************************************************************
@@ -335,22 +334,25 @@ SearchRtfIndex(const char *theTexCommand, int WhichCfg)
 	return help - configinfo[WhichCfg].config_info;
 }
 
-/***/
-const char     *
+char     *
 SearchRtfCmd(const char *theTexCommand, int WhichCfg)
 /****************************************************************************
  * purpose:  search theTexCommand in a specified config data and return
  *           pointer to the data
  ****************************************************************************/
 {
-	ConfigEntryT  **help = search_rtf(theTexCommand, WhichCfg);
-	return help == NULL ? NULL : (*help)->RtfCommand;
+	ConfigEntryT  **help;
+	
+	help = search_rtf(theTexCommand, WhichCfg);
+	
+	if (help == NULL)
+		return NULL;
+	else
+		return (char *)(*help)->RtfCommand;
 }
 
-/***/
-/* @null@ */
-const ConfigEntryT **
-CfgStartIterate( /* @unused@ */ int WhichCfg)
+ConfigEntryT **
+CfgStartIterate(int WhichCfg)
 /****************************************************************************
  * purpose:  Start iterating of configuration data
  ****************************************************************************/
@@ -358,22 +360,18 @@ CfgStartIterate( /* @unused@ */ int WhichCfg)
 	return NULL;
 }
 
-/***/
-/* @null@ */
-const ConfigEntryT **
-CfgNext(int WhichCfg
-	, /* @null@ */ const ConfigEntryT ** last
-)
+ConfigEntryT **
+CfgNext(int WhichCfg, ConfigEntryT ** last)
 /****************************************************************************
  * purpose:  Get the next entry from specified configuration data
  ****************************************************************************/
 {
 	if (last == NULL) {
-		return (const ConfigEntryT **) configinfo[WhichCfg].config_info;
+		return (ConfigEntryT **) configinfo[WhichCfg].config_info;
 	}
 	last++;
 	if (last
-	    > (const ConfigEntryT **) configinfo[WhichCfg].config_info
+	    > (ConfigEntryT **) configinfo[WhichCfg].config_info
 	    + configinfo[WhichCfg].config_info_size
 	    - 1
 		) {
@@ -428,7 +426,7 @@ ReadLg(char *lang)
  params  : name, name of heading.
 
  ****************************************************************************/
-const char     *
+char     *
 TranslateName(char *name)
 {
 	return SearchRtfCmd(name, LANGUAGE_A);

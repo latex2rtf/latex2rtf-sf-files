@@ -82,7 +82,7 @@ ENVIRONMENT     ignores contentents of that environment
 	bool            result = TRUE;
 
 	if (strlen(command) >= 100) {
-		fprintf(stderr, "\n%s: WARNING: Command %s is too long in LaTeX-File.\n", progname, command);
+		diagnostics(WARNING, "Command <%s> is too long", command);
 		return FALSE;	/* command too long */
 	}
 	TexCommand[0] = '\\';

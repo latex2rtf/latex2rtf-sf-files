@@ -40,8 +40,10 @@
 #include "main.h"
 #include "chars.h"
 #include "l2r_fonts.h"
+#include "preamble.h"
 #include "funct1.h"
 #include "funct2.h"
+#include "letterformat.h"
 #include "commands.h"
 #include "parser.h"
 
@@ -73,33 +75,33 @@ static CommandArray commands[] = {
 	{"centerline", Paragraph, PAR_CENTERLINE},
 	/* ---------- FONT FAMILIES ------------------- */
 	{"rm", CmdSetFont, F_ROMAN_1},
-	{"textrm", CmdSetFont, F_ROMAN},
+	{"textrm", CmdSetFont, F_ROMAN_2},
 	{"rmfamily", CmdSetFont, F_ROMAN},
 	{"mathrm", CmdSetFont, F_ROMAN},
 	{"sf", CmdSetFont, F_SANSSERIF_1},
-	{"textsf", CmdSetFont, F_SANSSERIF},
+	{"textsf", CmdSetFont, F_SANSSERIF_2},
 	{"sffamily", CmdSetFont, F_SANSSERIF},
 	{"mathsf", CmdSetFont, F_SANSSERIF},
 	{"tt", CmdSetFont, F_TYPEWRITER_1},
-	{"texttt", CmdSetFont, F_TYPEWRITER},
+	{"texttt", CmdSetFont, F_TYPEWRITER_2},
 	{"ttfamily", CmdSetFont, F_TYPEWRITER},
 	{"sl", CmdSetFont, F_SLANTED_1},
-	{"textsl", CmdSetFont, F_SLANTED},
+	{"textsl", CmdSetFont, F_SLANTED_2},
 	{"slshape", CmdSetFont, F_SLANTED},
 	/* ---------- FONT SERIES ------------------- */
 	{"bf", CmdSetFontStyle, CMD_BOLD_1},
-	{"textbf", CmdSetFontStyle, CMD_BOLD},
-	{"mathbf", CmdSetFontStyle, CMD_BOLD},
+	{"textbf", CmdSetFontStyle, CMD_BOLD_2},
+	{"mathbf", CmdSetFontStyle, CMD_BOLD_2},
 	{"bfseries", CmdSetFontStyle, CMD_BOLD},
-	{"textmd", CmdSetFontStyle, CMD_BOLD},	/* poor approximation */
+	{"textmd", CmdSetFontStyle, CMD_BOLD_2},	/* poor approximation */
 	{"mdseries", CmdSetFontStyle, CMD_BOLD},
 	/* ---------- FONT SHAPE ------------------- */
 	{"it", CmdSetFontStyle, CMD_ITALIC_1},
-	{"textit", CmdSetFontStyle, CMD_ITALIC},
-	{"mathit", CmdSetFontStyle, CMD_ITALIC},
+	{"textit", CmdSetFontStyle, CMD_ITALIC_2},
+	{"mathit", CmdSetFontStyle, CMD_ITALIC_2},
 	{"itshape", CmdSetFontStyle, CMD_ITALIC},
 	{"sc", CmdSetFontStyle, CMD_CAPS_1},
-	{"textsc", CmdSetFontStyle, CMD_CAPS},
+	{"textsc", CmdSetFontStyle, CMD_CAPS_2},
 	{"scshape", CmdSetFontStyle, CMD_CAPS},
 	{"underline", CmdSetFontStyle, CMD_UNDERLINE},
 	/* ---------- FONT SIZE ------------------- */
@@ -121,6 +123,9 @@ static CommandArray commands[] = {
 	{"TeX", CmdLogo, CMD_TEX},
 	{"SLiTeX", CmdLogo, CMD_SLITEX},
 	{"BibTeX", CmdLogo, CMD_BIBTEX},
+	{"AmSTeX", CmdLogo, CMD_AMSTEX},
+	{"AmSLaTeX", CmdLogo, CMD_AMSLATEX},
+	
 	/* ---------- SPECIAL CHARACTERS ------------------- */
 	{"hat", CmdHatChar, 0},
 	{"check", CmdHacekChar, 0},
@@ -141,7 +146,10 @@ static CommandArray commands[] = {
 	{"hat", CmdHatChar, 0},
 
 	{"ldots", CmdLdots, 0},
-	{"maketitle", CmdTitle, TITLE_MAKE},
+	{"title", CmdTitle, TITLE_TITLE},
+	{"author", CmdTitle, TITLE_AUTHOR},
+	{"date", CmdTitle, TITLE_DATE},
+	{"maketitle", CmdMakeTitle, 0},
 	{"section", CmdSection, SECT_NORM},
 	{"section*", CmdSection, SECT_NORM},
 	{"caption", CmdCaption, 0},
@@ -158,8 +166,9 @@ static CommandArray commands[] = {
 	{"clearpage", CmdNewPage, NewPage},
 	{"cleardoublepage", CmdNewPage, NewPage},
 	{"newpage", CmdNewPage, NewColumn},
-	{"mbox", CmdMbox, 0},
-	{"hbox", CmdMbox, 0},
+	{"mbox", CmdBox, 0},
+	{"hbox", CmdBox, 0},
+	{"vbox", CmdBox, 0},
 	{"frenchspacing", CmdIgnore, 0},
 	{"nonfrenchspacing", CmdIgnore, 0},
 	{"include", CmdInclude, 0},	/* include Latex file */
@@ -172,10 +181,13 @@ static CommandArray commands[] = {
 	{"raggedbottom", CmdBottom, 0},
 	{"includegraphics", CmdGraphics, 0},
 	{"includegraphics*", CmdGraphics, 0},
-	{"setlength", CmdIgnoreParameter, No_Opt_Two_NormParam},
+	{"moveleft", CmdLength, 0},
+	{"moveright", CmdLength, 0},
+	{"addtolength", CmdLength, LENGTH_ADD},
+	{"setlength", CmdLength, LENGTH_SET},
+	{"newlength", CmdLength, LENGTH_NEW},
 	{"footnotemark", CmdIgnoreParameter, One_Opt_No_NormParam},
 	{"footnotetext", CmdIgnoreParameter, One_Opt_One_NormParam},
-	{"newlength", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"label", CmdLabel, LABEL},
 	{"ref", CmdLabel, REF},
 	{"pageref", CmdLabel, PAGEREF},
@@ -221,8 +233,10 @@ static CommandArray commands[] = {
 	{"renewtheorem", CmdIgnoreParameter, One_Opt_Two_NormParam},
 	{"newcount", CmdIgnoreDef, 0},
 	{"output", CmdIgnoreDef, 0},
-	{"newcounter", CmdIgnoreParameter, One_Opt_One_NormParam},
-	{"value", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"newcounter", CmdCounter, COUNTER_NEW},
+	{"setcounter", CmdCounter, COUNTER_SET},
+	{"addtocounter", CmdCounter, COUNTER_ADD},
+	{"value", CmdCounter, COUNTER_VALUE},
 	{"makebox", CmdIgnoreParameter, Two_Opt_One_NormParam},
 	{"framebox", CmdIgnoreParameter, Two_Opt_One_NormParam},
 	{"sbox", CmdIgnoreParameter, No_Opt_Two_NormParam},
@@ -231,7 +245,6 @@ static CommandArray commands[] = {
 	{"rule", CmdIgnoreParameter, One_Opt_Two_NormParam},
 	{"raisebox", CmdIgnoreParameter, Two_Opt_Two_NormParam},
 	{"newfont", CmdIgnoreParameter, No_Opt_Two_NormParam},
-	{"addtolength", CmdIgnoreParameter, No_Opt_Two_NormParam},
 	{"settowidth", CmdIgnoreParameter, No_Opt_Two_NormParam},
 	{"pagebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
 	{"nopagebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
@@ -241,9 +254,6 @@ static CommandArray commands[] = {
 	{"typein", CmdIgnoreParameter, One_Opt_One_NormParam},
 	{"cite", CmdCite, 0},
 	{"marginpar", CmdIgnoreParameter, One_Opt_One_NormParam},
-	{"addtocounter", CmdIgnoreParameter, No_Opt_Two_NormParam},
-	{"setcounter", CmdIgnoreParameter, No_Opt_Two_NormParam},
-	{"newcounter", CmdIgnoreParameter, One_Opt_One_NormParam},
 	{"baselineskip", Cmd_OptParam_Without_braces, 0},
 	{"lineskip", Cmd_OptParam_Without_braces, 0},
 	{"vsize", Cmd_OptParam_Without_braces, 0},
@@ -262,11 +272,6 @@ static CommandArray commands[] = {
 	{"bibliographystyle", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"let", CmdIgnoreLet, 0},
 	{"cline", CmdIgnoreParameter, No_Opt_One_NormParam},
-	/* begin pftg 23.11.94 ----------------------------------- */
-	{"title", CmdTitle, TITLE_TITLE},
-	{"author", CmdTitle, TITLE_AUTHOR},
-	{"date", CmdTitle, TITLE_DATE},
-	/* end pftg ---------------------------------- */
 	{"multicolumn", CmdMultiCol, 0},
 	{"newcommand", CmdIgnoreParameter, 13},	/* one optional 3 required */
 	{"newenvironment", CmdIgnoreParameter, 13},	/* ditto */
@@ -275,44 +280,44 @@ static CommandArray commands[] = {
 	{"frac", CmdFraction, 0},
 	{"sqrt", CmdRoot, 0},
 	{"int", CmdIntegral, 0},
+	{"nonumber",CmdFormula, FORM_NO_NUMBER},
 	{"", NULL, 0}
 };
 
-/********************************************************************/
-/* commands for environment LaTeX-header */
-/********************************************************************/
-static CommandArray HeaderCommands[] = {
+/********************************************************************
+  commands found in the preamble of the LaTeX file
+ ********************************************************************/
+static CommandArray PreambleCommands[] = {
 	{"documentclass", CmdDocumentStyle, 0},
-	{"usepackage", CmdUsepackage, 0},
 	{"documentstyle", CmdDocumentStyle, 0},
-	{"setlength", CmdIgnoreParameter, No_Opt_Two_NormParam},
-	{"pagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},	/* pagestyle is ignored
-									 * because there is a
-									 * variable calculation
-									 * in the RTF-header
-									 * which can't be
-									 * converted by reading
-									 * the LATEX-File. */
-	{"pagenumbering", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
-	{"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"newlength", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"usepackage", CmdUsepackage, 0},
+	{"begin", CmdPreambleBeginEnd, CMD_BEGIN},          /* only \begin{document} should occur */
 	{"title", CmdTitle, TITLE_TITLE},
 	{"author", CmdTitle, TITLE_AUTHOR},
 	{"date", CmdTitle, TITLE_DATE},
-	{"begin", CmdBeginEnd, CMD_BEGIN},
-	{"newcommand", CmdIgnoreParameter, One_Opt_Two_NormParam},
-	{"renewcommand", CmdIgnoreParameter, One_Opt_Two_NormParam},
-	{"def", CmdIgnoreDef, 0},
 	{"flushbottom", CmdBottom, 0},
 	{"raggedbottom", CmdBottom, 0},
-	{"thanks", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"addtolength", CmdLength, LENGTH_ADD},
+	{"setlength", CmdLength, LENGTH_SET},
+	{"newlength", CmdLength, LENGTH_NEW},
+	{"newcounter", CmdCounter, COUNTER_NEW},
+	{"setcounter", CmdCounter, COUNTER_SET},
+	{"addtocounter", CmdCounter, COUNTER_ADD},
+	{"hyphenation", CmdHyphenation, 0},
+	{"def", CmdIgnoreDef, 0},
+	{"newcommand", CmdIgnoreParameter, One_Opt_Two_NormParam},
+	{"renewcommand", CmdIgnoreParameter, One_Opt_Two_NormParam},
+	{"pagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"pagenumbering", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
+	{"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"makeindex",CmdIgnoreParameter,0},
+	{"makeglossary",CmdIgnoreParameter,0},
+	{"listoffiles",CmdIgnoreParameter,0},
+	{"nofiles",CmdIgnoreParameter,0},
+	{"makelabels",CmdIgnoreParameter,0},
 	{"address", CmdAddress, 0},
 	{"signature", CmdSignature, 0},
-	{"opening", CmdOpening, 0},
-	{"closing", CmdClosing, 0},
-	{"ps", CmdPs, 0},
-	{"nonumber", CmdFormula, FORM_NO_NUMBER},
 	{"", NULL, 0}
 };				/* end of list */
 
@@ -343,11 +348,13 @@ static CommandArray TabbingCommands[] = {
 };
 
 static CommandArray LetterCommands[] = {
-	{"address", CmdAddress, 0},
-	{"signature", CmdSignature, 0},
 	{"opening", CmdOpening, 0},
 	{"closing", CmdClosing, 0},
-	{"ps", CmdPs, 0},
+	{"address", CmdAddress, 0},
+	{"signature", CmdSignature, 0},
+	{"ps", CmdPs, LETTER_PS},
+	{"cc", CmdPs, LETTER_CC},
+	{"encl", CmdPs, LETTER_ENCL},
 	{"", NULL, 0}
 };
 
@@ -388,7 +395,7 @@ static CommandArray params[] = {
 	{"list", CmdList, ITEMIZE},
 	{"itemize", CmdList, ITEMIZE},
 	{"description", CmdList, DESCRIPTION},
-	{"verbatim", CmdVerbatim, 0},
+	{"verbatim", CmdVerbatim, 1},
 	{"verse", CmdVerse, 0},
 	{"tabular", CmdTabular, TABULAR},
 	{"tabular*", CmdTabular, TABULAR_1},
@@ -451,7 +458,7 @@ globals: command-functions have side effects or recursive calls
 				if (Environments[j][i].func == NULL)
 					return FALSE;
 				if (*Environments[j][i].func == CmdIgnoreParameter) {
-					fprintf(stderr, "\n%s: WARNING: command \\%s ignored", progname, cCommand);
+					diagnostics(WARNING, "Command \\%s ignored", cCommand);
 				}
 				(*Environments[j][i].func) ((Environments[j][i].param));
 				return TRUE;	/* Command Function found */
@@ -490,7 +497,7 @@ globals: command-functions have side effects or recursive calls
 	if (AddParam == ON) {
 		sprintf(unknown_environment, "%s%s%s", "end{", cCommand, "}");
 		/* Ignore_Environment(unknown_environment); */
-		fprintf(stderr, "\n%s: WARNING: Environment \"%s\" ignored, because it's not defined in the command-list\n", progname, cCommand);
+		diagnostics(WARNING, "Environment <%s> ignored.  Not defined in commands.c", cCommand);
 	}
 	return FALSE;
 }
@@ -520,7 +527,7 @@ globals: changes Environment - array of active environments
 	previous_font_size = CurrentFontSize();
 	switch (code) {
 	case HEADER:
-		Environments[iEnvCount++] = HeaderCommands;
+		Environments[iEnvCount++] = PreambleCommands;
 		diag = "preample";
 		break;
 	case DOCUMENT:

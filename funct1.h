@@ -49,14 +49,6 @@ void            CmdEmphasize(int code);
 
 void            Environment(int code);
 
-#define TITLE_TITLE 1
-#define TITLE_AUTHOR 2
-#define TITLE_DATE 3
-#define TITLE_MAKE 4
-void            CmdTitle(int code);
-
-void            CmdDocumentStyle(int code);
-
 #define SECT_NORM 1
 #define SECT_SUB 2
 #define SECT_SUBSUB 3
@@ -88,9 +80,22 @@ void            CmdQuote(int code);
 #define RESET_ITEM_COUNTER 0
 
 void            CmdList(int code);
+
+#define COUNTER_NEW   1
+#define COUNTER_SET   2
+#define COUNTER_ADD   3
+#define COUNTER_VALUE 4
+
+void            CmdCounter(int code);
+
+#define LENGTH_NEW   1
+#define LENGTH_SET   2
+#define LENGTH_ADD   3
+void            CmdLength(int code);
+
 void            CmdCaption(int code);
 
-void            CmdMbox(int code);
+void            CmdBox(int code);
 
 void            CmdInclude(int code);
 

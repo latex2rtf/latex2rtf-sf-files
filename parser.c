@@ -12,19 +12,13 @@
  *
  * LEG 070798 adapted Frank Barnes contribution to r2l coding conventions
  *
- */
-/****************************************************************************/
-/* file: parser.h                                                           */
-/* */
-/* Description:                                                             */
-/* Contains declarations for a generic recursive parser the              */
-/* LaTex2RTF code.                                                       */
+
+/* Contains declarations for a generic recursive parser the  LaTex2RTF code.                                                       */
 /* */
 /* Revision history                                                         */
 /* ================                                                         */
 /* 26th June 1998 - Created initial version - fb                            */
-/* 24th May  2001 - Now includes getParam, getbrackeparam, getbraceparam    */
-/* - which really should be rewritten -sap                   */
+/* 24th May  2001 - Now includes getParam, getbracketparam, getbraceparam    */
 /****************************************************************************/
 
 #include <stdio.h>
@@ -37,6 +31,8 @@
 #include "stack.h"
 #include "util.h"
 #include "parser.h"
+#include "l2r_fonts.h"
+#include "lengths.h"
 
 #define POSSTACKSIZE   256	/* Size of stack to save positions              */
 
@@ -53,6 +49,8 @@ static void     parseBrace();	/* parse an open/close brace sequence             
 static void     parseBracket();	/* parse an open/close bracket sequence              */
 
 
+#define CR (char) 0x0d
+#define LF (char) 0x0a
 
 char 
 getRawTexChar()
@@ -71,12 +69,14 @@ getRawTexChar()
 			error("Unknown error reading latex file\n");
 		else
 			thechar = '\0';
-	else if (thechar == '\r') {
+	else if (thechar == CR){                  /* convert CR, CRLF, or LF to \n */
 		thechar = getc(fTex);
-		if (thechar != '\n' && !feof(fTex))
+		if (thechar != LF && !feof(fTex))
 			ungetc(thechar, fTex);
 		thechar = '\n';
-	} else if (thechar == '\t')
+	} else if (thechar == LF)
+		thechar = '\n';
+	else if (thechar == '\t')
 		thechar = ' ';
 
 	currentChar = (char) thechar;
@@ -89,21 +89,26 @@ getRawTexChar()
 	return currentChar;
 }
 
+#undef CR
+#undef LF
+
 /***************************************************************************
  function: getTexChar()
  Description: get the next character from the input stream
               This should be the usual place to access the LaTeX file
-			  It should handle % properly in most cases
+			  It should handle % properly
 ****************************************************************************/
 char 
 getTexChar()
 {
 	char            cThis;
+	char            cSave = lastChar;
+	char            cSave2 = penultimateChar;
 
-	while ((cThis = getRawTexChar()) && cThis == '%' && penultimateChar != '\\') {
+	while ((cThis = getRawTexChar()) && cThis == '%' && cSave != '\\') {
 		skipToEOL();
-		penultimateChar = ' ';
-		lastChar = ' ';
+		penultimateChar = cSave2;
+		lastChar = cSave;
 	}
 	return cThis;
 }
@@ -178,7 +183,7 @@ skipSpaces(void)
 void
 parseBrace()
 /****************************************************************************
-/* Description: Skip text to balancing close brace                          
+  Description: Skip text to balancing close brace                          
 /****************************************************************************/
 {
 	while (getTexChar() != '}') {
@@ -201,7 +206,7 @@ parseBrace()
 void
 parseBracket()
 /****************************************************************************
-/* Description: Skip text to balancing close bracket
+  Description: Skip text to balancing close bracket
 /****************************************************************************/
 {
 	while (getTexChar() != ']') {
@@ -242,7 +247,7 @@ CmdIgnoreParameter(int code)
 	diagnostics(4, "CmdIgnoreParameter [%d] {%d}", optParmCount, regParmCount);
 
 	while (regParmCount) {
-		cThis = getNonSpace();
+		cThis = getNonBlank();
 		switch (currentChar) {
 		case '{':
 
@@ -257,7 +262,7 @@ CmdIgnoreParameter(int code)
 			break;
 
 		default:
-			fprintf(stderr,"\nWarning - ignored command missing {}\n");
+			diagnostics(WARNING,"Ignored command missing {} expected %d - found %d", code%10, code%10-regParmCount);
 			ungetTexChar(cThis);
 			return;
 		}
@@ -280,7 +285,6 @@ CmdIgnoreParameter(int code)
 	return;
 }
 
-/******************************************************************************/
 bool 
 getBracketParam(char *string, int size)
 /******************************************************************************
@@ -370,7 +374,7 @@ with fTex pointing to the first non-space character
 	/* fprintf(stderr, "\nthe string in braces is %s\n", string); */
 }
 
-static char    *
+char    *
 getSimpleCommand(void)
 /**************************************************************************
      purpose: returns a simple command e.g., \alpha\beta will return "alpha"
@@ -384,7 +388,7 @@ getSimpleCommand(void)
 	if (buffer[0] != '\\')
 		return NULL;
 
-	for (size = 1; size < 127; size++) {
+	for (size = 0; size < 127; size++) {
 		buffer[size] = getTexChar();
 
 		if (!isalpha(buffer[size])) {
@@ -414,7 +418,7 @@ getParam(void)
 	      miss : string = ""
  **************************************************************************/
 {
-	char            cThis, buffer[512];
+	char            cThis, buffer[4094];
 	int             PopLevel, PopBrack, bracket, size;
 
 	if ((cThis = getTexChar()) != '{') {
@@ -427,7 +431,7 @@ getParam(void)
 
 	size = 0;
 	bracket = 1;
-	while (bracket > 0 && size < 511) {
+	while (bracket > 0 && size < 4093) {
 		buffer[size] = getTexChar();
 
 		if (buffer[size] == '}') {
@@ -445,11 +449,52 @@ getParam(void)
 	}
 
 	buffer[size] = '\0';
-	if (size == 511)
-		error(" Misplaced brace in command.  Scanned 511 chars looking for end\n");
+	if (size == 4093)
+		error(" Misplaced brace in command.  Scanned 4093 chars looking for end\n");
 
 	diagnostics(5, "getParam result <%s>", buffer);
 
+	return strdup(buffer);
+}
+
+char *
+getTexUntil(char * target)
+/**************************************************************************
+     purpose: returns the portion of the file to the beginning of target
+     returns: NULL if not found
+ **************************************************************************/
+{
+	char            buffer[4096];
+	int             i   = 0;                /* size of string that has been read */
+	int             j   = 0;                /* number of found characters */
+	int             len = strlen(target);
+	
+	while (j < len && i < 4095) {
+	
+		buffer[i] = getTexChar();
+		
+		if (buffer[i] != target[j]) {
+			while (j > 0) {			        /* false start, put back what was found */
+				ungetTexChar(buffer[i]);
+				j--;
+				i--;
+			}
+		} else 
+			j++;
+		
+		i++;
+	}
+	
+	if (i == 4096)
+		error("Could not find target in 4096 characters");
+	
+	buffer[i-len] = '\0';
+
+	while(j>0) {					/* put the target back */
+		j--;
+		ungetTexChar(target[j]);
+	}
+		
 	return strdup(buffer);
 }
 
@@ -477,5 +522,93 @@ getMathParam(void)
 		return strdup(buffer);
 	}
 
+}
+
+int 
+getDimension(void)
+/**************************************************************************
+     purpose: reads a TeX dimension and returns size it twips
+          eg: 3 in, -.013mm, 29 pc, + 42,1 dd, 1234sp
+**************************************************************************/
+{
+	char            cThis, buffer[20];
+	int             i=0;
+	float           num;
+
+	skipSpaces();	
+
+/* obtain optional sign */
+	cThis=getTexChar();
+	if (cThis=='-' || cThis == '+')
+	{
+		buffer[i++]=cThis;
+		skipSpaces();
+		cThis=getTexChar();
+	}
+	
+/* obtain number */
+	while (i<19 && (isdigit(cThis) || cThis=='.' || cThis == ',')){
+		if (cThis==',') cThis = '.';
+		buffer[i++] = cThis;
+		cThis = getTexChar();
+	}
+	ungetTexChar(cThis);
+	buffer[i]='\0';
+	diagnostics(4,"getDimension() number is <%s>", buffer);
+	
+	if (i==19 || sscanf(buffer, "%f", &num) != 1)
+		error("Screwy number in TeX dimension");
+	num *= 2;                   /* convert pts to twips */
+	
+/* obtain unit of measure */
+	skipSpaces();
+	buffer[0] = tolower(getTexChar());
+	
+	if (buffer[0] != '\\') {
+		buffer[1] = tolower(getTexChar());
+		buffer[2] = '\0';
+		
+		diagnostics(4,"getDimension() dimension is <%s>", buffer);
+		if (strstr(buffer,"pt"))
+			return num*20;
+		else if (strstr(buffer,"pc"))
+			return num*12*20;
+		else if (strstr(buffer,"in"))
+			return num*72.27*20;
+		else if (strstr(buffer,"bp"))
+			return num*72.27/72*20;
+		else if (strstr(buffer,"cm"))
+			return num*72.27/2.54*20;
+		else if (strstr(buffer,"mm"))
+			return num*72.27/25.4*20;
+		else if (strstr(buffer,"dd"))
+			return num*1238.0/1157.0*20;
+		else if (strstr(buffer,"dd"))
+			return num*1238.0/1157*20;
+		else if (strstr(buffer,"cc"))
+			return num*1238.0/1157.0*12.0*20;
+		else if (strstr(buffer,"sp"))
+			return num/65536.0*20;
+		else if (strstr(buffer,"ex")) 
+			return num*CurrentFontSize()*0.5;
+		else if (strstr(buffer,"em")) 
+			return num*CurrentFontSize();
+		else if (strstr(buffer,"in"))
+			return num*72.27*20;
+		else {
+			ungetTexChar(buffer[1]);
+			ungetTexChar(buffer[0]);
+			return num;
+		}
+	} else {
+		char * s;
+		ungetTexChar(buffer[0]);
+		s = getSimpleCommand();
+		diagnostics(4,"getDimension() dimension is <%s>", s);
+		num *= getLength(s);
+		free(s);
+		return num;
+	}
+		
 }
 

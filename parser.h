@@ -22,6 +22,8 @@ void            skipSpaces(void);
 void            CmdIgnoreParameter(int);
 char           *getParam(void);
 char           *getMathParam(void);
+char           *getSimpleCommand(void);
 bool            getBracketParam(char *string, int size);
 void            getBraceParam(char *string, int size);
-
+char           *getTexUntil(char * target);
+int             getDimension(void);

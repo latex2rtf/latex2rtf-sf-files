@@ -79,7 +79,7 @@
 # Erick Branderhorst. Parts are written by Ian Jackson and Ian Murdock.
 # TODO: add target "changes". 
 CC=gcc    # C-Compiler 
-CFLAGS=-g -Wall $(XCFLAGS) # Use -O here if you want it optimized
+CFLAGS=-g -Wall -ansi -pedantic $(XCFLAGS) # Use -O here if you want it optimized
 COPY=cp
 INSTALL=install
 DIR_MODE=755
@@ -179,9 +179,12 @@ LIBS=
 # Nothing to change below this line
 SOURCES=commands.c commands.h chars.c chars.h direct.c direct.h encode.c encode.h l2r_fonts.c \
     l2r_fonts.h funct1.c funct1.h funct2.c funct2.h ignore.c ignore.h main.c \
-    main.h stack.c stack.h version.h cfg.c cfg.h Makefile README README.DOS README.Mac\
-    Copyright mygetopt.c optind.c version debian.README \
-    debian.control debian.rules util.c util.h  ChangeLog parser.c parser.h l2r.bat
+    main.h stack.c stack.h version.h cfg.c cfg.h util.c util.h parser.c parser.h \
+    lengths.c lengths.h counters.c counters.h letterformat.c letterformat.h \
+    preamble.c preamble.h \
+    Makefile README README.DOS README.Mac Copyright\
+    mygetopt.c optind.c version \
+    debian.README debian.control debian.rules ChangeLog l2r.bat
 SUPPORT=cfg/direct.cfg cfg/fonts.cfg cfg/ignore.cfg \
     cfg/english.cfg cfg/german.cfg cfg/spanish.cfg cfg/french.cfg
 MANUALS=latex2rtf.1
@@ -191,7 +194,8 @@ TEST=   test/Makefile \
 	test/accentchars.tex test/array.tex test/cite.tex test/cite.bib \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
-	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty
+	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty \
+	test/misc3.tex test/misc4.tex
 
 ARCH="`dpkg --print-architecture`"
 
@@ -202,9 +206,11 @@ all build stamp-build: checkdir latex2rtf
 	touch stamp-build
 
 latex2rtf: l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o funct2.o \
-	chars.o ignore.o cfg.o main.o util.o parser.o mygetopt.o
+	chars.o ignore.o cfg.o main.o util.o parser.o mygetopt.o lengths.o counters.o \
+	preamble.o letterformat.o
 	$(CC) $(CFLAGS) l2r_fonts.o chars.o direct.o encode.o commands.o stack.o \
-	funct1.o funct2.o cfg.o main.o ignore.o util.o parser.o mygetopt.o \
+	funct1.o funct2.o cfg.o main.o ignore.o util.o parser.o lengths.o mygetopt.o counters.o \
+	preamble.o letterformat.o \
 	$(LIBS) -o latex2rtf
 
 l2r_fonts.o: l2r_fonts.c main.h l2r_fonts.h cfg.h

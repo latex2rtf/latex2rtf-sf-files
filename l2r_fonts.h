@@ -19,6 +19,10 @@
 #define F_SLANTED_1    6
 #define F_SANSSERIF_1  7
 #define F_TYPEWRITER_1 8
+#define F_ROMAN_2      9
+#define F_SLANTED_2    10
+#define F_SANSSERIF_2  11
+#define F_TYPEWRITER_2 12
 
 #define CMD_BOLD 1
 #define CMD_ITALIC 2
@@ -27,16 +31,18 @@
 #define CMD_BOLD_1 5
 #define CMD_ITALIC_1 6
 #define CMD_CAPS_1 7
+#define CMD_BOLD_2 8
+#define CMD_ITALIC_2 9
+#define CMD_CAPS_2 10
 
 /* ----------------------------------- */
-#define CMD_CENTERED 8
+#define CMD_CENTERED 13
 /* ----------------------------------- */
 
-void            WriteFontHeader( /* @dependent@ */ FILE * fRtf);
 bool            SetFont(char *TexFont, FILE * fRtf);
-size_t          GetFontNumber(char *Fname);
+int             GetFontNumber(char *Fname);
 void            RemoveFontlist(void);
-size_t          getTexFontNumber(char *Fname);
+int             getTexFontNumber(char *Fname);
 
 void            CmdSetFontStyle(int code);
 void            CmdSetFont(int code);

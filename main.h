@@ -69,7 +69,6 @@ void            IgnoreTo(char cEnd);
  /* @exits@ */ void numerror(int num);
  /* @exits@ */ void error(char *text);
  /* @dependent@ */ FILE *open_cfg(const char *);
-size_t          fTexRead( /* @out@ */ void *ptr, size_t size, size_t nitems, FILE * stream);
 long            getLinenumber(void);
  /* @only@ */ char *EmptyString(void);
 void            diagnostics(int level, char *format,...);
@@ -104,24 +103,6 @@ enum TexCharSetKind {
 
 #define PATHMAX 255
 
-#define HEADER11 "\\s1\\sb240\\sa60\\keepn{\\*\\pn \\pnlvl1\\pndec\\pnprev1\\pnstart1\\pnsp144 {\\pntxta .}}\\b\\f"
-#define HEADER12 "\\fs32\\lang2057\\kerning28"
-
-#define HEADER21 "\\s2\\sb240\\sa60\\keepn{\\*\\pn \\pnlvl2\\pndec\\pnprev1\\pnstart1\\pnsp144 }\\b\\f"
-#define HEADER22 "\\fs24\\lang2057"
-
-#define HEADER31 "\\s3\\sb240\\sa60\\keepn{\\*\\pn \\pnlvl3\\pndec\\pnprev1\\pnstart1\\pnsp144 {\\pntxtb .}}\\b\\f"
-#define HEADER32 "\\fs24\\lang2057"
-
-#define HEADER41 "\\s4\\sb240\\sa60\\keepn{\\*\\pn \\pnlvl4\\pndec\\pnprev1\\pnstart1\\pnsp144 {\\pntxtb .}}\\b\\f"
-#define HEADER42 "\\fs24\\lang2057"
-
-#define HEADER03 "{\\*\\cs10 \\additive Default Paragraph Font;}}"
-#define HEADER13 "{\\*\\pnseclvl1\\pnucrm\\pnstart1\\pnindent720\\pnhang{\\pntxta .}}"
-#define HEADER23 "{\\*\\pnseclvl2\\pnucltr\\pnstart1\\pnindent720\\pnhang{\\pntxta .}}"
-#define HEADER33 "{\\*\\pnseclvl3\\pndec\\pnstart1\\pnindent720\\pnhang{\\pntxta .}}"
-#define HEADER43 "{\\*\\pnseclvl4\\pnlcltr\\pnstart1\\pnindent720\\pnhang{\\pntxta .}}"
-
 /********************************* global variables *************************/
 extern long     linenumber;	/* lines in the LaTex-document */
 extern				/* @null@ */
@@ -140,15 +121,15 @@ extern char     alignment;	/* default for justified: */
 extern fpos_t   pos_begin_kill;
 extern bool     bCite;		/* to produce citations */
 extern bool     GermanMode;
-extern size_t   DefFont;
+extern int      DefFont;
 extern				/* @only@ */
  /* @null@ */ char *colFmt;
 /* @null@ */
 extern char    *hyperref;
 extern bool     pagenumbering;
 extern int      headings;
-extern bool     pagestyledefined;
-extern bool     twoside;
+//extern bool     pagestyledefined;
+//extern bool     twoside;
 
 /* Global flags of Convert routine */
 extern int      RecursLevel;

@@ -79,6 +79,9 @@
 #include "encode.h"
 #include "util.h"
 #include "parser.h"
+#include "lengths.h"
+#include "counters.h"
+#include "preamble.h"
 
 #ifdef __MWERKS__
 #include "MainMain.h"
@@ -134,11 +137,17 @@ bool            pagestyledefined = FALSE;	/* flag, set to true by
 bool            g_processing_figure = FALSE;	/* flag, set for figures and not tables */
 bool            g_processing_include = FALSE;	/* flag set when include file is being processed */
 bool            g_processing_eqnarray = FALSE;	/* flag set when in an eqnarry */
-int             g_equation_number = 0;
+
 bool            g_show_equation_number = FALSE;
 int             g_enumerate_depth = 0;
 bool            g_suppress_equation_number = FALSE;
 bool            g_aux_file_missing = FALSE;	/* assume that it exists */
+
+/* present in preamble, inserted when \maketitle encountered */
+char           *g_author = NULL;
+char           *g_title  = NULL;
+char           *g_date   = NULL;
+
 int             curr_fontbold[MAXENVIRONS] = {0};
 int             curr_fontital[MAXENVIRONS] = {0};
 int             curr_fontscap[MAXENVIRONS] = {0};
@@ -148,6 +157,8 @@ static void     PrepareTex(const char *filename ,FILE ** f);
 static void     PrepareRtf(char *filename, FILE ** f);
 static void     CloseTex(FILE ** f);
 static void     CloseRtf(FILE ** f);
+static void     ConvertLatexPreamble(void);
+static void     InitializeLatexLengths(void);
 
 static bool     TranslateCommand();	/* converts commands */
 bool            TranslateSpecKey();	/* converts special keys */
@@ -159,10 +170,7 @@ enum TexCharSetKind TexCharSet = SEVEN_BIT;	/* default SEVEN_BIT for converting 
 
 extern /* @observer@ */ char *optarg;
 extern int      optind;
-extern int 
-getopt(int ac, char *const av[], const char *optstring)
-/* @modifies optind, optarg@ */
-;
+extern int getopt(int ac, char *const av[], const char *optstring);
 
 /****************************************************************************
 purpose: checks parameter and starts convert routine
@@ -282,7 +290,11 @@ globals: initializes in- and outputfile fTex, fRtf,
 	PrepareTex(input, &fTex);
 	PrepareRtf(output, &fRtf);
 
-	(void) Push(1, 0);
+	Push(1, 0);
+	InitializeLatexLengths();
+	ConvertLatexPreamble();
+	WriteRtfHeader();
+	
 	diagnostics(4,"Entering Convert from main");
 	Convert();
 	diagnostics(4,"Exiting Convert from main");
@@ -327,7 +339,7 @@ bool            bBlankLine = TRUE;	/* handle pseudo-blank lines (with spaces) co
 int             colCount;			/* number of columns in a tabular environment */
 int             actCol;				/* actual column in the tabular environment */
 char           *colFmt = NULL;
-size_t          DefFont = 0;		/* contains default TeX Roman font number*/
+int             DefFont = 0;		/* contains default TeX Roman font number*/
 
 void 
 Convert()
@@ -351,42 +363,43 @@ globals: fTex, fRtf and all global flags for convert (see above)
 		diagnostics(5, "Current character in Convert() is %c", cThis);
 		switch (cThis) {
 
-		case '\\':{
-				fpos_t          pos1, pos2;
+		case '\\':
+/*				fpos_t          pos1, pos2;
 
 				bBlankLine = FALSE;
 				if (fgetpos(fRtf, &pos1) != 0)
 					diagnostics(ERROR, "Problem accessing rtf file");
+*/
+			(void) Push(RecursLevel, BracketLevel);
+			
+			/* For now we ignore the return value of TranslateCommand */
+			(void) TranslateCommand();
 
-				(void) Push(RecursLevel, BracketLevel);
-				
-				/* For now we ignore the return value of TranslateCommand */
-				(void) TranslateCommand();
+			/* erase multiple identical values on top of stack */
+			CleanStack();
 
-				/* erase multiple identical values on top of stack */
-				CleanStack();
+			if (ret > 0) {
+				--ret;
+				--RecursLevel;
+				return;
+			}
 
-				if (ret > 0) {
-					--ret;
-					--RecursLevel;
-					return;
-				}
-
-				cThis = '\\';
+/*				cThis = '\\';
 				if (fgetpos(fRtf, &pos2) != 0)
 					diagnostics(ERROR, "Problem accessing rtf file");
 
-				if (pos1 == pos2) {	/* no RTF output */
+				if (pos1 == pos2) {
 					if (cLast == '\n')
 						cThis = '\n';
 					else
 						cThis = ' ';
 				}
+*/
 				break;
-			}
+			
 			
 		case '%':
-			fprintf(stderr, "\nWarning: ignoring %% in %s at line %ld\n", latexname, getLinenumber());
+			diagnostics(WARNING, "Ignoring %% in %s at line %ld\n", latexname, getLinenumber());
 			cThis = ' ';
 			break;
 			
@@ -431,7 +444,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			break;
 			
 		case '\r':
-			fprintf(stderr, "\nWarning: ignoring \\r in %s at line %ld\n", latexname, getLinenumber());
+			diagnostics(WARNING, "Ignoring \\r in %s at line %ld", latexname, getLinenumber());
 			cThis = ' ';
 			break;
 			
@@ -721,7 +734,8 @@ diagnostics(int level, char *format,...)
 		default:
 			fprintf(stderr, "\n   ");
 		}
-		fprintf(stderr, "\n%s\n   line: %ld\n", latexname, getLinenumber());
+		fprintf(stderr, "%s (%ld) ", input, getLinenumber());
+		
 		vfprintf(stderr, format, ap);
 	}
 	if (logfile != NULL)
@@ -734,7 +748,7 @@ diagnostics(int level, char *format,...)
 
 	if ((level <= verbosity) && (level > 1)) {
 		int iEnvCount=CurrentEnvironmentCount();
-		fprintf(stderr, "\n%s %4ld=%4ld bra=%d rec=%d env=%d ", latexname, getLinenumber(), linenumber, BracketLevel, RecursLevel, iEnvCount);
+		fprintf(stderr, "\n%s %4ld=%4ld bra=%d rec=%d env=%d ", input, getLinenumber(), linenumber, BracketLevel, RecursLevel, iEnvCount);
 		//fprintf(errfile, "\n%s:%ld: ", latexname, getLinenumber());
 		switch (level) {
 		case 0:
@@ -756,8 +770,68 @@ diagnostics(int level, char *format,...)
 	}
 }
 
+static void
+InitializeLatexLengths(void)
+{
+	
+	setLength("textheight", 550*20);
+	setLength("pageheight", 795*20);
+	setLength("headheight",  12*20);
+	setLength("voffset",      0*20);
+	setLength("footskip",    30*20);
+	setLength("topmargin",   16*20);
+	setLength("headsep",     25*20);	
+	setLength("textwidth",  345*20);
+	setLength("pagewidth",  614*20);
+	setLength("textwidth",  345*20);
+	setLength("hoffset",      0*20);
+	setLength("marginparsep",11*20);
 
-/****************************************************************************/
+	setLength("baselineskip",11*20);
+	setLength("parindent",   11*20);
+	setLength("parskip",     11*20);
+	setLength("evensidemargin",     11*20);
+	setLength("oddsidemargin",     11*20);
+				
+	setCounter("page",          0);
+	setCounter("chapter",       0);
+	setCounter("section",       0);
+	setCounter("subsection",    0);
+	setCounter("subsubsection", 0);
+	setCounter("paragraph",     0);
+	setCounter("subparagraph",  0);
+	setCounter("figure",        0);
+	setCounter("table",         0);
+	setCounter("equation",      0);
+	setCounter("footnote",      0);
+	setCounter("mpfootnote",    0);
+ }
+
+
+static void 
+ConvertLatexPreamble(void)
+/****************************************************************************
+purpose: reads the LaTeX preamble (to \begin{document} ) for the file
+ ****************************************************************************/
+{
+	FILE * hidden;
+	char * s;
+	
+	diagnostics(4, "Reading LaTeX Preamble");
+	hidden = fRtf;
+	fRtf = stderr;
+	 
+	s = getTexUntil("\\begin{document}");
+	
+	diagnostics(4, "Entering ConvertString() from ConvertLatexPreamble <%s>",s);
+	ConvertString(s);
+	diagnostics(4, "Exiting ConvertString() from ConvertLatexPreamble");
+	
+	fRtf = hidden;
+	free(s);
+}
+
+
 void 
 PrepareRtf(char *filename, FILE ** f)
 /****************************************************************************
@@ -780,16 +854,6 @@ params: filename - name of outputfile, possibly NULL for already open file
 			exit(EXIT_FAILURE);
 		}
 	}
-	/* write header */
-	diagnostics(4, "Writing header for RTF file %s", filename);
-#ifdef DEFAULT_MAC_ENCODING
-	fprintf(*f, "{\\rtf1\\mac\\fs%d\\deff0\\deflang1024\n", CurrentFontSize());
-#else
-	fprintf(*f, "{\\rtf1\\PC\\fs%d\\deff0\\deflang1024\n", CurrentFontSize());
-#endif
-	fprintf(*f, "{\\info{\\version1}}\\widowctrl\\ftnbj\\sectd\\linex0\\endnhere");
-	fprintf(*f, "\\qj \n");
-	WriteFontHeader(*f);
 }
 
 
@@ -808,7 +872,7 @@ params: filename - name of inputfile, possibly NULL
 		}
 	}
 
-	diagnostics(4,"Opened LaTeX file %s",filename);
+	diagnostics(4,"Opened LaTeX file %s, (%p)",filename, *f);
 
 }
 
@@ -819,11 +883,10 @@ purpose: closes input file.
 params: f - pointer to filepointer to invalidate
  ****************************************************************************/
 {
-//	if (*f != stdin  && *f != NULL)
-//		(void) fclose(*f);
-//	*f = NULL;
+	if (*f != stdin  && *f != NULL)
+		fclose(*f);
+	*f = NULL;
 	diagnostics(4,"Closed LaTeX file");
-
 }
 
 
@@ -835,11 +898,10 @@ params: f - pointer to filepointer to invalidate
 globals: progname;
  ****************************************************************************/
 {
-	diagnostics(4,"Closed RTF file");
 	fprintf(*f, "}}\n");
 	if (*f != stdout) {
 		if (fclose(*f) == EOF) {
-			fprintf(stderr, "%s: Warning: Error closing RTF-File\n", progname);
+			diagnostics(WARNING, "Error closing RTF-File");
 		}
 	}
 	*f = NULL;
@@ -899,8 +961,8 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		if (g_processing_eqnarray) {	/* eqnarray */
 			fprintf(fRtf, "}");	/* close italics */
 			if (g_show_equation_number && !g_suppress_equation_number) {
-				g_equation_number++;
-				fprintf(fRtf, "\\tab (%d)", g_equation_number);
+				incrementCounter("equation");
+				fprintf(fRtf, "\\tab (%d)", getCounter("equation"));
 			}
 			fprintf(fRtf, "\n\\par\\tab {\\i ");
 			g_suppress_equation_number = FALSE;
@@ -1075,7 +1137,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		return TRUE;
 	if (TryVariableIgnore(cCommand, fTex))
 		return TRUE;
-	fprintf(stderr, "\n%s: WARNING: command: %s not found - ignored\n", progname, cCommand);
+	diagnostics(WARNING, "Command \\%s not found - ignored", cCommand);
 	return FALSE;
 }
 
@@ -1092,15 +1154,16 @@ long
 getLinenumber(void)
 {
 	char            buffer[1024];
-	fpos_t          oldpos;
-	fpos_t          pos;
+	long            oldpos;
+	long            pos;
 	int             linenum = 0;
 
-	if (fTex == stdin)
+	if (fTex == NULL || fTex == stdin)
 		return 0;
 
-	if (fgetpos(fTex, &oldpos) != 0)
-		error("fgetpos: can\'t get linenumber");
+	oldpos=ftell(fTex);
+	if (oldpos == -1)
+		error("ftell: can\'t get linenumber");
 	if (fseek(fTex, 0L, SEEK_SET) == -1)
 		error("fseek: can\'t get linenumber");
 
@@ -1108,13 +1171,14 @@ getLinenumber(void)
 		if (fgets(buffer, 1023, fTex) == NULL)
 			error("fgets: can\'t get linenumber");
 		linenum++;
-		if (fgetpos(fTex, &pos) != 0)
-			error("fgetpos: can\'t get linenumber");
+		pos = ftell(fTex);
+		if (pos == -1)
+			error("ftell: can\'t get linenumber");
 	}
 	while (pos < oldpos);
 
-	if (fsetpos(fTex, &oldpos) != 0)
-		error("fgetpos: can\'t get linenumber");
+	if (fseek(fTex, oldpos, SEEK_SET) == -1)
+		error("fseek: can\'t get linenumber");
 
 	return linenum;
 }
