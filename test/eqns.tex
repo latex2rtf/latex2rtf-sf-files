@@ -1,0 +1,47 @@
+\documentclass{article}
+\begin{document}
+
+\section{Inline equations}
+
+First begin with simple \verb#$# delimited equation such as
+$x+y=w$ as an example.  All the equations in this section should
+look identical.
+
+Next how about a simple \verb#\begin{math}# delimited equation such as
+\begin{math}x+y=w\end{math} as an example.  All the equations in this section should
+look identical.
+
+Now consider \verb#\(# and \verb#\)# delimited equation such as
+\(x+y=w\) as an example.  All the equations in this section should
+look identical.
+
+\section{Unnumbered equations}
+
+I will start with a simple \verb#$$# wave equation
+that will have no number
+$$
+\nabla^2 \phi -{1\over c} {\partial \phi\over \partial t}  = 0
+$$
+This is followed by a \verb#displaymath# environment
+\begin{displaymath}
+\nabla^2 \phi -{1\over c} {\partial \phi\over \partial t}  = 0
+\end{displaymath}
+Here is an example of the \verb#\[# displaymath environment
+\[
+\nabla^2 \phi -{1\over c} {\partial \phi\over \partial t}  = 0
+\]
+
+
+\section{Numbered equations}
+Next comes an \verb#equation# environment
+\begin{equation}
+\nabla^2 \phi -{1\over c} {\partial \phi\over \partial t}  = 0
+\end{equation}
+Note that \verb#\nonumber# in an \verb#equation# environment still gets
+an equation number
+\begin{equation}
+\nabla^2 \phi -{1\over c} {\partial \phi\over \partial t}  = 0 \nonumber
+\end{equation}
+
+
+\end{document}
