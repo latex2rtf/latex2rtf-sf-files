@@ -1,0 +1,6 @@
+The original TODO file from Ralf Schlatterbeck has been moved to the
+texinfo manual.
+
+What's todo now is to check that Version 1.7 compiles on all platforms
+where LaTeX2rtf has been available until now. Especially check the
+MS-DOS Port and update makefile.dos
