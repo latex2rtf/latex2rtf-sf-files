@@ -1,10 +1,25 @@
-/* $Id: preamble.c,v 1.30 2002/03/31 17:13:11 prahl Exp $
+/* preamble.c - Handles LaTeX commands that should only occur in the preamble.
 
-purpose : Handles LaTeX commands that should only occur in the preamble.
-          These are gathered together because the entire preamble must be
-		  parsed before the RTF header can be written.
-		  
-		  When \begin{document} is encountered, then the RTF header is created.
+Copyright (C) 2001-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
@@ -22,8 +37,6 @@ purpose : Handles LaTeX commands that should only occur in the preamble.
 #include "ignore.h"
 #include "commands.h"
 #include "counters.h"
-
-extern bool   pagestyledefined;
 
 static bool   g_preambleTwoside  = FALSE;
 static bool   g_preambleTwocolumn= FALSE;
@@ -65,6 +78,22 @@ setPackageBabel(char * option)
 		ReadLanguage("french");
 	}
 		
+	if (strcmp(option, "russian") == 0)
+	{
+		RussianMode = TRUE;
+		PushEnvironment(RUSSIAN_MODE);
+		ReadLanguage("russian");
+	}
+
+	if (strcmp(option, "czech") == 0)
+	{
+		CzechMode = TRUE;
+		PushEnvironment(CZECH_MODE);
+		ReadLanguage("czech");
+		g_fcharset_number=238;  			/* East European in RTF Specification */
+		strcpy(g_charset_encoding_name, "raw");
+	}
+		
 }
 
 void
@@ -73,26 +102,68 @@ setPackageInputenc(char * option)
 	g_preambleEncoding = strdup_noblanks(option);
 
 	if (strcmp(option, "ansinew") == 0)
-		strcpy(g_encoding, "cp1252");
+		strcpy(g_charset_encoding_name, "cp1252");
 		
 	else if (strcmp(option, "applemac") == 0 ||
-	         strcmp(option, "cp437") == 0 ||
-	         strcmp(option, "cp437de") == 0 ||
-	         strcmp(option, "cp850") == 0 ||
-	         strcmp(option, "cp852") == 0 ||
-	         strcmp(option, "cp865") == 0 ||
 	         strcmp(option, "decmulti") == 0 ||
-	         strcmp(option, "cp1250") == 0 ||
-	         strcmp(option, "cp1252") == 0 ||
-	         strcmp(option, "latin1") == 0 ||
-	         strcmp(option, "latin2") == 0 ||
-	         strcmp(option, "latin3") == 0 ||
-	         strcmp(option, "latin4") == 0 ||
-	         strcmp(option, "latin5") == 0 ||
-	         strcmp(option, "latin9") == 0 ||
-	         strcmp(option, "next") == 0 ) 
-		strcpy(g_encoding, option);
-	else
+	         strcmp(option, "latin1") == 0   ||
+	         strcmp(option, "latin2") == 0   ||
+	         strcmp(option, "latin3") == 0   ||
+	         strcmp(option, "latin4") == 0   ||
+	         strcmp(option, "latin5") == 0   ||
+	         strcmp(option, "latin9") == 0   ||
+	         strcmp(option, "next") == 0     ||
+	         strcmp(option, "cp437") == 0    ||
+	         strcmp(option, "cp437de") == 0  ||
+	         strcmp(option, "cp850") == 0    ||
+	         strcmp(option, "cp852") == 0    ||
+	         strcmp(option, "cp855") == 0    ||
+	         strcmp(option, "cp866") == 0    ||
+	         strcmp(option, "cp1250") == 0   ||
+	         strcmp(option, "cp1251") == 0   ||
+	         strcmp(option, "cp1252") == 0   ||
+	         strcmp(option, "437") == 0    ||
+	         strcmp(option, "437de") == 0  ||
+	         strcmp(option, "850") == 0    ||
+	         strcmp(option, "852") == 0    ||
+	         strcmp(option, "855") == 0    ||
+	         strcmp(option, "866") == 0    ||
+	         strcmp(option, "1250") == 0   ||
+	         strcmp(option, "1251") == 0   ||
+	         strcmp(option, "1252") == 0   ||
+	         strcmp(option, "maccyr") == 0   ||
+	         strcmp(option, "macukr") == 0   ||
+	         strcmp(option, "koi8-r") == 0   ||
+	         strcmp(option, "koi8-u") == 0) {
+	         
+		strcpy(g_charset_encoding_name, option);
+		g_fcharset_number = 0;				/* ANSI in RTF Specification */
+
+	} else if (strcmp(option, "raw") == 0) {
+		strcpy(g_charset_encoding_name, "raw");
+		g_fcharset_number = 255;            /* OEM in RTF Specification */
+
+	} else if (strcmp(option, "raw437") == 0 ) { 
+		g_fcharset_number=254;  			/* IBM PC in RTF Specification */
+		strcpy(g_charset_encoding_name, "raw");
+
+	} else if (strcmp(option, "raw852") == 0) { 
+		g_fcharset_number=255;  			/* Microsoft bug ... */
+		strcpy(g_charset_encoding_name, "raw");
+
+	} else if (strcmp(option, "raw1250") == 0 ) { 
+		g_fcharset_number=238;  			/* East European in RTF Specification */
+		strcpy(g_charset_encoding_name, "raw");
+
+	} else if (strcmp(option, "raw1251") == 0 ) { 
+		g_fcharset_number=204;  			/* Cyrillic in RTF Specification */
+		strcpy(g_charset_encoding_name, "raw");
+
+	} else if (strcmp(option, "raw1253") == 0 ) { 
+		g_fcharset_number=161;  			/* Greek in RTF Specification */
+		strcpy(g_charset_encoding_name, "raw");
+
+	} else
 		diagnostics(WARNING,"\n Input Encoding <%s> not supported", option);
 }
 
@@ -297,7 +368,7 @@ setPointSize(char * option)
 
 	}else {
 		InitializeDocumentFont(-1, 24, -1, -1);
-		setLength("baselineskip",14.5*20);
+		setLength("baselineskip",(int) 14.5*20);
 		setLength("parindent",   18*20);
 		setLength("parskip",      0*20);
 	}
@@ -333,6 +404,8 @@ setDocumentOptions(char *optionlist)
 		else if (strcmp(option, "german")  == 0 ||
 			     strcmp(option, "spanish") == 0 || 
 			     strcmp(option, "english") == 0 || 
+			     strcmp(option, "russian") == 0 || 
+			     strcmp(option, "czech"  ) == 0 || 
 				 strcmp(option, "french")  == 0) 
 			setPackageBabel(option);
 		else if (strcmp(option, "twoside") == 0) 
@@ -347,7 +420,11 @@ setDocumentOptions(char *optionlist)
 			PushEnvironment(HYPERLATEX); 
 		} else if (strcmp(option, "fancyhdr") == 0) {
 			diagnostics(WARNING, "Only partial support for %s", option);
-		} else if (!TryVariableIgnore(option)) {
+		} else if (strcmp(option, "textcomp")==0 ||
+				   strcmp(option, "fontenc")==0) {
+			/* do nothing ... but don't complain */
+		}
+		else if (!TryVariableIgnore(option)) {
 			diagnostics(WARNING, "Unknown style option %s ignored", option);
 		}
 		option = strtok(NULL, ",");
@@ -433,8 +510,9 @@ CmdUsepackage(int code)
 	else if (strcmp(package, "babel") == 0 && options)
 		setPackageBabel(options);
 		
-	else if (strcmp(package, "german")  == 0 ||
+	else if (strcmp(package, "german" )  == 0 ||
 		     strcmp(package, "ngerman")  == 0 ||
+		     strcmp(package, "czech"  )  == 0 ||
 		     strcmp(package, "french")  == 0) 
 		setPackageBabel(package);
 
@@ -573,7 +651,6 @@ CmdPagestyle( /* @unused@ */ int code)
 
  globals : headings  set to TRUE if the pagenumber is to go into the header
            pagenumbering set to TRUE if pagenumbering is to occur- default
-	   pagestyledefined, flag, set to true
 
 Produces latex-like headers and footers.
 Needs to be terminated for:
@@ -583,7 +660,6 @@ Needs to be terminated for:
 {
 	static char    *style = "";
 
-	pagestyledefined = TRUE;
 	style = getBraceParam();
 	if (strcmp(style, "empty") == 0) {
 		if (pagenumbering) {
@@ -683,27 +759,38 @@ WriteFontHeader(void)
 /****************************************************************************
  *   purpose: writes fontnumbers and styles for headers into Rtf-File
  
- \fcharset0:    ANSI coding
+ \fcharset0:    ANSI coding (codepage 1252)
  \fcharset1:    MAC coding
- \fcharset2:    PC coding (implies CodePage 437)
- \fcharset3:    PCA coding (implies CodePage 850)
+ \fcharset2:    PC coding   (codepage 437)
+ \fcharset3:    PCA coding  (codepage 850)
+ \fcharset204:  Cyrillic    (codepage 1251)
+ \fcharset238:  E. European (codepage 852, 1250)
  ****************************************************************************/
 {
-	int                  num = 3;
+	int                  i;
 	ConfigEntryT       **config_handle;
+	char                *font_type, *font_name;
+	int					 charset;
 
 	fprintRTF("{\\fonttbl\n");
 
 	config_handle = CfgStartIterate(FONT_A);
+	i=3;
 	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
-		if (strstr((*config_handle)->RtfCommand, "Symbol"))
+	
+		font_type = (char *)(*config_handle)->TexCommand;
+		font_name = (char *)(*config_handle)->RtfCommand;
+		charset = g_fcharset_number;
+		
+		if (strncmp(font_name, "Symbol", 6)==0)
+			charset = 2;
+			
+		if (strncmp(font_type, "Cyrillic", 8)==0)	
+			charset = 204;
+					
+		fprintRTF(" {\\f%d\\fnil\\fcharset%d %s;}\n",i, charset, font_name);
 
-			fprintRTF(" {\\f%d\\fnil\\fcharset2 %s;}\n",num,(*config_handle)->RtfCommand);
-
-		else
-			fprintRTF(" {\\f%d\\fnil\\fcharset0 %s;}\n",num,(*config_handle)->RtfCommand);
-
-		++num;
+		i++;
 	}
 
 	fprintRTF("}\n");
@@ -735,7 +822,9 @@ WriteStyleHeader(void)
 	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 2;}\n", HEADER21, DefFont, HEADER22);
 	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 3;}\n", HEADER31, DefFont, HEADER32);
 	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 4;}\n", HEADER41, DefFont, HEADER42);
-	fprintRTF("%s\n", HEADER03);
+	fprintRTF("%s", HEADER03);
+	fprintRTF("%s", HEADER04);
+	fprintRTF("%s\n", HEADER05);
 	
 	fprintRTF("%s\n", HEADER13);
 	fprintRTF("%s\n", HEADER23);
@@ -880,10 +969,23 @@ WriteColorTable(void)
      <colordef>          \red ? & \green ? & \blue ? ';'
  ***************************************************************************/
 {
-	fprintRTF("{\\colortbl");
-	fprintRTF("\\red255\\green0\\blue0;");
-	fprintRTF("\\red0\\green255\\blue0;");
-	fprintRTF("\\red0\\green0\\blue255;");
+	fprintRTF("{\\colortbl;\n");
+	fprintRTF("\\red0\\green0\\blue0;\n");
+	fprintRTF("\\red0\\green0\\blue255;\n");
+	fprintRTF("\\red0\\green255\\blue255;\n");
+	fprintRTF("\\red0\\green255\\blue0;\n");
+	fprintRTF("\\red255\\green0\\blue255;\n");
+	fprintRTF("\\red255\\green0\\blue0;\n");
+	fprintRTF("\\red255\\green255\\blue0;\n");
+	fprintRTF("\\red255\\green255\\blue255;\n");
+	fprintRTF("\\red0\\green0\\blue128;\n");
+	fprintRTF("\\red0\\green128\\blue128;\n");
+	fprintRTF("\\red0\\green128\\blue0;\n");
+	fprintRTF("\\red128\\green0\\blue128;\n");
+	fprintRTF("\\red128\\green0\\blue0;\n");
+	fprintRTF("\\red128\\green128\\blue0;\n");
+	fprintRTF("\\red128\\green128\\blue128;\n");
+	fprintRTF("\\red192\\green192\\blue192;\n");
 	fprintRTF("}\n");
 }
 

@@ -1,8 +1,27 @@
-/* $Id: encode.c,v 1.9 2001/12/07 05:03:48 prahl Exp $ 
-   Translate high bit characters into RTF assuming that
-   the default codepage is ansi (1252)
-   
-   There are many non-translated characters, patches welcome.
+/* encode.c - Translate high bit chars into RTF using codepage 1252
+
+Copyright (C) 1995-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    1995-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
@@ -12,6 +31,7 @@
 #include "funct1.h"
 #include "encode.h"
 #include "encode_tables.h"
+#include "chars.h"
 
 static void put_breve_char(char c)
 {
@@ -1753,40 +1773,125 @@ char *s;
 	}
 }
 
+static void cp1251_enc(int index)
+{
+	char *s;
+	s = cp1251_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void cp855_enc(int index)
+{
+	char *s;
+	s = cp855_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void cp866_enc(int index)
+{
+	char *s;
+	s = cp866_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void koi8r_enc(int index)
+{
+	char *s;
+	s = koi8r_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void koi8u_enc(int index)
+{
+	char *s;
+	s = koi8u_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void maccyr_enc(int index)
+{
+	char *s;
+	s = maccyr_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
+static void macukr_enc(int index)
+{
+	char *s;
+	s = macukr_2_cp1251[index];
+	CmdCyrillicStrChar(s);
+}
+
 void WriteEightBitChar(char cThis)
 {
 	int index = (int) cThis + 128;
-	diagnostics(5, "WriteEightBitChar char=%d index=%d encoding=%s",(int) cThis, index, g_encoding);
-	if (strcmp(g_encoding, "applemac") == 0)
+	diagnostics(5, "WriteEightBitChar char=%d index=%d encoding=%s",
+	                (int) cThis, index, g_charset_encoding_name);
+	                
+	if (strcmp(g_charset_encoding_name, "raw") == 0)
+		fprintRTF("\\'%2X", (unsigned char) cThis);
+	else if (strcmp(g_charset_encoding_name, "applemac") == 0)
 		applemac_enc(index);
-	else if (strcmp(g_encoding, "cp437") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp437") == 0)
 		cp437_enc(index);
-	else if (strcmp(g_encoding, "cp850") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp850") == 0)
 		cp850_enc(index);
-	else if (strcmp(g_encoding, "cp852") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp852") == 0)
 		cp852_enc(index);
-	else if (strcmp(g_encoding, "cp865") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp865") == 0)
 		cp865_enc(index);
-	else if (strcmp(g_encoding, "decmulti") == 0)
+	else if (strcmp(g_charset_encoding_name, "437") == 0)
+		cp437_enc(index);
+	else if (strcmp(g_charset_encoding_name, "850") == 0)
+		cp850_enc(index);
+	else if (strcmp(g_charset_encoding_name, "852") == 0)
+		cp852_enc(index);
+	else if (strcmp(g_charset_encoding_name, "865") == 0)
+		cp865_enc(index);
+	else if (strcmp(g_charset_encoding_name, "decmulti") == 0)
 		decmulti_enc(index);
-	else if (strcmp(g_encoding, "cp1250") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp1250") == 0)
 		cp1250_enc(index);
-	else if (strcmp(g_encoding, "cp1252") == 0)
+	else if (strcmp(g_charset_encoding_name, "cp1252") == 0)
 		cp1252_enc(index);
-	else if (strcmp(g_encoding, "latin1") == 0)
+	else if (strcmp(g_charset_encoding_name, "1250") == 0)
+		cp1250_enc(index);
+	else if (strcmp(g_charset_encoding_name, "1252") == 0)
+		cp1252_enc(index);
+	else if (strcmp(g_charset_encoding_name, "latin1") == 0)
 		latin1_enc(index);
-	else if (strcmp(g_encoding, "latin2") == 0)
+	else if (strcmp(g_charset_encoding_name, "latin2") == 0)
 		latin2_enc(index);
-	else if (strcmp(g_encoding, "latin3") == 0)
+	else if (strcmp(g_charset_encoding_name, "latin3") == 0)
 		latin3_enc(index);
-	else if (strcmp(g_encoding, "latin4") == 0)
+	else if (strcmp(g_charset_encoding_name, "latin4") == 0)
 		latin4_enc(index);
-	else if (strcmp(g_encoding, "latin5") == 0)
+	else if (strcmp(g_charset_encoding_name, "latin5") == 0)
 		latin5_enc(index);
-	else if (strcmp(g_encoding, "latin9") == 0)
+	else if (strcmp(g_charset_encoding_name, "latin9") == 0)
 		latin9_enc(index);
-	else if (strcmp(g_encoding, "next") == 0 ) 
+	else if (strcmp(g_charset_encoding_name, "next") == 0 ) 
 		next_enc(index);
+	else if (strcmp(g_charset_encoding_name, "cp1251") == 0 ) 
+		cp1251_enc(index);
+	else if (strcmp(g_charset_encoding_name, "cp855") == 0 ) 
+		cp855_enc(index);
+	else if (strcmp(g_charset_encoding_name, "cp866") == 0 ) 
+		cp866_enc(index);
+	else if (strcmp(g_charset_encoding_name, "1251") == 0 ) 
+		cp1251_enc(index);
+	else if (strcmp(g_charset_encoding_name, "855") == 0 ) 
+		cp855_enc(index);
+	else if (strcmp(g_charset_encoding_name, "866") == 0 ) 
+		cp866_enc(index);
+	else if (strcmp(g_charset_encoding_name, "koi8-r") == 0 ) 
+		koi8r_enc(index);
+	else if (strcmp(g_charset_encoding_name, "koi8-u") == 0 ) 
+		koi8u_enc(index);
+	else if (strcmp(g_charset_encoding_name, "maccyr") == 0 ) 
+		maccyr_enc(index);
+	else if (strcmp(g_charset_encoding_name, "macukr") == 0 ) 
+		macukr_enc(index);
 }
 
 

@@ -1,3 +1,444 @@
+2002-11-28 10:36  prahl
+
+ Add support fo \abstract{}
+	
+2002-11-28 10:08  prahl
+
+ Remove control characters from .hlp files
+	
+2002-11-28 09:29  prahl
+
+ Documentation updates.
+	
+2002-11-26 20:09  prahl
+
+ add linux.tex as a test file.  Add list environment with braces
+	
+2002-11-25 20:55  prahl
+
+ Ensure that bookmarks begin with letters BM
+	
+2002-11-25 19:33  prahl
+
+ Fix attribution in russian.cfg.  Documentation tweaks.
+	
+2002-11-25 08:05  prahl
+
+ Add mygetopt.h to Makefile
+	
+2002-11-25 08:01  prahl
+
+ Adding mygetopt.h to distribution
+	
+2002-11-25 07:59  prahl
+
+ Adding test files
+	
+2002-11-25 07:22  prahl
+
+ Eliminate extra tab in description environment
+	
+2002-11-24 22:36  prahl
+
+ Support for xlink.
+	Adding test cases to existing test files
+	Fix crashing bug when graphics file is not found
+	
+2002-11-24 19:54  prahl
+
+ Fix segfault when including files that cannot be opened
+	
+2002-11-24 16:46  prahl
+
+ Properly ignore \limits and \nolimits
+	Increase stack size so misc2.tex continues to translate
+	
+2002-11-23 23:04  prahl
+
+ Add support for leftrightarrows and kin (found in amssymb)
+	
+2002-11-23 21:15  prahl
+
+ Fix for \left and \right
+	Add proper parsing for plain tex \matrix command
+	
+2002-11-23 15:35  prahl
+
+ Add CzechMode and \uv{quote} command for czech
+	
+2002-11-23 11:02  prahl
+
+ Add comments and rename EXESFX to EXE_SUFFIX
+	
+2002-11-23 08:52  prahl
+
+ Remove optind.c from distribution
+	
+2002-11-23 08:40  prahl
+
+ Simplify Makefile by eliminating HAS_DOS_SEP and HAS_NO_GETOPT
+	
+2002-11-21 08:19  prahl
+
+ Add \up to work just like \fup
+	
+2002-11-21 08:11  prahl
+
+ Allow -C 850 as well as -C cp580 (patch by D. Taupin)
+	
+2002-11-21 08:06  prahl
+
+ Make equation option -M default to more sensible behavior
+	
+2002-11-21 07:54  prahl
+
+ different conventions for calling latex2png under MSDOS
+	
+2002-11-20 08:30  prahl
+
+ Add missing test files to CVS
+	
+2002-11-20 08:25  prahl
+
+ Remove proffois.tex from CVS and tarball
+	
+2002-11-20 08:19  prahl
+
+ Remove extra header file from mygetopt.c
+	
+2002-11-20 08:08  prahl
+
+ Fix for bad footnote processing.
+	
+2002-11-20 07:56  prahl
+
+ Fix broken -C command line option
+	
+2002-11-19 21:26  prahl
+
+ Fixed indentation bug in second paragraph of list item
+	
+2002-11-19 21:12  prahl
+
+ Fix to properly create .pbm files when inline equation flag is present
+	
+2002-11-19 21:08  prahl
+
+ Add readme for scripts directory
+	
+2002-11-19 21:07  prahl
+
+ Add Makefile and test files for latex2png script.  Removed old scripts
+	added files to main Makefile for packaging.
+	
+2002-11-19 18:43  prahl
+
+ Make -fsigned-char the default (mostly for AIX)
+	
+2002-11-19 04:04  prahl
+
+ Hack to work around \begin{multicols} ... \end{multicols} bug.  There is no
+	support, but create a valid RTF file.
+	
+2002-11-19 03:55  prahl
+
+ Use endash and not bullet in itemize environment
+	
+2002-11-19 03:28  prahl
+
+ Fix indentation bugs in bibliography environment
+	
+2002-11-18 20:09  prahl
+
+ update credits, todo list
+	
+2002-11-18 20:06  prahl
+
+ Various fixes to improve equation handling by C. Bernard.
+	
+2002-11-18 17:38  prahl
+
+ Adding a few more commands from french.sty
+	
+2002-11-18 09:16  prahl
+
+ Fix indenting of paragraphs following section in FrenchMode
+	
+2002-11-17 21:43  prahl
+
+ Fix for duplicated labels in apalike bibliographies.
+	Explicitly handle \bibliographystyle
+	Fix bug in opening .bbl file
+	Provide warning if file has not be latexed enough times
+	Ensure that name of bibliography is discarded.
+	
+2002-11-17 17:45  prahl
+
+ Fixes to make list environments (enumerate, itemize, and description) align
+	better.
+	
+2002-11-17 08:52  prahl
+
+ Fix broken -o option
+	
+2002-11-16 22:20  prahl
+
+ Changes to make inline equations align properly.  This required changes to
+	the latex2png script and how png files are placed.
+	
+2002-11-08 08:03  prahl
+
+ Add -c -g -m and -i options to all scripts.  Make default, _1 and _2
+	scripts work with included eps files.  -i support not implemented.
+	latex2png was contributed by B. Horeni, but mangled by me so it probably
+	does not work on any platform at the moment.
+	
+	Finally, -i support will be added when the inline equation option
+	is added to the latex2rtf source.
+	
+2002-11-06 18:06  prahl
+
+ Support for processing figures using latex and including the result as a
+	png in the RTF file.  This is the new (undocumented) option -F.  This
+	check-in also adds support for processing \begin{music}...\end{music}
+	in the same way.  I also see that some of the partially enhanced latex2png
+	files have also made their way into this check-in as well.
+	
+2002-11-05 07:17  prahl
+
+ Removed -ansi and added -fsigned-char to CFLAGS
+	Add need explict cast in parser.c to avoid warning
+	Explicitly set tabbing and tabular in those environments
+	latex russian.tex before testing
+	
+2002-10-15 00:17  whennings
+
+ In Makefile
+	option "-ansi" deactivated
+	option "-fsigned-char" added, needed on IBM SP/2 (AIX)
+	
+2002-10-07 07:55  prahl
+
+ Added examples to help message.  Added tabbing.tex to tarball
+	
+2002-09-30 02:18  whennings
+
+ Updated documentation:
+	In Makefile, default compiler being "gcc".
+	On IBM AIX, use "gmake" instead of "make".
+	DOS/Windows: Using 4NT.exe probably causes problem.
+	
+2002-09-29 21:16  prahl
+
+ Slight reorganization of texinfo.
+	Changes to -v and -h commands in preparation for using help2man to automate
+	creation of man pages.
+	
+2002-09-24 18:34  prahl
+
+ rename strndup to mystrndup to avoid function found on some systems
+	
+2002-09-24 17:22  prahl
+
+ Fix typo in Makefile
+	
+2002-09-24 06:59  prahl
+
+ Another test case for tabbing.tex
+	
+2002-09-24 06:54  prahl
+
+ Another round of patches for tabbing.  Works now, but column widths still
+	need work.  Added tabbing.tex to files used for testing.
+	
+2002-09-23 07:34  prahl
+
+ Another set of code changes to support tabbing.  Still not fully functional.
+	
+2002-09-22 14:53  prahl
+
+ Fix to use \fcharset255 with codepage 852
+	
+2002-09-22 14:48  prahl
+
+ Added support of -se and -sf switches to scale equations and figures.  Patch
+	by Bohumir Horeni.  Also change to xref, improved bitmap sizing in graphics.c
+	and added \bmod operator to direct.cfg.
+	
+2002-09-21 17:47  prahl
+
+ Add HAS_DOS_SEP for OS2 support.  By Bohumir Horeni
+	
+2002-09-21 16:56  prahl
+
+ added raw1253 (greek) and raw437 (ibm pc) to codepage support
+	
+2002-09-21 16:26  prahl
+
+ Added raw, raw852, and raw1250 as options for -C
+	base on suggestion and patch by Bohumir Horeni
+	
+2002-09-21 11:20  prahl
+
+ Makefile improvements for OS2 and win32 by Bohumir Horeni
+	More work on the tabbing environment.  Still needs work.
+	
+2002-09-21 08:13  prahl
+
+ Bugfixes from Bohumir Horeni
+	
+2002-09-10 02:34  whennings
+
+ Added to documentation that calling latex2png.bat
+	may not work under DOS/Win when using command processor
+	other than command.com
+	
+2002-09-02 04:36  whennings
+
+ latex2png.bat changed to avoid unnecessary error messages
+	like "Bad command or file name"
+	caused by "del %fn%.dvi" and "del %fn%.png" commands:
+	"IF EXIST %fn%.dvi " added.
+	
+2002-08-04 21:05  prahl
+
+ First round of corrections for tabbing environment
+	
+2002-07-27 15:04  prahl
+
+ Added better support for \lim, \liminf, and \limsup when subscript is present
+	Patch based on suggestions by ninov
+	
+2002-07-25 03:00  whennings
+
+ added to documentation recommendation to use gcc and gmake in case of problems
+	
+2002-07-25 02:09  whennings
+
+ added "#include <stdio.h>" to solve compile error on IBM AIX
+	
+2002-07-23 09:08  whennings
+
+ added to documentation how to install under WinNT and XP
+	
+2002-06-23 08:06  prahl
+
+ Assign copyright to The Free Software Foundation
+	
+2002-06-23 08:00  prahl
+
+ Add GNU copyright to all source files
+	
+2002-06-22 17:10  prahl
+
+ Support for \cline in tabular environment
+	
+2002-05-07 22:07  prahl
+
+ Enhancements to file inclusion.
+	wmf inclusion tested and working
+	eps_to_pict tested and working but not as hoped
+	
+2002-05-05 23:02  prahl
+
+ Skeleton for eps_to_wmf function added.
+	
+2002-05-05 15:40  prahl
+
+ Untested routine to convert eps files to pict format
+	
+2002-05-05 12:37  prahl
+
+ Fixed bugs in EMF file handling
+	
+2002-05-05 11:11  prahl
+
+ Added support for including wmf and emf files.
+	
+2002-05-04 20:45  prahl
+
+ Added structs for embedding EPS files in EMF to graphics.c
+	
+2002-05-04 11:41  prahl
+
+ A few more changes for cyrillic support
+	
+2002-05-04 11:12  prahl
+
+ Remove debugging messages
+	Remove some unneeded warnings
+	
+2002-05-04 10:52  prahl
+
+ Tabular support for horiz and vert rules
+	More test cases in test/tabular.tex
+	
+2002-05-02 22:39  prahl
+
+ Yet more fixes for \multicolumn
+	Improved tabular.tex as a test file
+	
+2002-05-02 07:47  prahl
+
+ Added strndup
+	Fixed bug in strdup_noendblanks
+	Improved handling of \multicolumn
+	
+2002-04-28 11:45  prahl
+
+ Changes to allow cp1252 (latin1) and cp1251 (cyrillic) to coexist.
+	
+2002-04-27 15:53  prahl
+
+ Leak fixes.
+	
+2002-04-27 09:05  prahl
+
+ Fix for $1\over2$ trashing memory
+	
+2002-04-26 20:55  prahl
+
+ Mihail Baikov's fixes for cyrillic support
+	
+2002-04-24 07:31  prahl
+
+ First pass at support for cyrillic fonts.  These don't quite work yet.
+	
+2002-04-21 15:49  prahl
+
+ More tabular fixes.
+	Weird malloc problem under OSX
+	Added man file for latex2png
+	More robust code for user environment expansions
+	
+2002-04-13 12:59  prahl
+
+ Small fixes for tabular environment
+	
+2002-04-13 11:38  prahl
+
+ Fixes for letter format
+	
+2002-04-13 11:20  prahl
+
+ Fix bug opening file in another directory
+	Begin cleaning up table translation code
+	Change PushSource to return 0 when successful
+	Change memcpy to memmove for safety
+	
+2002-04-05 20:37  prahl
+
+ Eliminate more warnings
+	Fix bugs when using my_getopt
+	Create my_fopen to gather path mangling in one place
+	
+2002-04-03 19:11  prahl
+
+ Remove diagnostic label warning
+	support \dfrac (mostly)
+	Eliminate spurious make problem #define in main.h
+	Fix warnings for gcc 2.95.2 on solaris
+	
 2002-04-03 07:44  prahl
 
  By default use our own strdup.  Simplifies porting.
@@ -977,13 +1418,7 @@
 2001-08-12 15:56  prahl
 
  Revised fonts.cfg, removed Ferdsch, now set the default font correctly
-	and begun the process of eliminating the $Log: ChangeLog,v $
-	and begun the process of eliminating the Revision 1.15  2002/04/04 03:11:24  prahl
-	and begun the process of eliminating the Remove diagnostic label warning
-	and begun the process of eliminating the support \dfrac (mostly)
-	and begun the process of eliminating the Eliminate spurious make problem #define in main.h
-	and begun the process of eliminating the Fix warnings for gcc 2.95.2 on solaris
-	and begun the process of eliminating the comments in files.
+	and begun the process of eliminating the $Log$ comments in files.
 	
 2001-08-12 14:15  prahl
 

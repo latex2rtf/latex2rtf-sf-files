@@ -1,14 +1,35 @@
-/* $Id: stack.c,v 1.18 2002/02/17 05:12:59 prahl Exp $
+/* stack.c - code that implements a stack to handle braces and recursive calls
+	         created by environments, and open and closing-braces
 
-  purpose : code that implements a stack to handle braces and recursive calls
-	        created by environments, and open and closing-braces
+Copyright (C) 1994-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+
+Authors:
+    1994-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
 #include "main.h"
 #include "stack.h"
 
-#define STACKSIZE 500
+#define STACKSIZE 1000
 
 static int      stack[STACKSIZE];
 static int      top = 0;
@@ -19,7 +40,7 @@ int             BasicPop(int *lev, int *brack);
 int             getStackRecursionLevel(void);
 
 void
-printStack(void)
+myprintStack(void)
 {
 int i, lev, brack;
 
@@ -93,7 +114,7 @@ PushLevels(void)
 	diagnostics(5, "PushLevels");
 	CleanStack();
 	(void) BasicPush(RecursionLevel, BraceLevel);
-	/*printStack();*/
+	/*myprintStack();*/
 }
 
 int 
@@ -151,7 +172,7 @@ int             PopLevel, PopBrack, PPopLevel, PPopBrack;
 	if (PPopLevel != PopLevel || PPopBrack != PopBrack)
 		BasicPush(PPopLevel, PPopBrack);
 	
-/*	printStack(); */
+	/* myprintStack(); */
 }
 
 void 

@@ -5,12 +5,15 @@
 all:	accentchars.rtf array.rtf cite.rtf eqns.rtf fonts.rtf fontsize.rtf \
         frac.rtf list.rtf logo.rtf misc1.rtf misc2.rtf oddchars.rtf \
         tabular.rtf percent.rtf essential.rtf misc3.rtf misc4.rtf fancy.rtf \
-	align.rtf german.rtf box.rtf \
+	align.rtf german.rtf russian.rtf box.rtf \
 	enc_applemac.rtf enc_cp437.rtf enc_cp865.rtf    enc_latin2.rtf enc_latin5.rtf \
 	enc_cp1250.rtf   enc_cp850.rtf enc_decmulti.rtf enc_latin3.rtf enc_latin9.rtf\
 	enc_cp1252.rtf   enc_cp852.rtf enc_latin1.rtf   enc_latin4.rtf enc_next.rtf\
+	enc_cp1251.rtf   enc_cp855.rtf enc_cp866.rtf    enc_koi8-r.rtf enc_koi8-u.rtf \
+	enc_maccyr.rtf enc_macukr.rtf eqns-koi8.rtf \
 	defs.rtf qualisex.rtf ttgfsr7.rtf excalibur.rtf include.rtf ch.rtf\
-	spago1.rtf theorem.rtf picture.rtf
+	spago1.rtf theorem.rtf picture.rtf tabbing.rtf figtest.rtf \
+	apalike.rtf chem.rtf linux.rtf
 
 LATEX= latex
 BIBTEX= bibtex
@@ -37,10 +40,33 @@ german.rtf: german.tex
 	$(LATEX) german > latex.log
 	$(LATEX2RTF) $(OPTIONS) german
 
+russian.rtf: russian.tex
+	$(LATEX) russian > russian.log
+	$(LATEX) russian > russian.log
+	$(LATEX2RTF) $(OPTIONS) russian
+
 ttgfsr7.rtf: ttgfsr7.tex
 	$(LATEX) ttgfsr7 > latex.log
 	$(LATEX) ttgfsr7 > latex.log
 	$(LATEX2RTF) $(OPTIONS) ttgfsr7
+
+figtest.rtf: figtest.tex figtest.eps
+	$(LATEX) figtest > latex.log
+	$(LATEX) figtest > latex.log
+	echo "only works if latex2png is installed"
+	$(LATEX2RTF) $(OPTIONS) -F figtest
+
+apalike.rtf: apalike.tex apalike.bib
+	$(LATEX) apalike > latex.log
+	$(BIBTEX) apalike > bibtex.log
+	$(LATEX) apalike > latex.log
+	$(LATEX) apalike > latex.log
+	$(LATEX2RTF) $(OPTIONS) apalike
+
+linux.rtf: linux.tex
+	$(LATEX) linux > latex.log
+	$(LATEX) linux > latex.log
+	$(LATEX2RTF) $(OPTIONS) linux
 
 check:
 	./bracecheck

@@ -1,14 +1,36 @@
-/* $Id: graphics.c,v 1.10 2002/03/31 17:13:11 prahl Exp $ 
-This file contains routines that handle LaTeX graphics commands
+/* graphics.c - routines that handle LaTeX graphics commands
+
+Copyright (C) 2001-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
 #ifdef UNIX
 #include <unistd.h>
 #endif
+#include "cfg.h"
 #include "main.h"
 #include "graphics.h"
 #include "parser.h"
@@ -16,6 +38,7 @@ This file contains routines that handle LaTeX graphics commands
 #include "commands.h"
 #include "convert.h"
 #include "equation.h"
+#include "funct1.h"
 
 #define POINTS_PER_M 2834.65
 
@@ -76,12 +99,12 @@ typedef struct _EnhancedMetaHeader
 	unsigned long	RecordType;		/* Record type (always 0x00000001)*/
 	unsigned long	RecordSize;		/* Size of the record in bytes */
 	long			BoundsLeft;		/* Left inclusive bounds */
-	long			BoundsRight;	/* Right inclusive bounds */
 	long			BoundsTop;		/* Top inclusive bounds */
+	long			BoundsRight;	/* Right inclusive bounds */
 	long			BoundsBottom;	/* Bottom inclusive bounds */
 	long			FrameLeft;		/* Left side of inclusive picture frame */
-	long			FrameRight;		/* Right side of inclusive picture frame */
 	long			FrameTop;		/* Top side of inclusive picture frame */
+	long			FrameRight;		/* Right side of inclusive picture frame */
 	long			FrameBottom;	/* Bottom side of inclusive picture frame */
 	unsigned long	Signature;		/* Signature ID (always 0x464D4520) */
 	unsigned long	Version;		/* Version of the metafile */
@@ -98,6 +121,26 @@ typedef struct _EnhancedMetaHeader
 	long			HeightDevMM;	/* Height of reference device in millimeters */
 } ENHANCEDMETAHEADER;
 
+typedef struct _EmrFormat
+{
+    unsigned long 	Signature;    	/* 0x46535045 for EPS, 0x464D4520 for EMF */
+    unsigned long 	Version;      	/* EPS version number or 0x00000001 for EMF */
+    unsigned long 	Data;         	/* Size of data in bytes */
+    unsigned long 	OffsetToData; 	/* Offset to data */
+} EMRFORMAT;
+
+typedef struct _GdiCommentMultiFormats
+{
+    unsigned long 	Identifier;		/* Comment ID (0x43494447) */
+    unsigned long 	Comment;		/* Multiformats ID (0x40000004) */
+    long  			BoundsLeft;		/* Left side of bounding rectangle */
+    long  			BoundsRight;	/* Right side of bounding rectangle */
+    long  			BoundsTop;		/* Top side of bounding rectangle */
+    long  			BoundsBottom;	/* Bottom side of bounding rectangle */
+    unsigned long 	NumFormats;		/* Number of formats in comment */
+    EMRFORMAT 		*Data;			/* Array of comment data */
+} GDICOMMENTMULTIFORMATS;
+
 static void
 my_unlink(char *filename)
 /******************************************************************************
@@ -109,37 +152,258 @@ my_unlink(char *filename)
 #endif
 }
 
-
-static FILE * 
-open_graphics_file(char * s)
+static
+void PicComment(short label, short size, FILE *fp)
 {
-char           *fullpath;
-FILE		   *fp = NULL;
+	short long_comment  = 0x00A1;
+	short short_comment = 0x00A0;
+	short tag;
+	
+	tag = (size) ? long_comment : short_comment;
+	
+	if (g_little_endian) {
+		tag   = LETONS(tag);
+		label = LETONS(label);
+		size  = LETONS(size);
+	}
+	
+	fwrite(&tag,  2,1,fp);
+	fwrite(&label,2,1,fp);
+	if (size) fwrite(&size, 2,1,fp);
+}
 
+static char *
+strdup_new_extension(char *s, char *old_ext, char *new_ext)
+{
+	char *new_name, *p;
+	
+	p=strstr(s,old_ext);
+	if (p==NULL) return NULL;
+	
+	new_name = strdup_together(s,new_ext);
+	p=strstr(new_name,old_ext);
+	strcpy(p,new_ext);
+	return new_name;
+}
+
+static char *
+strdup_tmp_path(char *s)
+{
+	char *tmp, *new_name;
+	
 	if (s==NULL) return NULL;
 	
-#ifdef __MWERKS__
-	{
-		char * path, *dp;			/* use directory of latex file */
-		path = strdup(latexname);		
-		dp = strrchr(path, ':');
-		if (dp != NULL) {
-			dp++;
-			*dp = '\0';
-		} else
-			*path = '\0';
-		fullpath = strdup_together(path, s);
-		free(path);
-	}
-#else
-	fullpath = strdup(s);
-#endif
-
-	diagnostics(6, "processing picture <%s>\n", fullpath);
-	fp=fopen(fullpath, "rb");
-	free(fullpath);
-	return fp;
+	tmp = getTmpPath();
+	new_name = strdup_together(tmp,s);
+	free(tmp);
+	return new_name;
 }
+
+
+static char *
+eps_to_pict(char *s)
+/******************************************************************************
+     purpose : create a pict file from an EPS file and return file name for
+               the pict file.  Ideally this file will contain both the bitmap
+               and the original EPS embedded in the PICT file as comments.  If a
+               bitmap cannot be created, then the EPS is still embedded in the PICT
+               file so that at least the printed version will be good.
+ ******************************************************************************/
+{
+	char *cmd, *p, buffer[560];
+	long ii, pict_bitmap_size, eps_size;
+	short err,handle_size;
+	unsigned char byte;
+	short PostScriptBegin 	= 190;
+	short PostScriptEnd   	= 191;
+	short PostScriptHandle	= 192;
+	char *pict_bitmap		=NULL;
+	char *pict_eps			=NULL;
+	char *eps				=NULL;
+	char *return_value		=NULL;
+	FILE *fp_eps			=NULL;
+	FILE *fp_pict_bitmap	=NULL;
+	FILE *fp_pict_eps		=NULL;
+	
+	diagnostics(2, "eps_to_pict filename = <%s>", s);
+
+	/* Create filename for bitmap */
+	p = strdup_new_extension(s, ".eps", "a.pict");
+	if (p == NULL) {
+		p = strdup_new_extension(s, ".EPS", "a.pict");
+		if (p == NULL) goto Exit;
+	}
+	pict_bitmap = strdup_tmp_path(p);
+	free(p);
+	
+	/* Create filename for eps file */
+	p = strdup_new_extension(s, ".eps", ".pict");
+	if (p == NULL) {
+		p = strdup_new_extension(s, ".EPS", ".pict");
+		if (p == NULL) goto Exit;
+	}
+	pict_eps = strdup_tmp_path(p);
+	free(p);
+
+	eps = strdup_together(g_home_dir,s);
+
+	/* create a bitmap version of the eps file */
+	cmd = (char *) malloc(strlen(eps)+strlen(pict_bitmap)+strlen("convert -crop 0x0  ")+1);
+	sprintf(cmd, "convert -crop 0x0 %s %s", eps, pict_bitmap);	
+	diagnostics(1,"<%s> ",cmd);
+	err = system(cmd);
+	free(cmd);
+	
+	if (err!=0) 
+		diagnostics(WARNING, "problem creating bitmap from %s", eps);
+	else
+		return_value = pict_bitmap;
+		
+	/* open the eps file and make sure that it is less than 32k */
+ 	fp_eps = fopen (eps, "rb");
+	if (fp_eps==NULL) goto Exit;
+	fseek(fp_eps, 0, SEEK_END);
+  	eps_size = ftell (fp_eps);
+  	if (eps_size > 32000) {
+  		diagnostics(WARNING, "EPS file >32K ... using bitmap only");
+  		goto Exit;
+  	}
+  	rewind (fp_eps);
+  	diagnostics(WARNING, "eps size is 0x%X bytes", eps_size);
+  
+	/*open bitmap pict file and get file size */
+	fp_pict_bitmap = fopen(pict_bitmap, "rb");
+	if (fp_pict_bitmap == NULL) goto Exit;
+	fseek(fp_pict_bitmap, 0, SEEK_END);
+  	pict_bitmap_size = ftell(fp_pict_bitmap);
+  	rewind(fp_pict_bitmap);
+
+	/*open new pict file */
+	fp_pict_eps = fopen(pict_eps, "w");
+	if (fp_pict_eps == NULL) goto Exit;
+
+	/*copy header 512 buffer + 40 byte header*/
+	fread( &buffer,1,512+40,fp_pict_bitmap);
+	fwrite(&buffer,1,512+40,fp_pict_eps);
+	
+	/* insert comment that allows embedding postscript */
+	PicComment(PostScriptBegin,0,fp_pict_eps);
+	
+	/*copy bitmap 512+40 bytes of header + 2 bytes at end */
+	for (ii=512+40+2; ii<pict_bitmap_size; ii++) {
+		fread(&byte,1,1,fp_pict_bitmap);
+		fwrite(&byte,1,1,fp_pict_eps);
+	}
+	
+	/*copy eps graphic (write an even number of bytes) */
+	handle_size = eps_size;   
+	if (eps_size % 2) handle_size ++;	
+	
+	PicComment(PostScriptHandle,handle_size,fp_pict_eps);
+	for (ii=0; ii<eps_size; ii++) {
+		fread(&byte,1,1,fp_eps);
+		fwrite(&byte,1,1,fp_pict_eps);
+	}
+	if (eps_size % 2) {
+		byte = ' ';
+		fwrite(&byte,1,1,fp_pict_eps);
+	}		
+	
+	/*close file*/
+	PicComment(PostScriptEnd,0,fp_pict_eps);
+	byte = 0x00;
+	fwrite(&byte,1,1,fp_pict_eps);
+	byte = 0xFF;
+	fwrite(&byte,1,1,fp_pict_eps);
+
+	return_value= pict_eps;
+	
+Exit:
+	if (eps)           free(eps);
+	if (pict_eps)      free(pict_eps);
+	if (pict_bitmap)   free(pict_bitmap);
+
+  	if (fp_eps)         fclose(fp_eps); 
+	if (fp_pict_eps)    fclose(fp_pict_eps); 
+	if (fp_pict_bitmap) fclose(fp_pict_bitmap); 
+	return return_value;
+}
+
+static char *
+eps_to_png(char *eps)
+/******************************************************************************
+     purpose : create a png file from an EPS file and return file name
+ ******************************************************************************/
+{
+	char *cmd, *s1, *p, *png, *tmp;
+	diagnostics(1, "filename = <%s>", eps);
+
+	s1 = strdup(eps);
+	if ((p=strstr(s1,".eps")) == NULL && (p=strstr(s1,".EPS")) == NULL) {
+		diagnostics(1, "<%s> is not an EPS file", eps);
+		free(s1);
+		return NULL;
+	}
+
+	strcpy(p,".png");
+	tmp = getTmpPath();
+	png = strdup_together(tmp,s1);
+	cmd = (char *) malloc(strlen(eps)+strlen(png)+10);
+	sprintf(cmd, "convert %s %s", eps, png);	
+	system(cmd);	
+	
+	free(cmd);
+	free(tmp);
+	free(s1);
+	return png;
+}
+
+static char *
+eps_to_emf(char *eps)
+/******************************************************************************
+     purpose : create a wmf file from an EPS file and return file name
+ ******************************************************************************/
+{
+	FILE *fp;
+	char *cmd, *s1, *p, *emf, *tmp;
+	char ans[50];
+	long width, height;
+	diagnostics(1, "filename = <%s>", eps);
+
+	s1 = strdup(eps);
+	if ((p=strstr(s1,".eps")) == NULL && (p=strstr(s1,".EPS")) == NULL) {
+		diagnostics(1, "<%s> is not an EPS file", eps);
+		free(s1);
+		return NULL;
+	}
+
+	strcpy(p,".wmf");
+	tmp = getTmpPath();
+	emf = strdup_together(tmp,s1);
+	
+	/* Determine bounding box for EPS file */
+	cmd = (char *) malloc(strlen(eps)+strlen("identify -format \"%w %h\" ")+1);
+	sprintf(cmd, "identify -format \"%%w %%h\" %s", eps);	
+	fp=popen(cmd,"r");	
+	fgets(ans, 50, fp);
+	sscanf(ans,"%ld %ld",&width,&height);
+	pclose(fp);	
+ 	free(cmd);
+	
+	fp = fopen(emf, "wb");
+	
+	/* write ENHANCEDMETAHEADER */
+	
+	/* write GDICOMMENTMULTIFORMATS */
+	
+	/* write EMRFORMAT containing EPS */
+
+	free(tmp);
+	free(s1);
+	fclose(fp);
+	return emf;
+}
+
 
 static void 
 PutHexFile(FILE *fp)
@@ -160,17 +424,25 @@ int i, c;
 }
 
 static void 
-PutPictFile(char * s)
+PutPictFile(char * s, int full_path)
 /******************************************************************************
      purpose : Include .pict file in RTF
  ******************************************************************************/
 {
 FILE *fp;
+char *pict;
 short buffer[5];
 short top, left, bottom, right;
 int width, height;
 
-	fp = open_graphics_file(s);
+	if (full_path)
+		pict = strdup(s);
+	else
+		pict = strdup_together(g_home_dir, s);		
+	diagnostics(1, "PutPictFile <%s>", pict);
+
+	fp = fopen(pict, "rb");
+	free(pict);
 	if (fp == NULL) return;
 	
 	if (fseek(fp, 514L, SEEK_SET) || fread(buffer, 2, 4, fp) != 4) {
@@ -194,9 +466,9 @@ int width, height;
 		right  = LETONS(right);
 	}
 
-	diagnostics(1,"top = %d, bottom = %d", top, bottom);
-	diagnostics(1,"left = %d, right = %d", left, right);
-	diagnostics(1,"width = %d, height = %d", width, height);
+	diagnostics(4,"top = %d, bottom = %d", top, bottom);
+	diagnostics(4,"left = %d, right = %d", left, right);
+	diagnostics(4,"width = %d, height = %d", width, height);
 	fprintRTF("\n{\\pict\\macpict\\picw%d\\pich%d\n", width, height);
 
 	fseek(fp, -10L, SEEK_CUR);
@@ -205,7 +477,7 @@ int width, height;
 	fclose(fp);
 }
 
-void
+static void
 GetPngSize(char *s, unsigned long *w, unsigned long *h)
 /******************************************************************************
      purpose : determine height and width of file
@@ -219,7 +491,7 @@ char refchunk[5] = "IHDR";
 
 	*w = 0;
 	*h = 0;
-	fp = open_graphics_file(s);
+	fp = fopen(s, "rb");
 	if (fp == NULL) return;
 
 	if (fread(buffer,1,16,fp)<16) {
@@ -251,26 +523,41 @@ char refchunk[5] = "IHDR";
 }
 
 void 
-PutPngFile(char * s, double scale)
+PutPngFile(char * s, double scale, double baseline, int full_path)
 /******************************************************************************
      purpose : Include .png file in RTF
  ******************************************************************************/
 {
-FILE *fp;
-unsigned long width, height, w, h;
-int iscale;
+	FILE *fp;
+	char *png;
+	unsigned long width, height, w, h, b;
+	int iscale;
 
-	GetPngSize(s, &width, &height);
+	if (full_path)
+		png = strdup(s);
+	else
+		png = strdup_together(g_home_dir, s);		
+	diagnostics(1, "PutPngFile <%s>",png);
 
-	diagnostics(1,"width = %ld, height = %ld", width, height);
-	if (width==0) return;
+	GetPngSize(png, &width, &height);
+
+	diagnostics(4,"width = %ld, height = %ld, baseline = %g", width, height, baseline);
+
+	if (width==0 || height==0) return;
 	
-	fp = open_graphics_file(s);
+	fp = fopen(png, "rb");
+	free(png);
 	if (fp == NULL) return;
 
-	w = (unsigned long)( 100000.0*width  )/ ( 20* POINTS_PER_M );
-	h = (unsigned long)( 100000.0*height )/ ( 20* POINTS_PER_M );
-	fprintRTF("\n{\\pict\\pngblip\\picw%ld\\pich%ld", w, h);
+	w = (unsigned long)( 100000.0*width   )/ ( 20* POINTS_PER_M );
+	h = (unsigned long)( 100000.0*height  )/ ( 20* POINTS_PER_M );
+	b = (unsigned long)( 100000.0*baseline*scale)/ ( 20* POINTS_PER_M );
+
+	diagnostics(4,"width = %ld, height = %ld, baseline = %ld", w, h, b);
+	
+	fprintRTF("\n{");
+	if (b) fprintRTF("\\dn%ld",b);
+	fprintRTF("\\pict\\pngblip\\picw%ld\\pich%ld", w, h);
 	fprintRTF("\\picwgoal%ld\\pichgoal%ld", width*20, height*20);
 	if (scale != 1.0) {
 		iscale = (int) (scale * 100);
@@ -289,13 +576,16 @@ PutJpegFile(char * s)
      purpose : Include .jpeg file in RTF
  ******************************************************************************/
 {
-FILE *fp;
-unsigned short buffer[2];
-int m,c;
-unsigned short width, height;
-unsigned long w, h;
+	FILE *fp;
+	char *jpg;
+	unsigned short buffer[2];
+	int m,c;
+	unsigned short width, height;
+	unsigned long w, h;
 
-	fp = open_graphics_file(s);
+	jpg = strdup_together(g_home_dir,s);
+	fp = fopen(jpg, "rb");
+	free(jpg);
 	if (fp == NULL) return;
 
 	if ((c=fgetc(fp)) != 0xFF && (c=fgetc(fp)) != 0xD8) {
@@ -306,9 +596,9 @@ unsigned long w, h;
 	
 	do {  /* Look for SOFn tag */
 	
-		  while (!feof(fp) && fgetc(fp) != 0xFF);   		/* Find 0xFF byte */
+		  while (!feof(fp) && fgetc(fp) != 0xFF){}   		/* Find 0xFF byte */
 		  
-		  while (!feof(fp) && (m=fgetc(fp)) == 0xFF);  	/* Skip multiple 0xFFs */
+		  while (!feof(fp) && (m=fgetc(fp)) == 0xFF){}  	/* Skip multiple 0xFFs */
 		  
 	} while (!feof(fp) && m!=0xC0 && m!=0xC1 && m!=0xC2 && m!=0xC3 && m!=0xC5 && m!=0xC6 && m!=0xC7 &&
 					      m!=0xC9 && m!=0xCA && m!=0xCB && m!=0xCD && m!=0xCE && m!=0xCF );    
@@ -327,7 +617,7 @@ unsigned long w, h;
 		height = LETONS(height);
 	}
 
-	diagnostics(1,"width = %d, height = %d", width, height);
+	diagnostics(4,"width = %d, height = %d", width, height);
 
 	w = (unsigned long)( 100000.0*width  )/ ( 20* POINTS_PER_M );
 	h = (unsigned long)( 100000.0*height )/ ( 20* POINTS_PER_M );
@@ -341,152 +631,403 @@ unsigned long w, h;
 }
 
 static void
-PutEmfFile(char *s)
+PutEmfFile(char *s, int full_path)
 {
 	FILE *fp;
+	char *emf;
+	unsigned long	RecordType;		/* Record type (always 0x00000001)*/
+	unsigned long	RecordSize;		/* Size of the record in bytes */
+	long			BoundsLeft;		/* Left inclusive bounds */
+	long			BoundsRight;	/* Right inclusive bounds */
+	long			BoundsTop;		/* Top inclusive bounds */
+	long			BoundsBottom;	/* Bottom inclusive bounds */
+	long			FrameLeft;		/* Left side of inclusive picture frame */
+	long			FrameRight;		/* Right side of inclusive picture frame */
+	long			FrameTop;		/* Top side of inclusive picture frame */
+	long			FrameBottom;	/* Bottom side of inclusive picture frame */
+	unsigned long	Signature;		/* Signature ID (always 0x464D4520) */
+	long			w,h,width,height;
 	
-	fp = open_graphics_file(s);
+	if (full_path)
+		emf = strdup(s);
+	else
+		emf = strdup_together(g_home_dir, s);		
+	diagnostics(1, "PutEmfFile <%s>",emf);
+	fp = fopen(emf,"rb");
+	free(emf);
 	if (fp == NULL) return;
 
-/* identify file type */
-/* extract size information */
+/* extract size information*/
+	if (fread(&RecordType,4,1,fp)  != 1) goto out;
+	if (fread(&RecordSize,4,1,fp)  != 1) goto out;
+	if (fread(&BoundsLeft,4,1,fp)  != 1) goto out;
+	if (fread(&BoundsTop,4,1,fp)   != 1) goto out;
+	if (fread(&BoundsRight,4,1,fp) != 1) goto out;
+	if (fread(&BoundsBottom,4,1,fp)!= 1) goto out;
+	if (fread(&FrameLeft,4,1,fp)   != 1) goto out;
+	if (fread(&FrameRight,4,1,fp)  != 1) goto out;
+	if (fread(&FrameTop,4,1,fp)    != 1) goto out;
+	if (fread(&FrameBottom,4,1,fp) != 1) goto out;
+	if (fread(&Signature,4,1,fp)   != 1) goto out;
 
-	diagnostics(1, "EMF file inclusion not implemented yet");
+	if (!g_little_endian) {
+		RecordType   = LETONL(RecordType);
+		RecordSize   = LETONL(RecordSize);
+		BoundsLeft   = LETONL(BoundsLeft);
+		BoundsTop    = LETONL(BoundsTop);
+		BoundsRight  = LETONL(BoundsRight);
+		BoundsBottom = LETONL(BoundsBottom);
+		FrameLeft    = LETONL(FrameLeft);
+		FrameRight   = LETONL(FrameRight);
+		FrameTop     = LETONL(FrameTop);
+		FrameBottom  = LETONL(FrameBottom);
+		Signature    = LETONL(Signature);
+	}
 
-/*	width = buffer[1];
-	height = buffer[0];
-	diagnostics(1,"width = %d, height = %d", width, height);
+	if (RecordType != 1 || Signature != 0x464D4520) goto out;
+	height = BoundsBottom-BoundsTop;
+	width  = BoundsRight-BoundsLeft;
+	
+	w = (unsigned long)( 100000.0*width  )/ ( 20* POINTS_PER_M );
+	h = (unsigned long)( 100000.0*height )/ ( 20* POINTS_PER_M );
+	diagnostics(4,"width = %ld, height = %ld", width, height);
+	fprintRTF("\n{\\pict\\emfblip\\picw%ld\\pich%ld", w, h);
+	fprintRTF("\\picwgoal%ld\\pichgoal%ld\n", width*20, height*20);
 
-	fprintRTF("\n{\\pict\\emfblip\\picw%d\\pich%d\n", width, height);
+/* write file */
 	rewind(fp);
 	PutHexFile(fp);
 	fprintRTF("}\n");
-*/
+	fclose(fp);
+	return;
+
+out:
+	diagnostics(WARNING,"Problem with file %s --- not included",s);
+	fclose(fp);
+}
+
+static void
+PutWmfFile(char *s)
+/******************************************************************************
+ purpose   : Insert WMF file (from g_home_dir) into RTF file
+ ******************************************************************************/
+{
+	FILE *fp;
+	char *wmf;
+	unsigned long	Key;			/* Magic number (always 0x9AC6CDD7) */
+	unsigned short	FileType;		/* Type of metafile (0=memory, 1=disk) */
+	unsigned short	HeaderSize;		/* Size of header in WORDS (always 9) */
+	unsigned short	Handle;			/* Metafile HANDLE number (always 0) */
+	short			Left;			/* Left coordinate in twips */
+	short			Top;			/* Top coordinate in twips */
+	short			Right;			/* Right coordinate in twips */
+	short			Bottom;			/* Bottom coordinate in twips */
+	int 			width, height;
+	
+	/* open the proper file */
+	wmf = strdup_together(g_home_dir,s);
+	diagnostics(1, "PutWmfFile <%s>", wmf);
+	fp = fopen(wmf, "rb");
+	free(wmf);
+	if (fp == NULL) return;
+
+	/* verify file is actually WMF and get size */
+	if (fread(&Key,4,1,fp) != 1) goto out;
+	if (!g_little_endian) Key  = LETONL(Key);
+
+	if (Key == 0x9AC6CDD7) {		/* file is placeable metafile */
+		if (fread(&Handle,2,1,fp) != 1) goto out;
+		if (fread(&Left,2,1,fp)   != 1) goto out;
+		if (fread(&Top,2,1,fp)    != 1) goto out;
+		if (fread(&Right,2,1,fp)  != 1) goto out;
+		if (fread(&Bottom,2,1,fp) != 1) goto out;
+
+		if (!g_little_endian) {
+			Left   = LETONS(Left);
+			Top    = LETONS(Top);
+			Right  = LETONS(Right);
+			Bottom = LETONS(Bottom);
+		}
+		
+		width  = abs(Right - Left);
+		height = abs(Top-Bottom);
+
+	} else {					/* file may be old wmf file with no size */
+
+		rewind(fp);
+		if (fread(&FileType,2,1,fp) != 1) goto out;
+		if (fread(&HeaderSize,2,1,fp) != 1) goto out;
+		
+		if (!g_little_endian) {
+			FileType  = LETONS(FileType);
+			HeaderSize = LETONS(HeaderSize);
+		}
+	
+		if (FileType != 0 && FileType != 1) goto out;
+		if (HeaderSize != 9) goto out;
+		
+		/* real wmf file ... just assume size */
+		width = 200;
+		height = 200;
+	}
+
+	diagnostics(4,"width = %d, height = %d", width, height);
+	fprintRTF("\n{\\pict\\wmetafile1\\picw%d\\pich%d\n", width, height);
+
+	rewind(fp);
+	PutHexFile(fp);
+	fprintRTF("}\n");
+	fclose(fp);
+	return;
+
+out:
+	diagnostics(WARNING,"Problem with file %s --- not included",s);
 	fclose(fp);
 }
 
 static void
 PutEpsFile(char *s)
 {
-	char *cmd, *s1, *p, *png, *tmp;
-	diagnostics(1, "filename = <%s>", s);
-	s1 = strdup(s);
-	if ((p=strstr(s1,".eps")) == NULL && (p=strstr(s1,".EPS")) == NULL) {
-		diagnostics(1, "<%s> is not an EPS file", s);
-		free(s1);
-		return;
+	char *png, *emf, *pict;
+	diagnostics(2, "PutEpsFile filename = <%s>", s);
+
+	if (1) {
+		png = eps_to_png(s);
+		if (png) {
+			PutPngFile(png, 1.0, 0.0, TRUE);
+			my_unlink(png);
+			free(png);
+		}
 	}
-	strcpy(p,".png");
-	tmp = getTmpPath();
-	png = strdup_together(tmp,s1);
-	cmd = (char *) malloc(strlen(s)+strlen(png)+10);
-	sprintf(cmd, "convert %s %s", s, png);	
-	system(cmd);
 	
-	PutPngFile(png,1.0);
-	my_unlink(png);
-	
-	free(png);
-	free(cmd);
-	free(s1);
-	free(tmp);
+	if (0) {
+		pict = eps_to_pict(s);
+		if (pict) {
+			PutPictFile(pict, TRUE);
+/*			my_unlink(pict);  */
+			free(pict);
+		}
+	}
+
+	if (0) {
+		emf = eps_to_emf(s);
+		if (emf) {
+			PutEmfFile(emf, TRUE);
+			my_unlink(emf);
+			free(emf);
+		}
+	}
 }
 
 static void
 PutTiffFile(char *s)
+/******************************************************************************
+ purpose   : Insert TIFF file (from g_home_dir) into RTF file as a PNG image
+ ******************************************************************************/
 {
-	char *cmd, *s1, *p, *png, *tmp;
+	char *cmd, *tiff, *png, *tmp_png;
+	
 	diagnostics(1, "filename = <%s>", s);
-	s1 = strdup(s);
-	if ((p=strstr(s1,".tiff")) == NULL && (p=strstr(s1,".TIFF")) == NULL) {
-		diagnostics(1, "<%s> is not an EPS file", s);
-		free(s1);
-		return;
+	png = strdup_new_extension(s, ".tiff", ".png");
+	if (png == NULL) {
+		png = strdup_new_extension(s, ".TIFF", ".png");
+		if (png == NULL) return;
 	}
-	strcpy(p,".png");
-	tmp = getTmpPath();
-	png = strdup_together(tmp,s1);
-	cmd = (char *) malloc(strlen(s)+strlen(png)+10);
-	sprintf(cmd, "convert %s %s", s, png);	
+	
+	tmp_png = strdup_tmp_path(png);
+	tiff = strdup_together(g_home_dir,s);
+
+	cmd = (char *) malloc(strlen(tiff)+strlen(tmp_png)+10);
+	sprintf(cmd, "convert %s %s", tiff, tmp_png);	
 	system(cmd);
 	
-	PutPngFile(png,1.0);
-	my_unlink(png);
+	PutPngFile(tmp_png, 1.0, 0.0, TRUE);
+	my_unlink(tmp_png);
 	
-	free(png);
+	free(tmp_png);
 	free(cmd);
-	free(s1);
-	free(tmp);
+	free(tiff);
+	free(png);
 }
 
 static void
 PutGifFile(char *s)
+/******************************************************************************
+ purpose   : Insert GIF file (from g_home_dir) into RTF file as a PNG image
+ ******************************************************************************/
 {
-	char *cmd, *s1, *p, *png, *tmp;
+	char *cmd, *gif, *png, *tmp_png;
+	
 	diagnostics(1, "filename = <%s>", s);
-	s1 = strdup(s);
-	if ((p=strstr(s1,".gif")) == NULL && (p=strstr(s1,".GIF")) == NULL) {
-		diagnostics(1, "<%s> is not an gif file", s);
-		free(s1);
-		return;
+	png = strdup_new_extension(s, ".gif", ".png");
+	if (png == NULL) {
+		png = strdup_new_extension(s, ".GIF", ".png");
+		if (png == NULL) return;
 	}
-	strcpy(p,".png");
-	tmp = getTmpPath();
-	png = strdup_together(tmp,s1);
-	cmd = (char *) malloc(strlen(s)+strlen(png)+10);
-	sprintf(cmd, "convert %s %s", s, png);	
+	
+	tmp_png = strdup_tmp_path(png);
+	gif = strdup_together(g_home_dir,s);
+	
+	cmd = (char *) malloc(strlen(gif)+strlen(tmp_png)+10);
+	sprintf(cmd, "convert %s %s", gif, tmp_png);	
 	system(cmd);
 	
-	PutPngFile(png,1.0);
-	my_unlink(png);
+	PutPngFile(tmp_png, 1.0, 0.0, TRUE);
+	my_unlink(tmp_png);
 
-	free(png);
+	free(tmp_png);
 	free(cmd);
-	free(s1);
-	free(tmp);
+	free(gif);
+	free(png);
+}
+
+static int
+ReadLine(FILE *fp)
+/****************************************************************************
+purpose: reads up to and and including a line ending (CR, CRLF, or LF)
+ ****************************************************************************/
+{
+	int thechar;
+	while (1) {
+	 	thechar = getc(fp);
+	 	if (thechar == EOF ) {fclose(fp); return 0;}
+	 	if (thechar == 0x0a) return 1;      				/* LF */
+		if (thechar == 0x0d) {
+			thechar = getc(fp);
+	 		if (thechar == EOF ) {fclose(fp); return 0;} 
+			if (thechar == 0x0d) return 1;  				/* CR LF */
+			ungetc(thechar,fp);		                      	/* CR */
+			return 1;
+		}
+	}
+}
+
+long 
+GetBaseline(char *s, char *pre)
+/****************************************************************************
+purpose: reads a .pbm file to determine the baseline for an equation
+		 the .pbm file should have dimensions of 1xheight
+ ****************************************************************************/
+{
+	FILE *fp;
+	int thechar;
+	char *pbm;
+	char magic[250];
+	long baseline, width, height, items, top, bottom;
+	
+	/* baseline=0 if not an inline image */
+	if ((strcmp(pre,"$")!=0) && (strcmp(pre,"\\begin{math}")!=0) && (strcmp(pre,"\\(")!=0)) 
+		return 0;
+		
+	pbm = strdup_together(s,".pbm");
+	baseline = 4;
+		
+	diagnostics(4, "GetBaseline opening=<%s>",pbm);
+
+	fp = fopen(pbm, "rb");
+	if (fp == NULL) {free(pbm); return baseline;}
+
+	items = fscanf(fp,"%2s", magic);			/* ensure that file begins with "P4" */
+	if ((items!=1) || (strcmp(magic,"P4")!=0)) goto Exit;
+
+	items = fscanf(fp," %s", magic);
+	while ((items==1) && (magic[0]=='#')) {		/* skip any comment lines in pbm file */
+		if (!ReadLine(fp)) goto Exit;
+		items = fscanf(fp,"%s", magic);
+	}
+	
+	items = sscanf(magic, "%ld", &width);		/* make sure image width is 1 */
+	if ((items != 1) || (width != 1)) goto Exit;
+	
+	items=fscanf(fp," %ld", &height);  /* read height */
+	if (items != 1) goto Exit;
+
+	diagnostics(4, "width=%ld height=%ld", width, height);
+			
+	if (!ReadLine(fp)) goto Exit;				/* pixel map should start on next line */
+
+	for (top=height; top>0; top--) {			/* seek first black pixel (0x00) */
+		thechar = getc(fp);
+		if (thechar == EOF) goto Exit;		
+		if (thechar != 0  ) break;
+	}
+
+	for (bottom=top-1; bottom>0; bottom--) {	/* seek first black pixel (0x00) */
+		thechar = getc(fp);
+		if (thechar == EOF) goto Exit;		
+		if (thechar == 0  ) break;
+	}
+		
+	baseline = (bottom+top)/2;
+
+	diagnostics(4, "top=%ld bottom=%ld baseline=%ld", top, bottom, baseline);
+	
+Exit:
+	free(pbm);
+	fclose(fp);
+	return baseline;	
+}
+
+static char *
+get_latex2png_name()
+{
+#ifdef MSDOS
+	return strdup("command.com /e:2048 /c latex2pn");
+#else
+	return strdup("latex2png");
+#endif
 }
 
 void
-PutLatexFile(char *s)
+PutLatexFile(char *s, double scale, char *pre)
 /******************************************************************************
  purpose   : Convert LaTeX to Bitmap and insert in RTF file
  ******************************************************************************/
 {
-	char *png, *cmd;
-	int err, cmd_len;
-	unsigned long width, height;
-	unsigned long max=32767/20;
-	int resolution = g_dots_per_inch*2; /*points per inch */
+	char *png, *cmd, *l2p;
+	int err, cmd_len, baseline,second_pass;
+	unsigned long width, height, rw, rh;
+	double maxsize=32767/20;
+	int resolution = g_dots_per_inch; /*points per inch */
 	
 	diagnostics(4, "Entering PutLatexFile");
 
 	png = strdup_together(s,".png");
+	l2p = get_latex2png_name();
 
-	cmd_len = strlen(s)+25;
+	cmd_len = strlen(l2p)+strlen(s)+25;
 	if (g_home_dir)
 		cmd_len += strlen(g_home_dir);
 
 	cmd = (char *) malloc(cmd_len);
 
-	/* iterate until png is small enough for Word */
 	do {
-		resolution /= 2;
+		second_pass = FALSE; 	/* only needed if png is too large for Word */
 		if (g_home_dir==NULL)
-			sprintf(cmd, "latex2png -d %d %s", resolution, s);	
+			sprintf(cmd, "%s -d %d %s", l2p, resolution, s);	
 		else
-			sprintf(cmd, "latex2png -d %d -H \"%s\" %s", resolution, g_home_dir, s);	
+			sprintf(cmd, "%s -d %d -H \"%s\" %s", l2p, resolution, g_home_dir, s);	
 
-		err = system(cmd);
 		diagnostics(1, "cmd = <%s>", cmd);
-		if (err==0){
-			GetPngSize(png, &width, &height);
-			diagnostics(4, "png size width=%d height =%d", width, height);
+		err=system(cmd);
+		if (err) break;
+
+		GetPngSize(png, &width, &height);
+		baseline=GetBaseline(s, pre);
+		diagnostics(4, "png size height=%d baseline=%d width=%d", height, baseline, width);
+		
+		if( (width>maxsize && height!=0) || (height>maxsize && width!=0) ){  
+			second_pass = TRUE;
+			rw=(resolution*maxsize)/width;
+		 	rh=(resolution*maxsize)/height; 
+			resolution=rw<rh?rw:rh;
 		}
-	} while (!err && resolution>10 && ( (width>max) || (height>max)) );
+	} while (resolution>10 && ( (width>maxsize) || (height>maxsize)) );
 	
 	if (err==0)
-		PutPngFile(png,72.0/resolution);
+		PutPngFile(png, scale*72.0/resolution, baseline, TRUE);
 	
+	free(l2p);
 	free(png);
 	free(cmd);
 }
@@ -504,32 +1045,70 @@ angle=angle,
 scale=factor,
 clip=true/false,
 draft=true/false.
+
+code=0 => includegraphics
+code=1 => epsffile
+code=2 => epsfbox
+code=3 => \BoxedSPSF
+code=4 => psfig
 */
 {
 	char           *options;
 	char           *filename;
 
-	/* could be \includegraphics*[0,0][5,5]{file.pict} */
-
-	options = getBracketParam();
-	if (options) free(options);
-
-	options = getBracketParam();
-	if (options) free(options);
+	if (code==0) { /* could be \includegraphics*[0,0][5,5]{file.pict} */
+		options = getBracketParam();
+		if (options) free(options);
 	
-	filename = getBraceParam();
+		options = getBracketParam();
+		if (options) free(options);
+		filename = getBraceParam();
+	}
+	
+	if (code==1) { /* \epsffile{filename.eps} */
+		filename = getBraceParam();
+	}
 
+	if (code==2) { /* \epsfbox[0 0 30 50]{filename.ps} */
+		options = getBracketParam();
+		if (options) free(options);
+		filename = getBraceParam();
+	}
+	
+	if (code==3) {		/* \BoxedEPSF{filename [scaled nnn]} */
+		char *s;
+		filename = getBraceParam();
+		s= strchr(filename,' ');
+		if (s) *s='\0';
+	}
+		
+	if (code==4) {		/* \psfig{figure=filename,height=hhh,width=www} */
+		char *s, *t;
+		filename = getBraceParam();
+		s = strstr(filename,"figure=");
+		if (!s) return;
+		s += strlen("figure=");
+		t = strchr(s,',');
+		if (t) *t='\0';
+		t = strdup(s);
+		free(filename);
+		filename = t;
+	}
+	
 	if (strstr(filename, ".pict") || strstr(filename, ".PICT"))
-		PutPictFile(filename);
+		PutPictFile(filename, FALSE);
 		
 	else if (strstr(filename, ".png")  || strstr(filename, ".PNG"))
-		PutPngFile(filename,1.0);
+		PutPngFile(filename, 1.0, 0.0, FALSE);
 
 	else if (strstr(filename, ".gif")  || strstr(filename, ".GIF"))
 		PutGifFile(filename);
 
 	else if (strstr(filename, ".emf")  || strstr(filename, ".EMF"))
-		PutEmfFile(filename);
+		PutEmfFile(filename, FALSE);
+
+	else if (strstr(filename, ".wmf")  || strstr(filename, ".WMF"))
+		PutWmfFile(filename);
 
 	else if (strstr(filename, ".eps")  || strstr(filename, ".EPS"))
 		PutEpsFile(filename);
@@ -569,4 +1148,32 @@ CmdPicture(int code)
 		free(post);
 		free(picture);
 	}
+}
+
+void 
+CmdMusic(int code)
+/******************************************************************************
+  purpose: Process \begin{music} ... \end{music} environment
+ ******************************************************************************/
+{
+	char *contents;
+	char endmusic[] = "\\end{music}";
+
+	if (!(code & ON)) {
+		diagnostics(4, "exiting CmdMusic");
+		return;
+	}
+
+	diagnostics(4, "entering CmdMusic");
+	contents = getTexUntil(endmusic, TRUE);
+	CmdEndParagraph(0);
+	CmdVspace(1);
+	CmdIndent(INDENT_NONE);
+	CmdStartParagraph(0);
+	WriteLatexAsBitmap("\\begin{music}",contents,endmusic);
+	ConvertString(endmusic);	
+	CmdEndParagraph(0);
+	CmdVspace(1);
+	CmdIndent(INDENT_INHIBIT);
+	free(contents);		
 }

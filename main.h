@@ -1,8 +1,8 @@
-/* $Id: main.h,v 1.43 2002/04/04 03:11:24 prahl Exp $ */
+/* $Id: main.h,v 1.56 2002/11/23 23:35:41 prahl Exp $ */
 #ifndef __MAIN_H
 #define __MAIN_H
 
-#ifdef UNIX
+#if defined(UNIX)
 #ifndef ENVSEP
 #define ENVSEP ':'
 #endif
@@ -11,7 +11,16 @@
 #endif 
 #endif
 
-#ifdef MSDOS
+#if defined(MSDOS)
+#ifndef ENVSEP
+#define ENVSEP ';'
+#endif
+#ifndef PATHSEP
+#define PATHSEP '\\'
+#endif 
+#endif
+
+#if defined(OS2)
 #ifndef ENVSEP
 #define ENVSEP ';'
 #endif
@@ -25,10 +34,6 @@
 #define ENVSEP '^'
 #define PATHSEP ':'
 #include "MainMain.h"
-#endif
-
-#ifdef HAS_NO_GETOPT
-#define getopt my_getopt
 #endif
 
 #ifdef HAS_STRDUP
@@ -70,7 +75,8 @@ extern 			char *progname;			/* name of the executable file */
 
 extern bool     GermanMode;
 extern bool     FrenchMode;
-extern char    *hyperref;
+extern bool     RussianMode;
+extern bool		CzechMode;
 extern bool     pagenumbering;
 extern int      headings;
 
@@ -79,12 +85,10 @@ extern int      RecursionLevel;
 extern int      indent;
 extern char     alignment;
 
-/* table/tabbing variables */
+/* table  & tabbing variables */
 extern char 	*colFmt;
 extern long   	pos_begin_kill;
 extern int      tabcounter;
-extern bool     tabbing_on;
-extern bool     g_processing_tabular;
 extern int      colCount;
 extern int      actCol;
 extern int 		g_equation_column;
@@ -96,25 +100,34 @@ extern bool     g_processing_equation;
 extern bool     g_processing_preamble;
 extern bool     g_processing_figure;
 extern bool 	g_processing_table;
+extern bool     g_processing_tabbing;
+extern bool     g_processing_tabular;
 extern bool     g_processing_eqnarray;
 extern int		g_processing_arrays;
 extern int 		g_processing_fields;
 extern int		g_dots_per_inch;
 
 extern int      g_equation_number;
+extern bool g_escape_parent;
 extern bool     g_show_equation_number;
 extern int      g_enumerate_depth;
 extern bool     g_suppress_equation_number;
 extern bool     g_aux_file_missing;
 extern int    	g_document_type;
-extern char     g_encoding[20];
+extern char     g_charset_encoding_name[20];
+extern int 		g_fcharset_number;
+
 extern char		*g_figure_label;
 extern char		*g_table_label;
 extern char		*g_equation_label;
 extern char  	*g_section_label;
 extern char		*g_config_path;
 extern char     g_field_separator;
-extern char    *g_preamble;
+extern char		*g_preamble;
+
+extern double	g_png_equation_scale; 
+extern double	g_png_figure_scale;
+extern bool		g_latex_figures;
 
 extern bool		g_equation_inline_rtf;
 extern bool		g_equation_display_rtf;
@@ -126,6 +139,8 @@ extern bool		g_little_endian;
 void fprintRTF(char *format, ...);
 void putRtfChar(char cThis);
 char *getTmpPath(void);
-char *  my_strdup(const char *str);
+char *my_strdup(const char *str);
+FILE *my_fopen(char *path, char *mode);
 
+void debug_malloc(void);
 #endif				/* __MAIN_H */

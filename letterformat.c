@@ -1,6 +1,26 @@
-/***************************************************************************
-purpose : Handles LaTeX commands specific to the letter format
- ****************************************************************************/
+/* letterformat.c - LaTeX commands specific to the letter format
+
+Copyright (C) 2001-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    2001-2002 Scott Prahl
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -49,13 +69,12 @@ CmdLetter(int code)
 parameter: code: on/off-option for environment
  ******************************************************************************/
 {	
-	if (code & ON) {	/* on switch */
-		code &= ~(ON);	/* mask MSB */
-		PushEnvironment(code);
+	if (code & ON) {
+		PushEnvironment(LETTER);
 		if (g_letterToAddress) 
 			free(g_letterToAddress);
 		g_letterToAddress = getBraceParam();
-	} else {		/* off switch */
+	} else {
 		PopEnvironment();
 	}
 }
@@ -71,6 +90,7 @@ CmdOpening(int code)
 
 /* put return address and date at the top right */
 	g_letterOpened = TRUE;
+	oldalignment=alignment;
 	alignment = RIGHT;
 	fprintRTF("\n\\par\\pard\\q%c ", alignment);
 	diagnostics(5, "Entering ConvertString() from CmdAddress");

@@ -1,3 +1,29 @@
+/* equation.c - Translate TeX equations
+
+Copyright (C) 1995-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    1995-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -69,7 +95,7 @@ char *s, *t, *u;
 	return u;
 }
 
-void
+static void
 SlurpEquation(int code, char **pre, char **eq, char **post)
 {
 	int true_code = code & ~ON;
@@ -148,7 +174,7 @@ SlurpEquation(int code, char **pre, char **eq, char **post)
 	}
 }
 
-int
+static int
 EquationNeedsFields(char *eq)
 /******************************************************************************
  purpose   : Determine if equation needs EQ field for RTF conversion
@@ -167,11 +193,15 @@ EquationNeedsFields(char *eq)
 	if (strstr(eq,"\\sqrt")) return 1;
 	if (strstr(eq,"\\over")) return 1;
 	if (strstr(eq,"\\stackrel")) return 1;
+	if (strstr(eq,"_") || strstr(eq,"^")) return 1;
 	if (strstr(eq,"\\dfrac")) return 1;
+	if (strstr(eq,"\\lim")) return 1;
+	if (strstr(eq,"\\liminf")) return 1;
+	if (strstr(eq,"\\limsup")) return 1;
 	return 0;
 }
 
-void
+static void
 WriteEquationAsComment(char *pre, char *eq, char *post)
 /******************************************************************************
  purpose   : Writes equation to RTF file as text of COMMENT field
@@ -184,15 +214,19 @@ WriteEquationAsComment(char *pre, char *eq, char *post)
 	fprintRTF("}{ }}{\\fldrslt }}");
 }
 
-char *
-SaveEquationAsFile(char *pre, char *eq, char *post)
+static char *
+SaveEquationAsFile(char *pre, char *eq_with_spaces, char *post)
 {	
 	FILE * f;
 	char name[15];
-	char *tmp_dir, *fullname, *texname;
+	char *tmp_dir, *fullname, *texname, *eq;
 	static int file_number = 0;
 	
-	/* create needed file names */
+	if (!pre || !eq_with_spaces || !post) return NULL;
+	
+	eq = strdup_noendblanks(eq_with_spaces);
+
+/* create needed file names */
 	file_number++;
 	tmp_dir = getTmpPath();
 	sprintf(name, "l2r_%04d", file_number);
@@ -208,10 +242,13 @@ SaveEquationAsFile(char *pre, char *eq, char *post)
 		fprintf(f, "\\thispagestyle{empty}\n");
 		fprintf(f, "\\begin{document}\n");
 		fprintf(f, "\\setcounter{equation}{%d}\n",getCounter("equation"));
-		if (strstr(pre, "equation"))
+		if ((strcmp(pre,"$")==0) || (strcmp(pre,"\\begin{math}")==0) || (strcmp(pre,"\\(")==0)) {
+			fprintf(f, "%%INLINE_DOT_ON_BASELINE\n");
+			fprintf(f, "%s\n.\\quad %s\n%s", pre, eq, post);
+		} else if (strstr(pre, "equation"))
 			fprintf(f, "$$%s$$", eq);
 		else
-			fprintf(f, "%s%s%s", pre, eq, post);
+			fprintf(f, "%s\n%s\n%s", pre, eq, post);
 		fprintf(f, "\n\\end{document}");
 		fclose(f);
 	} else {
@@ -219,6 +256,7 @@ SaveEquationAsFile(char *pre, char *eq, char *post)
 		fullname = NULL;
 	}
 	
+	free(eq);
 	free(tmp_dir);
 	free(texname);
 	return(fullname);
@@ -232,9 +270,16 @@ WriteLatexAsBitmap(char *pre, char *eq, char *post)
  ******************************************************************************/
 {
 	char *p, *name;
+	double scale;
 	
 	diagnostics(4, "Entering WriteEquationAsBitmap");
 
+	if (eq == NULL) return;
+		
+	scale = g_png_equation_scale;
+	if (strstr(pre,"music") || strstr(pre,"figure") || strstr(pre,"picture"))
+		scale = g_png_figure_scale;
+		
 /* suppress bitmap equation numbers in eqnarrays with zero or one \label{}'s*/
 	if (strcmp(pre,"\\begin{eqnarray}")==0){
 		p = strstr(eq, "\\label");
@@ -247,10 +292,10 @@ WriteLatexAsBitmap(char *pre, char *eq, char *post)
 	} else
 		name = SaveEquationAsFile(pre,eq,post);
 	
-	PutLatexFile(name);
+	PutLatexFile(name,scale,pre);
 }
 
-void 
+static void 
 PrepareRtfEquation(int code, int EQ_Needed)
 {
 	int width,a,b,c;
@@ -358,7 +403,7 @@ PrepareRtfEquation(int code, int EQ_Needed)
 	
 }
 
-void 
+static void 
 FinishRtfEquation(int code, int EQ_Needed)
 {	
 	if (EQ_Needed && g_processing_fields==1) {
@@ -448,7 +493,7 @@ FinishRtfEquation(int code, int EQ_Needed)
 		}
 }
 
-char *
+static char *
 scanback(char *s, char *t)
 /******************************************************************************
  purpose   : Find '{' that starts a fraction designated by \over 
@@ -478,7 +523,7 @@ scanback(char *s, char *t)
 	return t;
 }
 
-char *
+static char *
 scanahead(char *s)
 /******************************************************************************
  purpose   : Find '}' that ends a fraction designated by \over 
@@ -514,7 +559,7 @@ scanahead(char *s)
 	return t;
 }
 
-void
+static void
 ConvertOverToFrac(char ** equation)
 /******************************************************************************
  purpose   : Convert {A \over B} to \frac{A}{B} 
@@ -524,11 +569,13 @@ ConvertOverToFrac(char ** equation)
 	eq = *equation;
 	p = eq;
 	diagnostics(4,"ConvertOverToFrac before <%s>",p);
+
 	while ((mid = strstr(p,"\\over")) != NULL) {
 		diagnostics(5,"Matched at <%s>",mid);
 		cNext = *(mid+5);
 		diagnostics(5,"Next char is <%c>",cNext);
-	 	if (!(('A'<= cNext && cNext <= 'Z') || ('a'<= cNext && cNext <= 'z'))) {
+	 	if (!isalpha((int)cNext)) {
+	 		
 			first = scanback(eq, mid);
 			diagnostics(6, "first = <%s>", first);
 			last  = scanahead(mid);
@@ -536,7 +583,7 @@ ConvertOverToFrac(char ** equation)
 	
 			strncpy(mid,"  }{ ",5);
 			diagnostics(6, "mid = <%s>", mid);
-			s = (char *) malloc(strlen(eq)+7);
+			s = (char *) malloc(strlen(eq)+sizeof("\\frac{}")+1);
 			t = s;
 
 			strncpy(t, eq, first-eq);			/* everything up to {A\over B} */
@@ -563,7 +610,7 @@ ConvertOverToFrac(char ** equation)
 	diagnostics(4,"ConvertOverToFrac after <%s>",eq);
 }
 
-void 
+static void 
 WriteEquationAsRTF(int code, char **eq)
 /******************************************************************************
  purpose   : Translate equation to RTF 
@@ -653,179 +700,6 @@ CmdEquation(int code)
 	
 }
 
-
-void
-CmdMath(int code)
-/******************************************************************************
- purpose   : sets the TeX mode to math or horizontal as appropriate
-             for $...$ \( ... \) and \begin{math} ... \end{math}
- ******************************************************************************/
-{
-	int true_code = code & ~ON;
-	
-	switch (true_code) {
-	
-		case EQN_MATH:
-			if (code & ON) {
-				diagnostics(4, "CmdMath() ... \\begin{math}");
-				SetTexMode(MODE_MATH);
-			} else {
-				diagnostics(4, "CmdMath() ... \\end{math}");
-				SetTexMode(MODE_HORIZONTAL);
-			}
-			break;
-	
-		case EQN_DOLLAR:
-			if (GetTexMode() != MODE_MATH) {
-				diagnostics(4, "Entering CmdMath() ... $");
-				fprintRTF("{");
-				SetTexMode(MODE_MATH);
-			} else {
-				diagnostics(4, "Exiting CmdMath() ... $");
-				fprintRTF("}");
-				SetTexMode(MODE_HORIZONTAL);
-			}
-			break;
-	
-		case EQN_RND_OPEN:	/* \( */
-			diagnostics(4, "CmdMath() ... \\(");
-			fprintRTF("{");
-			SetTexMode(MODE_MATH);
-			break;
-	
-		case EQN_RND_CLOSE:	/* \) */
-			diagnostics(4, "CmdMath() ... \\)");
-			fprintRTF("}");
-			SetTexMode(MODE_HORIZONTAL);
-			break;
-	}
-}
-
-void 
-CmdDisplayMath(int code)
-/******************************************************************************
- purpose: creates a displayed equation
-          \begin{equation} gets a right justified equation number
-          \begin{displaymath} gets no equation number
-          \[ gets no equation number
-          $$ gets no equation number
- ******************************************************************************/
-{
-	int width, mid, mode, true_code,a,b,c;
-	width = getLength("textwidth");
-	mid = width/2;
-	mode = GetTexMode();
-	true_code = code & ~ON;
-	
-	if (true_code == EQN_DOLLAR_DOLLAR) {
-		if (mode != MODE_DISPLAYMATH) {
-			diagnostics(4,"Entering CmdDisplayMath -- $$");
-			CmdEndParagraph(0);
-			SetTexMode(MODE_DISPLAYMATH);
-			g_show_equation_number = FALSE;
-			fprintRTF("{\\pard\\tqc\\tx%d\\tab ", mid);
-		} else {
-			diagnostics(4,"Exiting CmdDisplayMath -- $$");
-			CmdEndParagraph(0);
-			CmdIndent(INDENT_INHIBIT);
-			fprintRTF("}");
-		}
-		return;
-	}
-	
-	if (true_code == EQN_BRACKET_OPEN) {
-		diagnostics(4,"Entering CmdDisplayMath -- \\[");
-		SetTexMode(MODE_DISPLAYMATH);
-		g_show_equation_number = TRUE;
-		fprintRTF("\\par\\par\n{\\pard\\tqc\\tx%d\\tqr\\tx%d\n\\tab ", mid, width);
-		return;
-	}
-
-	if (true_code == EQN_BRACKET_CLOSE) {
-		diagnostics(4,"Exiting CmdDisplayMath -- \\]");
-		SetTexMode(MODE_VERTICAL);
-		fprintRTF("\\par\\par\n}");
-		return;
-	}
-
-	if (code & ON) {  /* \begin{equation}, etc. */
-
-		g_suppress_equation_number = FALSE;
-		
-		a = 0.45 *width;
-		b = 0.5 * width;
-		c = 0.55 * width;
-		fprintRTF("\\par\\par\n\\pard");
-		switch (true_code) {
-		case EQN_DISPLAYMATH:
-			diagnostics(4,"Entering CmdDisplayMath -- displaymath");
-			g_show_equation_number = FALSE;
-			fprintRTF("\\tqc\\tx%d", mid);
-			break;
-
-		case EQN_EQUATION_STAR:
-			diagnostics(4,"Entering CmdDisplayMath -- equation*");
-			g_show_equation_number = FALSE;
-			fprintRTF("\\tqc\\tx%d", mid);
-			break;
-
-		case EQN_EQUATION:
-			diagnostics(4,"Entering CmdDisplayMath -- equation");
-			g_equation_column = 5;				/* avoid adding \tabs when finishing */
-			g_show_equation_number = TRUE;
-			fprintRTF("\\tqc\\tx%d\\tqr\\tx%d", mid, width);
-			break;
-
-		case EQN_ARRAY_STAR:
-			diagnostics(4,"Entering CmdDisplayMath -- eqnarray* ");
-			g_show_equation_number = FALSE;
-			g_processing_eqnarray = TRUE;
-			g_processing_tabular = TRUE;
-			g_equation_column = 1;
-			fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d", a, b, c);
-			break;
-
-		case EQN_ARRAY:
-		    diagnostics(4,"Entering CmdDisplayMath --- eqnarray");
-			g_show_equation_number = TRUE;
-			g_processing_eqnarray = TRUE;
-			g_processing_tabular = TRUE;
-			g_equation_column = 1;
-			fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d\\tqr\\tx%d", a, b, c, width);
-			break;
-		}
-		fprintRTF("\\tab ");
-		SetTexMode(MODE_DISPLAYMATH);
-		
-	} else {
-	
-		diagnostics(4,"Exiting CmdDisplayMath");
-		
-		if (g_show_equation_number && !g_suppress_equation_number) {
-			char number[20];
-			incrementCounter("equation");
-			for (; g_equation_column < 3; g_equation_column++)
-					fprintRTF("\\tab ");
-			fprintRTF("\\tab{\\b0 (");
-			sprintf(number,"%d",getCounter("equation"));
-			InsertBookmark(g_equation_label,number);
-			if (g_equation_label) {
-				free(g_equation_label);
-				g_equation_label = NULL;
-			} 
-			fprintRTF(")}");
-		}
-
-		CmdEndParagraph(0);
-		CmdIndent(INDENT_INHIBIT);
-
-		if (true_code == EQN_ARRAY || true_code == EQN_ARRAY_STAR) {
-			g_processing_tabular = FALSE;
-			g_processing_eqnarray = FALSE;
-		}
-	}
-}
-
 void 
 CmdRoot(int code)
 /******************************************************************************
@@ -878,6 +752,92 @@ CmdFraction(int code)
 }
 
 void 
+CmdArrows(int code)
+/******************************************************************************
+ converts: amssymb \leftrightarrows and \rightleftarrows
+ ******************************************************************************/
+{
+    int size = CurrentFontSize()/4.5;
+
+	fprintRTF(" \\\\o ({\\up%d ",size);
+
+    switch (code) {
+    case LEFT_RIGHT:
+		ConvertString("\\leftarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\rightarrow");
+		break;
+
+    case RIGHT_LEFT:
+		ConvertString("\\rightarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\leftarrow");
+		break;
+		
+    case RIGHT_RIGHT:
+		ConvertString("\\rightarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\rightarrow");
+		break;
+
+    case LEFT_LEFT:
+		ConvertString("\\leftarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\leftarrow");
+		break;
+
+    case LONG_LEFTRIGHT:
+		ConvertString("\\longleftarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\longrightarrow");
+		break;
+    
+    case LONG_RIGHTLEFT:
+		ConvertString("\\longrightarrow");
+		fprintRTF("}%c{\\dn%d ", g_field_separator, size);
+        ConvertString("\\longleftarrow");
+		break;
+    }
+	fprintRTF("}) ");
+}
+
+void 
+CmdLim(int code)
+/******************************************************************************
+ purpose: handles \lim
+parameter: 0=\lim, 1=\limsup, 2=\liminf
+ ******************************************************************************/
+{
+	char cThis, *s, *lower_limit=NULL;
+
+	cThis = getNonBlank();
+    if (cThis == '_')
+        lower_limit = getBraceParam();
+    else
+        ungetTexChar(cThis);
+
+	if (code == 0)
+		s=strdup("lim");
+	else if (code == 1)
+		s=strdup("lim sup");
+	else
+		s=strdup("lim inf");
+
+    if (lower_limit) 
+    	fprintRTF("\\\\a\\\\ac(");
+
+    fprintRTF("%s",s);
+
+    if (lower_limit) {
+		fprintRTF("%c",g_field_separator);
+        ConvertString(lower_limit);
+    	fprintRTF(")");
+    }
+    
+    free(s);
+}
+
+void 
 CmdIntegral(int code)
 /******************************************************************************
  purpose: converts integral symbol + the "exponent" and "subscript" fields
@@ -887,10 +847,21 @@ parameter: type of operand
 	char           *upper_limit = NULL;
 	char           *lower_limit = NULL;
 	char            cThis;
+	char		   *command;
 
 	/* is there an exponent/subscript ? */
 	cThis = getNonBlank();
 
+	if (cThis=='\\') {			/* accept \nolimits and \limits */
+		ungetTexChar(cThis);
+		command=getSimpleCommand();	
+		if (!(strstr(command,"\\limits")==0) && !(strstr(command,"\\nolimits")==0))
+			PushSource(NULL,command);
+		else 
+			free(command);
+		cThis = getNonBlank();
+	}
+	
 	if (cThis == '_')
 		lower_limit = getBraceParam();
 	else if (cThis == '^')
@@ -933,6 +904,74 @@ parameter: type of operand
 }
 
 void
+SubSupWorker (bool big)
+/******************************************************************************
+ purpose:  Stack a superscript and a subscript together
+ ******************************************************************************/
+{
+	char cThis;
+	char *upper_limit = NULL;
+	char *lower_limit = NULL;
+	
+	for (;;) {
+		cThis = getNonBlank ();
+		if (cThis == '_') {
+			if (lower_limit) diagnostics (ERROR, "Double subscript");
+			lower_limit = getBraceParam ();
+		}
+		else if (cThis == '^') {
+			if (upper_limit) diagnostics (ERROR, "Double superscript");
+			upper_limit = getBraceParam ();
+		} else {
+			ungetTexChar (cThis);
+			break;
+		}
+	}
+	
+	if (upper_limit && lower_limit) {
+		int size, newsize;
+		size = CurrentFontSize ();
+		newsize = size / 1.2;
+		fprintRTF ("\\\\s\\\\up({\\fs%d ", newsize);
+		ConvertString (upper_limit);
+		if (big)
+			fprintRTF ("%c %c", g_field_separator, g_field_separator);
+		else
+			fprintRTF ("%c", g_field_separator);
+		ConvertString (lower_limit);
+		fprintRTF ("})");
+		free (lower_limit);
+		free (upper_limit);
+
+	} else if (lower_limit) {
+		int size, newsize, upsize;
+		size = CurrentFontSize ();
+		newsize = size / 1.2;
+		if (big)
+			upsize = size / 1.4;
+		else
+			upsize = size / 4;
+		fprintRTF ("\\\\s\\\\do%d({\\fs%d ", upsize, newsize);
+		ConvertString (lower_limit);
+		fprintRTF ("})");
+		free (lower_limit);
+		
+	} else if (upper_limit) {
+		int size, newsize, upsize;
+		size = CurrentFontSize ();
+		newsize = size / 1.2;
+		if (big)
+			upsize = size / 1.4;
+		else
+			upsize = size / 4;
+		fprintRTF ("\\\\s\\\\up%d({\\fs%d ", upsize, newsize);
+		ConvertString (upper_limit);
+		fprintRTF ("})");
+		free (upper_limit);
+	}
+}
+
+void
 CmdSuperscript(int code)
 /******************************************************************************
  purpose   : Handles superscripts ^\alpha, ^a, ^{a} and \textsuperscript{a}
@@ -940,6 +979,18 @@ CmdSuperscript(int code)
 {
 	char           *s = NULL;
 	int  size, newsize, upsize;
+
+	if (g_processing_fields){
+		ungetTexChar('^');
+		SubSupWorker(FALSE);
+		return;
+	}
+
+	if (g_processing_fields){
+		ungetTexChar('_');
+		SubSupWorker (FALSE);
+		return;
+	}
 
 	if ((s = getBraceParam())) {
 		size = CurrentFontSize();
@@ -980,32 +1031,59 @@ CmdLeftRight(int code)
  			 entire equation.  
  ******************************************************************************/
 { 
-	char delim;
+	char ldelim,rdelim;
+	char *contents;
 
-	delim = getTexChar();
-	if (delim == '\\')			/* might be \{ or \} */
-		delim = getTexChar();
-	
-	if (code == 0) {
-		diagnostics(4, "CmdLeftRight() ... \\left <%c>", delim);
+	ldelim = getNonSpace();
+	if (ldelim == '\\')			/* might be \{ or \} */
+		ldelim = getTexChar();
 
-		if (delim == '.')
-			diagnostics(WARNING, "\\left. not supported");
-		
-		fprintRTF(" \\\\b ");
-		if (delim == '(' || delim == '.')
-			fprintRTF("(");
-		else if (delim == '{')
-			fprintRTF("\\\\bc\\\\\\{ (");
-		else 
-			fprintRTF("\\\\bc\\\\%c (", delim);
+	contents= getLeftRightParam();
+	rdelim= getNonSpace();
 
-	} else {
-		fprintRTF(")");
-		if (delim == '.')
-			diagnostics(WARNING, "\\right. not supported");
-		diagnostics(4, "CmdLeftRight() ... \\right <%c>", delim);
+	if (rdelim == '\\')			/* might be \{ or \} */
+		rdelim = getTexChar();
+
+	if (code == 1) diagnostics(ERROR, "\\right without opening \\left");
+
+	diagnostics(4, "CmdLeftRight() ... \\left <%c> \\right <%c>", ldelim, rdelim);
+
+	fprintRTF(" \\\\b ");
+	if (ldelim == '(' && rdelim == ')'){
+		fprintRTF("(");
+		goto finish;
 	}
+
+	if (ldelim == '{' && rdelim == '}'){
+		fprintRTF("\\\\bc\\\\\\{ (");
+		goto finish;
+	}
+
+	if (ldelim == '[' && rdelim == ']'){
+		fprintRTF("\\\\bc\\\\[ (");
+		goto finish;
+	}
+
+	if (ldelim == '{' || ldelim == '}'){
+		fprintRTF("\\\\lc\\\\\\%c",ldelim);
+	} else {
+		if (ldelim != '.') fprintRTF("\\\\lc\\\\%c", ldelim);
+	}
+
+	if (rdelim == '{' || rdelim == '}'){
+		fprintRTF("\\\\rc\\\\\\%c (",ldelim);
+		
+	}else{
+		if (rdelim != '.') 
+			fprintRTF("\\\\rc\\\\%c (", ldelim);
+		else 
+			fprintRTF("(");
+	}
+	
+finish:
+	ConvertString(contents);
+	fprintRTF(")");
+	SubSupWorker(TRUE);
 }
 
 void
@@ -1038,6 +1116,20 @@ int n=0;
 		diagnostics(4, "CmdArray() ... \\end{array}");
 		g_processing_arrays--;
 	}
+}
+
+void
+CmdMatrix(int code)
+/******************************************************************************
+ purpose   : Does not handle plain tex \matrix command, but does not
+             produce improper RTF either.
+ ******************************************************************************/
+{
+	char *contents;
+	
+	fprintRTF(" matrix not implemented ");
+	contents = getBraceParam();
+	free(contents);
 }
 
 void

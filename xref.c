@@ -1,8 +1,25 @@
-/* $Id: xref.c,v 1.20 2002/04/04 03:11:24 prahl Exp $ 
+/* xref.c - commands for LaTeX cross references
+
+Copyright (C) 2001-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
  
-This file contains routines to handle cross references :
-	\label{key}, \ref{key},   \pageref{key}, \bibitem{key},
-	\cite{key},  \index{str}, \glossary{key}
+Authors:
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
@@ -37,17 +54,18 @@ CmdFootNote(int code)
  params : code specifies whether it is a footnote or a thanks-mark
  ******************************************************************************/
 {
-	char           *number;
+	char           *number, *text;
 	static int      thankno = 1;
 	int             text_ref_upsize, foot_ref_upsize;
 	int				DefFont = DefaultFontFamily();
 	
 	diagnostics(4,"Entering ConvertFootNote");
 	number = getBracketParam();	/* ignored by automatic footnumber generation */
+	text = getBraceParam();
 
 	if (number) free(number);
-	text_ref_upsize = 0.8 * CurrentFontSize();
-	foot_ref_upsize = 0.8 * CurrentFontSize();
+	text_ref_upsize = (int) (0.8 * CurrentFontSize());
+	foot_ref_upsize = (int) (0.8 * CurrentFontSize());
 
 	switch (code) {
 		case FOOTNOTE_THANKS:
@@ -69,9 +87,10 @@ CmdFootNote(int code)
 			break;
 	}
 
-	Convert();
-	diagnostics(4,"Exiting CmdFootNote");
+	ConvertString(text);
 	fprintRTF("}\n ");
+	diagnostics(4,"Exiting CmdFootNote");
+	free(text);
 }
 
 void 
@@ -83,10 +102,25 @@ CmdNoCite(int code)
 	free(getBraceParam());	/* just skip the parameter */
 }
 
+void
+CmdBibliographyStyle(int code)
+{
+	char * s = getBraceParam();   /*throw away widest_label */
+	free(s);
+}
+
 void 
 CmdBibliography(int code)
 {
-	if (PushSource(g_bbl_name, NULL)) {
+	int err;
+	char *s;
+	
+	s = getBraceParam();   /*throw away bibliography name */
+	free(s);
+	
+	err=PushSource(g_bbl_name, NULL);
+	
+	if (!err) {
 		diagnostics(4, "CmdBibliography ... begin Convert()");
 		Convert();
 		diagnostics(4, "CmdBibliography ... done Convert()");
@@ -98,6 +132,8 @@ CmdBibliography(int code)
 void 
 CmdThebibliography(int code)
 {
+	int amount = 450;
+	
 	if (code & ON) {
 		char * s = getBraceParam();   /*throw away widest_label */
 		free(s);
@@ -113,47 +149,53 @@ CmdThebibliography(int code)
 			ConvertBabelName("BIBNAME");
 		CmdEndParagraph(0);
 		fprintRTF("}");
+
+		PushEnvironment(GENERIC_ENV);
+		setLength("parindent", -amount);
+		indent += amount;
+	} else {
+		CmdEndParagraph(0);
+		CmdVspace(1);
+		PopEnvironment();
 	}
-	
+
+	CmdIndent(INDENT_USUAL);
 }
 
 void 
 CmdBibitem(int code)
 {
 	char *label, *key, *signet, *s;
-	int  old_indent;	
 	
-	/* new paragraph for bib entry */
 	CmdEndParagraph(0);
-	old_indent = getLength("parindent");
-	setLength("parindent", -450);
+	CmdIndent(INDENT_USUAL);
 	CmdStartParagraph(0);
-	fprintRTF("\\li450 ");
 	
 	label = getBracketParam();
-	if (label) {
-		fprintRTF("[");
-		ConvertString(label);
-		fprintRTF("]");
-		free(label);
-	}
-	
 	key = getBraceParam();
 	signet = strdup_nobadchars(key);
 	s=ScanAux("bibcite", key, 0);
-	diagnostics(4,"CmdBibitem <%s>",s);
-	fprintRTF("[");
-	fprintRTF("{\\*\\bkmkstart BIB_%s}",signet);
-	ConvertString(s);
-	fprintRTF("{\\*\\bkmkend BIB_%s}",signet);
-	fprintRTF("]");
+
+	if (label && !s) {		/* happens when file needs to be latex'ed again */
+		diagnostics(WARNING,"file needs to be latexed again for references");
+		fprintRTF("[");
+		ConvertString(label);
+		fprintRTF("]");
+	} else {
+		diagnostics(4,"CmdBibitem <%s>",s);
+		fprintRTF("[");
+		fprintRTF("{\\*\\bkmkstart BIB_%s}",signet);
+		ConvertString(s);
+		fprintRTF("{\\*\\bkmkend BIB_%s}",signet);
+		fprintRTF("]");
+	}
 
 	if (s) free(s);
+	if (label) free(label);
 	free(signet);
 	free(key);
 	
 	fprintRTF("\\tab ");
-	setLength("parindent", old_indent);
 	skipSpaces();
 }
 
@@ -247,7 +289,7 @@ InsertBookmark(char *name, char *text)
 	} else {
 		diagnostics(3,"bookmark %s being inserted around <%s>",signet,text);
 		RecordBookmark(signet);
-		fprintRTF("{\\*\\bkmkstart %s}%s{\\*\\bkmkend %s}",signet,text,signet);
+		fprintRTF("{\\*\\bkmkstart BM%s}%s{\\*\\bkmkend BM%s}",signet,text,signet);
 	}
 	
 	free(signet);
@@ -284,7 +326,7 @@ purpose: handles \label \ref \pageref \cite
 		case LABEL_REF:
 			signet = strdup_nobadchars(text);
 			s = ScanAux("newlabel", text, 1);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF %s \\\\* MERGEFORMAT }}",signet);
+			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BM%s \\\\* MERGEFORMAT }}",signet);
 			fprintRTF("{\\fldrslt{");
 			if (s)
 				ConvertString(s);
@@ -308,8 +350,8 @@ purpose: handles \label \ref \pageref \cite
 				signet = strdup_nobadchars(str1);
 				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BIB_%s \\\\* MERGEFORMAT }}",signet);
 				fprintRTF("{\\fldrslt{");
-				if (s && 0)
-					ConvertString(s);
+				if (s)
+					fprintRTF(s);
 				else
 					fprintRTF("?");
 				fprintRTF("}}}");
@@ -330,7 +372,7 @@ purpose: handles \label \ref \pageref \cite
 		case LABEL_HYPERPAGEREF:
 		case LABEL_PAGEREF:
 			signet = strdup_nobadchars(text);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF %s \\\\* MERGEFORMAT }}",signet);
+			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF BM%s \\\\* MERGEFORMAT }}",signet);
 			fprintRTF("{\\fldrslt{}}}",signet);
 			free(signet);
 			break;
@@ -361,7 +403,7 @@ code=1 means \token{reference}{{sect}{line}} -> "sect"
 
 	sprintf(target, "\\%s{%s}", token, reference);
 	
-	if (fAux == NULL && (fAux = fopen(g_aux_name, "r")) == NULL) {
+	if (fAux == NULL && (fAux = my_fopen(g_aux_name, "r")) == NULL) {
 		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", g_aux_name);
 		g_aux_file_missing = TRUE;
 		return NULL;

@@ -1,6 +1,27 @@
-/*  $Id: commands.c,v 1.51 2002/04/04 03:11:24 prahl Exp $
+/* commands.c - Defines subroutines to translate LaTeX commands to RTF
+
+Copyright (C) 1995-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
  
-    Defines subroutines to translate LaTeX commands to RTF
+Authors:
+    1995-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
@@ -24,13 +45,15 @@
 #include "graphics.h"
 
 typedef struct commandtag {
-	char           *cpCommand;			/* LaTeX command name without \ */
-	void (*func) (int);	        		/* function converting LaTex-cmd to Rtf-cmd */
-	int             param;	    		/* used in various ways */
+	char	*cpCommand;			/* LaTeX command name without \ */
+	void	(*func) (int);	    /* function to convert LaTeX to RTF */
+	int		param;	    		/* used in various ways */
 } CommandArray;
 
 static int      iEnvCount = 0;			/* number of active environments */
 static CommandArray *Environments[100];	/* list of active environments */
+static int parindentArray[100];
+static int indentArray[100];
 
 static CommandArray commands[] = {
 	{"begin", CmdBeginEnd, CMD_BEGIN},
@@ -118,6 +141,7 @@ static CommandArray commands[] = {
 	{"BibTeX", CmdLogo, CMD_BIBTEX},
 	{"AmSTeX", CmdLogo, CMD_AMSTEX},
 	{"AmSLaTeX", CmdLogo, CMD_AMSLATEX},
+	{"LyX", CmdLogo, CMD_LYX},
 	
 	/* ---------- SPECIAL CHARACTERS ------------------- */
 	{"hat", CmdHatChar, 0},
@@ -180,6 +204,10 @@ static CommandArray commands[] = {
 	{"onecolumn", CmdColumn, One_Column},
 	{"twocolumn", CmdColumn, Two_Column},
 	{"includegraphics", CmdGraphics, 0},
+	{"epsffile", CmdGraphics, 1},
+	{"epsfbox", CmdGraphics, 2},
+	{"BoxedEPSF", CmdGraphics, 3},
+	{"psfig", CmdGraphics, 4},
 	{"includegraphics*", CmdGraphics, 0},
 	{"moveleft", CmdLength, 0},
 	{"moveright", CmdLength, 0},
@@ -191,6 +219,7 @@ static CommandArray commands[] = {
 	{"pageref", CmdLabel, LABEL_PAGEREF},
 	{"cite", CmdLabel, LABEL_CITE},
 	{"bibliography", CmdBibliography, 0},
+	{"bibliographystyle", CmdBibliographyStyle, 0},
 	{"bibitem", CmdBibitem, 0},
 	{"newblock", CmdNewblock, 0},
 	{"newsavebox", CmdIgnoreParameter, No_Opt_One_NormParam},
@@ -255,12 +284,14 @@ static CommandArray commands[] = {
 	{"thanks", CmdFootNote, FOOTNOTE_THANKS},
 	{"bibliographystyle", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"let", CmdIgnoreLet, 0},
-	{"cline", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"multicolumn", CmdMultiCol, 0},
 	{"frac", CmdFraction, 0},
 	{"dfrac", CmdFraction, 0},
     {"Frac", CmdFraction, 0},
 	{"sqrt", CmdRoot, 0},
+    {"lim",  CmdLim, 0},
+    {"limsup",  CmdLim, 1},
+    {"liminf",  CmdLim, 2},
     {"int",  CmdIntegral, 0},
     {"iint",  CmdIntegral, 3},
     {"iiint",  CmdIntegral, 4},
@@ -269,11 +300,19 @@ static CommandArray commands[] = {
     {"left", CmdLeftRight, 0},
     {"right", CmdLeftRight, 1},
     {"stackrel", CmdStackrel, 0},
+    {"matrix", CmdMatrix, 0},
+	{"leftrightarrows", CmdArrows, LEFT_RIGHT},
+	{"leftleftarrows", CmdArrows, LEFT_LEFT},
+	{"rightrightarrows", CmdArrows, RIGHT_RIGHT},
+	{"rightleftarrows", CmdArrows, RIGHT_LEFT},
+	{"longleftrightarrows", CmdArrows, LONG_LEFTRIGHT},
+	{"longrightleftarrows", CmdArrows, LONG_RIGHTLEFT},
 	{"nonumber",CmdNonumber, EQN_NO_NUMBER},
 	{"char",CmdChar,0},
 	{"htmladdnormallink",CmdHtml,LABEL_HTMLADDNORMALREF},
 	{"htmlref",CmdHtml, LABEL_HTMLREF},
 	{"nobreakspace", CmdNonBreakSpace, 0},
+	{"abstract", CmdAbstract, 1},
 	{"", NULL, 0}
 };
 
@@ -340,6 +379,9 @@ static CommandArray PreambleCommands[] = {
 	{"htmladdnormallink",CmdHtml, LABEL_HTMLADDNORMALREF},
 	{"htmlref",CmdHtml, LABEL_HTMLREF},
 	{"nobreakspace", CmdNonBreakSpace, 0},
+	{"signature", CmdSignature, 0},
+	{"hline", CmdHline, 0},
+	{"cline", CmdHline, 1},
 	{"", NULL, 0}
 };				/* end of list */
 
@@ -364,11 +406,6 @@ static CommandArray FigureCommands[] = {
 	{"", NULL, 0}
 };
 
-static CommandArray TabbingCommands[] = {
-	{"kill", CmdTabkill, 0},/* a line that ends with a \kill command produces no output */
-	{"", NULL, 0}
-};
-
 static CommandArray LetterCommands[] = {
 	{"opening", CmdOpening, 0},
 	{"closing", CmdClosing, 0},
@@ -386,6 +423,11 @@ static CommandArray GermanModeCommands[] = {
 	{"glq", GermanPrint, GP_L},
 	{"grq", GermanPrint, GP_R},
 	{"grqq", GermanPrint, GP_RDBL},
+	{"", NULL, 0}
+};
+
+static CommandArray CzechModeCommands[] = {
+	{"uv", CmdCzechAbbrev, 0},
 	{"", NULL, 0}
 };
 
@@ -407,8 +449,93 @@ static CommandArray FrenchModeCommands[] = {
     {"secundo", CmdFrenchAbbrev, SECUNDO},
     {"tertio", CmdFrenchAbbrev, TERTIO},
     {"quarto", CmdFrenchAbbrev, QUARTO},
+    {"inferieura", CmdFrenchAbbrev, INFERIEURA},
+    {"superieura", CmdFrenchAbbrev, SUPERIEURA},
+    {"lq", CmdFrenchAbbrev, FRENCH_LQ},
+    {"rq", CmdFrenchAbbrev, FRENCH_RQ},
+    {"lqq", CmdFrenchAbbrev, FRENCH_LQQ},
+    {"rqq", CmdFrenchAbbrev, FRENCH_RQQ},
+    {"pointvirgule", CmdFrenchAbbrev, POINT_VIRGULE},
+    {"pointexclamation", CmdFrenchAbbrev, POINT_EXCLAMATION},
+    {"pointinterrogation", CmdFrenchAbbrev, POINT_INTERROGATION},
+    {"dittomark", CmdFrenchAbbrev, DITTO_MARK},
+    {"deuxpoints", CmdFrenchAbbrev, DEUX_POINTS},
     {"fup", CmdFrenchAbbrev, FUP},
+    {"up", CmdFrenchAbbrev, FUP},
+    {"LCS", CmdFrenchAbbrev, LCS},
+    {"FCS", CmdFrenchAbbrev, FCS},
 	{"", NULL, 0}
+};
+
+/********************************************************************/
+/* commands for Russian Mode */
+/********************************************************************/
+static CommandArray RussianModeCommands[] = {
+	{ "CYRA" , CmdCyrillicChar , 0xC0 },
+	{ "CYRB" , CmdCyrillicChar , 0xC1},
+	{ "CYRV" , CmdCyrillicChar , 0xC2},
+	{ "CYRG" , CmdCyrillicChar , 0xC3},
+	{ "CYRD" , CmdCyrillicChar , 0xC4},
+	{ "CYRE" , CmdCyrillicChar , 0xC5},
+	{ "CYRZH" , CmdCyrillicChar , 0xC6},
+	{ "CYRZ" , CmdCyrillicChar , 0xC7},
+	{ "CYRI" , CmdCyrillicChar , 0xC8},
+	{ "CYRISHRT" , CmdCyrillicChar , 0xC9},
+	{ "CYRK" , CmdCyrillicChar , 0xCA},
+	{ "CYRL" , CmdCyrillicChar , 0xCB},
+	{ "CYRM" , CmdCyrillicChar , 0xCC},
+	{ "CYRN" , CmdCyrillicChar , 0xCD},
+	{ "CYRO" , CmdCyrillicChar , 0xCE},
+	{ "CYRP" , CmdCyrillicChar , 0xCF},
+	{ "CYRR" , CmdCyrillicChar , 0xD0},	
+	{ "CYRS" , CmdCyrillicChar , 0xD1},
+	{ "CYRT" , CmdCyrillicChar , 0xD2},
+	{ "CYRU" , CmdCyrillicChar , 0xD3},
+	{ "CYRF" , CmdCyrillicChar , 0xD4},
+	{ "CYRH" , CmdCyrillicChar , 0xD5},
+	{ "CYRC" , CmdCyrillicChar , 0xD6},
+	{ "CYRCH" , CmdCyrillicChar , 0xD7},
+	{ "CYRSH" , CmdCyrillicChar , 0xD8},
+	{ "CYRCHSH" , CmdCyrillicChar , 0xD9},
+	{ "CYRHRDSN" , CmdCyrillicChar , 0xDA},
+	{ "CYRERY" , CmdCyrillicChar , 0xDB},
+	{ "CYRSFTSN" , CmdCyrillicChar , 0xDC},
+	{ "CYREREV" , CmdCyrillicChar , 0xDD},
+	{ "CYRYU" , CmdCyrillicChar , 0xDE},
+	{ "CYRYA" , CmdCyrillicChar , 0xDF},
+	{ "cyra" , CmdCyrillicChar , 0xE0 },
+	{ "cyrb" , CmdCyrillicChar , 0xE1},
+	{ "cyrv" , CmdCyrillicChar , 0xE2},
+	{ "cyrg" , CmdCyrillicChar , 0xE3},
+	{ "cyrd" , CmdCyrillicChar , 0xE4},
+	{ "cyre" , CmdCyrillicChar , 0xE5},
+	{ "cyrzh" , CmdCyrillicChar , 0xE6},
+	{ "cyrz" , CmdCyrillicChar , 0xE7},
+	{ "cyri" , CmdCyrillicChar , 0xE8},
+	{ "cyrishrt" , CmdCyrillicChar , 0xE9},
+	{ "cyrk" , CmdCyrillicChar , 0xEA},
+	{ "cyrl" , CmdCyrillicChar , 0xEB},
+	{ "cyrm" , CmdCyrillicChar , 0xEC},
+	{ "cyrn" , CmdCyrillicChar , 0xED},
+	{ "cyro" , CmdCyrillicChar , 0xEE},
+	{ "cyrp" , CmdCyrillicChar , 0xEF},
+	{ "cyrr" , CmdCyrillicChar , 0xF0},	
+	{ "cyrs" , CmdCyrillicChar , 0xF1},
+	{ "cyrt" , CmdCyrillicChar , 0xF2},
+	{ "cyru" , CmdCyrillicChar , 0xF3},
+	{ "cyrf" , CmdCyrillicChar , 0xF4},
+	{ "cyrh" , CmdCyrillicChar , 0xF5},
+	{ "cyrc" , CmdCyrillicChar , 0xF6},
+	{ "cyrch" , CmdCyrillicChar , 0xF7},
+	{ "cyrsh" , CmdCyrillicChar , 0xF8},
+	{ "cyrchsh" , CmdCyrillicChar , 0xF9},
+	{ "cyrhrdsn" , CmdCyrillicChar , 0xFA},
+	{ "cyrery" , CmdCyrillicChar , 0xFB},
+	{ "cyrsftsn" , CmdCyrillicChar , 0xFC},
+	{ "cyrerev" , CmdCyrillicChar , 0xFD},
+	{ "cyryu" , CmdCyrillicChar , 0xFE},
+	{ "cyrya" , CmdCyrillicChar , 0xFF},
+	{ "", NULL, 0 }
 };
 
 /********************************************************************/
@@ -425,6 +552,7 @@ static CommandArray params[] = {
 	{"figure*", CmdFigure, FIGURE_1},
 	{"picture", CmdPicture, 0},
 	{"minipage", CmdMinipage, 0},
+	{"music", CmdMusic, 0},
 
 	{"quote", CmdQuote, QUOTE},
 	{"quotation", CmdQuote, QUOTATION},
@@ -435,9 +563,9 @@ static CommandArray params[] = {
 	{"verbatim", CmdVerbatim, VERBATIM_1},
 	{"verse", CmdVerse, 0},
 	{"tabular", CmdTabular, TABULAR},
-	{"tabular*", CmdTabular, TABULAR_1},
-	{"longtable", CmdTabular, TABULAR},
-	{"longtable*", CmdTabular, TABULAR_1},
+	{"tabular*", CmdTabular, TABULAR_STAR},
+	{"longtable", CmdTabular, TABULAR_LONG},
+	{"longtable*", CmdTabular, TABULAR_LONG_STAR},
 	{"array", CmdArray, 1},
 
 	{"displaymath", CmdEquation, EQN_DISPLAYMATH},
@@ -594,6 +722,9 @@ globals: changes Environment - array of active environments
 {
 	char           *diag = "";
 
+	parindentArray[iEnvCount] = getLength("parindent");
+	indentArray[iEnvCount] = indent;
+	
 	switch (code) {
 	case PREAMBLE:
 		Environments[iEnvCount] = PreambleCommands;
@@ -611,10 +742,6 @@ globals: changes Environment - array of active environments
 		Environments[iEnvCount] = EnumerateCommands;
 		diag = "enumerate";
 		break;
-	case TABBING:
-		Environments[iEnvCount] = TabbingCommands;
-		diag = "tabbing";
-		break;
 	case LETTER:
 		Environments[iEnvCount] = LetterCommands;
 		diag = "letter";
@@ -631,6 +758,14 @@ globals: changes Environment - array of active environments
 		Environments[iEnvCount] = FrenchModeCommands;
 		diag = "french";
 		break;
+	case RUSSIAN_MODE:
+		Environments[iEnvCount] = RussianModeCommands;
+		diag = "french";
+ 		break;
+	case CZECH_MODE:
+		Environments[iEnvCount] = CzechModeCommands;
+		diag = "french";
+		break;
 	case FIGURE_ENV:
 		Environments[iEnvCount] = FigureCommands;
 		diag = "figure";
@@ -642,6 +777,10 @@ globals: changes Environment - array of active environments
 	case HYPERLATEX:
 		Environments[iEnvCount] = hyperlatex;
 		diag = "hyperlatex";
+		break;
+	case GENERIC_ENV:
+		Environments[iEnvCount] = commands;
+		diag = "Generic Environment";
 		break;
 
 	default:
@@ -663,6 +802,9 @@ globals: changes Environment - array of active environments
 {
 	--iEnvCount;
 	Environments[iEnvCount] = NULL;
+
+	setLength("parindent",parindentArray[iEnvCount]);
+	indent=indentArray[iEnvCount];
 
 	/*
 	 * overlapping environments are not allowed !!! example:

@@ -1,6 +1,26 @@
-/*  $Id: parser.c,v 1.53 2002/04/04 03:11:24 prahl Exp $
+/* parser.c - parser for LaTeX code
 
-   Contains declarations for a generic recursive parser for LaTeX code.
+Copyright (C) 1998-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 */
 
 #include <stdio.h>
@@ -22,6 +42,7 @@
 typedef struct InputStackType
 {
    char  *string;
+   char  *string_start;
    FILE  *file;
    char  *file_name;
    long   file_line;
@@ -113,7 +134,8 @@ int
 PushSource(char * filename, char * string)
 /***************************************************************************
  purpose:     change the source used by getRawTexChar() to either file or string
- 			  pass NULL for unused argument (both NULL means use stdin)
+ 			  --> pass NULL for unused argument (both NULL means use stdin)
+ 			  --> PushSource duplicates string
 ****************************************************************************/
 {
 	char       s[50];
@@ -152,38 +174,30 @@ PushSource(char * filename, char * string)
 	
 	/* if not then try to open a file */	
 	} else if (filename) {
-		if (g_home_dir==NULL)
-			name = strdup(filename);
-		else
-			name = strdup_together(g_home_dir, filename);
-		p = fopen(name, "rb");
-		if (!p) {
-           diagnostics(WARNING, "Cannot open <%s>", name);
-           free(name);
-           return 0;
-       }
-       g_parser_include_level++;
-       g_parser_line=1;
+		p=my_fopen(filename, "rb");
+		if (p==NULL) return 1;
+		g_parser_include_level++;
+		g_parser_line=1;
        
     } else {
     	name = CurrentFileName();
     	line = CurrentLineNumber();
 	}    	
 	
-	if (++g_parser_depth >= PARSER_SOURCE_MAX) {
-		diagnostics(ERROR, "To many BeginSource() calls");
-		return 0;
-	}
+	g_parser_depth++;
+	
+	if (g_parser_depth >= PARSER_SOURCE_MAX)
+		diagnostics(ERROR, "More than %d PushSource() calls",(int)PARSER_SOURCE_MAX);
 
-	g_parser_stack[g_parser_depth].string      = string;
+	g_parser_string = (string) ? strdup(string) : NULL;
+	g_parser_stack[g_parser_depth].string      = g_parser_string;
+	g_parser_stack[g_parser_depth].string_start= g_parser_string;
 	g_parser_stack[g_parser_depth].file        = p;
 	g_parser_stack[g_parser_depth].file_line   = line;
 	g_parser_stack[g_parser_depth].file_name   = name;
 	g_parser_file = p;
-	g_parser_string = string;
-/*
-	g_parser_line = line;
-*/
+	g_parser_string = g_parser_stack[g_parser_depth].string;
+
 	if (g_parser_file) {
 		diagnostics(5, "Opening Source File %s", g_parser_stack[g_parser_depth].file_name);
 	}else {
@@ -205,7 +219,7 @@ PushSource(char * filename, char * string)
 			}
 		}
 	}
-	return 1;
+	return 0;
 }
 
 int 
@@ -229,6 +243,9 @@ PopSource(void)
 	char       s[50];
 	int i;
 
+	if (g_parser_depth < 0) 
+		diagnostics(ERROR, "More PopSource() calls than PushSource() ");
+
 	if (0) {
 		diagnostics(1,"Before PopSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
 		g_parser_line,g_parser_depth,g_parser_include_level);
@@ -243,20 +260,26 @@ PopSource(void)
 			}
 		}
 	}
-	if (g_parser_file)
-		diagnostics(5, "Closing Source File %s", g_parser_stack[g_parser_depth].file_name);
-	else {
-		strncpy(s,g_parser_string,25);
-		diagnostics(5, "Closing Source string <%s>",s);
-	}
-
-	if (g_parser_depth < 0) 
-		diagnostics(ERROR, "EndSource() calls exceed BeginSource() calls");
-
+	
 	if (g_parser_file) {
+		diagnostics(5, "Closing Source File %s", g_parser_stack[g_parser_depth].file_name);
 		fclose(g_parser_file);
 		free(g_parser_stack[g_parser_depth].file_name);
+		g_parser_stack[g_parser_depth].file_name=NULL;
 		g_parser_include_level--;
+	} 
+	
+	if (g_parser_string) {
+		if (strlen(g_parser_stack[g_parser_depth].string_start)<49) 
+			strcpy(s,g_parser_stack[g_parser_depth].string_start);
+		else {
+			strncpy(s,g_parser_stack[g_parser_depth].string_start,49);
+			s[50]='\0';
+		}
+			
+		diagnostics(5, "Closing Source string <%s>",s);
+		free(g_parser_stack[g_parser_depth].string_start);
+		g_parser_stack[g_parser_depth].string_start=NULL;
 	}
 		
 	g_parser_depth--;
@@ -415,7 +438,7 @@ purpose: ignores anything from inputfile until the end of line.
  ****************************************************************************/
 {
 	char            cThis;
-	while ((cThis=getRawTexChar()) && cThis != '\n');
+	while ((cThis=getRawTexChar()) && cThis != '\n'){}
 }
 
 char 
@@ -425,7 +448,7 @@ getNonBlank(void)
 ****************************************************************************/
 {
 	char            c;
-	while ((c = getTexChar()) && (c == ' ' || c == '\n'));
+	while ((c = getTexChar()) && (c == ' ' || c == '\n')){}
 	return c;
 }
 
@@ -436,7 +459,7 @@ getNonSpace(void)
 ****************************************************************************/
 {
 	char            c;
-	while ((c = getTexChar()) && c == ' ');
+	while ((c = getTexChar()) && c == ' '){}
 	return c;
 }
 
@@ -447,7 +470,7 @@ skipSpaces(void)
 ****************************************************************************/
 {
 	char            c;
-	while ((c = getTexChar()) && c == ' ');
+	while ((c = getTexChar()) && c == ' '){}
 	ungetTexChar(c);
 }
 
@@ -695,13 +718,56 @@ getBraceParam(void)
 }
 
 char *
+getLeftRightParam(void)
+/**************************************************************************
+     purpose: get text between \left ... \right
+ **************************************************************************/
+{
+	char text[5000],s,*command;
+	int i=0;
+	int lrdepth=1;
+	
+	text[0]='\0';
+	
+	for (;;){
+		s=getTexChar();
+		if (s=='\\'){
+			ungetTexChar(s);
+			command=getSimpleCommand();
+			if (strcmp(command,"\\right")==0){
+				lrdepth--;
+				if (lrdepth==0) {
+					free(command);
+					return strdup(text);
+				}
+			}
+			strcat(text+i, command);
+			i+= strlen(command);
+			if (i>4950) diagnostics(ERROR, "Contents of \\left .. \\right too large.");
+			if (strcmp(command,"\\left")==0) lrdepth++;
+			free(command);
+		} else {
+			text[i]=s;
+			i++;
+			text[i]= '\0';
+		}
+	}
+	return NULL;
+}
+
+
+  
+  
+char *
 getTexUntil(char * target, int raw)
 /**************************************************************************
      purpose: returns the portion of the file to the beginning of target
      returns: NULL if not found
  **************************************************************************/
 {
-	char            *s, buffer[4096];
+	enum {BUFFSIZE = 8000};
+	char            *s;
+	char            buffer[BUFFSIZE+1] = {'\0'};
 	int				last_i = -1;
 	int             i   = 0;       /* size of string that has been read */
 	int             j   = 0;       /* number of found characters */
@@ -710,22 +776,29 @@ getTexUntil(char * target, int raw)
 	
 	PushTrackLineNumber(FALSE);
 
-	diagnostics(3, "getTexUntil target = <%s> raw_search = %d ", target, raw);
+	diagnostics(5, "getTexUntil target = <%s> raw_search = %d ", target, raw);
 
-	while (j < len && i < 4095) {
+	while (j < len && i < BUFFSIZE) {
 	
 		if (i > last_i) {
 			buffer[i] = (raw) ? getRawTexChar() : getTexChar();
 			last_i = i;
+			if (buffer[i]!='\n')
+				diagnostics(7,"next char = <%c>, %d, %d, %d",buffer[i],i,j,last_i);
+			else
+				diagnostics(7,"next char = <\\n>");
+
 		}
 		
-		if (!buffer[i]) {
+		if (buffer[i]=='\0') {
 			end_of_file_reached = TRUE;
+			diagnostics(7,"end of file reached");
 			break;
 		}
 		
 		if (buffer[i] != target[j]) {
 			if (j > 0) {			        /* false start, put back what was found */
+				diagnostics(8,"failed to match target[%d]=<%c> != buffer[%d]=<%c>", j,target[j], i,buffer[i]);
 				i-=j;
 				j=0;
 			}
@@ -735,13 +808,15 @@ getTexUntil(char * target, int raw)
 		i++;
 	}
 	
-	if (i == 4096) 
-		diagnostics(ERROR, "Could not find <%s> in 4096 characters", target);
+	if (i == BUFFSIZE) 
+		diagnostics(ERROR, "Could not find <%s> in %d characters", BUFFSIZE);
 	
 	if (!end_of_file_reached) /* do not include target in returned string*/
 		buffer[i-len] = '\0';
 	
 	PopTrackLineNumber();
+
+	diagnostics(3,"buffer size =[%d], actual=[%d]", strlen(buffer), i-len);
 
 	s = strdup(buffer);
 	diagnostics(3,"strdup result = %s",s);
@@ -806,10 +881,10 @@ getDimension(void)
 	
 /* obtain unit of measure */
 	skipSpaces();
-	buffer[0] = tolower(getTexChar());
+	buffer[0] = tolower((int) getTexChar());
 	
 	if (buffer[0] != '\\') {
-		buffer[1] = tolower(getTexChar());
+		buffer[1] = tolower((int) getTexChar());
 		buffer[2] = '\0';
 		
 		diagnostics(4,"getDimension() dimension is <%s>", buffer);
@@ -868,7 +943,7 @@ static void increase_buffer_size(void)
 	new_section_buffer = malloc(2*section_buffer_size+1);
 	if (new_section_buffer == NULL)
 		diagnostics(ERROR, "Could not allocate enough memory to process file. Sorry.");
-	memcpy(new_section_buffer, section_buffer, section_buffer_size);
+	memmove(new_section_buffer, section_buffer, section_buffer_size);
 	section_buffer_size *=2;
 	free(section_buffer);
 	section_buffer = new_section_buffer;
@@ -895,8 +970,9 @@ getSection(char **body, char **header, char **label)
 	char cNext, *s,*text,*next_header,*str;
 	int i;
 	long delta;
-	int  match[29];
-	char * command[29] = {"",  /* 0 entry is for user definitions */
+	int  match[30];
+	char * command[30] = {"",  /* 0 entry is for user definitions */
+	                      "",  /* 1 entry is for user environments */
 						  "\\begin{verbatim}", "\\begin{figure}", "\\begin{equation}", 
 						  "\\begin{eqnarray}", "\\begin{table}", "\\begin{description}",
 						  "\\end{verbatim}", "\\end{figure}", "\\end{equation}", 
@@ -906,29 +982,29 @@ getSection(char **body, char **header, char **label)
 	                     "\\label", "\\input", "\\include", "\\verb", "\\url",
 	                     "\\newcommand", "\\def" , "\\renewcommand"};
 
-	int ncommands = 29;
+	int ncommands = 30;
 
-	const int b_verbatim_item   = 1;
-	const int b_figure_item     = 2;
-	const int b_equation_item   = 3;
-	const int b_eqnarray_item   = 4;
-	const int b_table_item      = 5;
-	const int b_description_item= 6;
-	const int e_verbatim_item   = 7;
-	const int e_figure_item     = 8;
-	const int e_equation_item   = 9;
-	const int e_eqnarray_item   =10;
-	const int e_table_item      =11;
-	const int e_description_item=12;
+	const int b_verbatim_item   = 2;
+	const int b_figure_item     = 3;
+	const int b_equation_item   = 4;
+	const int b_eqnarray_item   = 5;
+	const int b_table_item      = 6;
+	const int b_description_item= 7;
+	const int e_verbatim_item   = 8;
+	const int e_figure_item     = 9;
+	const int e_equation_item   =10;
+	const int e_eqnarray_item   =11;
+	const int e_table_item      =12;
+	const int e_description_item=13;
 
-	const int label_item   = 21;
-	const int input_item   = 22;
-	const int include_item = 23;
-	const int verb_item    = 24;
-	const int url_item     = 25;
-	const int new_item     = 26;
-	const int def_item     = 27;
-	const int renew_item   = 28;
+	const int label_item   = 22;
+	const int input_item   = 23;
+	const int include_item = 24;
+	const int verb_item    = 25;
+	const int url_item     = 26;
+	const int new_item     = 27;
+	const int def_item     = 28;
+	const int renew_item   = 29;
 
 	int bs_count = 0;
 	int index = 0;
@@ -999,9 +1075,13 @@ getSection(char **body, char **header, char **label)
 		if (match[0])  	/* do any user defined commands possibly match? */
 			match[0] = maybeDefinition(section_buffer+delta-index+1, index-1);
 		
-		possible_match = match[0];
+		  	/* do any user defined commands possibly match? */
+		if (match[1])	
+			match[1] = maybeEnvironment(section_buffer+delta-index, index-1);
+
+		possible_match = match[0] || match[1];
 		
-		for (i=1; i<ncommands; i++) {	/* test each command for match */
+		for (i=2; i<ncommands; i++) {	/* test each command for match */
 			if (!match[i]) continue;
 				
 			if (*(section_buffer+delta)!=command[i][index]) {
@@ -1030,15 +1110,52 @@ getSection(char **body, char **header, char **label)
 					
 					delta -= index+1;  		/* remove \macroname */
 					str = expandDefinition(i);
-					PushSource(NULL,str);   /* memory leak :-( */
-					index = 0;
 	    			diagnostics(4,"getSection() expanded macro string is <%s>", str);
+					PushSource(NULL,str); 
+					free(str);
+					index = 0;
 					continue;
 				}
 			}
 		}
 		
-		for (i=1; i<ncommands; i++) {	/* discover any exact matches */
+		if (match[1]) {						/* expand user environments */
+			char * p = section_buffer+delta-index;
+			cNext = getRawTexChar();		/* wrong when cNext == '%' */			
+			str=NULL;
+			
+			if (cNext=='}' && index>5) {	/* is environ name complete? */
+				*(p+index+1) = '\0';
+				if (*(p+1) == 'e'){									/* find \\end{userenvironment} */
+					i   = existsEnvironment(p+strlen("\\end{"));
+					str = expandEnvironment(i,CMD_END);
+				} else if (index > 8) { 							/* find \\begin{userenvironment} */
+					i = existsEnvironment(p+strlen("\\begin{"));
+					str = expandEnvironment(i,CMD_BEGIN);
+				}
+			}
+				
+			if (str){							/* found */
+				char *str2;
+				diagnostics(4,"matched <%s}>", p);
+				diagnostics(4,"expanded <%s>", str);
+				if (*(p+1)=='e')
+					str2 = strdup_together(str,"}");
+				else
+					str2 = strdup_together("{",str);
+				free(str);
+				PushSource(NULL,str2);
+				free(str2);
+				delta -= index+1;  		/* remove \begin{userenvironment} */
+				index = 0;
+				diagnostics(4,"getSection() expanded environment string is <%s>", str);
+				continue;
+			}
+			
+			ungetTexChar(cNext);	/* put the character back */
+		}
+
+		for (i=2; i<ncommands; i++) {	/* discover any exact matches */
 			if (!match[i]) continue;
 			if (index+1 == strlen(command[i])) {
 				found = TRUE;
@@ -1107,26 +1224,8 @@ getSection(char **body, char **header, char **label)
 					free(s);
 					s = s2;
 				}
-	
-				/* Classic MacOS because of how DropUnix handles directories */
-				#ifdef __MWERKS__
-					{
-						char            fullpath[1024];
-						char           *dp;
-						strcpy(fullpath, latexname);
-						dp = strrchr(fullpath, ':');
-						if (dp != NULL) {
-							dp++;
-							*dp = '\0';
-						} else
-							strcpy(fullpath, "");
-						s2 = strdup_together(fullpath, s);
-						free(s);
-						s = s2;
-					}
-				#endif
-				
-				PushSource(s, NULL);
+					
+				PushSource(s, NULL);  /* ignore return value */
 			}
 			delta -=  (i==input_item) ? 6 : 8;  /* remove \input or \include */
 			free(s);

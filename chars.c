@@ -1,6 +1,23 @@
-/* $Id: chars.c,v 1.22 2002/02/18 05:54:03 prahl Exp $
+/* chars.c - Handle special TeX characters and logos
 
-   purpose : handles special characters and logos
+Copyright (C) 2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+
 */
 
 #include <stdlib.h>
@@ -804,17 +821,21 @@ CmdLogo(int code)
 	case CMD_TEX:
 		TeXlogo();
 		break;
+		
 	case CMD_LATEX:
 		LaTeXlogo();
 		break;
+		
 	case CMD_SLITEX:
 		fprintRTF("{\\scaps Sli}");  
 		TeXlogo();
 		break;
+		
 	case CMD_BIBTEX:
 		fprintRTF("{\\scaps Bib}");
 		TeXlogo();
 		break;
+		
 	case CMD_LATEXE:
 		LaTeXlogo();
 		if (CurrentFontSize() > 14) {
@@ -827,6 +848,7 @@ CmdLogo(int code)
 		font_num = RtfFontNumber("Symbol");
 		fprintRTF("2{\\dn%d\\f%d e}", dnsize, font_num);
 		break;
+		
 	case CMD_AMSTEX:
 		fprintRTF("{\\i AmS}-"); /* should be calligraphic */
 		TeXlogo();
@@ -836,8 +858,30 @@ CmdLogo(int code)
 		fprintRTF("{\\i AmS}-");  /* should be calligraphic */ 
 		LaTeXlogo();
 		break;
+		
+	case CMD_LYX:
+		DnSize = 0.3 * CurrentFontSize();
+		dnsize = DnSize + 0.45;
+		fprintRTF("L{\\dn%d Y}X", dnsize);
+		break;
 	}
 	fprintRTF("}");
+}
+
+void 
+CmdCzechAbbrev(int code)
+/******************************************************************************
+  purpose: only handles \uv{quote} at the moment
+ ******************************************************************************/
+{
+	char *quote;
+	
+	quote=getBraceParam();
+	fprintRTF(" \\'84");
+	ConvertString(quote); 
+	free(quote);
+	fprintRTF("\\ldblquote ");
+	return;
 }
 
 void 
@@ -849,6 +893,26 @@ CmdFrenchAbbrev(int code)
   float FloatFsize;
   int up, size;
   char *fuptext;
+
+  if (code == INFERIEURA) {fprintRTF("<"); return;}
+  if (code == SUPERIEURA) {fprintRTF(">"); return;}
+  if (code == FRENCH_LQ) {fprintRTF("\\lquote"); return;}
+  if (code == FRENCH_RQ) {fprintRTF("\\rquote"); return;}
+  if (code == FRENCH_LQQ) {fprintRTF("\\ldblquote"); return;}
+  if (code == FRENCH_RQQ) {fprintRTF("\\rdblquote"); return;}
+  if (code == POINT_VIRGULE) {fprintRTF(";"); return;}
+  if (code == POINT_EXCLAMATION) {fprintRTF("!"); return;}
+  if (code == POINT_INTERROGATION) {fprintRTF("?"); return;}
+  if (code == DITTO_MARK) {fprintRTF("\""); return;}
+  if (code == DEUX_POINTS) {fprintRTF(":"); return;}
+  if (code == LCS || code == FCS) {
+  		char *abbev=getBraceParam();
+		fprintRTF("{\\scaps ");
+ 		ConvertString(abbev); 
+       	free(abbev);
+		fprintRTF("}");
+		return;
+  }
 
   if (code == NUMERO) fprintRTF("n");
   if (code == NUMEROS) fprintRTF("n");
@@ -892,3 +956,38 @@ CmdFrenchAbbrev(int code)
   
   fprintRTF("}");
 }
+
+void CmdCyrillicChar(int code)
+/******************************************************************************
+ * purpose : insert cyrillic character into RTF stream
+ * ******************************************************************************/
+{
+	int n;
+	
+	if (code<=0 || code >= 255) return;
+	
+	n = CurrentCyrillicFontFamily();
+	
+	if (n>=0)
+		fprintRTF("{\\f%d\\\'%.2X}", n, code);
+	else										/* already using Cyrillic Font */
+		fprintRTF("\\\'%.2X", code);
+}
+
+void CmdCyrillicStrChar(char *s)
+/******************************************************************************
+ * purpose : insert cyrillic character into RTF stream
+ * ******************************************************************************/
+{
+	int n;
+	
+	if (s==NULL || strlen(s)!=2) return;
+
+	n = CurrentCyrillicFontFamily();
+	
+	if (n>=0)
+		fprintRTF("{\\f%d\\\'%s}", n, s);
+	else										/* already using Cyrillic Font */
+		fprintRTF("\\\'%s", s);
+}
+

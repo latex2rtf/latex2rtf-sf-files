@@ -1,17 +1,4 @@
 /*
- * $Id: mygetopt.c,v 1.11 2002/03/10 16:19:22 prahl Exp $ History: $Log:
- * mygetopt.c,v $ Revision 1.1  1998/11/12 13:05:43  glehner Initial revision
- * 
- * 
- */
-
-#ifdef HAS_NO_GETOPT
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "main.h"
-
-/*
  * my_getopt  is supposed to emulate the C Library getopt (which, according
  * to the man pages, is written by Henry Spencer to emulate the Bell Lab
  * version).
@@ -28,18 +15,15 @@
  * 
  * See the getopt manual pages for more information on getopt.
  * 
- * 
- * 
  * Written by V.Menkov, IU, 1995
- * 
  */
 
-extern char    *optarg;
-extern int      optind;
+#include "main.h"
+#include <stdlib.h>
+#include <string.h>
 
-typedef int     logical;
-
-int             my_getopt(int argc, char **argv, char *optstring);
+char           *optarg = 0;
+int             optind = 1;
 
 int 
 my_getopt(int argc, char **argv, char *optstring)
@@ -47,7 +31,7 @@ my_getopt(int argc, char **argv, char *optstring)
 	char           *q;
 	static char    *rem = NULL;
 	int             c;
-	logical         needarg = 0;
+	int         	needarg = 0;
 
 	optarg = NULL;
 
@@ -62,8 +46,7 @@ my_getopt(int argc, char **argv, char *optstring)
 		if (optind < argc && argv[optind][0] == '-') {
 			rem = argv[optind] + 1;
 			if (*rem == 0)
-				return EOF;	/* Treat lone "-" as a
-						 * non-option arg */
+				return EOF;	/* Treat lone "-" as a non-option arg */
 			if (*rem == '-') {
 				optind++;
 				return EOF;
@@ -100,6 +83,3 @@ my_getopt(int argc, char **argv, char *optstring)
 	}
 	return c;
 }
-#else
-int AVOID_EMPTY_MYGETOPT_SOURCE;
-#endif

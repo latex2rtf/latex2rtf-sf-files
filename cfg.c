@@ -1,6 +1,27 @@
-/* $Id: cfg.c,v 1.22 2002/03/14 06:42:21 prahl Exp $
+/* cfg.c - Read config files and provide lookup routines
 
-     purpose : Read config files and provide lookup routines
+Copyright (C) 1995-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+
+Authors:
+    1995-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 
  * LEG200698 I would have prefered to make the reading of the language file
  * separate, since the language is known some steps after reading the
@@ -56,7 +77,7 @@ cfg_compare(ConfigEntryT ** el1, ConfigEntryT ** el2)
 	return strcmp((*el1)->TexCommand, (*el2)->TexCommand);
 }
 
-FILE *
+static FILE *
 try_path(const char *path, const char *file)
 {
 	char * both;
@@ -87,7 +108,7 @@ try_path(const char *path, const char *file)
 	return fp;
 }
 
-FILE *
+static FILE *
 open_cfg(const char *name)
 /****************************************************************************
 purpose: open config by trying multiple paths
@@ -118,8 +139,8 @@ purpose: open config by trying multiple paths
 		free(env_path);
 	}		
 
-/* last resort.  try LIBDIR */
-	lib_path = strdup(LIBDIR);
+/* last resort.  try CFGDIR */
+	lib_path = strdup(CFGDIR);
 	if (lib_path) {
 		p = lib_path;
 		while (p) {
@@ -139,9 +160,9 @@ purpose: open config by trying multiple paths
 	diagnostics(WARNING, "Locate the directory containing the .cfg files and");
 	diagnostics(WARNING, "   (1) define the environment variable RTFPATH, *or*");
 	diagnostics(WARNING, "   (2) use command line path option \"-P /path/to/cfg/file\", *or*");
-	diagnostics(WARNING, "   (3) recompile latex2rtf with LIBDIR defined properly");
+	diagnostics(WARNING, "   (3) recompile latex2rtf with CFGDIR defined properly");
 	diagnostics(WARNING, "Current RTFPATH: %s", getenv("RTFPATH"));
-	diagnostics(WARNING, "Current  LIBDIR: %s", LIBDIR);
+	diagnostics(WARNING, "Current  CFGDIR: %s", CFGDIR);
 	diagnostics(ERROR,   " Giving up.  Have a nice day.");
 	return NULL;
 }

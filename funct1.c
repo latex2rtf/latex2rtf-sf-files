@@ -1,8 +1,28 @@
-/* $Id: funct1.c,v 1.67 2002/04/04 03:11:24 prahl Exp $ 
- 
-This file contains routines that interpret various LaTeX commands and produce RTF
+/* funct1.c - interpret various LaTeX commands and produce RTF
 
-Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
+Copyright (C) 1995-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+	1995      Fernando Dorner, Andreas Granzer, Freidrich Polzer, Gerhard Trisko
+    1995-1997 Ralf Schlatterbeck
+    1998-2000 Georg Lehner
+    2001-2002 Scott Prahl
 */
 
 #include <stdlib.h>
@@ -24,6 +44,7 @@ Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
 #include "definitions.h"
 #include "preamble.h"
 #include "xref.h"
+#include "equation.h"
 
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
 extern int      indent;		/* includes the left margin e.g. for itemize-commands */
@@ -46,12 +67,16 @@ CmdStartParagraph(int code)
 {
 	int parindent;
 	
-	diagnostics(5,"CmdStartParagraph mode = %d", GetTexMode());
-	diagnostics(5,"Noindent is %d", (int) g_paragraph_no_indent);
-	diagnostics(5,"Inhibit  is %d", (int) g_paragraph_inhibit_indent);
-	diagnostics(5,"parindent  is %d", getLength("parindent"));
+	parindent = getLength("parindent");
 
-	fprintRTF("\\q%c\\li%d ", alignment, indent);
+	diagnostics(5,"CmdStartParagraph mode = %d", GetTexMode());
+	diagnostics(5,"Noindent is         %s", (g_paragraph_no_indent) ? "TRUE" : "FALSE");
+	diagnostics(5,"Inhibit is          %s", (g_paragraph_inhibit_indent) ? "TRUE" : "FALSE");
+	diagnostics(5,"indent is           %d", indent);
+	diagnostics(5,"right indent is     %d", indent_right);
+	diagnostics(5,"paragraph indent is %d", getLength("parindent"));
+
+	fprintRTF("\\q%c ", alignment);
 	if (indent!=0)
 		fprintRTF("\\li%d ", indent);
 	if (indent_right!=0)
@@ -59,12 +84,10 @@ CmdStartParagraph(int code)
 
 	if (g_paragraph_no_indent || g_paragraph_inhibit_indent) 
 		parindent = 0;
-	else
-		parindent = getLength("parindent");
 	
 	fprintRTF("\\fi%d ", parindent);
 	
-	SetTexMode(MODE_HORIZONTAL);
+	SetTexMode(-MODE_HORIZONTAL);  /* negative value avoids calling CmdStartParagraph! */
 	g_paragraph_no_indent = FALSE;
 	g_paragraph_inhibit_indent = FALSE;
 }
@@ -106,7 +129,7 @@ CmdVspace(int code)
 			break;
 			
 		case 0 :
-			while ((c = getTexChar()) && c != '{');
+			while ((c = getTexChar()) && c != '{'){}
 			vspace = getDimension();
 			parseBrace();
 			break;
@@ -270,7 +293,7 @@ CmdIndent(int code)
      			     		
            INDENT_NONE tells CmdStartParagraph() to not indent the next paragraph
            
-           INDENT_USUAL has CmdStartParagraph() uses the value of \parindent
+           INDENT_USUAL has CmdStartParagraph() use the value of \parindent
  ******************************************************************************/
 {
 	diagnostics(5,"CmdIndent mode = %d", GetTexMode());
@@ -348,12 +371,12 @@ CmdSlashSlash(int code)
 		for (; actCol < colCount; actCol++) {
 			fprintRTF("\\cell\\pard\\intbl");
 		}
-		actCol = 1;
-		fprintRTF("\\cell\\pard\\intbl\\row\n\\pard\\intbl\\q%c ", colFmt[1]);
+		actCol = 0;
+		fprintRTF("\\row\n\\pard\\intbl\\q%c ", colFmt[actCol]);
 		return;
 	}
 
-	if (tabbing_on){
+	if (g_processing_tabbing){
 		PopBrace();
 		PushBrace();
 	}
@@ -386,6 +409,9 @@ CmdBeginEnd(int code)
 	else 
 		diagnostics(5, "\\end{%s}", s);
 
+	/* hack to avoid problems with multicols */
+	if (strcmp(s,"multicols")==0) {free(s); return;}
+	
 	i=existsEnvironment(s);
 	if (i>-1) {
 		str = expandEnvironment(i,code);
@@ -416,6 +442,7 @@ CmdBeginEnd(int code)
 			CmdVspace(1);
 			CmdIndent(INDENT_INHIBIT);
 		}
+		free(s);
 		return;
 	} else
 		diagnostics(5,"failed to match theorem");
@@ -777,7 +804,11 @@ parameter: code: type of section-recursion-level
 		free(g_section_label); 
 		g_section_label = NULL;
 	}
-	CmdIndent(INDENT_NONE);
+	
+	if (FrenchMode)
+		CmdIndent(INDENT_USUAL);
+	else
+		CmdIndent(INDENT_NONE);
 }
 
 
@@ -915,7 +946,7 @@ CmdLength(int code)
 			
 			if (cThis=='{') {
 				num = getDimension();
-				while ((cThis=getTexChar()) != '}');
+				while ((cThis=getTexChar()) != '}'){}
 						
 				if (code == LENGTH_ADD)
 					setLength(s1, getLength(s1)+num);
@@ -975,38 +1006,40 @@ CmdList(int code)
  globals  : indent
  ******************************************************************************/
 {
+	int amount = 300;
 	CmdEndParagraph(0);
-	CmdIndent(INDENT_INHIBIT);
 
 	switch (code) {
 		case (ITEMIZE | ON):
 		PushEnvironment(ITEMIZE);
-		indent += 512;
+		setLength("parindent", -amount);
+		indent += 2*amount;
+		CmdIndent(INDENT_USUAL);
 		break;
-	case (ITEMIZE | OFF):
-		PopEnvironment();
-		indent -= 512;
-		break;
+		
 
 	case (ENUMERATE | ON):
 		PushEnvironment(ENUMERATE);
 		g_enumerate_depth++;
 		CmdItem(RESET_ITEM_COUNTER);
-		indent += 512;
+		setLength("parindent", -amount);
+		indent += 2*amount;
+		CmdIndent(INDENT_USUAL);
 		break;
-	case (ENUMERATE | OFF):
-		PopEnvironment();
-		g_enumerate_depth--;
-		indent -= 512;
-		break;
+		
 
 	case (DESCRIPTION | ON):
 		PushEnvironment(DESCRIPTION);
-		indent += 512;
+		setLength("parindent", -amount);
+		indent += 2*amount;
+		CmdIndent(INDENT_USUAL);
 		break;
+		
+	case (ENUMERATE | OFF):  g_enumerate_depth--; /* fall through */
+	case (ITEMIZE | OFF):
 	case (DESCRIPTION | OFF):
 		PopEnvironment();
-		indent -= 512;
+		CmdIndent(INDENT_INHIBIT);
 		break;
 	}
 }
@@ -1019,7 +1052,7 @@ CmdItem(int code)
            this routine will get called recursively.
  ******************************************************************************/
 {
-	char           *itemlabel;
+	char           *itemlabel, thechar;
 	static int      item_number[4];
 
 	if (code == RESET_ITEM_COUNTER) {
@@ -1031,26 +1064,28 @@ CmdItem(int code)
 	diagnostics(4, "Entering CmdItem depth=%d item=%d",g_enumerate_depth,item_number[g_enumerate_depth]);
 
 	CmdEndParagraph(0);
-	CmdIndent(INDENT_NONE);
+	CmdIndent(INDENT_USUAL);
 	CmdStartParagraph(0);
 	
 	itemlabel = getBracketParam();
 	if (itemlabel) {	/* \item[label] */
-
-		fprintRTF("{\\b ");	/* bold on */
+		fprintRTF("{\\b ");	
 		diagnostics(5,"Entering ConvertString from CmdItem");
 		ConvertString(itemlabel);
 		diagnostics(5,"Exiting ConvertString from CmdItem");
-		fprintRTF("}\\tab ");	/* bold off */
-		free(itemlabel);
+		fprintRTF("}\\tab ");
 	}
 	
 	switch (code) {
 	case ITEMIZE:
-		fprintRTF("\\bullet\\tab ");
+		if (FrenchMode) 
+			fprintRTF("\\endash\\tab ");
+		else
+			fprintRTF("\\bullet\\tab ");
 		break;
 
 	case ENUMERATE:
+		if (itemlabel) break;
 		switch (g_enumerate_depth) {
 		case 1:
 			fprintRTF("%d.", item_number[g_enumerate_depth]);
@@ -1073,14 +1108,14 @@ CmdItem(int code)
 		break;
 
 	case DESCRIPTION:
-		fprintRTF("\\tab ");	/* indent */
+		if (!itemlabel) fprintRTF("\\tab ");	/* indent */
 		break;
 	}
 	
-/*	Convert();
-	CmdEndParagraph(0);
+	if (itemlabel) free(itemlabel);
+	thechar=getNonBlank();
+	ungetTexChar(thechar);
 	CmdIndent(INDENT_NONE);
-	diagnostics(4, "Exiting Convert() from CmdItem");*/
 }
 
 void 
@@ -1248,7 +1283,7 @@ CmdIgnoreDef( /* @unused@ */ int code)
 {
 	char            cThis;
 
-	while ((cThis = getTexChar()) && cThis != '{');
+	while ((cThis = getTexChar()) && cThis != '{'){}
     
     parseBrace();
     
@@ -1338,12 +1373,12 @@ CmdIgnoreLet( /* @unused@ */ int code)
 {
 	char            cThis;
 
-	while ((cThis = getTexChar()) && cThis != ' '  && cThis != '\\');
+	while ((cThis = getTexChar()) && cThis != ' '  && cThis != '\\'){}
 
 	if (cThis == ' ')
 	{
 		skipSpaces();
-		while ((cThis = getTexChar()) && cThis != ' ');
+		while ((cThis = getTexChar()) && cThis != ' '){}
 		skipSpaces();
 	}
 }
@@ -1375,7 +1410,7 @@ CmdFigure(int code)
   		   This is only complicated because we need to know what to
   		   label the caption before the caption is processed.  So 
   		   we just slurp the figure environment, extract the tag, and
-  		   the process the environment as usual.
+  		   then process the environment as usual.
  ******************************************************************************/
 {
 	char            *loc, *figure_contents;
@@ -1388,7 +1423,20 @@ CmdFigure(int code)
 		if (loc) free(loc);
 		figure_contents = getTexUntil(endfigure, TRUE);
 		g_figure_label = ExtractLabelTag(figure_contents);
-		ConvertString(figure_contents);	
+		if (g_latex_figures) {
+			char *caption, *label;
+			caption=ExtractAndRemoveTag("\\caption",figure_contents);
+			label=ExtractAndRemoveTag("\\label",figure_contents);
+			CmdEndParagraph(0);
+			CmdVspace(1);
+			CmdIndent(INDENT_NONE);
+			CmdStartParagraph(0);
+			WriteLatexAsBitmap("\\begin{figure}",figure_contents,"\\end{figure}");
+			ConvertString(caption);
+			if (label) free(label);
+			if (caption) free(caption);
+		} else 
+			ConvertString(figure_contents);	
 		ConvertString(endfigure);	
 		free(figure_contents);		
 	} else {
@@ -1433,64 +1481,42 @@ CmdIgnoreEnviron(int code)
 	}
 }
 
-/******************************************************************************
-CmdLink:
+void
+FixTildes(char *s)
+{
+	char *p,*p3;
+	while ( (p=strstr(s,"\\~{}")) != NULL ) {
+		*p = '~';
+		p++;
+		p3 = p+3;
+		while (*p3) {*p++=*p3++;}
+		*p = '\0';
+	}
+}
 
-  purpose: hyperlatex support. function, which translates the first parameter
-           to the rtf-file and ignores the second, the proposed optional
-	   parameter is also (still) ignored.
-  parameter: not (yet?) used.
-
-  The second parameter should be remembered for the \Cite (\Ref \Pageref)
-  command.
-  globals: hyperref, set to second Parameter
-
-The first parameter of a \link{anchor}[ltx]{label} is converted to the
-rtf-output. Label is stored to hyperref for later use, the optional
-parameter is ignored.
-[ltx] should be processed as Otfried recommends it, to use for
-exclusive latex output.e.g:
-
-	\link{readhere}[~\Ref]{explaining:chapter}.
-
-Since {explaining:chapter} is yet read by latex and hyperlatex when
-[...] is evaluated it produces the correct reference. We are only
-strolling from left to right through the text and can't remember what
-we will see in the future.
-
- ******************************************************************************/
 void
 CmdLink(int code)
+/******************************************************************************
+  purpose: hyperlatex support for \link{anchor}[ltx]{label}
+                              and \xlink{anchor}[printed reference]{URL}
+******************************************************************************/
 {
-	char           *param2;
-	char           *optparam;
+	char           *anchor,*latex,*url;
 
 	diagnostics(4, "Entering hyperlatex \\link command");
-	Convert();		/* convert routine is called again for
-				 * evaluating the contents of the first
-				 * parameter */
-	diagnostics(4, "  Converted first parameter");
+	anchor = getBraceParam();
+	latex = getBracketParam();
+	url = getBraceParam();
 
-	optparam = getBracketParam();
-	UpdateLineNumber(optparam);
-	if (optparam) free(optparam);
+	FixTildes(url);	
+	fprintRTF("{\\field\\fldedit{\\*\\fldinst { HYPERLINK \"%s\" \\\\* MERGEFORMAT }}",url);
+	fprintRTF("{\\fldrslt {\\cs15\\ul\\cf2 ");
+	ConvertString(anchor);
+	fprintRTF("}}}");
 	
-	/* LEG190498 now should come processing of the optional parameter */
-	diagnostics(4, "  Converted optional parameter");
-
-	param2 = getBraceParam();
-	diagnostics(4, "  Converted second parameter");
-
-	if (hyperref != NULL)
-		free(hyperref);
-
-	hyperref = (char *) malloc((strlen(param2) + 1));
-	if (hyperref == NULL)
-		diagnostics(ERROR, " malloc error -> out of memory!\n");
-
-	strcpy(hyperref, param2);
-	free(param2);
-	/* LEG210698*** better? hyperref = param2 */
+	if (latex) free(latex);
+	free(anchor);
+	free(url);
 }
 
 void 
@@ -1583,8 +1609,8 @@ CmdAbstract(int code)
 {
 	static char     oldalignment;
 
-	CmdEndParagraph(0);
-	if (code == ON) {
+	if (code == ON || code == 1) {
+		CmdEndParagraph(0);
 		if (g_document_type == FORMAT_REPORT || titlepage) 
 			fprintRTF("\\page ");
 
@@ -1597,7 +1623,9 @@ CmdAbstract(int code)
 		indent_right +=1024;
 		oldalignment = alignment;
 		alignment = JUSTIFIED;
-	} else {
+	} 
+	
+	if (code != ON || code == 1) {
 		CmdEndParagraph(0);
 		indent -= 1024;
 		indent_right -=1024;
@@ -1625,7 +1653,7 @@ CmdTitlepage(int code)
 	}
 }
 
-void
+void 
 CmdMinipage(int code)
 /******************************************************************************
   purpose: recognize and parse Minipage parameters
@@ -1661,7 +1689,7 @@ CmdColsep(int code)
 	if (GetTexMode() == MODE_DISPLAYMATH) {	/* in an eqnarray or array environment */
 		fprintRTF("\\tab ");
 	} else {
-		fprintRTF(" \\cell \\pard \\intbl ");
+		fprintRTF("\\cell\\pard\\intbl ");
 		if (colFmt == NULL)
 			diagnostics(WARNING, "Fatal, Fatal! CmdColsep called whith colFmt == NULL.");
 		else
@@ -1730,6 +1758,8 @@ roman_item(int n)
 
 void CmdNonBreakSpace(int code)
 {
+	char cThis=getNonSpace();
+	ungetTexChar(cThis);
 	fprintRTF("\\~");
 }
 
@@ -1763,7 +1793,7 @@ CmdInclude(int code)
 		s = t;
 	}
 
-	if (PushSource(s,NULL))
-		diagnostics(1, "Including file <%s>",t);
+	if (PushSource(s,NULL)==0)
+		diagnostics(WARNING, "Including file <%s>",t);
 	free(s);
 }

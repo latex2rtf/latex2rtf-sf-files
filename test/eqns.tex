@@ -2,6 +2,13 @@
 \begin{document}
 
 \section{Inline equations}
+First, test an inline equation in a paragraph of its own
+
+$x^2+y^2=z^2$
+
+Lets test baselines of equations.  First compare these ...$\ldots$... as
+well as ...$.$...  Now descenders like y $y$ and finally x$^2$ vs $x^2$ or
+x$_2$ vs $x_2$
 
 Parsing the tricky \verb#$$# properly $\varepsilon $$_o$ as an example.
 
@@ -194,7 +201,7 @@ $$
 \section{fields}
 Problem with mbox containing \$ in a field
 $$
-x[l]\leftarrow x[(l+m) mod  n] \oplus \mbox{shiftright}(x[l])
+x[l]\leftarrow x[(l+m) \bmod  n] \oplus \mbox{shiftright}(x[l])
  \oplus \left\{ \begin{array}{ll}
                 0   & \mbox{if LSB of $x[l]$=0} \\
                 b   & \mbox{if LSB of $x[l]$=1,}
@@ -203,12 +210,31 @@ x[l]\leftarrow x[(l+m) mod  n] \oplus \mbox{shiftright}(x[l])
 $$
 problem with correctly delimiting the above equation 
 $
-x[l]\leftarrow x[(l+m) mod  n] \oplus \mbox{shiftright}(x[l])
+x[l]\leftarrow x[(l+m) \bmod  n] \oplus \mbox{shiftright}(x[l])
  \oplus \left\{ \begin{array}{ll}
                 0   & \mbox{if LSB of $x[l]$=0} \\
                 b   & \mbox{if LSB of $x[l]$=1,}
                \end{array}
         \right.
 $
+
+Look at the position of the superscript in this:
+$$
+  \left[
+    \begin{array}{ccc}
+      1 & 2 & 3\\
+      4 & 5 & 6\\
+      7 & 8 & 9
+    \end{array}
+  \right]^T
+$$
+or the superscript and subscript superposition:
+$$
+  s = \sum_{i=1}^n x^2_i
+$$
+or embedded sub/superscripts:
+\[
+  s_n=s^{n^2}
+\]
 
 \end{document}

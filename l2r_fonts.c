@@ -1,5 +1,28 @@
-/* $Id: l2r_fonts.c,v 1.24 2002/04/04 03:11:24 prahl Exp $
+/* l2r_fonts.c - LaTeX commands that alter font size, style, or face
 
+Copyright (C) 2001-2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+ 
+Authors:
+    2001-2002 Scott Prahl
+*/
+
+/*
 	All changes to font size, font style, and font face are 
 	handled in this file.  Explicit changing of font characteristics
 	should not be done elsewhere.
@@ -590,6 +613,42 @@ CurrentFontFamily(void)
 {
 	diagnostics(4,"CurrentFontFamily -- family=%d", RtfFontInfo[FontInfoDepth].family);
 	return RtfFontInfo[FontInfoDepth].family;
+}
+
+int 
+CurrentCyrillicFontFamily(void)
+/******************************************************************************
+  purpose: returns the cyrillic font that should be used ... 
+           if the current font is cyrillic font then -1 is returned
+ ******************************************************************************/
+{
+	int            num,i;
+	char          *font_type;
+	ConfigEntryT **font_handle;
+
+	num = CurrentFontFamily();
+
+/* obtain name and type of current active font */
+	font_handle = CfgStartIterate(FONT_A);
+	for (i=0; i<=num-3; i++)
+		font_handle = CfgNext(FONT_A, font_handle);
+		
+	font_type = (char *) (*font_handle)->TexCommand;
+	diagnostics(6,"CurrentCyrillicFontFamily current active font type =<%s>", font_type);
+	
+	if (strncmp(font_type, "Cyrillic", 8)==0)
+		return -1;
+		
+	if (strcmp(font_type, "Slanted")==0) 
+		return TexFontNumber("Cyrillic Slanted");
+		
+	if (strcmp(font_type, "Sans Serif")==0) 
+		return TexFontNumber("Cyrillic Sans Serif");
+
+	if (strcmp(font_type, "Typewriter")==0) 
+		return TexFontNumber("Cyrillic Typewriter");
+
+	return TexFontNumber("Cyrillic Roman");
 }
 
 int 

@@ -1,5 +1,23 @@
-/* $Id: convert.c,v 1.28 2002/04/04 03:11:24 prahl Exp $ 
-	
+/* convert.c - high level routines for LaTeX to RTF conversion
+
+Copyright (C) 2002 The Free Software Foundation
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+This file is available from http://sourceforge.net/projects/latex2rtf/
+
 TeX has six modes:
 	
 	MODE_VERTICAL              Building the main vertical list, from which the 
@@ -62,6 +80,11 @@ void SetTexMode(int mode)
 	if (g_TeX_mode != mode) 
 		diagnostics(4, "TeX mode now %s", TexModeName[mode]);
 		
+	if (mode < 0) {
+		g_TeX_mode = -mode;
+		return;
+	}
+
 	if (g_TeX_mode == MODE_VERTICAL && mode == MODE_HORIZONTAL) {
 		g_TeX_mode = mode;  /* prevent recursion */
 		CmdStartParagraph(0);
@@ -81,15 +104,22 @@ ConvertString(char *string)
      purpose : converts string in TeX-format to Rtf-format
  ******************************************************************************/
 {
-	char            temp[51];
+	char            temp[256];
 	
 	if (string==NULL) return;
 	
-	strncpy(temp,string,50);
-
-	if (PushSource(NULL, string)) {
-		diagnostics(4, "Entering Convert() from StringConvert() <%s>",temp);
-
+	if (strlen(string)<250)
+		strncpy(temp,string,250);
+	else {
+		strncpy(temp,string,125);
+		strncpy(temp+125,"\n...\n", 5);
+		strncpy(temp+130,string+strlen(string)-125,125);
+		temp[255] = '\0';
+	}
+	
+	if (PushSource(NULL, string) == 0) {
+		diagnostics(4, "Entering Convert() from StringConvert()\n******\n%s\n*****",temp);
+	
 		while (StillSource())
 			Convert();
 			
@@ -112,10 +142,10 @@ ConvertAllttString(char *s)
 	if (s==NULL) return;
 	diagnostics(4, "Entering Convert() from StringAllttConvert()");
 
-	if (PushSource(NULL, s)) {
+	if(PushSource(NULL, s)==0) {
 
 		while (StillSource()) {
-
+	
 			cThis = getRawTexChar();   /* it is a verbatim like environment */
 			switch (cThis) {
 			
@@ -142,7 +172,6 @@ ConvertAllttString(char *s)
 		}
 		PopSource();
 	}
-
 	diagnostics(4, "Exiting Convert() from StringAllttConvert()");
 }
 
@@ -193,6 +222,8 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			CleanStack();
 			PushBrace();
 			fprintRTF("{");
+			/*Convert();
+			CleanStack();   These two commands cause problems.*/
 			break;
 			
 		case '}':
@@ -290,9 +321,8 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			}
 			
 			if (g_processing_tabular) {	/* in tabular */
-				fprintRTF(" \\cell \\pard \\intbl ");
-				fprintRTF("\\q%c ", colFmt[actCol]);
 				actCol++;
+				fprintRTF("\\cell\\pard\\intbl\\q%c ", colFmt[actCol]);
 				break;
 			}
 			fprintRTF("&");
@@ -329,6 +359,13 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			}
 			break;
 						
+		case '|':
+			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH) 
+				fprintRTF("|");
+			else 
+				fprintRTF("\\emdash ");
+			break;
+
 		case '\'':
 			if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
 					fprintRTF("'");	
@@ -452,14 +489,14 @@ globals: fTex, fRtf and all global flags for convert (see above)
 			break;
 
 		case '(':
-			if (g_processing_fields)
+			if (g_processing_fields&&g_escape_parent)
 				fprintRTF("\\\\(");
 			else
 				fprintRTF("(");
 			break;
 			
 		case ')':
-			if (g_processing_fields)
+			if (g_processing_fields&&g_escape_parent)
 				fprintRTF("\\\\)");
 			else
 				fprintRTF(")");
@@ -565,7 +602,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
 	case '-':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			PushBrace();
 		} else
@@ -574,7 +611,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
 	case '+':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			PushBrace();
 		}
@@ -582,7 +619,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		
 	case '<':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			PushBrace();
 		}
@@ -590,7 +627,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
 	case '>':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			CmdTabjump();
 			PushBrace();
@@ -600,7 +637,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		
 	case '`':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			PushBrace();
 		} else
@@ -609,7 +646,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 		
 	case '\'':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			PushBrace();
 			return TRUE;
@@ -619,7 +656,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
 	case '=':
 		if (mode == MODE_VERTICAL) SetTexMode(MODE_HORIZONTAL);
-		if (tabbing_on){
+		if (g_processing_tabbing){
 			(void) PopBrace();
 			CmdTabset();
 			PushBrace();
