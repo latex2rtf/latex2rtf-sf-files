@@ -1,4 +1,4 @@
-/* $Id: l2r_fonts.c,v 1.16 2001/09/18 03:40:25 prahl Exp $
+/* $Id: l2r_fonts.c,v 1.19 2001/10/07 21:20:51 prahl Exp $
 
 	All changes to font size, font style, and font face are 
 	handled in this file.  Explicit changing of font characteristics
@@ -81,13 +81,14 @@ int
 RtfFontNumber(char *Fname)
 /****************************************************************************
  *   purpose: returns the RTF font number from an RTF font name
-     example: getTexFontNumber("Times")
+     example: RtfFontNumber("Times")
  ****************************************************************************/
 {
 	int          num = 0;
 	ConfigEntryT **config_handle = CfgStartIterate(FONT_A);
 
 	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
+		diagnostics(4,"font name =%s", (*config_handle)->RtfCommand);
 		if (strcmp((*config_handle)->RtfCommand, Fname) == 0) {
 			return num+3;
 		}
@@ -537,23 +538,27 @@ void
 InitializeDocumentFont(int family, int size, int shape, int series)
 /******************************************************************************
   purpose: Initialize the basic font properties for a document
+  		   pass -1 to avoid setting any parameter
  ******************************************************************************/
 {	
-	RtfFontInfo[0].size = size;
-	RtfFontInfo[0].family = family;
-	RtfFontInfo[0].shape = shape;
-	RtfFontInfo[0].series = series;
+	if (size >= 0)
+		RtfFontInfo[0].size = size;
+	if (family >= 0)
+		RtfFontInfo[0].family = family;
+	if (shape >= 0)
+		RtfFontInfo[0].shape = shape;
+	if (series >= 0)
+		RtfFontInfo[0].series = series;
 
-	diagnostics(4,"PushFontSettings depth=%d, family=%d, size=%d, shape=%d, series=%d",\
-				   0, RtfFontInfo[0].family, \
-	               RtfFontInfo[0].size, RtfFontInfo[0].shape,\
+	diagnostics(4,"InitializeDocumentFont family=%d, size=%d, shape=%d, series=%d",\
+				   RtfFontInfo[0].family, RtfFontInfo[0].size, RtfFontInfo[0].shape,\
 	               RtfFontInfo[0].series);
 }
 
 int
 DefaultFontFamily(void)
 {
-	diagnostics(4,"DefaultFontFamily -- series=%d", RtfFontInfo[0].family);
+	diagnostics(4,"DefaultFontFamily -- family=%d", RtfFontInfo[0].family);
 	return RtfFontInfo[0].family;
 }
 

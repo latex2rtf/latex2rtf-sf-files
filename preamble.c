@@ -1,4 +1,4 @@
-/* $Id: preamble.c,v 1.10 2001/09/18 03:40:25 prahl Exp $
+/* $Id: preamble.c,v 1.15 2001/10/07 21:20:51 prahl Exp $
 
 purpose : Handles LaTeX commands that should only occur in the preamble.
           These are gathered together because the entire preamble must be
@@ -46,43 +46,91 @@ static char * g_preambleCHEAD = NULL;
 static char * g_preambleLHEAD = NULL;
 static char * g_preambleRHEAD = NULL;
 
-static void setPackageBabel(char * option);
-static void setPackageInputenc(char * option);
 static void setPaperSize(char * size);
 static void setDocumentOptions(char *optionlist);
 static void WriteFontHeader(void);
 static void WriteStyleHeader(void);
 static void WritePageSize(void);
 
-static void
+void
 setPackageBabel(char * option)
 {
 	if (strcmp(option, "german") == 0 ||
 	    strcmp(option, "ngerman") == 0 ) {
 			GermanMode = TRUE;
 			PushEnvironment(GERMAN_MODE);
-			g_language = strdup("german");
+			strcpy(g_language, "german");
 	}
 	
 	if (strcmp(option, "french") == 0)
 	{
 		PushEnvironment(FRENCH_MODE);
-		g_language = strdup(option);
+		strcpy(g_language, "french");
 	}
 		
 }
 
-static void
+void
 setPackageInputenc(char * option)
 {
 	g_preambleEncoding = strdup(option);
-	fprintf(stderr,"\n Input Encoding <%s> not supported yet", option);
+
+	if (strcmp(option, "ansinew") == 0)
+		strcpy(g_encoding, "cp1252");
+		
+	else if (strcmp(option, "applemac") == 0 ||
+	         strcmp(option, "cp437") == 0 ||
+	         strcmp(option, "cp437de") == 0 ||
+	         strcmp(option, "cp850") == 0 ||
+	         strcmp(option, "cp852") == 0 ||
+	         strcmp(option, "cp865") == 0 ||
+	         strcmp(option, "decmulti") == 0 ||
+	         strcmp(option, "cp1250") == 0 ||
+	         strcmp(option, "cp1252") == 0 ||
+	         strcmp(option, "latin1") == 0 ||
+	         strcmp(option, "latin2") == 0 ||
+	         strcmp(option, "latin3") == 0 ||
+	         strcmp(option, "latin4") == 0 ||
+	         strcmp(option, "latin5") == 0 ||
+	         strcmp(option, "latin9") == 0 ||
+	         strcmp(option, "next") == 0 ) 
+		strcpy(g_encoding, option);
+	else
+		diagnostics(WARNING,"\n Input Encoding <%s> not supported", option);
 }
 
 static void
 setPackageFont(char * font)
 {
-	fprintf(stderr,"\n Font Package <%s> not supported yet", font);
+int fnumber=-1;
+
+	if (strcmp(font, "palatino") == 0)
+		fnumber = RtfFontNumber("Palatino");
+		
+	else if (strstr(font, "times") )
+			fnumber = RtfFontNumber("Times");
+
+	else if (strstr(font, "chancery") )
+			fnumber = RtfFontNumber("Zapf Chancery");
+
+	else if (strstr(font, "courier") )
+			fnumber = RtfFontNumber("Courier");
+
+	else if (strstr(font, "avant") )
+			fnumber = RtfFontNumber("Avant Garde");
+
+	else if (strstr(font, "helvet") )
+			fnumber = RtfFontNumber("Helvetica");
+
+	else if (strstr(font, "newcen") )
+			fnumber = RtfFontNumber("New Century Schoolbook");
+
+	else if (strstr(font, "book") )
+			fnumber = RtfFontNumber("Bookman");
+
+	InitializeDocumentFont(fnumber, -1, -1, -1);
+	if (fnumber == -1)
+		fprintf(stderr,"\n Font Package <%s> not supported yet", font);
 }
 
 static void
@@ -239,19 +287,19 @@ static void
 setPointSize(char * option)
 {
 	if (strcmp(option, "10pt") == 0){
-		InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		InitializeDocumentFont(-1, 20, -1, -1);
 		setLength("baselineskip",12*20);
 		setLength("parindent",   15*20);
 		setLength("parskip",      0*20);
 
 	}else if (strcmp(option, "11pt") == 0){
-		InitializeDocumentFont(TexFontNumber("Roman"), 22, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		InitializeDocumentFont(-1, 22, -1, -1);
 		setLength("baselineskip",14*20);
 		setLength("parindent",   17*20);
 		setLength("parskip",      0*20);
 
 	}else {
-		InitializeDocumentFont(TexFontNumber("Roman"), 24, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		InitializeDocumentFont(-1, 24, -1, -1);
 		setLength("baselineskip",14.5*20);
 		setLength("parindent",   18*20);
 		setLength("parskip",      0*20);
@@ -265,11 +313,13 @@ setDocumentOptions(char *optionlist)
 ******************************************************************************/
 {
 	char           *option;
-
+	
 	option = strtok(optionlist, ",");
 
 	while (option) {
-		diagnostics(4, "                    option   %s", option);
+
+		while (*option == ' ') option++;  /*skip leading blanks */
+		diagnostics(4, "                    option   <%s>", option);
 		if      (strcmp(option, "10pt"       ) == 0 ||
 			     strcmp(option, "11pt"       ) == 0 || 
 				 strcmp(option, "12pt"       ) == 0) 
@@ -292,14 +342,11 @@ setDocumentOptions(char *optionlist)
 			g_preambleTwoside = TRUE;
 		else if (strcmp(option, "twocolumn") == 0) 
 			g_preambleTwocolumn = TRUE;
-		else if (strcmp(option, "titlepage") == 0) {
+		else if (strcmp(option, "titlepage") == 0)
 			g_preambleTitlepage = TRUE;
-		} else if (strcmp(option, "isolatin1") == 0) {
-			TexCharSet = ISO_8859_1;
-			fprintf(stderr, "\nisolatin1 style option encountered.");
-			fprintf(stderr, "\nLatin-1 (= ISO 8859-1) special characters will be ");
-			fprintf(stderr, "converted into RTF-Commands!\n");
-		} else if (strcmp(option, "hyperlatex") == 0) {
+		else if (strcmp(option, "isolatin1") == 0)
+			setPackageInputenc("latin1");
+		else if (strcmp(option, "hyperlatex") == 0) {
 			PushEnvironment(HYPERLATEX); 
 		} else if (strcmp(option, "fancyhdr") == 0) {
 			diagnostics(WARNING, "Only partial support for %s", option);
@@ -364,6 +411,9 @@ CmdUsepackage(int code)
 	if (strcmp(package, "inputenc") == 0)
 		setPackageInputenc(optionlist);
 		
+	else if (strcmp(package, "isolatin1") == 0)
+		setPackageInputenc("latin1");
+
 	else if (strcmp(package, "babel") == 0)
 		setPackageBabel(optionlist);
 		
@@ -374,8 +424,14 @@ CmdUsepackage(int code)
 
 	else if (strcmp(package, "palatino") == 0 ||
 	         strcmp(package, "times") == 0    ||
-	         strcmp(package, "helvetica") == 0 )
-		setPackageFont(optionlist);
+	         strcmp(package, "bookman") == 0  ||
+	         strcmp(package, "chancery") == 0 ||
+	         strcmp(package, "courier") == 0  ||
+	         strstr(package, "avant")         ||
+	         strstr(package, "newcen")        ||
+	         strstr(package, "helvet") )
+		setPackageFont(package);
+		
 	else
 		setDocumentOptions(package);
 		
@@ -465,7 +521,7 @@ PlainPagestyle(void)
   globals : pagenumbering set to TRUE if pagenumbering is to occur, default
  ******************************************************************************/
 {
-	int fn = TexFontNumber("Roman");
+	int fn = DefaultFontFamily();
 	pagenumbering = TRUE;
 	
 	if (g_preambleTwoside) {
@@ -615,11 +671,7 @@ WriteFontHeader(void)
 
 	config_handle = CfgStartIterate(FONT_A);
 	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
-		if (strstr((*config_handle)->TexCommand, "MacRoman"))
-		
-			fprintRTF(" {\\f%d\\fnil\\fcharset1 %s;}\n",num,(*config_handle)->RtfCommand);
-				
-		else if (strstr((*config_handle)->RtfCommand, "Symbol"))
+		if (strstr((*config_handle)->RtfCommand, "Symbol"))
 
 			fprintRTF(" {\\f%d\\fnil\\fcharset2 %s;}\n",num,(*config_handle)->RtfCommand);
 

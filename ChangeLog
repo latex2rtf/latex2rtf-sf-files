@@ -134,7 +134,12 @@
 
 	Revised fonts.cfg, removed
 	Ferdsch, now set the default font correctly and begun the process
-	of eliminating the $Log$ comments in files.
+	of eliminating the $Log: ChangeLog,v $
+	of eliminating the Revision 1.9  2001/09/26 05:34:05  prahl
+	of eliminating the Updated changelog.  Added box.tex as test file.  Updated ToDo
+	of eliminating the Updated version.h to 1.9i.  Modified Makefile to not use -Wall
+	of eliminating the This is the last check-in before 1.9i tarball is released.
+	of eliminating the comments in files.
 
 2001-08-12 14:15  prahl
 

@@ -1,4 +1,4 @@
-/*  $Id: commands.c,v 1.24 2001/09/26 03:31:50 prahl Exp $
+/*  $Id: commands.c,v 1.27 2001/10/08 05:06:37 prahl Exp $
 
     Defines subroutines to translate LaTeX commands to RTF
 */
@@ -20,6 +20,7 @@
 #include "parser.h"
 #include "biblio.h"
 #include "ignore.h"
+#include "lengths.h"
 
 void            error(char *);
 
@@ -188,9 +189,14 @@ static CommandArray commands[] = {
 	{"quad", CmdQuad, 1},
 	{"qquad", CmdQuad, 2},
 	{"textsuperscript", CmdSuperscript, 0},
+	{"hspace", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"hspace*", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"vspace", CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"vspace*", CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"vspace", CmdVspace, 0},
+	{"vspace*", CmdVspace, 0},
+	{"vskip", CmdVspace, -1},
+	{"smallskip", CmdVspace, 1},
+	{"medskip", CmdVspace, 2},
+	{"bigskip", CmdVspace, 3},
 	{"addvspace", CmdIgnoreParameter, No_Opt_One_NormParam},
 	{"addcontentsline", CmdIgnoreParameter, No_Opt_Three_NormParam},
 	{"addcontents", CmdIgnoreParameter, No_Opt_Two_NormParam},
@@ -246,6 +252,18 @@ static CommandArray commands[] = {
 	{"sqrt", CmdRoot, 0},
     {"int",  CmdIntegral, 0},
 	{"nonumber",CmdNonumber, EQN_NO_NUMBER},
+	{"hoffset",CmdSetTexLength, SL_HOFFSET},
+	{"voffset",CmdSetTexLength, SL_VOFFSET},
+	{"parindent",CmdSetTexLength, SL_PARINDENT},
+	{"parskip",CmdSetTexLength, SL_PARSKIP},
+	{"baselineskip",CmdSetTexLength, SL_BASELINESKIP},
+	{"topmargin",CmdSetTexLength, SL_TOPMARGIN},
+	{"textheight",CmdSetTexLength, SL_TEXTHEIGHT},
+	{"headheight",CmdSetTexLength, SL_HEADHEIGHT},
+	{"headsep",CmdSetTexLength, SL_HEADSEP},
+	{"textwidth",CmdSetTexLength, SL_TEXTWIDTH},
+	{"oddsidemargin",CmdSetTexLength, SL_ODDSIDEMARGIN},
+	{"evensidemargin",CmdSetTexLength, SL_EVENSIDEMARGIN},
 	{"", NULL, 0}
 };
 
