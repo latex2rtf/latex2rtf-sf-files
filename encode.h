@@ -7,6 +7,5 @@
  *
  */
 
-void Write_ISO_8859_1 (char theChar);
-
-void Write_Default_Charset (char theChar);
+void            Write_ISO_8859_1(char theChar);
+void            Write_Default_Charset(char theChar);

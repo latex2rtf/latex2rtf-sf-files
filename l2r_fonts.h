@@ -32,16 +32,15 @@
 #define CMD_CENTERED 8
 /* ----------------------------------- */
 
-void WriteFontHeader(/*@dependent@*/ FILE* fRtf);
-bool SetFont(char *TexFont, FILE* fRtf);
-size_t GetFontNumber(char * Fname);
-void RemoveFontlist(void);
-size_t GetTexFontNumber(char * Fname);
+void            WriteFontHeader( /* @dependent@ */ FILE * fRtf);
+bool            SetFont(char *TexFont, FILE * fRtf);
+size_t          GetFontNumber(char *Fname);
+void            RemoveFontlist(void);
+size_t          getTexFontNumber(char *Fname);
 
-void CmdSetFontStyle(int code);
-void CmdSetFont(int code);
-void CmdSetFontSize(int code);
-void SetDocumentFontSize(int code);
-int CurrentFontSize(void);
-void BasicSetFontSize(int code);
-
+void            CmdSetFontStyle(int code);
+void            CmdSetFont(int code);
+void            CmdSetFontSize(int code);
+void            SetDocumentFontSize(int code);
+int             CurrentFontSize(void);
+void            BasicSetFontSize(int code);

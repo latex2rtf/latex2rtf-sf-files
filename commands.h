@@ -22,13 +22,14 @@
 #define LETTER 8
 #define IGN_ENV_CMD 9
 #define HYPERLATEX 10
+#define FIGURE_ENV 11
 
 #define ON 0x4000
 #define OFF 0x0000
 
-void PushEnvironment(int code);
-void PopEnvironment();
-void ClearEnvironment();
-bool CallCommandFunc(char *cCommand);
-bool CallParamFunc(char *cCommand, int AddParam);
-int CurrentEnvironmentCount(void);
+void            PushEnvironment(int code);
+void            PopEnvironment();
+void            ClearEnvironment();
+bool            CallCommandFunc(char *cCommand);
+bool            CallParamFunc(char *cCommand, int AddParam);
+int             CurrentEnvironmentCount(void);

@@ -78,9 +78,8 @@
 # The Debian-specific parts of this Makefile are created by 
 # Erick Branderhorst. Parts are written by Ian Jackson and Ian Murdock.
 # TODO: add target "changes". 
-CC=gcc    # GCC-Compiler 
-#CC=cc    # C-Compiler 
-CFLAGS=-g $(XCFLAGS) # Use -O here if you want it optimized
+CC=gcc    # C-Compiler 
+CFLAGS=-g -Wall $(XCFLAGS) # Use -O here if you want it optimized
 COPY=cp
 INSTALL=install
 DIR_MODE=755
@@ -138,6 +137,11 @@ LIBINSTALL=$(LIBDIR)
 BININSTALL=$(prefix)/bin
 MANINSTALL=$(prefix)/man/man1
 
+# It seems that MS Word allows different forms for the separator
+# used in the formula commands.  For US systems the default is
+# for FORMULASEP should be ',' in Germany and in perhaps other
+# European systems, it should be ';' 
+
 # The following should fix compatibility problems on some machines, you
 # may add the following option to XCFLAGS
 # -DHAS_NO_FPOS for SunOs 4.1.3 (Thanks to Ulrich Schmid schmid@dkrz.d400.de)
@@ -145,18 +149,27 @@ MANINSTALL=$(prefix)/man/man1
 # If you are using MSDOS, the environment separator ENVSEP shoud be
 # ';' and PATHSEP '\'.
 # If not specified it defaults to ':' and '/' (UNIX standard)
+#
+# It seems that MS Word allows different forms for the separator
+# used in the formula commands.  For US systems the default is
+# The default for FORMULASEP is ',' 
+# In Germany at least SEMICOLONSEP should be defined so that 
+# FORMULASEP becomes ';'
 
 # If your target/system has no getopt() function, use Vladimir Menkov's
 # instead, found in mygetopt.c.
 # Add -DHAS_NO_FPOS
 
+# If your system does not have strdup() defined in string.h
+# then you should add -DHAS_NO_STRDUP
+
 XCFLAGS=
-#XCFLAGS=-DENVSEP="':'"
-#XCFLAGS=-DPATHSEP="'/'"
 #XCFLAGS=-DENVSEP="';'"
 #XCFLAGS=-DPATHSEP="'\'"
+#XCFLAGS=-DSEMICOLONSEP
 #XCFLAGS=-DHAS_NO_FPOS
 #XCFLAGS=-DHAS_NO_GETOPT
+#XCFLAGS=-DHAS_NO_STRDUP
 
 # Sometimes additional system libraries are needed, they can be defined
 # here
@@ -166,18 +179,19 @@ LIBS=
 # Nothing to change below this line
 SOURCES=commands.c commands.h chars.c chars.h direct.c direct.h encode.c encode.h l2r_fonts.c \
     l2r_fonts.h funct1.c funct1.h funct2.c funct2.h ignore.c ignore.h main.c \
-    main.h stack.c stack.h version.h cfg.c cfg.h Makefile README README.Mac\
+    main.h stack.c stack.h version.h cfg.c cfg.h Makefile README README.DOS README.Mac\
     Copyright mygetopt.c optind.c version debian.README \
-    debian.control debian.rules util.c util.h  ChangeLog parser.c parser.h
+    debian.control debian.rules util.c util.h  ChangeLog parser.c parser.h l2r.bat
 SUPPORT=cfg/direct.cfg cfg/fonts.cfg cfg/ignore.cfg \
     cfg/english.cfg cfg/german.cfg cfg/spanish.cfg cfg/french.cfg
 MANUALS=latex2rtf.1
+MSDOS=l2r.bat l2r.exe
 DOCS= doc/l2r.html doc/credits doc/copying.txt doc/Makefile
 TEST=   test/Makefile \
 	test/accentchars.tex test/array.tex test/cite.tex test/cite.bib \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
-	test/oddchars.tex test/tabular.tex
+	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty
 
 ARCH="`dpkg --print-architecture`"
 

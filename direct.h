@@ -13,5 +13,4 @@
  *
  */
 
-bool TryDirectConvert(char *command, FILE *fRtf);
-
+bool            TryDirectConvert(char *command, FILE * fRtf);

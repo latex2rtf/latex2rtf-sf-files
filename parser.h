@@ -1,33 +1,27 @@
 /*
- * $Id: parser.h,v 1.1 1998/10/27 04:46:43 glehner Exp $
- * History:
- * $Log: parser.h,v $
- * Revision 1.1  1998/10/27 04:46:43  glehner
- * Initial revision
- *
- *
- * LEG 070798 adapted Frank Barnes contribution to r2l coding conventions
+ * Description: Contains declarations for generic recursive parsering
+ * routines and other help routines for parsing LaTeX code
+ * 
+ * 26th June 1998 - Created initial version - fb                            LEG
+ * 070798 adapted Frank Barnes contribution to r2l coding conventions SAP
+ * Added several more routines
  */
-/****************************************************************************/
-/* file: parser.h                                                           */
-/*                                                                          */
-/* Description:                                                             */
-/*    Contains declarations for a generic recursive parser the              */
-/*    LaTex2RTF code.                                                       */
-/*                                                                          */
-/* Revision history                                                         */
-/* ================                                                         */
-/* 26th June 1998 - Created initial version - fb                            */
-/****************************************************************************/
 
-#define POSSTACKSIZE   256  /* Size of stack to save positions              */
+#define POSSTACKSIZE   256	/* Size of stack to save positions              */
 
-void CmdIgnoreParameter(int);
-char *GetParam();
-bool GetBracketParam(char *string, int size);
-void GetBraceParam(char *string, int size);
-void rewind_one(void);
+char            getRawTexChar(void);
+char            getTexChar(void);
+char            getNonSpace(void);
+char            getNonBlank(void);
 
-/****************************************************************************/
-/* End of file parser.h                                                     */
-/****************************************************************************/
+void            ungetTexChar(char c);
+
+void            skipToEOL(void);
+void            skipSpaces(void);
+
+void            CmdIgnoreParameter(int);
+char           *getParam(void);
+char           *getMathParam(void);
+bool            getBracketParam(char *string, int size);
+void            getBraceParam(char *string, int size);
+

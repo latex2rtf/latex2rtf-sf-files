@@ -12,12 +12,12 @@
 #include <stdio.h>
 #define BUFFER_INCREMENT 1024
 
-/*@dependent@*/ /*@null@*/
-char *ReadUptoMatch (FILE *infile, /*@observer@*/ const char *scanchars);
-char *StrSave       (/*@observer@*/ const char *str);
-/*@exits@*/
-extern void  Fatal         (/*@observer@*/ const char *fmt, ...);
-/*@exits@*/
-void  ParseError    (/*@observer@*/ const char *fmt, ...);
+/* @dependent@ *//* @null@ */
+char           *ReadUptoMatch(FILE * infile, /* @observer@ */ const char *scanchars);
+char           *StrSave( /* @observer@ */ const char *str);
+/* @exits@ */
+extern void     Fatal( /* @observer@ */ const char *fmt,...);
+/* @exits@ */
+void            ParseError( /* @observer@ */ const char *fmt,...);
 
-void roman_item(int n, char * s);
+void            roman_item(int n, char *s);

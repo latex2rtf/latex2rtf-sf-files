@@ -84,655 +84,539 @@
 #include "MainMain.h"
 #endif
 
-/****************************************************************************/
-
-
 /********************************* global variables *************************/
-long linenumber=1;		               /* lines in the LaTex-document */
-/*@null@*//*@observer@*/        char *currfile;/* current file name */
-FILE *fTex = (FILE *)NULL;                     /* file pointer to Latex file */
-FILE *fRtf = (FILE *)NULL;	               /* file pointer to RTF file */
-       /*@null@*//*@observer@*/ char *input   = NULL;
-static /*@null@*//*@observer@*/ char *output  = NULL;
-                                char *AuxName = NULL;
-                                char *BblName = NULL;
+long            linenumber = 1;	/* lines in the LaTex-document */
+ /* @null@ *//* @observer@ */ char *currfile;	/* current file name */
+FILE           *fTex = (FILE *) NULL;	/* file pointer to Latex file */
+FILE           *fRtf = (FILE *) NULL;	/* file pointer to RTF file */
+ /* @null@ *//* @observer@ */ char *input = NULL;
+static				/* @null@ */
+ /* @observer@ */ char *output = NULL;
+char           *AuxName = NULL;
+char           *BblName = NULL;
 
-/*@observer@*/ char *progname;		       /* name of the executable file */
-char *latexname= "stdin";                      /* name of LaTex-File */
-char alignment = JUSTIFIED;	               /* default for justified: */
-fpos_t pos_begin_kill;
-bool bCite = FALSE;                        /* to produce citations */
-bool GermanMode = FALSE;  /* switches support for germanstyle on or off */
-/* the Germand Mode supports most of the commands defined in GERMAN.STY file
-   by H.Partl(TU Wien) 87-06-17 */
+ /* @observer@ */ char *progname;	/* name of the executable file */
+char           *latexname = "stdin";	/* name of LaTex-File */
+char            alignment = JUSTIFIED;	/* default for justified: */
+fpos_t          pos_begin_kill;
+bool            bCite = FALSE;	/* to produce citations */
+bool            GermanMode = FALSE;	/* switches support for germanstyle
+					 * on or off */
+/*
+ * the Germand Mode supports most of the commands defined in GERMAN.STY file
+ * by H.Partl(TU Wien) 87-06-17
+ */
 
-char *language = "english";   /* in \begin{document} "language".cfg is read in */
-bool twoside = FALSE;
+char           *language = "english";	/* in \begin{document} "language".cfg
+					 * is read in */
+bool            twoside = FALSE;
 /* verbosity of diagnostics output. */
-static int verbosity = WARNING;
-/*static int verbosity = 4;*/
+static int      verbosity = WARNING;
+/* static int verbosity = 4; */
 
 /* file to log diagnostics output to.  NULL = stderr */
-/*@null@*/
-static FILE *logfile = NULL;
+/* @null@ */
+static FILE    *logfile = NULL;
 
 /* flags indicating to which rtf-version output is restricted */
-static int rtf_major = 1;
-static int rtf_minor = 5;
+static int      rtf_major = 1;
+static int      rtf_minor = 5;
+
 /* Holds the last referenced "link" value, used by \Ref and \Pageref */
-char *hyperref = NULL;
-bool pagenumbering = TRUE;        /* by default use plain style */
-int headings = FALSE;
-bool pagestyledefined = FALSE;    /* flag, set to true by pagestylecommand
-				    triggers PlainPagestyle in \begin{document} */
+char           *hyperref = NULL;
+bool            pagenumbering = TRUE;	/* by default use plain style */
+int             headings = FALSE;
+bool            pagestyledefined = FALSE;	/* flag, set to true by
+						 * pagestylecommand triggers
+						 * PlainPagestyle in
+						 * \begin{document} */
 
-/*SAP Changes to produce count figures and tables separately*/
-bool g_processing_figure = FALSE; /* flag, set in figures and not tables */
-bool g_processing_include = FALSE; /* flag set when include file being processed */
-bool g_processing_eqnarray = FALSE; /* flag set when include file being processed */
-int g_equation_number = 0;
-bool g_show_equation_number = FALSE;
-int g_enumerate_depth = 0;
-bool g_suppress_equation_number = FALSE;
-bool g_aux_file_missing = FALSE; /* assume that it exists */
-int curr_fontbold[MAXENVIRONS] = {0};
-int curr_fontital[MAXENVIRONS] = {0};
-int curr_fontscap[MAXENVIRONS] = {0};
-int curr_fontnumb[MAXENVIRONS] = {0};
-/*SAP end fix*/
+bool            g_processing_figure = FALSE;	/* flag, set for figures and not tables */
+bool            g_processing_include = FALSE;	/* flag set when include file is being processed */
+bool            g_processing_eqnarray = FALSE;	/* flag set when in an eqnarry */
+int             g_equation_number = 0;
+bool            g_show_equation_number = FALSE;
+int             g_enumerate_depth = 0;
+bool            g_suppress_equation_number = FALSE;
+bool            g_aux_file_missing = FALSE;	/* assume that it exists */
+int             curr_fontbold[MAXENVIRONS] = {0};
+int             curr_fontital[MAXENVIRONS] = {0};
+int             curr_fontscap[MAXENVIRONS] = {0};
+int             curr_fontnumb[MAXENVIRONS] = {0};
 
-/****************************************************************************/
-/*** function prototypes ***/
+static void     PrepareTex(const char *filename ,FILE ** f);
+static void     PrepareRtf(char *filename, FILE ** f);
+static void     CloseTex(FILE ** f);
+static void     CloseRtf(FILE ** f);
 
-/* opens file for reading */
-static void PrepareTex( /*@null@*/ const char  *filename
-               ,                  FILE **f
-	       );
-/* creates file and writes RTF header */
-static void PrepareRtf( /*@null@*/ char * filename
-               ,            FILE **f
-	       );
-static void CloseTex(FILE **f);
-static void CloseRtf(FILE **f);
+static bool     TranslateCommand();	/* converts commands */
+bool            TranslateSpecKey();	/* converts special keys */
+void           *GetCommandFunc(char *cCommand);
 
-static bool TranslateCommand();  /* converts commands */
-bool TranslateSpecKey();  /* converts special keys */
-void *GetCommandFunc(char *cCommand);
-bool ConvertFormula(char * command);
-
-enum TexCharSetKind TexCharSet = SEVEN_BIT; /* default SEVEN_BIT for
-					       converting special chars */
+enum TexCharSetKind TexCharSet = SEVEN_BIT;	/* default SEVEN_BIT for converting special chars */
 
 
 
-extern /*@observer@*/ char *optarg;
-extern int optind;
-extern int getopt(int ac, char *const av[], const char *optstring)
-	 /*@modifies optind, optarg@*/
-	 ;
+extern /* @observer@ */ char *optarg;
+extern int      optind;
+extern int 
+getopt(int ac, char *const av[], const char *optstring)
+/* @modifies optind, optarg@ */
+;
 
 /****************************************************************************
 purpose: checks parameter and starts convert routine
 params:  command line arguments argc, argv
 globals: initializes in- and outputfile fTex, fRtf,
  ****************************************************************************/
-int
-main(int argc, char **argv)
+	int
+	                main(int argc, char **argv)
 {
-  int c;
-  bool errflag = FALSE;
+	int             c;
+	bool            errflag = FALSE;
 
-  fTex = stdin; /* default input/output */
-  fRtf = stdout;
-  
-  SetDocumentFontSize(20);
-  PushEnvironment(HEADER);
-  PushEnvironment(DOCUMENT);
-  progname=argv[0];
-  optind = 1;
-  while((c = getopt(argc, argv, "Vlo:a:b:v:i:")) != EOF)
-    {
-      switch(c)
-	{
-	case 'V':
-	  printf("%s: %s\n", progname, Version);
-	  return(0);
-	case 'a':
-	  AuxName = optarg;
-	  break;
-	case 'b':
-	  BblName = optarg;
-	  break;
-	case 'o':
-	  output = optarg;
-	  break;
-	case 'l':
-	  TexCharSet = ISO_8859_1;
-	  fprintf(stderr,"Latin-1 (= ISO 8859-1) special characters will be ");
-	  fprintf(stderr,"converted into RTF-Commands!\n");
-	  break;
-	case 'i':
-	  language = optarg;
-	  break;
-	case 'v':
-	  {
-	    char *endptr;
-	    verbosity = (int) strtol(optarg, &endptr, 10);
-	    if((verbosity < 0) || verbosity > MAX_VERBOSITY)
-	      diagnostics(ERROR, "verbosity %d not between 0 and %d",
-			  verbosity, MAX_VERBOSITY);
-	    if((*endptr != '\0') || (endptr == optarg))
-	      diagnostics(ERROR, "argument to -v option malformed: %s",
-			  optarg);
-	  }
-	  break;
-	default:
-	  errflag = TRUE;
+	fTex = stdin;		/* default input/output */
+	fRtf = stdout;
+
+	SetDocumentFontSize(20);
+	PushEnvironment(HEADER);
+	PushEnvironment(DOCUMENT);
+	progname = argv[0];
+	optind = 1;
+	while ((c = getopt(argc, argv, "Vlo:a:b:v:i:")) != EOF) {
+		switch (c) {
+		case 'V':
+			printf("%s: %s\n", progname, Version);
+			return (0);
+		case 'a':
+			AuxName = optarg;
+			break;
+		case 'b':
+			BblName = optarg;
+			break;
+		case 'o':
+			output = optarg;
+			break;
+		case 'l':
+			TexCharSet = ISO_8859_1;
+			fprintf(stderr, "Latin-1 (= ISO 8859-1) special characters will be ");
+			fprintf(stderr, "converted into RTF-Commands!\n");
+			break;
+		case 'i':
+			language = optarg;
+			break;
+		case 'v':
+			{
+				char           *endptr;
+				verbosity = (int) strtol(optarg, &endptr, 10);
+				if ((verbosity < 0) || verbosity > MAX_VERBOSITY)
+					diagnostics(ERROR, "verbosity %d not between 0 and %d",
+						  verbosity, MAX_VERBOSITY);
+				if ((*endptr != '\0') || (endptr == optarg))
+					diagnostics(ERROR, "argument to -v option malformed: %s",
+						    optarg);
+			}
+			break;
+		default:
+			errflag = TRUE;
+		}
 	}
-    }  
-        
-  if(argc > optind + 1 || errflag)
-  {
-    fprintf(stderr,"%s: Usage: %s [-V] [-l] [-o outfile]"
-	    " [-a auxfile] [-b bblfile] [ -i languagefile ] inputfile\n",
-      progname, progname);
-    fprintf(stderr,"-l\t Latin-1 (= ISO 8859-1) special characters will be\n");
-    fprintf(stderr,"\t converted into RTF-Commands!\n");
-    return(1);
-  }
-  
-  if(argc == optind + 1)
-  {
-    char *s, *newrtf;
-    
-/* if filename does not end in .tex then append .tex */
-	if ((s=strrchr(argv[optind], PATHSEP))==NULL)
-           s = argv[optind];
-        
-        if((s = strrchr(s, '.')) == NULL)
-        {
-	    if((input = malloc(strlen(argv[optind]) + 4)) == NULL)
-	        error(" malloc error -> out of memory!\n");
-  	   strcpy(input,argv[optind]);
-	   strcat(input, ".tex");
-        }
-	else if (strcmp(s, ".tex"))
-	   error("latex files should end with .tex");
-        else
-           input = argv[optind];
 
-       latexname = input;
-//       fprintf(stderr,"latex filename is %s\n",input);
-        
-/* create the .rtf filename */
-	if((newrtf = malloc(strlen(input) + 5)) == NULL)
-	    error(" malloc error -> out of memory!\n");
-  	strcpy(newrtf,input);
-	if((s = strrchr(newrtf, '.')) == NULL || strcmp(s, ".tex") != 0)
-	   strcat(newrtf, ".rtf");
-	else
-	   strcpy (s, ".rtf");
-        output = newrtf;
-//        fprintf(stderr,"rtf filename is %s\n", output);
-  }
-  
-  if (AuxName == NULL)
-  {
-    char *s;
-    if(input != NULL)
-    {
-	if((AuxName = malloc(strlen(input) + 5)) == NULL)
-	    error(" malloc error -> out of memory!\n");
-	strcpy (AuxName, input);
-	if((s = strrchr(AuxName, '.')) == NULL || strcmp(s, ".tex") != 0)
-	   strcat(AuxName, ".aux");
-	else
-	   strcpy (s, ".aux");
-    }
-    else
-    {
-	if((AuxName = malloc(1)) == NULL)
-	    error(" malloc error -> out of memory!\n");
-	*AuxName = '\0';
-    }
-  }
+	if (argc > optind + 1 || errflag) {
+		fprintf(stderr, "%s: Usage: %s [-V] [-l] [-o outfile]"
+		" [-a auxfile] [-b bblfile] [ -i languagefile ] inputfile\n",
+			progname, progname);
+		fprintf(stderr, "-l\t Latin-1 (= ISO 8859-1) special characters will be\n");
+		fprintf(stderr, "\t converted into RTF-Commands!\n");
+		return (1);
+	}
+	if (argc == optind + 1) {
+		char           *s, *newrtf;
 
-  ReadCfg();
-  PrepareTex(input,&fTex);
-  WriteTemp(fTex);         /* Normalize eol of inputfile */
-  PrepareRtf(output,&fRtf);
+		/* if filename does not end in .tex then append .tex */
+		if ((s = strrchr(argv[optind], PATHSEP)) == NULL)
+			s = argv[optind];
 
-  (void)Push(1,0);
-  Convert();
-  /* if citations were produced, now the reference-list will be created */
-  PushEnvironment(DOCUMENT);
-  if (bCite)
-     WriteRefList();
+		if ((s = strrchr(s, '.')) == NULL) {
+			if ((input = malloc(strlen(argv[optind]) + 4)) == NULL)
+				error(" malloc error -> out of memory!\n");
+			strcpy(input, argv[optind]);
+			strcat(input, ".tex");
+		} else if (strcmp(s, ".tex"))
+			error("latex files must end with .tex");
+		else
+			input = argv[optind];
 
-  CloseTex(&fTex);
-  CloseRtf(&fRtf);
-  printf("\n");
-  return(0);
+		latexname = input;
+		diagnostics(3, "latex filename is %s\n", input);
+
+		/* create the .rtf filename */
+		if ((newrtf = malloc(strlen(input) + 5)) == NULL)
+			error(" malloc error -> out of memory!\n");
+		strcpy(newrtf, input);
+		if ((s = strrchr(newrtf, '.')) == NULL || strcmp(s, ".tex") != 0)
+			strcat(newrtf, ".rtf");
+		else
+			strcpy(s, ".rtf");
+		output = newrtf;
+		diagnostics(3, "rtf filename is %s\n", output);
+	}
+	
+	if (AuxName == NULL) {
+		char           *s;
+		if (input != NULL) {
+			if ((AuxName = malloc(strlen(input) + 5)) == NULL)
+				error(" malloc error -> out of memory!\n");
+			strcpy(AuxName, input);
+			if ((s = strrchr(AuxName, '.')) == NULL || strcmp(s, ".tex") != 0)
+				strcat(AuxName, ".aux");
+			else
+				strcpy(s, ".aux");
+		} else {
+			if ((AuxName = malloc(1)) == NULL)
+				error(" malloc error -> out of memory!\n");
+			*AuxName = '\0';
+		}
+	}
+	ReadCfg();
+	PrepareTex(input, &fTex);
+	PrepareRtf(output, &fRtf);
+
+	(void) Push(1, 0);
+	diagnostics(4,"Entering Convert from main");
+	Convert();
+	diagnostics(4,"Exiting Convert from main");
+
+	if (bCite){
+		diagnostics(4,"Starting bibliography");
+		PushEnvironment(DOCUMENT);
+		WriteRefList();
+	}
+
+	CloseTex(&fTex);
+	CloseRtf(&fRtf);
+	printf("\n");
+	return (0);
 }
 
 
 /****************************************************************************/
 /* Global Flags for Convert Routine */
 /****************************************************************************/
-int RecursLevel = 0;
-int BracketLevel = 1;
-static int ret = 0;
-bool mbox = FALSE;
-bool g_processing_equation = FALSE;
-bool bNewPar = FALSE;
-int indent = 0;
-bool NoNewLine = FALSE;
-static int ConvertFlag;
-bool bInDocument = FALSE;
-int tabcounter = 0;
-bool twocolumn = FALSE;
-bool titlepage = FALSE;
-bool article = TRUE;
-bool tabbing_on = FALSE;
-bool tabbing_return = FALSE;
-bool tabbing_on_itself = FALSE;
-bool TITLE_AUTHOR_ON = FALSE;
-bool g_processing_tabular = FALSE;
-bool bBlankLine=TRUE;  /* to handle pseudo-blank lines (contains spaces)
-                          correctly					    */
-int colCount;     /* number of columns in a tabular environment             */
-int actCol;       /* actual column in the tabular environment               */
-/*@only@*//*@null@*/ char* colFmt = NULL;
-size_t DefFont = 0;  /* contains default font number, which is associated
-		     with TeX's font "Roman"                                */
+int             RecursLevel = 0;
+int             BracketLevel = 1;
+static int      ret = 0;
+bool            mbox = FALSE;
+bool            g_processing_equation = FALSE;
+bool            bNewPar = FALSE;
+int             indent = 0;
+bool            NoNewLine = FALSE;
+static int      ConvertFlag;
+bool            bInDocument = FALSE;
+int             tabcounter = 0;
+bool            twocolumn = FALSE;
+bool            titlepage = FALSE;
+bool            article = TRUE;
+bool            tabbing_on = FALSE;
+bool            tabbing_return = FALSE;
+bool            tabbing_on_itself = FALSE;
+bool            TITLE_AUTHOR_ON = FALSE;
+bool            g_processing_tabular = FALSE;
+bool            g_preprocessing = FALSE;
+bool            bBlankLine = TRUE;	/* handle pseudo-blank lines (with spaces) correctly */
+int             colCount;			/* number of columns in a tabular environment */
+int             actCol;				/* actual column in the tabular environment */
+char           *colFmt = NULL;
+size_t          DefFont = 0;		/* contains default TeX Roman font number*/
 
-
-
-/****************************************************************************/
-void Convert()
+void 
+Convert()
 /****************************************************************************
 purpose: convertes inputfile and writes result to outputfile
 globals: fTex, fRtf and all global flags for convert (see above)
  ****************************************************************************/
 {
-  char cThis = '\n';
-  char cLast = '\n';
-  char cLast2 = '\n';
-  char cLastNoSpace = 'a';
-  char cNext;
-  int PopLevel=0,PopBrack,PPopLevel,PPopBrack,size,retlevel;
-  int count = 0;
-  int i;
-  char cThishilf;
+	char            cThis = '\n';
+	char            cLast = '\n';
+	char            cLast2 = '\n';
+	char            cNext;
+	int             retlevel;
+	int             count = 0;
+	int             i;
 
-  RecursLevel++;
-  (void)Push(RecursLevel,BracketLevel);
-  ++ConvertFlag;
-  while (fread(&cThis, 1,1,fTex) == 1)
-  {
-    switch(cThis)
-    {
-    case '\\':{
-	      int SaveFlag;
-	      fpos_t pos1,pos2;
+	RecursLevel++;
+	(void) Push(RecursLevel, BracketLevel);
+	++ConvertFlag;
+	while ((cThis = getTexChar()) && cThis != EOF && cThis != '\0') {
+		diagnostics(5, "Current character in Convert() is %c", cThis);
+		switch (cThis) {
 
-              bBlankLine=FALSE;
-	      if(fgetpos(fRtf,&pos1) != 0)
-		diagnostics(ERROR,
-			    "Failed fgetpos; main.c (Convert1): errno %d", errno);
+		case '\\':{
+				fpos_t          pos1, pos2;
 
-	      (void)Push(RecursLevel,BracketLevel);
-	      SaveFlag=ConvertFlag;
-	      /* For now we ignore the return value of TranslateCommand */
-	      (void)TranslateCommand();
+				bBlankLine = FALSE;
+				if (fgetpos(fRtf, &pos1) != 0)
+					diagnostics(ERROR, "Problem accessing rtf file");
 
-	      /*if ((tabbing_on_itself) ||
-		  ((tabbing_on) &&
-		  (tabbing_return)))
-		  {
-		  tabbing_return = FALSE;
-		  if (tabbing_on_itself)
-		     tabbing_on = FALSE;
-		  tabbing_on_itself = FALSE;
-		  return;
-		  } */
+				(void) Push(RecursLevel, BracketLevel);
+				
+				/* For now we ignore the return value of TranslateCommand */
+				(void) TranslateCommand();
 
-	      /* erase double identic values on stack top */
-	      for(;;)
-	      {
-		if ((size = Pop(&PPopLevel, &PPopBrack)) <= 0 )
-		{
-		  (void)Push(PPopLevel,PPopBrack);
-		  break;
-		}
-		if ((size = Pop(&PopLevel, &PopBrack)) <= 0 )
-		{
-		  (void)Push(PopLevel,PopBrack);
-		  break;
-		}
-		if ( (PPopLevel == PopLevel) && (PPopBrack == PopBrack) )
-		{
-		  (void)Push(PopLevel,PopBrack);
-		}
-		else
-		{
-		  (void)Push(PopLevel,PopBrack);
-		  (void)Push(PPopLevel,PPopBrack);
-		  break;
-		}
-	      };
+				/* erase multiple identical values on top of stack */
+				CleanStack();
 
-	      if (ret > 0)
-	      {
-		--ret;
-		--RecursLevel;
-		return;
-	      }
-	      /* remove SaveFlag */
-	      /*if (ConvertFlag == SaveFlag)    Convert was not called
-	      {
-		//cThis = ' ';	 error
-	      }
-              */
-	      cThis = '\\';
-	      if(fgetpos(fRtf,&pos2) != 0)
-		diagnostics(ERROR,
-			    "Failed fgetpos; main.c (Convert2): errno %d", errno);
+				if (ret > 0) {
+					--ret;
+					--RecursLevel;
+					return;
+				}
 
-	      if (pos1 == pos2)    /* no RTF output */
-	      {
-		if (cLast == '\n')
-		  cThis = '\n';
-		else
-		  cThis = ' ';
-	      }
-	      break;
-	      }
-    case '%': bBlankLine=FALSE;
-              IgnoreTo('\n');
-	      cThis = ' ';
-	      break;
-    case '{': bBlankLine=FALSE;
-	      (void)Push(RecursLevel,BracketLevel);
-	      ++BracketLevel;
-	      break;
-    case '}': bBlankLine=FALSE;
-	      BracketLevel--;
-	      PPopLevel = RecursLevel;
-	      PPopBrack = BracketLevel;
-	      size = Pop(&PopLevel, &PopBrack);
-	      while ( (size = Pop(&PopLevel, &PopBrack)) >= 0 )
-	      {
-		if ( PopBrack < BracketLevel )
-		{
-		  break;
-		}
-		PPopLevel = PopLevel;
-		PPopBrack = PopBrack;
-	      } /* while */
-	      (void)Push(PopLevel,PopBrack);	/* push back */
-	      retlevel = PPopLevel;
-	      ret = RecursLevel-retlevel;
-	      (void)Push(retlevel,BracketLevel);
+				cThis = '\\';
+				if (fgetpos(fRtf, &pos2) != 0)
+					diagnostics(ERROR, "Problem accessing rtf file");
 
-	      if (ret > 0)
-	      {
-		ret--;
-		RecursLevel--;
-		return;
-	      }
-	      else
-		break;
-
-    case ' ': if (!bInDocument) continue;
-	      if ( (cLast != ' ') && (cLast != '\n') && (cLast != '\r'))
-	      {
-		if (!mbox)
-	       /*   if (bNewPar == FALSE)*/
-		    fprintf(fRtf," ");
-		else
-		  fprintf(fRtf,"\\~");
-	      }
-	      break;
-    case '~': bBlankLine=FALSE;
-              if (!bInDocument) numerror(ERR_NOT_IN_DOCUMENT);
-	      fprintf(fRtf,"\\~");
-	      break;
-    case '\r':
-	      fprintf(stderr,"\n%s: ERROR: error in input file: %s at linenumber: %ld\n",progname,latexname,getLinenumber());
-	      fprintf(stderr,"\nprogram aborted\n");
-	      exit(EXIT_FAILURE);
-	      /*@notreached@*/
-	      break;
-    case '\n':
-	      tabcounter=0;
-	      linenumber++;
-	      if (!bInDocument) continue;
-
-/*SAP Fix to allow blank lines with spaces*/
-	       cNext = '\0';
-	       while((fread(&cNext,1,1,fTex) == 1) && (cNext==' '));
-	       if (cNext != '\0') rewind_one();
-/*SAP end fix */
-		
-	      if (cLast != '\n')
-	      {
-		if (bNewPar)
-		{
-                   bNewPar = FALSE;
-                   cThis = ' ';
-                   break;
-                }
-		if (cLast!=' ')
-		  fprintf(fRtf," ");	 /* treat as 1 space */
-                else if (bBlankLine)
-		  fprintf(fRtf,"\n\\par\\fi0\\li%d ",indent);
-	      }
-	      else
-	      {
-		if (cLast2 != '\n')
-		{
-		  fprintf(fRtf,"\n\\par\\fi0\\li%d ",indent);
-		}
-	      }
-              bBlankLine=TRUE;
-	      break;
-
-    case '^': bBlankLine=FALSE;
-              if (!bInDocument) numerror(ERR_NOT_IN_DOCUMENT);
-
-	      fprintf(fRtf,"{\\up6 \\fs20 ");
-              if (fTexRead (&cNext,1,1,fTex) == 1)
-              {
-                 if (cNext == '{')
-                 {
-	            rewind_one(); /* reread last character */
-  	            (void)Push(RecursLevel,BracketLevel);
-	            Convert();
-	            if (ret > 0)
-	            {
-		       --ret;
-		       --RecursLevel;
-	               return;
-	            }
-	            fprintf(fRtf,"}");
-                 }
-/* SAP fix ^\alpha */
-                 else if (cNext == '\\') 
-                 {
-	            TranslateCommand();
-	            fprintf(fRtf,"}");
-                 }
-/* SAP end of fix */
-                 else
-                    fprintf(fRtf,"%c}",cNext);
-              }
-              else
-	         error("Error reading Latex-File");
-	      break;
-    case '_': bBlankLine=FALSE;
-              if (!bInDocument) numerror(ERR_NOT_IN_DOCUMENT);
-	      fprintf(fRtf,"{\\dn6 \\fs20 ");
-              if (fTexRead (&cNext,1,1,fTex) == 1)
-              {
-                 if (cNext == '{')
-                 {
-	            rewind_one(); /* reread last character */
-  	            (void)Push(RecursLevel,BracketLevel);
-	            Convert();
-	            if (ret > 0)
-	            {
-		       --ret;
-		       --RecursLevel;
-	               return;
-	            }
-	            fprintf(fRtf,"}");
-                 }
-/* SAP fix _\alpha */
-                 else if (cNext == '\\') 
-                 {
-	            TranslateCommand();
-	            fprintf(fRtf,"}");
-                 }
-/* SAP end of fix */
-                 else
-                    fprintf(fRtf,"%c}",cNext);
-              }
-              else
-	         error("Error reading Latex-File");
-	      break;
-    case '$': 
-             bBlankLine=FALSE;
-             if (fTexRead (&cNext,1,1,fTex) == 1)
-              {
-                 if (cNext == '$')
-                 {
-                 	CmdFormula2(FORM_DOLLAR);
-                 	break;
-                 }
-	         rewind_one(); /* reread last character */
-    	      }
-              CmdFormula(FORM_DOLLAR);
-	      break;
-    case '&': 
-    
-    	      if (g_processing_tabular && g_processing_equation)   /* in an eqnarray */
-	      {
-			fprintf(fRtf,"\\tab ");
+				if (pos1 == pos2) {	/* no RTF output */
+					if (cLast == '\n')
+						cThis = '\n';
+					else
+						cThis = ' ';
+				}
+				break;
+			}
+			
+		case '%':
+			fprintf(stderr, "\nWarning: ignoring %% in %s at line %ld\n", latexname, getLinenumber());
+			cThis = ' ';
 			break;
-	      }
+			
+		case '{':
+			bBlankLine = FALSE;
+			(void) Push(RecursLevel, BracketLevel);
+			++BracketLevel;
+			break;
+			
+		case '}':
+			bBlankLine = FALSE;
+			BracketLevel--;
+			retlevel = getStackRecursionLevel();
+			ret = RecursLevel - retlevel;
+			(void) Push(retlevel, BracketLevel);
 
-	      if (g_processing_tabular)				   /* in tabular */
-	      {
-			 fprintf(fRtf," \\cell \\pard \\intbl ");
-	                 actCol++;
-	                 fprintf (fRtf, "\\q%c ", colFmt[actCol]);
-	                 break;
-	      }
+			if (ret > 0) {
+				ret--;
+				RecursLevel--;
+				return;
+			} else
+				break;
 
-	      fprintf(fRtf,"&");
-	      break;
-	      
-    case '-' : bBlankLine=FALSE;
-               count++;
-	       while ((fread(&cThishilf,1,1,fTex) >= 1) && (cThishilf == '-'))
-		   count++;
-	       switch (count)
-	       {
-		 case 1: fprintf(fRtf,"-");
-			 break;
-		 case 2: fprintf(fRtf,"\\endash ");
-			 break;
-		 case 3: fprintf(fRtf,"\\emdash ");
-			 break;
-		 default:
-		 { for (i = count-1; i >= 0; i--)
-		   fprintf(fRtf,"-");
-		 }
-	       }
-	       rewind_one(); /* reread last character */
-	       count = 0;
-		break;
-    case '\'' :bBlankLine=FALSE;
-               count++;
-	       while ((fread(&cThishilf,1,1,fTex) >= 1) && (cThishilf == '\''))
-		   count++;
-	       if (count != 2)
-		 { for (i = count-1; i >= 0; i--)
-		   fprintf(fRtf,"\\rquote ");
-		 }
-	       else
-		   fprintf(fRtf,"\\rdblquote ");
-	       rewind_one(); /* reread last character */
-	       count = 0;
-	       break;
-    case '`' : bBlankLine=FALSE;
-               count++;
-	       while ((fread(&cThishilf,1,1,fTex) >= 1) && (cThishilf == '`'))
-		   count++;
-	       if (count != 2)
-		 { for (i = count-1; i >= 0; i--)
-		   fprintf(fRtf,"\\lquote ");
-		 }
-	       else
-		   fprintf(fRtf,"\\ldblquote ");
-	       rewind_one(); /* reread last character */
-	       count = 0;
-	       break;
-    case '\"': bBlankLine=FALSE;
-               if (GermanMode)
-		 TranslateGerman();
-	       else
-		 fprintf(fRtf,"\"");
-	       break;
-//    case '\t':bBlankLine=FALSE;
-//              break;
-    /* Added by John E. Davis to take care of !` and ?`. */
-    case '?':
-    case '!':
-	{
-	    char ch;
+		case ' ':
+			if (!bInDocument)
+				continue;
+				
+			if ((cLast != ' ') && (cLast != '\n') ) {
+				if (!mbox)
+					/* if (bNewPar == FALSE) */
+					fprintf(fRtf, " ");
+				else
+					fprintf(fRtf, "\\~");
+			}
+			break;
+			
+		case '~':
+			bBlankLine = FALSE;
+			if (!bInDocument)
+				numerror(ERR_NOT_IN_DOCUMENT);
+			fprintf(fRtf, "\\~");
+			break;
+			
+		case '\r':
+			fprintf(stderr, "\nWarning: ignoring \\r in %s at line %ld\n", latexname, getLinenumber());
+			cThis = ' ';
+			break;
+			
+		case '\n':
+			tabcounter = 0;
+			if (!bInDocument)
+				continue;
 
-	    bBlankLine=FALSE;
-	    if (fread (&ch, 1, 1, fTex) == 1)
-	    {
-		if (ch == '`')
-		{
-		    fprintf (fRtf, "\\mac\\'c%d\\pc ", (cThis == '?') ? 0 : 1);
+			while ((cNext = getTexChar()) == ' ');	/* blank line with
+								 * spaces */
+			ungetTexChar(cNext);
+
+			if (cLast != '\n') {
+				if (bNewPar) {
+					bNewPar = FALSE;
+					cThis = ' ';
+					break;
+				}
+				if (cLast != ' ')
+					fprintf(fRtf, " ");	/* treat as 1 space */
+				else if (bBlankLine)
+					fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
+			} else {
+				if (cLast2 != '\n') {
+					fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
+				}
+			}
+			bBlankLine = TRUE;
+			break;
+
+		case '^':
+			bBlankLine = FALSE;
+			if (!bInDocument)
+				numerror(ERR_NOT_IN_DOCUMENT);
+
+			{
+				char           *s = NULL;
+				if ((s = getMathParam())) {
+					fprintf(fRtf, "{\\up6 \\fs20 ");
+					ConvertString(s);
+					fprintf(fRtf, "}");
+					free(s);
+				}
+			}
+			break;
+
+		case '_':
+			bBlankLine = FALSE;
+			if (!bInDocument)
+				numerror(ERR_NOT_IN_DOCUMENT);
+			{
+				char           *s = NULL;
+				if ((s = getMathParam())) {
+					fprintf(fRtf, "{\\dn6 \\fs20 ");
+					ConvertString(s);
+					fprintf(fRtf, "}");
+					free(s);
+				}
+			}
+			break;
+
+		case '$':
+			bBlankLine = FALSE;
+			cNext = getTexChar();
+			if (cNext == '$')	/* check for $$ */
+				CmdFormula2(FORM_DOLLAR);
+			else {
+				ungetTexChar(cNext);
+				CmdFormula(FORM_DOLLAR);
+			}
+			break;
+
+		case '&':
+			if (g_processing_tabular && g_processing_equation) {	/* in an eqnarray */
+				fprintf(fRtf, "\\tab ");
+				break;
+			}
+			if (g_processing_tabular) {	/* in tabular */
+				fprintf(fRtf, " \\cell \\pard \\intbl ");
+				actCol++;
+				fprintf(fRtf, "\\q%c ", colFmt[actCol]);
+				break;
+			}
+			fprintf(fRtf, "&");
+			break;
+
+		case '-':
+			bBlankLine = FALSE;
+			count++;
+			while ((cNext = getTexChar()) && cNext == '-')
+				count++;
+			ungetTexChar(cNext);	/* reread last character */
+			switch (count) {
+			case 1:
+				fprintf(fRtf, "-");
+				break;
+			case 2:
+				fprintf(fRtf, "\\endash ");
+				break;
+			case 3:
+				fprintf(fRtf, "\\emdash ");
+				break;
+			default:
+				{
+					for (i = count - 1; i >= 0; i--)
+						fprintf(fRtf, "-");
+				}
+			}
+			count = 0;
+			break;
+			
+		case '\'':
+			bBlankLine = FALSE;
+			count++;
+			while ((cNext = getTexChar()) && cNext == '\'')
+				count++;
+			ungetTexChar(cNext);
+			if (count != 2) {
+				for (i = count - 1; i >= 0; i--)
+					fprintf(fRtf, "\\rquote ");
+			} else
+				fprintf(fRtf, "\\rdblquote ");
+			count = 0;
+			break;
+			
+		case '`':
+			bBlankLine = FALSE;
+			count++;
+			while ((cNext = getTexChar()) && cNext == '`')
+				count++;
+			ungetTexChar(cNext);
+			if (count != 2) {
+				for (i = count - 1; i >= 0; i--)
+					fprintf(fRtf, "\\lquote ");
+			} else
+				fprintf(fRtf, "\\ldblquote ");
+			count = 0;
+			break;
+			
+		case '\"':
+			bBlankLine = FALSE;
+			if (GermanMode)
+				TranslateGerman();
+			else
+				fprintf(fRtf, "\"");
+			break;
+
+		case '?':
+		case '!':
+			{
+				char            ch;
+				bBlankLine = FALSE;
+				if ((ch = getTexChar()) && ch == '`') {
+					if (cThis == '?')
+						fprintf(fRtf, "{\\ansi\\'bf}");
+					else
+						fprintf(fRtf, "{\\ansi\\'a1}");
+				} else {
+						fprintf(fRtf, "%c", cThis);
+						ungetTexChar(ch);
+				}
+			}
+			break;
+			
+		default:
+			bBlankLine = FALSE;
+			if (bInDocument) {
+				if (isupper(cThis) && ((cLast == '.') || (cLast == '!') || (cLast == '?') || (cLast == ':')))
+					fprintf(fRtf, " ");
+
+				if (TexCharSet == ISO_8859_1)
+					Write_ISO_8859_1(cThis);
+				else
+					Write_Default_Charset(cThis);
+
+				bNewPar = FALSE;
+			}
+			break;
 		}
-		else
-		{
-		    if(putc (cThis, fRtf) == EOF)
-		      diagnostics(ERROR, "Failed putc; main.c (Convert)");
-		    rewind_one();
-		}
-	    }
+
+		tabcounter++;
+		cLast2 = cLast;
+		cLast = cThis;
 	}
-	break;
-    default: bBlankLine=FALSE;
-             if (bInDocument)
-	     {
-	      if ((isupper((unsigned char) cThis)) &&
-		 ((cLast=='.') || (cLast=='!') || (cLast=='?') || (cLast==':')))
-	  	 fprintf(fRtf," ");
-
-	      if (TexCharSet==ISO_8859_1)
-			Write_ISO_8859_1(cThis);
-	      else
-		    	Write_Default_Charset(cThis);
-
-	      bNewPar = FALSE;
-	    }
-	  break;
-    }
-
-  tabcounter++;
-  cLast2 = cLast;
-  cLast = cThis;
-  if (cThis != ' ')
-    cLastNoSpace = cThis;
-  }
-  RecursLevel--;
+	RecursLevel--;
 }
 
 /***********************************************************************
@@ -744,23 +628,23 @@ globals: fTex, fRtf and all global flags for convert (see above)
 bool
 rtf_restrict(int major, int minor)
 {
-  return((major <= rtf_major) && (minor <= rtf_minor));
+	return ((major <= rtf_major) && (minor <= rtf_minor));
 }
 
-/****************************************************************************/
-void error(char * text)
+void 
+error(char *text)
 /****************************************************************************
 purpose: writes error message
 globals: reads progname;
  ****************************************************************************/
 {
-  fprintf(stderr,"\nERROR at line %ld: %s", getLinenumber(), text);
-  fprintf(stderr,"\nprogram aborted\n");
-  exit(EXIT_FAILURE);
+	fprintf(stderr, "\nERROR at line %ld: %s", getLinenumber(), text);
+	fprintf(stderr, "\nprogram aborted\n");
+	exit(EXIT_FAILURE);
 }
 
-/****************************************************************************/
-void numerror(int num)
+void 
+numerror(int num)
 /****************************************************************************
 purpose: writes error message identified by number - for messages on many
 	 places in code. Calls function error.
@@ -768,252 +652,203 @@ globals: progname; latexname; linenumber;
  ****************************************************************************/
 {
 
-  char text[1024];
+	char            text[1024];
 
-  switch(num)
-  {
-    case ERR_EOF_INPUT:
-      if (g_processing_include) return;  /*SAP - HACK end of file ok in include files */
-      sprintf(text,"%s%s%s%ld%s","unexpected end of input file in: ",latexname," at linenumber: ",getLinenumber(),"\n");
-      error(text);
-      /*@notreached@*/
-      break;
-    case ERR_WRONG_COMMAND:
-      sprintf(text,"%s%s%s%ld%s","unexpected command or character in: ",latexname," at linenumber: ",getLinenumber(),"\n");
-      error(text);
-      /*@notreached@*/
-      break;
-      
-    case ERR_NOT_IN_DOCUMENT:
-      sprintf(text,"%s%s%s%ld%s","No longer in document ",latexname," at linenumber: ",getLinenumber(),"\nCheck for missing \\begin{document} or the like\n");
-      error(text);
-      /*@notreached@*/
-      break;
-    case ERR_Param:
-      error("wrong number of parameters\n");
-      /*@notreached@*/
-      break;
-    case ERR_WRONG_COMMAND_IN_TABBING:
-      sprintf(text,"%s%s%s%ld%s","wrong command in Tabbing-kill-command-line in: ",latexname," at linenumber: ",getLinenumber(),"\n");
-      error(text);
-      /*@notreached@*/
-      break;
-    default :
-      error("internal error");
-      /*@notreached@*/
-      break;
-  }
+	switch (num) {
+	case ERR_EOF_INPUT:
+		if (g_processing_include || g_preprocessing)
+			return;	/* SAP - HACK end of file ok in include files */
+		sprintf(text, "%s%s%s%ld%s", "unexpected end of input file in: ", latexname, " at linenumber: ", getLinenumber(), "\n");
+		error(text);
+		/* @notreached@ */
+		break;
+	case ERR_WRONG_COMMAND:
+		sprintf(text, "%s%s%s%ld%s", "unexpected command or character in: ", latexname, " at linenumber: ", getLinenumber(), "\n");
+		error(text);
+		/* @notreached@ */
+		break;
+
+	case ERR_NOT_IN_DOCUMENT:
+		sprintf(text, "%s%s%s%ld%s", "No longer in document ", latexname, " at linenumber: ", getLinenumber(), "\nCheck for missing \\begin{document} or the like\n");
+		error(text);
+		/* @notreached@ */
+		break;
+	case ERR_Param:
+		error("wrong number of parameters\n");
+		/* @notreached@ */
+		break;
+	case ERR_WRONG_COMMAND_IN_TABBING:
+		sprintf(text, "%s%s%s%ld%s", "wrong command in Tabbing-kill-command-line in: ", latexname, " at linenumber: ", getLinenumber(), "\n");
+		error(text);
+		/* @notreached@ */
+		break;
+	default:
+		error("internal error");
+		/* @notreached@ */
+		break;
+	}
 }
 
-/* Writes the given warning message in format, ... if global verbosity
-   is higher or equal then level.  If ??? option is given,
-   i.e. logfile is not null, everything is logged to the logfile
-   -vn Flag (verbosity)	0 ... only errors = -q
-                        1 ... (default) Translation Warnings
-			2 ... conditions on output e.g. (rtf1.5 options)
-			3 ... complete logging of what's going on.
-*/
+/*
+ * Writes the given warning message in format, ... if global verbosity is
+ * higher or equal then level.  If ??? option is given, i.e. logfile is not
+ * null, everything is logged to the logfile -vn Flag (verbosity)	0 ...
+ * only errors = -q 1 ... (default) Translation Warnings 2 ... conditions on
+ * output e.g. (rtf1.5 options) 3 ... complete logging of what's going on.
+ */
 void
-diagnostics(int level, char *format, ...)
+diagnostics(int level, char *format,...)
 {
-  va_list ap, apf; /*LEG240698 The GNU libc info says that after using
-		    the vfprintf function on some systems the ap
-		    pointer is destroyed. Well, let's use a second one
-		    for safety */
-  FILE *errfile;
+	va_list         ap, apf;/* LEG240698 The GNU libc info says that
+				 * after using the vfprintf function on some
+				 * systems the ap pointer is destroyed. Well,
+				 * let's use a second one for safety */
+	FILE           *errfile;
 
-  /* output always to stderr on level 0 and 1 but observe quiet
-     option */
-  va_start (ap, format);
+	/*
+	 * output always to stderr on level 0 and 1 but observe quiet option
+	 */
+	va_start(ap, format);
 
-  if((level <= 1) && (verbosity != 0)) 
-    {
-      switch(level)
-	{
-	case 0: 
-	  fprintf(stderr, "\nError! ");
-	  break;
-	case 1:
-	  fprintf(stderr, "\nWarning! ");
-	  break;
-	default:
-	  fprintf(stderr, "\n   ");
+	if ((level <= 1) && (verbosity != 0)) {
+		switch (level) {
+		case 0:
+			fprintf(stderr, "\nError! ");
+			break;
+		case 1:
+			fprintf(stderr, "\nWarning! ");
+			break;
+		default:
+			fprintf(stderr, "\n   ");
+		}
+		fprintf(stderr, "\n%s\n   line: %ld\n", latexname, getLinenumber());
+		vfprintf(stderr, format, ap);
 	}
-      fprintf(stderr, "\n%s\n   line: %ld\n", latexname, getLinenumber());
-      vfprintf(stderr, format, ap);
-    }
-
-  if(logfile != NULL)
-    errfile = logfile;
-  else
-    errfile = stderr;
+	if (logfile != NULL)
+		errfile = logfile;
+	else
+		errfile = stderr;
 
 
-  va_start(apf, format);
+	va_start(apf, format);
 
-  if((level <= verbosity) && (level > 1))
-    {
-      fprintf(errfile, "\n%s:%ld: ", latexname, getLinenumber());
-      switch(level)
-	{
-	case 0: 
-	  fprintf(errfile, "Error! ");
-	  break;
-	case 1:
-	  fprintf(errfile, "Warning! ");
-	  break;
-	default:
-	  fprintf(errfile, "   ");
+	if ((level <= verbosity) && (level > 1)) {
+		int iEnvCount=CurrentEnvironmentCount();
+		fprintf(stderr, "\n%s %4ld=%4ld bra=%d rec=%d env=%d ", latexname, getLinenumber(), linenumber, BracketLevel, RecursLevel, iEnvCount);
+		//fprintf(errfile, "\n%s:%ld: ", latexname, getLinenumber());
+		switch (level) {
+		case 0:
+			fprintf(errfile, "Error! ");
+			break;
+		case 1:
+			fprintf(errfile, "Warning! ");
+			break;
+		default:
+			fprintf(errfile, "   ");
+		}
+		vfprintf(errfile, format, apf);
 	}
-      vfprintf(errfile, format, apf);
-    }
+	va_end(apf);
 
-  va_end(apf);
-
-  if(level == 0)
-    {
-      fprintf(stderr, "\n");
-      exit(EXIT_FAILURE);
-    }
+	if (level == 0) {
+		fprintf(stderr, "\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 
 /****************************************************************************/
-void PrepareRtf(char *filename, FILE **f)
+void 
+PrepareRtf(char *filename, FILE ** f)
 /****************************************************************************
 purpose: creates output file and writes RTF-header.
 params: filename - name of outputfile, possibly NULL for already open file
 	f - pointer to filepointer to store file ID
  ****************************************************************************/
 {
-  if(filename != NULL)
-  {
-      /* I have replaced "wb" with "w" in the following
-         fopen, for correct operation under MS DOS (with the -o option).
-         I believe this should make no difference under UNIX.
-                                                   --V.Menkov
-       */
+	diagnostics(4, "Opening RTF file %s", filename);
+	if (filename != NULL) {
+		/*
+		 * I have replaced "wb" with "w" in the following fopen, for
+		 * correct operation under MS DOS (with the -o option). I
+		 * believe this should make no difference under UNIX.
+		 * --V.Menkov
+		 */
 
-       if ((*f = fopen(filename,"w")) == NULL)	 /* open file */
-      {
-        fprintf(stderr, "Error opening RTF file %s\n", filename);
-        exit(EXIT_FAILURE);
-      }
-  }
-  
-  /* write header */
+		if ((*f = fopen(filename, "w")) == NULL) {	/* open file */
+			fprintf(stderr, "Error opening RTF file %s\n", filename);
+			exit(EXIT_FAILURE);
+		}
+	}
+	/* write header */
+	diagnostics(4, "Writing header for RTF file %s", filename);
 #ifdef DEFAULT_MAC_ENCODING
-  fprintf(*f,"{\\rtf1\\mac\\fs%d\\deff0\\deflang1024\n",CurrentFontSize());
+	fprintf(*f, "{\\rtf1\\mac\\fs%d\\deff0\\deflang1024\n", CurrentFontSize());
 #else
-  fprintf(*f,"{\\rtf1\\PC\\fs%d\\deff0\\deflang1024\n",CurrentFontSize());
+	fprintf(*f, "{\\rtf1\\PC\\fs%d\\deff0\\deflang1024\n", CurrentFontSize());
 #endif
-  fprintf(*f,"{\\info{\\version1}}\\widowctrl\\ftnbj\\sectd\\linex0\\endnhere");
-  fprintf(*f,"\\qj \n");
-  WriteFontHeader(*f);
+	fprintf(*f, "{\\info{\\version1}}\\widowctrl\\ftnbj\\sectd\\linex0\\endnhere");
+	fprintf(*f, "\\qj \n");
+	WriteFontHeader(*f);
 }
 
 
-/****************************************************************************/
-void PrepareTex(const char *filename, FILE **f)
+void 
+PrepareTex(const char *filename, FILE ** f)
 /****************************************************************************
 purpose: opens input file.
 params: filename - name of inputfile, possibly NULL
 	f - pointer to filepointer to store file ID
  ****************************************************************************/
 {
-  if(filename != NULL)
-  {
-      if ((*f = fopen(filename,"r")) == NULL)	/* open file */
-      {
-        fprintf(stderr, "Error opening LaTeX file %s\n", filename);
-        exit(EXIT_FAILURE);
-      }
-  }
-}
-
-/*************************************************************************
-WriteTemp:    Reads the original inputfile, and normalizes all end-of-lines
-              to \n writing it to a temporary file. Then feeds this tempfile
-              to l2r.
-
-	      also changes all tabs to a single space
-	      
-globals:f - pointer to inputfile
-*************************************************************************/
-void
-WriteTemp(FILE *f)
-{
-  FILE *tout;
-  char cThis;
-
-  tout = tmpfile();
-  
-  while (fread(&cThis, 1, 1, f) == 1)
-  {
-      if (cThis =='\r')
-      {
-	  if (fread(&cThis, 1, 1, f) == 1)
-	    {
-	      if (cThis == '\n')
-		fprintf(tout, "%c", '\n');
-	      else
-		{
-		  fprintf(tout, "%c", '\n');
-      		  if (cThis =='\r')
-		  	fprintf(tout, "%c", '\n');
-	          else if (cThis == '\t')
-	      	        fprintf(tout, "%c", ' ');
-		  else
-		  	fprintf(tout, "%c", cThis);
+	if (filename != NULL) {
+		if ((*f = fopen(filename, "r")) == NULL) {	/* open file */
+			fprintf(stderr, "Error opening LaTeX file %s\n", filename);
+			exit(EXIT_FAILURE);
 		}
-	    }
-      }
-      else if (cThis == '\t')
-      	fprintf(tout, "%c", ' ');
-      else
-	fprintf(tout, "%c", cThis);
-  }
-  
-  fclose(f);
-  rewind(tout);
-  fTex = tout;
+	}
+
+	diagnostics(4,"Opened LaTeX file %s",filename);
+
 }
 
-/****************************************************************************/
-void CloseTex(FILE **f)
+void 
+CloseTex(FILE ** f)
 /****************************************************************************
 purpose: closes input file.
 params: f - pointer to filepointer to invalidate
  ****************************************************************************/
 {
-  if(*f != stdin)
-      (void)fclose(*f);
-  *f = NULL;
+//	if (*f != stdin  && *f != NULL)
+//		(void) fclose(*f);
+//	*f = NULL;
+	diagnostics(4,"Closed LaTeX file");
+
 }
 
 
+void
+CloseRtf(FILE ** f)
 /****************************************************************************
 purpose: closes output file.
 params: f - pointer to filepointer to invalidate
 globals: progname;
  ****************************************************************************/
-void
-CloseRtf(FILE **f)
 {
-  fprintf(*f,"}}\n");
-  if(*f != stdout)
-  {
-      if(fclose(*f) == EOF)
-      {
-	fprintf(stderr, "%s: Warning: Error closing RTF-File\n", progname);
-      }
-  }
-  *f = NULL;
+	diagnostics(4,"Closed RTF file");
+	fprintf(*f, "}}\n");
+	if (*f != stdout) {
+		if (fclose(*f) == EOF) {
+			fprintf(stderr, "%s: Warning: Error closing RTF-File\n", progname);
+		}
+	}
+	*f = NULL;
+	diagnostics(4,"Closed RTF file");
 }
 
 
-/****************************************************************************/
-bool TranslateCommand()
+bool 
+TranslateCommand()
 /****************************************************************************
 purpose: The function is called on a backslash in input file and
 	 tries to call the command-function for the following command.
@@ -1022,281 +857,275 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
          global flags for convert
  ****************************************************************************/
 {
-  char cCommand[MAXCOMMANDLEN];
-  int i;
-  char cThis;
-  char option_string[100];
-  
-  for (i = 0; ;i++)   /* get command from input stream */
-  {
-    if (fread(&cThis,1,1,fTex) < 1)
-       break;
-    if (i == 0) /* test for special characters */
-    {
-      switch(cThis)
-      {
-	case '}': fprintf(fRtf,"\\}"); return TRUE;
-	case '{': fprintf(fRtf,"\\{"); return TRUE;
-	case '#': fprintf(fRtf,"#"); return TRUE;
-	case '$': fprintf(fRtf,"$"); return TRUE;
-	case '&': fprintf(fRtf,"&"); return TRUE;
-	case '%': fprintf(fRtf,"%%"); return TRUE;
-	case '_': fprintf(fRtf,"_"); return TRUE;
-	case '\\':    	/* \\[1mm] and \\*[1mm]		/* produces a newline in output */
-		      					/* no new paragraph    */
+	char            cCommand[MAXCOMMANDLEN];
+	int             i;
+	char            cThis;
+	char            option_string[100];
 
-/* skip one * and any spaces that follow */
-		if (fread(&cThis,1,1,fTex) == 1)
-		{
-		     if ((cThis == ' ') || (cThis == '*'))  /* ignore initial * and spaces */
-		     {
-		        while((fread(&cThis,1,1,fTex) == 1) && (cThis == ' ')); /*space  ignore */
-		     }
-		     rewind_one();
-		}
+	diagnostics(5, "Beginning TranslateCommand()");
 
-		GetBracketParam(option_string,99);       /* skip spacing info e.g., \\[1mm] */
+	cThis = getTexChar();
+
+	switch (cThis) {
+	case '}':
+		fprintf(fRtf, "\\}");
+		return TRUE;
+	case '{':
+		fprintf(fRtf, "\\{");
+		return TRUE;
+	case '#':
+		fprintf(fRtf, "#");
+		return TRUE;
+	case '$':
+		fprintf(fRtf, "$");
+		return TRUE;
+	case '&':
+		fprintf(fRtf, "&");
+		return TRUE;
+	case '%':
+		fprintf(fRtf, "%%");
+		return TRUE;
+	case '_':
+		fprintf(fRtf, "_");
+		return TRUE;
 		
-		if (g_processing_eqnarray) /* eqnarray */
-		{
-			fprintf(fRtf,"}");   /* close italics */
-			if (g_show_equation_number  && !g_suppress_equation_number)
-			{
+	case '\\':		/* \\[1mm] or \\*[1mm] possible */
+
+		if ((cThis = getTexChar()) != '*')
+			ungetTexChar(cThis);
+
+		getBracketParam(option_string, 99);	
+
+		if (g_processing_eqnarray) {	/* eqnarray */
+			fprintf(fRtf, "}");	/* close italics */
+			if (g_show_equation_number && !g_suppress_equation_number) {
 				g_equation_number++;
-				fprintf(fRtf,"\\tab (%d)",g_equation_number);
+				fprintf(fRtf, "\\tab (%d)", g_equation_number);
 			}
-			
-			fprintf(fRtf,"\n\\par\\tab {\\i ");
-	 		g_suppress_equation_number = FALSE;
+			fprintf(fRtf, "\n\\par\\tab {\\i ");
+			g_suppress_equation_number = FALSE;
 			actCol = 1;
-		  	return TRUE;
+			return TRUE;
 		}
 		
-		if (g_processing_tabular) /* tabular or array environment */
-		{
-			if (g_processing_equation) 	/* array */
-			{
-				fprintf(fRtf,"\n\\par\\tab ");			
+		if (g_processing_tabular) {	/* tabular or array environment */
+			if (g_processing_equation) {	/* array */
+				fprintf(fRtf, "\n\\par\\tab ");
 				return TRUE;
 			}
-				
-			for (; actCol< colCount; actCol++)
-			{
-				fprintf (fRtf, "\\cell\\pard\\intbl");
-                     	}
+			for (; actCol < colCount; actCol++) {
+				fprintf(fRtf, "\\cell\\pard\\intbl");
+			}
 			actCol = 1;
-			fprintf(fRtf,"\\cell\\pard\\intbl\\row\n\\pard\\intbl\\q%c ", colFmt[1]);
-		  	return TRUE;
+			fprintf(fRtf, "\\cell\\pard\\intbl\\row\n\\pard\\intbl\\q%c ", colFmt[1]);
+			return TRUE;
 		}
-			
 
-/* simple end of line ... */
-		fprintf(fRtf,"\\par ");
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
+		}
+
+		/* simple end of line ... */
+		fprintf(fRtf, "\\par ");
 		bNewPar = TRUE;
 		tabcounter = 0;
-		if (tabbing_on)
-		{
-			 if(fgetpos(fRtf,&pos_begin_kill) != 0)
-			    diagnostics(ERROR,
-					"Failed fgetpos;"
-					" main.c (TranslateCommand): errno %d", errno);
+		if (tabbing_on && (fgetpos(fRtf, &pos_begin_kill) != 0))
+				diagnostics(ERROR, "File access problem in tabbing environment");
+		return TRUE;
+
+	case ' ':
+		fprintf(fRtf, " ");	/* ordinary interword space */
+		skipSpaces();
+		return TRUE;
+
+/* \= \> \< \+ \- \' \` all have different meanings in a tabbing environment */
+
+	case '-':
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
+		} else
+			fprintf(fRtf, "\\-");
+		return TRUE;
+
+	case '+':
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
+		}
+		return TRUE;
+		
+	case '<':
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
 		}
 		return TRUE;
 
-	case ' ': fprintf(fRtf," ");	/* ordinary interword space */
-		  while (cThis == ' ') /* all spaces after commands are ignored */
-		  {
-		     if (fread(&cThis,1,1,fTex) < 1)
-			numerror(ERR_EOF_INPUT);
-		  }
+	case '>':
+		if (tabbing_on){
+			ConvertString("}");
+			CmdTabjump();
+			ConvertString("{");
+		}
+		return TRUE;
+		
+	case '`':
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
+		} else
+			CmdLApostrophChar(0);
+		return TRUE;
+		
+	case '\'':
+		if (tabbing_on){
+			ConvertString("}");
+			ConvertString("{");
+			return TRUE;
+		} else
+			CmdRApostrophChar(0);	/* char ' =?= \' */
+		return TRUE;
 
-		  rewind_one();
-		  return TRUE;
-		  /*@notreached@*/
-		  break;
-	case '-': /* hyphen */
-		  /* caution: this character has another effect in the tabbing-environment */
-		  if (!tabbing_on)
-		     fprintf(fRtf,"\\-");
-		  return TRUE;
-		  /*@notreached@*/
-		  break;
-	case '+': /* see tabbing-environment */
-		  /* no harm for RTF-output */
-		  break;
-	case '<': /* see tabbing-environment */
-		  /* no harm for RTF-output */
-		  break;
-	case '~': CmdTildeChar(0);
-		  return TRUE;
-	case '^': CmdHatChar(0);
-		  return TRUE;
-	case '.': CmdDotChar(0);
-		  return TRUE;
-	case '\"':CmdUmlauteChar(0);
-		  return TRUE;
-	case '`': if (!tabbing_on)
-		    CmdLApostrophChar(0);
-		  return TRUE;
-	case '=': if (tabbing_on) CmdTabset(); else CmdMacronChar(0);
-		  return TRUE;
-	case '\'':if (!tabbing_on)
-		     CmdRApostrophChar(0);  /* char ' =?= \' */
-		  return TRUE;
-	case '(': CmdFormula(FORM_RND_OPEN);
-		  return TRUE;
-	case '[': CmdFormula2(FORM_DOLLAR);
-		  return TRUE;
-	case ')': CmdFormula(FORM_RND_CLOSE);
-		  return TRUE;
-	case ']': CmdFormula2(FORM_DOLLAR);
-		  return TRUE;
-	case '/': CmdIgnore(0);
-		  return TRUE;
-	case ',': CmdIgnore(0);  /* \, produces a small space */
-		  return TRUE;
-	case '@': CmdIgnore(0);  /* \@ produces an "end of sentence" space */
-		  return TRUE;
-	case '>': CmdTabjump();
-		  return TRUE;
-	case '3': fprintf(fRtf, "{\\ansi\\'df}");   /* german symbol 'á' */
-		  return TRUE;
-      }
-    }
-    /*LEG180498 Commands consist of letters and can have an optional * at the end*/
-    if (!isalpha((unsigned char) cThis) && (cThis != '*'))
-    {
-      bool found_nl = FALSE;
-      /* all spaces after commands are ignored, a single \n may occur */
-//      while (cThis == ' ' || cThis == '\t' || cThis == '\n' && !found_nl)
-      while (cThis == ' ' || cThis == '\n' && !found_nl)
-	{
-	if(cThis == '\n')
-	{
-           found_nl = TRUE;
-        }
-	if (fread(&cThis,1,1,fTex) < 1)
-	    break;
+	case '=':
+		if (tabbing_on){
+			ConvertString("}");
+			CmdTabset();
+			ConvertString("{");
+		}
+		else
+			CmdMacronChar(0);
+		return TRUE;
+		
+	case '~':
+		CmdTildeChar(0);
+		return TRUE;
+	case '^':
+		CmdHatChar(0);
+		return TRUE;
+	case '.':
+		CmdDotChar(0);
+		return TRUE;
+	case '\"':
+		CmdUmlauteChar(0);
+		return TRUE;
+	case '(':
+		CmdFormula(FORM_RND_OPEN);
+		return TRUE;
+	case '[':
+		CmdFormula2(FORM_DOLLAR);
+		return TRUE;
+	case ')':
+		CmdFormula(FORM_RND_CLOSE);
+		return TRUE;
+	case ']':
+		CmdFormula2(FORM_DOLLAR);
+		return TRUE;
+	case '/':
+		CmdIgnore(0);
+		return TRUE;
+	case ',':
+		CmdIgnore(0);	/* \, produces a small space */
+		return TRUE;
+	case '@':
+		CmdIgnore(0);	/* \@ produces an "end of sentence" space */
+		return TRUE;
+	case '3':
+		fprintf(fRtf, "{\\ansi\\'df}");	/* german symbol 'á' */
+		return TRUE;
 	}
 
-      rewind_one(); /* position of next character after command
-				   except space */
-      break;
-    }
-    cCommand[i] = cThis;
-  }
 
-  cCommand[i] = '\0';  /* mark end of string with zero */
+	/*
+	 * LEG180498 Commands consist of letters and can have an optional *
+	 * at the end
+	 */
+	for (i = 0; i < MAXCOMMANDLEN; i++) {
+		if (!isalpha(cThis) && (cThis != '*')) {
+			bool            found_nl = FALSE;
+			/*
+			 * all spaces after commands are ignored, a single \n
+			 * may occur
+			 */
+			while (cThis == ' ' || (cThis == '\n' && !found_nl)) {
+				if (cThis == '\n')
+					found_nl = TRUE;
+				cThis = getTexChar();
+			}
 
-  if ( i == 0)
-    return FALSE;
-  if (CallCommandFunc(cCommand)) /*call handling function for command*/
-    return TRUE;
-  if (TryDirectConvert(cCommand, fRtf))
-    return TRUE;
-  if (TryVariableIgnore(cCommand, fTex))
-    return TRUE;
-  fprintf(stderr,"\n%s: WARNING: command: %s not found - ignored\n",progname,cCommand);
-  return FALSE;
+			ungetTexChar(cThis);	/* position of next character
+						 * after command and optional
+						 * space */
+			break;
+		} else
+			cCommand[i] = cThis;
+
+		cThis = getTexChar();
+	}
+
+	cCommand[i] = '\0';	/* mark end of string with zero */
+	diagnostics(5, "TranslateCommand() <%s>", cCommand);
+
+	if (i == 0)
+		return FALSE;
+	if (CallCommandFunc(cCommand))	/* call handling function for command */
+		return TRUE;
+	if (TryDirectConvert(cCommand, fRtf))
+		return TRUE;
+	if (TryVariableIgnore(cCommand, fTex))
+		return TRUE;
+	fprintf(stderr, "\n%s: WARNING: command: %s not found - ignored\n", progname, cCommand);
+	return FALSE;
 }
-/****************************************************************************/
-
-/****************************************************************************/
-void IgnoreTo(char cEnd)
-/****************************************************************************
-purpose: ignores anything from inputfile till character cEnd
-params:  charcter to stop ignoring
-globals: changes inputfile fTex
-         linenumber;
- ****************************************************************************/
-{
-  char c;
-  while (fread(&c, 1,1,fTex) >= 1)
-  {
-    if (c == cEnd)
-    {
-      if (cEnd == '\n')
-	rewind_one();   /*linenumber is set in convert-routine */
-	/*linenumber++;*/
-      return;
-    }
-    else
-    {
-     if (c == '\n')
-       linenumber++;
-    }
-  }
-  numerror(ERR_EOF_INPUT);
-}
-/****************************************************************************/
-
-
-/****************************************************************************/
-size_t fTexRead (void *ptr, size_t size, size_t nitems, FILE *stream)
-/****************************************************************************
-purpose: performs fread and increments linenumber if '\n' is read...
-         errors are checked after calling fTexRead!
-params:  same as needed  for fread(3)
- ****************************************************************************/
-{
-   size_t val;
-
-   val = fread (ptr, size, nitems, stream);
-
-   if ( *((char*)ptr) == '\n' )
-      linenumber++;
-
-   return val;
-}
-
 
 
 /****************************************************************************
 purpose: get number of actual line (do not use global linenumber, because
          it does not work correctly!)
-         this function is not very efficient, but it will be used only 
+         this function is not very efficient, but it will be used only
 	 once when
          printing an error-message + program abort
 params:  none
  ****************************************************************************/
-long 
-getLinenumber (void)
+long
+getLinenumber(void)
 {
-  char buffer[1024];
-  fpos_t oldpos;
-  fpos_t pos;
-  int linenum = 0;
+	char            buffer[1024];
+	fpos_t          oldpos;
+	fpos_t          pos;
+	int             linenum = 0;
 
-  if (fTex == stdin) return 0;
+	if (fTex == stdin)
+		return 0;
 
-  if ( fgetpos (fTex, &oldpos) != 0)
-     error ("fgetpos: can\'t get linenumber");
-  if ( fseek (fTex, 0L, SEEK_SET) == -1)
-     error ("fseek: can\'t get linenumber");
+	if (fgetpos(fTex, &oldpos) != 0)
+		error("fgetpos: can\'t get linenumber");
+	if (fseek(fTex, 0L, SEEK_SET) == -1)
+		error("fseek: can\'t get linenumber");
 
-  do
-  {
-    if (fgets(buffer, 1023, fTex) == NULL)
-       error ("fgets: can\'t get linenumber");
-    linenum++;
-    if ( fgetpos (fTex, &pos) != 0)
-       error ("fgetpos: can\'t get linenumber");
-  }
-  while (pos < oldpos);
+	do {
+		if (fgets(buffer, 1023, fTex) == NULL)
+			error("fgets: can\'t get linenumber");
+		linenum++;
+		if (fgetpos(fTex, &pos) != 0)
+			error("fgetpos: can\'t get linenumber");
+	}
+	while (pos < oldpos);
 
-  if ( fsetpos (fTex, &oldpos) != 0)
-     error ("fgetpos: can\'t get linenumber");
+	if (fsetpos(fTex, &oldpos) != 0)
+		error("fgetpos: can\'t get linenumber");
 
-  return linenum;
+	return linenum;
 }
 
-char *EmptyString(void)
+char           *
+EmptyString(void)
 {
-    char *s = malloc(1);
-    if (s == NULL)
-    {
-	error(" malloc error -> out of memory!\n");
-    }
-    *s = '\0';
-    return s;
+	char           *s = malloc(1);
+	if (s == NULL) {
+		error(" malloc error -> out of memory!\n");
+	}
+	*s = '\0';
+	return s;
 }

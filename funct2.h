@@ -55,80 +55,84 @@
 #define TABULAR_2 3
 
 /*--------------------------------function prototypes----------------------*/
-void CmdTabset(void);
+void            CmdTabset(void);
 
-void CmdTabjump(void);
+void            CmdTabjump(void);
 
-void CmdTabkill(int code);
+void            CmdTabkill(int code);
 
-void Tabbing(int code);
+void            CmdTabbing(int code);
 
-void CmdIgnoreFigure(int code);
+void            CmdIgnoreFigure(int code);
 
-void Cmd_OptParam_Without_braces(int code);
+void            CmdFigure(int code);
 
-void Ignore_Environment(char *searchstring); /*LEG210698*** lclint -
-					       consider passing this to ignore.c */
+void            Cmd_OptParam_Without_braces(int code);
 
-void CmdIgnoreEnvironment(int code);
+void            Ignore_Environment(char *searchstring);	/* LEG210698*** lclint -
+							 * consider passing this
+							 * to ignore.c */
 
-void CmdColumn(int code);
+void            CmdIgnoreEnvironment(int code);
 
-char *GetSubString(char *s, char terminatesymbol);
+void            CmdColumn(int code);
 
-void CmdNewPage(int code);
+void            CmdNewPage(int code);
 
- 
-void GetInputParam(char *, int);
 
-void ConvertTabbing(void);
+void            GetInputParam(char *, int);
 
-void CmdBottom(int code);
+void            ConvertTabbing(void);
 
-void CmdAbstract(int code);
+void            CmdBottom(int code);
 
-void CmdTitlepage(int code);
+void            CmdAbstract(int code);
 
-void CmdHyphenation(int code);
+void            CmdTitlepage(int code);
 
-void CmdFormula2(int code);
+void            CmdHyphenation(int code);
 
-void CmdAddress(int code);
+void            CmdFormula2(int code);
 
-void CmdSignature(int code);
+void            CmdAddress(int code);
 
-void CmdOpening(int code);
+void            CmdSignature(int code);
 
-void CmdClosing(int code);
+void            CmdOpening(int code);
 
-void CmdPs(int code);
+void            CmdClosing(int code);
 
-void CmdTabular(int code);
+void            CmdPs(int code);
 
-void CmdLetter(int code);
+void            CmdTabular(int code);
 
-void CmdFigure(int code);
+void            CmdLetter(int code);
 
-void CmdTable(int code);
+void            CmdFigure(int code);
 
-void CmdMultiCol(int code);
+void            CmdTable(int code);
 
-void CmdNoCite(int code);
+void            CmdMultiCol(int code);
 
-void CmdCite(int code);
+void            CmdNoCite(int code);
 
-void CmdFraction(int code);
+void            CmdCite(int code);
 
-void WriteRefList (void)
-    /*@globals input, bCite @*/
+void            CmdFraction(int code);
+void            CmdRoot(int code);
+void            CmdIntegral(int code);
+
+void 
+WriteRefList(void)
+/* @globals input, bCite @ */
 ;
 
-void CmdAnnotation(int code);
+void            CmdAnnotation(int code);
 
-void CmdColsep(/*@unused@*/ int code);
-void CmdLink(/*@unused@*/ int code);
+void            CmdColsep( /* @unused@ */ int code);
+void            CmdLink( /* @unused@ */ int code);
 
-void CmdConvertBiblio(/*@unused@*/ int code);
+void            CmdConvertBiblio( /* @unused@ */ int code);
 
-void CmdGraphics(int code);
-void GetRequiredParam(char *string, int size);
+void            CmdGraphics(int code);
+void            GetRequiredParam(char *string, int size);

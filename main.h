@@ -47,7 +47,7 @@
 #define SEEK_CUR 1
 #endif
 #ifdef HAS_NO_FPOS
-typedef long fpos_t;
+typedef long    fpos_t;
 #define fgetpos(file, posptr) (*(posptr) = ftell(file))
 #define fsetpos(file, posptr) fseek(file, *(posptr), SEEK_SET)
 #endif
@@ -56,27 +56,30 @@ typedef long fpos_t;
 #define getopt my_getopt
 #endif
 
-typedef int bool;
+#ifdef SEMICOLONSEP
+#define FORMULASEP ';'
+#else
+#define FORMULASEP ','
+#endif
 
-void Convert();  /* main convert routine */
-void IgnoreTo(char cEnd);
-/*@exits@*/     void numerror(int num);
-/*@exits@*/     void error(char * text);
-/*@dependent@*/ FILE *open_cfg(const char *);
-size_t fTexRead (/*@out@*/void *ptr, size_t size, size_t nitems, FILE *stream);
-long getLinenumber(void);
-/*@only@*/	char *EmptyString(void);
-void diagnostics(int level, char *format, ...);
+typedef int     bool;
+
+void            Convert();	/* main convert routine */
+void            IgnoreTo(char cEnd);
+ /* @exits@ */ void numerror(int num);
+ /* @exits@ */ void error(char *text);
+ /* @dependent@ */ FILE *open_cfg(const char *);
+size_t          fTexRead( /* @out@ */ void *ptr, size_t size, size_t nitems, FILE * stream);
+long            getLinenumber(void);
+ /* @only@ */ char *EmptyString(void);
+void            diagnostics(int level, char *format,...);
 /* level values */
-
-/* write temp data */
-void WriteTemp(FILE *f);
 
 #define ERROR 0
 #define WARNING 1
-#define MAX_VERBOSITY 4
+#define MAX_VERBOSITY 5
 
-bool rtf_restrict(int major, int minor);
+bool            rtf_restrict(int major, int minor);
 
 #define MAXCOMMANDLEN 100
 #define MAXENVIRONS 100
@@ -95,7 +98,9 @@ bool rtf_restrict(int major, int minor);
 #define CENTERED 'c'
 #define JUSTIFIED 'j'
 
-enum TexCharSetKind { SEVEN_BIT, ISO_8859_1 };
+enum TexCharSetKind {
+	SEVEN_BIT, ISO_8859_1
+};
 
 #define PATHMAX 255
 
@@ -118,61 +123,64 @@ enum TexCharSetKind { SEVEN_BIT, ISO_8859_1 };
 #define HEADER43 "{\\*\\pnseclvl4\\pnlcltr\\pnstart1\\pnindent720\\pnhang{\\pntxta .}}"
 
 /********************************* global variables *************************/
-extern long linenumber;                      /* lines in the LaTex-document */
-extern /*@null@*//*@observer@*/ char *currfile; /* current file name */
-extern /*@dependent@*/ FILE *fTex;           /* file pointer to Latex file */
-extern /*@dependent@*/ FILE *fRtf;           /* file pointer to RTF file */
-extern /*@null@*//*@observer@*/ char *input;
-extern /*@null@*//*@only@*/     char *AuxName; /*LEG220698*** lclint error?*/
-extern /*@null@*//*@only@*/     char *BblName;
-extern /*@observer@*/ char *progname;        /* name of the executable file */
-extern /*@only@*/     char *latexname;       /* name of LaTex-File */
-extern char alignment;                       /* default for justified: */
-extern fpos_t pos_begin_kill;
-extern bool bCite;                           /* to produce citations */
-extern bool GermanMode;
-extern size_t DefFont;
-extern /*@only@*//*@null@*/ char* colFmt;
-/*@null@*/ 
-extern char *hyperref;
-extern bool pagenumbering;
-extern int headings;
-extern bool pagestyledefined;
-extern bool  twoside;
+extern long     linenumber;	/* lines in the LaTex-document */
+extern				/* @null@ */
+ /* @observer@ */ char *currfile;	/* current file name */
+extern /* @dependent@ */ FILE *fTex;	/* file pointer to Latex file */
+extern /* @dependent@ */ FILE *fRtf;	/* file pointer to RTF file */
+extern				/* @null@ */
+ /* @observer@ */ char *input;
+extern				/* @null@ */
+ /* @only@ */ char *AuxName;	/* LEG220698*** lclint error? */
+extern				/* @null@ */
+ /* @only@ */ char *BblName;
+extern /* @observer@ */ char *progname;	/* name of the executable file */
+extern /* @only@ */ char *latexname;	/* name of LaTex-File */
+extern char     alignment;	/* default for justified: */
+extern fpos_t   pos_begin_kill;
+extern bool     bCite;		/* to produce citations */
+extern bool     GermanMode;
+extern size_t   DefFont;
+extern				/* @only@ */
+ /* @null@ */ char *colFmt;
+/* @null@ */
+extern char    *hyperref;
+extern bool     pagenumbering;
+extern int      headings;
+extern bool     pagestyledefined;
+extern bool     twoside;
 
 /* Global flags of Convert routine */
-extern int RecursLevel;
-extern int BracketLevel;
-extern bool mbox;
-extern bool bNewPar;
-extern int indent;
-extern bool bInDocument;
-extern int tabcounter;
-extern bool tabbing_on;
-extern bool g_processing_tabular;
-extern bool bBlankLine;
-extern int colCount;
-extern int actCol;
-extern int tabcounter;
-extern bool twocolumn;
-extern bool article;
-extern bool titlepage;
-extern bool g_processing_equation;
-extern long linenumber;
-extern bool tabbing_on_itself; /*LEG220698*** lclint - really used? */
-extern bool tabbing_return; /*LEG220698*** lclint - really used? */
-extern bool g_processing_figure;   /*SAP Change to produce count figures and tables separately*/
-extern bool g_processing_include;  /*SAP Change to process include files separately*/
-extern bool g_processing_eqnarray;
-extern int g_equation_number;
-extern bool g_show_equation_number;
-extern int g_enumerate_depth;
-extern bool g_suppress_equation_number;
-extern bool g_aux_file_missing;
+extern int      RecursLevel;
+extern int      BracketLevel;
+extern bool     mbox;
+extern bool     bNewPar;
+extern int      indent;
+extern bool     bInDocument;
+extern int      tabcounter;
+extern bool     tabbing_on;
+extern bool     g_processing_tabular;
+extern bool     bBlankLine;
+extern int      colCount;
+extern int      actCol;
+extern int      tabcounter;
+extern bool     twocolumn;
+extern bool     article;
+extern bool     titlepage;
+extern bool     g_processing_equation;
+extern long     linenumber;
+extern bool     tabbing_on_itself;	/* LEG220698*** lclint - really used? */
+extern bool     tabbing_return;	/* LEG220698*** lclint - really used? */
+extern bool     g_processing_figure;
+extern bool     g_processing_include;	
+extern bool     g_processing_eqnarray;
+extern int      g_equation_number;
+extern bool     g_show_equation_number;
+extern int      g_enumerate_depth;
+extern bool     g_suppress_equation_number;
+extern bool     g_aux_file_missing;
 
 /****************************************************************************/
 
 
-#endif     /* __MAIN_H */
-
-
+#endif				/* __MAIN_H */

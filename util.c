@@ -15,114 +15,108 @@
 #include "main.h"
 #include "util.h"
 
-/*@null@*/ /*@owned@*/ static char *buffer;
-                       static size_t   bufsize = 0;
+ /* @null@ *//* @owned@ */ static char *buffer;
+static size_t   bufsize = 0;
 
 /*
  * This function assumes there are no ´\0´ characters in the input.
  * if there are any, they are ignored.
  */
-/*@dependent@*/ /*@null@*/
-char *ReadUptoMatch (FILE *infile, /*@observer@*/ const char *scanchars)
+/* @dependent@ *//* @null@ */
+char           *
+ReadUptoMatch(FILE * infile, /* @observer@ */ const char *scanchars)
 {
-    size_t bufindex = 0;
-    int c;
+	size_t          bufindex = 0;
+	int             c;
 
-    if (feof (infile) != 0)
-    {
-	return NULL;
-    }
-
-    if(buffer == NULL)
-    {
-	if((buffer = malloc(BUFFER_INCREMENT)) == NULL)
-	{
-	    Fatal("Cannot allocate memory for input buffer\n");
+	if (feof(infile) != 0) {
+		return NULL;
 	}
-	bufsize = BUFFER_INCREMENT;
-    }
-
-    while ((c = getc (infile)) != EOF && strchr (scanchars, c) == NULL)
-    {
-	if (c == (int) '\0')
-	{
-	    continue;
+	if (buffer == NULL) {
+		if ((buffer = malloc(BUFFER_INCREMENT)) == NULL) {
+			Fatal("Cannot allocate memory for input buffer\n");
+		}
+		bufsize = BUFFER_INCREMENT;
 	}
-	if (c == (int) '\n')
-	{
-	    linenumber++;
+	while ((c = getc(infile)) != EOF && strchr(scanchars, c) == NULL) {
+		if (c == (int) '\0') {
+			continue;
+		}
+		if (c == (int) '\n') {
+			linenumber++;
+		}
+		buffer[bufindex++] = (char) c;
+		if (bufindex >= bufsize) {
+			if ((buffer = realloc(buffer, bufsize += BUFFER_INCREMENT)) == NULL) {
+				Fatal("Cannot allocate memory for input buffer\n");
+			}
+		}
 	}
-	buffer[bufindex++] = (char) c;
-	if(bufindex >= bufsize)
-	{
-	    if((buffer = realloc(buffer, bufsize += BUFFER_INCREMENT)) == NULL)
-	    {
-		Fatal("Cannot allocate memory for input buffer\n");
-	    }
+	buffer[bufindex] = '\0';
+	if (c != EOF) {
+		ungetc(c, infile);	/* LEG210698*** lclint, GNU libc
+					 * doesn't say what's the return
+					 * value */
 	}
-    }
-    buffer[bufindex] = '\0';
-    if (c != EOF)
-    {
-	ungetc(c, infile); /*LEG210698*** lclint, GNU libc doesn't say
-			     what's the return value */
-    }
-    return buffer;
+	return buffer;
 }
 
-char *StrSave(/*@observer@*/ const char *str)
+#ifdef HAS_NO_STRDUP
+char           *
+strdup(const char *str)
 {
-    char *s;
+	char           *s;
 
-    if((s = malloc(strlen(str) + 1)) == NULL)
-    {
-	Fatal("Cannot allocate memory for string\n");
-    }
-    strcpy (s, str);
-    return s;
+	if ((s = malloc(strlen(str) + 1)) == NULL) {
+		Fatal("Cannot allocate memory for string\n");
+	}
+	strcpy(s, str);
+	return s;
+}
+#endif
+
+/* @exits@ */
+void 
+ParseError(const char *fmt,...)
+{
+	va_list         ap;
+
+	fprintf(stderr, "%s: %s %4ld: ", progname, currfile, linenumber);
+	va_start(ap, fmt);
+	(void) vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
+	exit(EXIT_FAILURE);
 }
 
-/*@exits@*/
-void ParseError (const char *fmt, ...)
+void 
+Fatal(const char *fmt,...)
 {
-    va_list ap;
+	va_list         ap;
 
-    fprintf(stderr,"%s: %s %4ld: ", progname, currfile, linenumber);
-    va_start(ap, fmt);
-    (void)vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fprintf(stderr,"\n");
-    exit (EXIT_FAILURE);
-}
-
-void Fatal(const char *fmt, ...)
-{
-    va_list ap;
-
-    fprintf(stderr,"%s: Fatal error: ", progname);
-    va_start(ap, fmt);
-    (void)vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    fprintf(stderr,"\n");
-    exit(EXIT_FAILURE);
+	fprintf(stderr, "%s: Fatal error: ", progname);
+	va_start(ap, fmt);
+	(void) vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "\n");
+	exit(EXIT_FAILURE);
 }
 
 
 /* convert integer to roman number --- only works up correctly up to 39 */
 
-void roman_item(int n, char * s)
+void 
+roman_item(int n, char *s)
 {
-	int i=0;
-	
-	while (n>=10)
-	{
+	int             i = 0;
+
+	while (n >= 10) {
 		n -= 10;
 		s[i] = 'x';
 		i++;
 	}
-	
-	if (n==9)
-	{
+
+	if (n == 9) {
 		s[i] = 'i';
 		i++;
 		s[i] = 'x';
@@ -130,16 +124,12 @@ void roman_item(int n, char * s)
 		s[i] = '\0';
 		return;
 	}
-
-	if (n>=5)
-	{
+	if (n >= 5) {
 		n -= 5;
 		s[i] = 'v';
 		i++;
 	}
-
-	if (n==4)
-	{
+	if (n == 4) {
 		s[i] = 'i';
 		i++;
 		s[i] = 'v';
@@ -147,13 +137,11 @@ void roman_item(int n, char * s)
 		s[i] = '\0';
 		return;
 	}
-
-	while (n>=1)
-	{
+	while (n >= 1) {
 		n -= 1;
 		s[i] = 'i';
 		i++;
 	}
-	
+
 	s[i] = '\0';
 }

@@ -9,6 +9,7 @@
  * Initial revision
  *
  */
-int Push(int lev, int brack);
-int Pop(/*@out@*/int *lev, /*@out@*/int *brack);
-
+int             Push(int lev, int brack);
+int             Pop( /* @out@ */ int *lev, /* @out@ */ int *brack);
+void            CleanStack(void);
+int             getStackRecursionLevel(void);

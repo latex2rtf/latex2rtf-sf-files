@@ -10,4 +10,4 @@
  * Initial revision
  *
  */
-bool TryVariableIgnore(char *command, FILE *fRtf);
+bool            TryVariableIgnore(char *command, FILE * fRtf);

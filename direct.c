@@ -46,7 +46,7 @@
 
 /*************************** prototypes **************************************/
 
-static bool WriteFontName(const char **buffpoint, FILE *fRtf);
+static bool     WriteFontName(const char **buffpoint, FILE * fRtf);
 
 /******************************* defines *************************************/
 #define MAXFONTLEN 100
@@ -54,7 +54,8 @@ static bool WriteFontName(const char **buffpoint, FILE *fRtf);
 
 
 /******************************************************************************/
-bool WriteFontName(const char **buffpoint, FILE *fRtf)
+bool 
+WriteFontName(const char **buffpoint, FILE * fRtf)
 /******************************************************************************
   purpose: reads from the font-array to write correct font-number into
            Rtf-File
@@ -63,40 +64,34 @@ parameter: buffpoint: font and number
 globals:   progname
  ******************************************************************************/
 {
-  char buffer[MAXFONTLEN+1];
-  int i;
-  size_t fnumber;
+	char            buffer[MAXFONTLEN + 1];
+	int             i;
+	size_t          fnumber;
 
-  if (**buffpoint == '*')
-  {
-    fprintf(fRtf,"*");
-    return TRUE;
-  }
-  i = 0;
-  while(**buffpoint != '*')
-  {
-    if ((i >= MAXFONTLEN) || (**buffpoint == '\0'))
-    {
-      fprintf(stderr, "\n%s: ERROR: Invalid fontname in direct command",
-	      progname);
-      exit(EXIT_FAILURE);
-    }
-    buffer[i] = **buffpoint;
-    i++;
-    (*buffpoint)++;
-  }
-  buffer[i] = '\0';
-  if ((fnumber = GetFontNumber(buffer)) < 0)
-  {
-    fprintf(stderr, "\n%s: ERROR: Unknown fontname in direct command",progname);
-    fprintf(stderr, "\nprogram aborted\n");
-    exit(EXIT_FAILURE);
-  }
-  else
-  {
-    fprintf(fRtf,"%u",(unsigned int)fnumber);
-    return TRUE;
-  }
+	if (**buffpoint == '*') {
+		fprintf(fRtf, "*");
+		return TRUE;
+	}
+	i = 0;
+	while (**buffpoint != '*') {
+		if ((i >= MAXFONTLEN) || (**buffpoint == '\0')) {
+			fprintf(stderr, "\n%s: ERROR: Invalid fontname in direct command",
+				progname);
+			exit(EXIT_FAILURE);
+		}
+		buffer[i] = **buffpoint;
+		i++;
+		(*buffpoint)++;
+	}
+	buffer[i] = '\0';
+	if ((fnumber = GetFontNumber(buffer)) < 0) {
+		fprintf(stderr, "\n%s: ERROR: Unknown fontname in direct command", progname);
+		fprintf(stderr, "\nprogram aborted\n");
+		exit(EXIT_FAILURE);
+	} else {
+		fprintf(fRtf, "%u", (unsigned int) fnumber);
+		return TRUE;
+	}
 }
 
 
@@ -108,56 +103,44 @@ parameter: command: LaTex-command and Rtf-command
 globals:   progname
  ******************************************************************************/
 bool
-TryDirectConvert(char *command, FILE *fRtf)
+TryDirectConvert(char *command, FILE * fRtf)
 {
-  const char *buffpoint;
-  const char *RtfCommand;
-  char TexCommand[128];
+	const char     *buffpoint;
+	const char     *RtfCommand;
+	char            TexCommand[128];
 
-  if (strlen(command) >= 100)
-    {
-      fprintf(stderr,"\n%s: WARNING: Command %s is too long in LaTeX-File.\n",progname,command);
-      return FALSE;    /* command too long */
-    }
-  
-  TexCommand[0] = '\\';
-  TexCommand[1] = '\0';
-  strcat (TexCommand, command);
-  
-  RtfCommand = SearchRtfCmd (TexCommand, DIRECT_A);
-  if (RtfCommand == NULL)
-    return FALSE;
-  
-  buffpoint = RtfCommand;
-  diagnostics(4, "Direct converting `%s' command to `%s'.",
-	      TexCommand, RtfCommand);
-  while (buffpoint[0] != '\0')
-    {
-      if (buffpoint[0] == '*')
-	{
-	  ++buffpoint;
-	  (void)WriteFontName(&buffpoint, fRtf);
+	if (strlen(command) >= 100) {
+		fprintf(stderr, "\n%s: WARNING: Command %s is too long in LaTeX-File.\n", progname, command);
+		return FALSE;	/* command too long */
+	}
+	TexCommand[0] = '\\';
+	TexCommand[1] = '\0';
+	strcat(TexCommand, command);
 
-	  /* From here on it is not necesarry
-	     if (WriteFontName(&buffpoint, fRtf))
-	     {
-	     fprintf(stderr,
-	     "\n%s: WARNING: error in direct command file"
-	     " - invalid font name , \n",
-	     progname);
-	     return FALSE;
-	     }
-	     */
-	}
-      else
-	{
-	  fprintf(fRtf,"%c",*buffpoint);
-	}
-      
-      ++buffpoint;
-      
-    }  /* end while */
-  return TRUE;
+	RtfCommand = SearchRtfCmd(TexCommand, DIRECT_A);
+	if (RtfCommand == NULL)
+		return FALSE;
+
+	buffpoint = RtfCommand;
+	diagnostics(4, "Directly converting %s to %s", TexCommand, RtfCommand);
+	while (buffpoint[0] != '\0') {
+		if (buffpoint[0] == '*') {
+			++buffpoint;
+			(void) WriteFontName(&buffpoint, fRtf);
+
+			/*
+			 * From here on it is not necesarry if
+			 * (WriteFontName(&buffpoint, fRtf)) {
+			 * fprintf(stderr, "\n%s: WARNING: error in direct
+			 * command file" " - invalid font name , \n",
+			 * progname); return FALSE; }
+			 */
+		} else {
+			fprintf(fRtf, "%c", *buffpoint);
+		}
+
+		++buffpoint;
+
+	}			/* end while */
+	return TRUE;
 }
-
-

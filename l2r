@@ -1,7 +1,0 @@
-# This is a unix shellscript to start latex2rtf
-# with the required environment variable RTFPATH correctly set
-# It assumes that the latex2rtf executable is in latex2rtf-1.9e
-#  and that the .cfg-files are in latex2rtf-1.9e/cfg
-#  but you can use any other directories instead.
-export RTFPATH=$HOME/latex2rtf-1.9e/cfg
-$HOME/latex2rtf-1.9e/latex2rtf $3 $4 $5 $6 $7 $8 <$1 >$2

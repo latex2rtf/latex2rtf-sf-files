@@ -53,12 +53,13 @@
 /*****************************************************************************/
 
 /***********************      prototypes   ***********************************/
-static void IgnoreVar(FILE *fRtf);
-static void IgnoreCmd(FILE *fTex);
+static void     IgnoreVar(FILE * fRtf);
+static void     IgnoreCmd(FILE * fTex);
 /*****************************************************************************/
 
 
-bool TryVariableIgnore(char *command, FILE *fTex)
+bool 
+TryVariableIgnore(char *command, FILE * fTex)
 /****************************************************************************
 purpose : ignores variable-formats shown in file "ignore.cfg"
 params	:    fTex: open Tex-File
@@ -76,116 +77,74 @@ ENVCMD		proceses contents of unknown environment as if it were
 ENVIRONMENT     ignores contentents of that environment
  ****************************************************************************/
 {
-  const char *RtfCommand;
-  char TexCommand[128];
-  bool result = TRUE;
+	const char     *RtfCommand;
+	char            TexCommand[128];
+	bool            result = TRUE;
 
-  if (strlen(command) >= 100)
-  {
-      fprintf(stderr,"\n%s: WARNING: Command %s is too long in LaTeX-File.\n",progname,command)
-;
-      return FALSE;    /* command too long */
-  }
+	if (strlen(command) >= 100) {
+		fprintf(stderr, "\n%s: WARNING: Command %s is too long in LaTeX-File.\n", progname, command);
+		return FALSE;	/* command too long */
+	}
+	TexCommand[0] = '\\';
+	TexCommand[1] = '\0';
+	strcat(TexCommand, command);
 
-  TexCommand[0] = '\\';
-  TexCommand[1] = '\0';
-  strcat (TexCommand, command);
-
-  RtfCommand = SearchRtfCmd (TexCommand, IGNORE_A);
-  if (RtfCommand == NULL)
-    result = FALSE;
-  else if (strcmp(RtfCommand,"NUMBER")==0)
-    IgnoreVar(fTex);
-  else if (strcmp(RtfCommand,"MEASURE")==0)
-    IgnoreVar(fTex);
-  else if (strcmp(RtfCommand,"OTHER")==0)
-    IgnoreVar(fTex);
-  else if (strcmp(RtfCommand,"COMMAND")==0)
-    IgnoreCmd(fTex);
-  else if (strcmp(RtfCommand,"SINGLE")==0)
-      ;
-  else if (strcmp(RtfCommand,"PARAMETER")==0)
-    CmdIgnoreParameter(No_Opt_One_NormParam);
-  else if (strcmp(RtfCommand,"LINE")==0)
-    IgnoreTo('\n');
-  else if (strcmp(RtfCommand,"ENVIRONMENT")==0)
-    {
-      char *str;
-      str = malloc(strlen(command)+5); /* envelope: end{..} */
-      if (str == NULL)
-	error(" malloc error -> out of memory!\n");
-      strcpy(str, "end{");
-      strcat(str, command);
-      strcat(str, "}");
-      Ignore_Environment(str);
-      free(str);
-    }
-  else if (strcmp(RtfCommand,"ENVCMD")==0)
-    PushEnvironment(IGN_ENV_CMD);
-  else if (strcmp(RtfCommand,"PACKAGE")==0)
-      ;
-  else
-    result = FALSE;
-  /*LEG210698*** lclint ?  free(RtfCommand);*/
-  return(result);
+	RtfCommand = SearchRtfCmd(TexCommand, IGNORE_A);
+	if (RtfCommand == NULL)
+		result = FALSE;
+	else if (strcmp(RtfCommand, "NUMBER") == 0)
+		IgnoreVar(fTex);
+	else if (strcmp(RtfCommand, "MEASURE") == 0)
+		IgnoreVar(fTex);
+	else if (strcmp(RtfCommand, "OTHER") == 0)
+		IgnoreVar(fTex);
+	else if (strcmp(RtfCommand, "COMMAND") == 0)
+		IgnoreCmd(fTex);
+	else if (strcmp(RtfCommand, "SINGLE") == 0);
+	else if (strcmp(RtfCommand, "PARAMETER") == 0)
+		CmdIgnoreParameter(No_Opt_One_NormParam);
+/*	else if (strcmp(RtfCommand, "LINE") == 0) skipToEOL(); */
+	else if (strcmp(RtfCommand, "ENVIRONMENT") == 0) {
+		char           *str;
+		str = malloc(strlen(command) + 5);	/* envelope: end{..} */
+		if (str == NULL)
+			error(" malloc error -> out of memory!\n");
+		strcpy(str, "end{");
+		strcat(str, command);
+		strcat(str, "}");
+		Ignore_Environment(str);
+		free(str);
+	} else if (strcmp(RtfCommand, "ENVCMD") == 0)
+		PushEnvironment(IGN_ENV_CMD);
+	else if (strcmp(RtfCommand, "PACKAGE") == 0);
+	else
+		result = FALSE;
+	/* LEG210698*** lclint ?  free(RtfCommand); */
+	return (result);
 }
 
 
 /****************************************************************************
 purpose : ignores anything till a space or a newline
 params	: fTex: open Tex-File
-globals : linenumber
  ****************************************************************************/
-void IgnoreVar(FILE *fTex)
+void 
+IgnoreVar(FILE * fTex)
 {
-  char dummy;
-  if(fread(&dummy,1,1,fTex) != 1)
-    diagnostics(ERROR,
-		"fread; ignore.c (IgnoreVar): unexpected EOF in LaTeX-file or read error");
-  if (dummy == '\n')
-      linenumber++;
-  do
-  {
-    if(fread(&dummy,1,1,fTex) != 1)
-      diagnostics(ERROR,
-		  "fread; ignore.c (IgnoreVar): unexpected EOF in LaTeX-file or read error");
-    if (dummy == '\n')
-	linenumber++;
-  } while ((dummy != ' ') && (dummy != '\n'));
+	char            c;
+	while ((c = getTexChar()) && c != '\n' && c != ' ');
 }
 
 
 /****************************************************************************
-purpose : ignores anything till an alphanumeric character 
+purpose : ignores anything till an alphanumeric character
 params	: fTex: open Tex-File
-globals : linenumber
  ****************************************************************************/
-void IgnoreCmd(FILE *fTex)
+void 
+IgnoreCmd(FILE * fTex)
 {
-  char dummy;
-  if(fread(&dummy,1,1,fTex) != 1)
-    diagnostics(ERROR,
-		"fread; ignore.c (IgnoreCmd): unexpected EOF in LaTeX-file or read error");
-  if (dummy == '\n')
-    linenumber++;
-  do
-  {
-    if(fread(&dummy,1,1,fTex) != 1)
-      diagnostics(ERROR,
-		  "fread; ignore.c (IgnoreCmd): unexpected EOF in LaTeX-file or read error");
-    if (dummy == '\n')
-      linenumber++;
-  } while (dummy != '\\');
-  do
-    {
-      if(fread(&dummy,1,1,fTex) != 1)
-	diagnostics(ERROR,
-		    "fread; ignore.c (IgnoreCmd): unexpected EOF in LaTeX-file or read error");
-      if (dummy == '\n')
-	linenumber++;
-    }
-  while (!isalpha((unsigned char) dummy));
-  if (dummy == '\n')
-    linenumber--;
-  rewind_one();
+	char            c;
+	while ((c = getTexChar()) && c != '\\');
+	while ((c = getTexChar()) && !isalpha(c));
+	ungetTexChar(c);
 }
