@@ -1,17 +1,14 @@
 LaTeX2RTF 
 	version 1.5 by Ralf Schlatterbeck
 	version 1.8a by Georg Lehner
-	version 1.9c by Scott Prahl
+	version 1.9d by Scott Prahl
 	
 This is a Mac port of the 1.8a version of latex2rtf.
 I fixed many minor bugs, improved handling of tabular environments, 
 added code to significantly improve handling displayed equations,
-and the inclusion .pict files via \includegraphics.
+better handling of citations, and including .pict files.
 
-LaTeX2RTF is not great but it is better than it was .  
-I have also messed with direct.cfg so that it works better for me.
-Your mileage may vary, but I see no reason that the new direct.cfg
-will not work for pc and unix versions.
+LaTeX2RTF is not great but it is getting better.
  
 USING LaTeX2RTF
 
@@ -33,6 +30,6 @@ USING LaTeX2RTF
 
 This application and source code is available at
 
-http://omlc.ogi.edu/software/tex-convert/latex2rtf/latex2rtf.tar.gz
+http://sourceforge.net/projects/latex2rtf/
 
 Scott Prahl

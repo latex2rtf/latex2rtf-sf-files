@@ -1,5 +1,17 @@
 Changes for latex2rtf by Scott Prahl
 
+1.9d
+        Rewrote the \cite code.
+        No crashes when .aux missing.
+        Inserts '?' for unknown citations
+        Added cite.tex and cite.bib to for testing \cite commands
+        hyperref not tested since I don't use it.
+        A small hyperref test file would be nice
+        Revised treatment of \oe and \OE per Wilfried Hennings suggestions
+        Added support for MT Extra in direct.cfg and fonts.cfg so that
+        more math characters will be translated e.g., \ell (see oddchars.tex)
+        added and improved font changing commands e.g., \texttt, \it
+
 1.9c
 	Added support for \frac
 	Complete support for all characters in the symbol font now

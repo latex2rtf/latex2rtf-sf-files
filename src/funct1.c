@@ -97,7 +97,6 @@ static void CmdLabel1_4(int code, char *text);
 static void CmdLabelOld(int code, char *text);
 static void RtfHeader(int where, /*@null@*/ char *what);
 static void PlainPagestyle(void);
-static void ScanAux(char *token, char* reference, int code);
 void CmdPagestyle(/*@unused@*/ int code);
 void CmdHeader(int code);
 
@@ -1676,17 +1675,23 @@ parameter: code: includes the font-type
 
   switch(code)
   {
-    case F_ROMAN: num = GetTexFontNumber("Roman");
-		  break;
-    case F_SLANTED: num = GetTexFontNumber("Slanted");
-		  break;
-    case F_SANSSERIF: num = GetTexFontNumber("Sans Serif");
-		  break;
-    case F_TYPEWRITER: num = GetTexFontNumber("Typewriter");
-		  break;
+    case F_ROMAN_1:
+    case F_ROMAN:         num = GetTexFontNumber("Roman");
+		                  break;
+    case F_SLANTED_1:
+    case F_SLANTED:       num = GetTexFontNumber("Slanted");
+		                  break;
+    case F_SANSSERIF_1:
+    case F_SANSSERIF:     num = GetTexFontNumber("Sans Serif");
+		                  break;
+    case F_TYPEWRITER_1:
+    case F_TYPEWRITER:    num = GetTexFontNumber("Typewriter");
+		                  break;
     default: num = 0;
   }
   fprintf(fRtf,"{\\f%u ", (unsigned int)num);
+  if (code == F_ROMAN_1 || code == F_SANSSERIF_1 || code == F_TYPEWRITER_1 || code == F_SLANTED_1)
+  	fprintf(fRtf, "\\plain ");
   Convert();
   fprintf(fRtf,"}");
 }
@@ -2085,8 +2090,6 @@ void IgnoreNewCmd(/*@unused@*/ int code)
     CmdIgnoreParameter(No_Opt_Two_NormParam );
 }
 
-
-
 /*************************************************************************
  *LEG250498
  * purpose: opens existing aux-file and scans for token, with value
@@ -2096,65 +2099,64 @@ void IgnoreNewCmd(/*@unused@*/ int code)
  *                           1 = get the first par. of the first {
  * {{sectref}{line}} } -> sectref ) globals: input (name of
  * LaTeX-Inputfile) fRtf rtf-Outputfile
+ * returns 1 if target is found otherwise 0
  ************************************************************************/
 
-void
-ScanAux(char *token, char* reference, int code)
+int ScanAux(char *token, char* reference, int code)
 {
   static FILE* fAux = NULL;
-  char help[255];      /* should really be allocated dynmically */
-  char AuxLine[255];
-  size_t i;
+  static char openbrace = '{';
+  static char closebrace = '}';
+  char tokenref[255];      /* should really be allocated dynmically */
+  char AuxLine[1024];
+  char *s;
       
-  if (fAux == NULL)
-    {
-      if ((fAux = fopen(AuxName,"r")) == NULL)   /* open file */
-	{
-	  fprintf(stderr,"Error opening AUX-file: %s - while trying to"
-		         "search for \\%s{%s}...",
-		  AuxName, token, reference);
-	  return;
-	}
-    }
-
-
-  i = 0; 
-
-  sprintf(help, "\\%s{%s}", token, reference);
-  /*DBG1 fprintf(stderr, "\n-> Searching .aux for %s", help); */
-  /*DBG3 fprintf(stderr, "\n"); */
-  
-  do
-    {
-      if (fgets (AuxLine, 255, fAux) == NULL)
-	if (feof(fAux))
-	  break;
-	else
-	  error ("Error reading AUX-File!\n");
-      	/*DBG2 fprintf(stderr,"--> in line: %s", AuxLine); */
-      if (strstr (AuxLine, help) )
-	{
-	  i = strlen(help); /* supposing that we start on start of line !*/
-	  while (AuxLine[i++] != '{') ; /* scan to "{" */
-	  if (code == 1)
-	    while (AuxLine[i++] != '{') ; /* scan to "{" */
-	  /*DBG2 fprintf(stderr, "\n--> Now scanning argument: "); */
-	  while (AuxLine[i] != '}')
-	    {
-	      /*DBG2 fprintf(stderr, "%c", AuxLine[i]);*/
-	      fprintf (fRtf, "%c", AuxLine[i++]);
-	    }
-	  break; /* don't continue searching */
-	}
-      
-    } while (!feof(fAux));
-  if (feof(fAux)) {
-    fprintf(stderr, "\nWarning: \\%s{%s} not found in %s", token, reference, AuxName);
-    diagnostics(WARNING, "\\%s{%s} not found in %s",
-		token, reference, AuxName);
+  if (g_aux_file_missing || strlen(reference)==0)
+  {
+    fprintf(fRtf, "?");
+    return 0;
   }
+  
+  if (fAux == NULL && (fAux = fopen(AuxName,"r")) == NULL)   /* open .aux file if not opened before */
+  {
+          fprintf(stderr,"Error opening AUX-file: %s\n", AuxName);
+          fprintf(stderr,"Try running LaTeX first\n", AuxName);
+          g_aux_file_missing = TRUE;
+          fprintf(fRtf, "?");
+	  return 0;
+  }
+
   rewind(fAux);
-  return;
+  sprintf(tokenref, "\\%s{%s}", token, reference);
+  
+  while (fgets (AuxLine, 1023, fAux) != NULL)
+  {
+      
+      if ( (s=strstr (AuxLine, tokenref)) != NULL)
+      {
+          s += strlen(tokenref);
+
+          for (; code>=0; code--)          /* Do once or twice depending on code */
+          {
+              s = strchr(s, openbrace);
+              if (s==NULL)                 /* no parameter found, just print '?' and return */
+              {
+                fprintf(fRtf, "?");
+                return 0;
+              }
+              s++;                         
+          }
+          
+	  while (*s != closebrace && *s != '\0')  /* print the number and exit */
+	      fprintf (fRtf, "%c", *s++);
+
+	  return 1;
+      }
+  }
+  
+  fprintf(stderr, "Warning: \\%s{%s} not found in %s\n", token, reference, AuxName);
+  fprintf(fRtf, "?");
+  return 0;
 }
 
 

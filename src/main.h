@@ -29,6 +29,8 @@
 /*** Main Includefile ***/
 /*** global definitons used in nearly all files ***/
 
+#undef HAS_NO_GETOPT
+
 #ifdef __MWERKS__
 #define HAS_NO_GETOPT
 #define DEFAULT_MAC_ENCODING
@@ -167,6 +169,7 @@ extern int g_equation_number;
 extern bool g_show_equation_number;
 extern int g_enumerate_depth;
 extern bool g_suppress_equation_number;
+extern bool g_aux_file_missing;
 
 /****************************************************************************/
 

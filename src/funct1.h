@@ -116,10 +116,15 @@ void CmdList(int code);
 
 void CmdMbox(int code);
 
-#define F_ROMAN 1
-#define F_SLANTED 2
-#define F_SANSSERIF 3
-#define F_TYPEWRITER 4
+#define F_ROMAN        1
+#define F_SLANTED      2
+#define F_SANSSERIF    3
+#define F_TYPEWRITER   4
+#define F_ROMAN_1      5
+#define F_SLANTED_1    6
+#define F_SANSSERIF_1  7
+#define F_TYPEWRITER_1 8
+
 void CmdSetFont(int code);
 
 void CmdInclude(int code);
@@ -170,3 +175,5 @@ void ConvertString(char *string);
 #define BOTH_SIDES  348
 #define LEFT_SIDE  349
 /*LEG030598 End*/
+
+int ScanAux(char *token, char* reference, int code);

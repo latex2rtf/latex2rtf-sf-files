@@ -77,7 +77,10 @@
 #include "cfg.h"
 #include "encode.h"
 #include "util.h"
+
+#ifdef __MWERKS__
 #include "MainMain.h"
+#endif
 
 /****************************************************************************/
 
@@ -129,6 +132,7 @@ int g_equation_number = 0;
 bool g_show_equation_number = FALSE;
 int g_enumerate_depth = 0;
 bool g_suppress_equation_number = FALSE;
+bool g_aux_file_missing = FALSE; /* assume that it exists */
 /*SAP end fix*/
 
 /****************************************************************************/
