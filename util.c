@@ -1,4 +1,4 @@
-/* util.c - handy strings routines
+/* util.c - handy routines
 
 Copyright (C) 1995-2002 The Free Software Foundation
 
@@ -30,8 +30,53 @@ Authors:
 #include "util.h"
 #include "parser.h"
 
+int
+odd(int n)
+/******************************************************************************
+ purpose:  returns true if n is odd
+******************************************************************************/
+{
+	return (n&1);
+}
+
+int
+even(int n)
+/******************************************************************************
+ purpose:  returns true if n is even
+******************************************************************************/
+{
+	return (!(n&1));
+}
+
+int
+strstr_count(char *s, char *t)
+/******************************************************************************
+ purpose:  count the number of occurences of the string t in the string s
+******************************************************************************/
+{
+	int n=0;
+	size_t len;
+	char *p;
+	
+//	fprintf(stderr, "s=%0x %s\n", (int) s, s);
+//	fprintf(stderr, "t=%0x %s\n", (int) t, t);
+	if (t==NULL || s==NULL) return n;
+	
+	len = strlen(t);
+	p = strstr(s,t);
+//	fprintf(stderr, "p=%0x %s\n", (int) p, p);
+	while (p) {
+		n++;
+		p = strstr(p+len-1,t);  
+//		fprintf(stderr, "p=%0x %s\n", (int) p, p);
+	}
+	
+	return n;
+}
+
+
 char *  
-my_strndup(char *src, int n)
+my_strndup(char *src, size_t n)
 /******************************************************************************
  purpose:  returns a new string with n characters from s (with '\0' at the end)
 ******************************************************************************/
@@ -69,6 +114,34 @@ strdup_together(char *s, char *t)
 	strcpy(both, s);
 	strcat(both, t);
 	return both;
+}
+
+char *
+strdup_nocomments(char *s)
+/******************************************************************************
+ purpose:  duplicates a string but removes TeX  %comment\n
+******************************************************************************/
+{
+char *p, *dup;
+	if (s==NULL) return NULL;
+	
+	dup = malloc(strlen(s) + 1);
+	p = dup;
+	
+	while (*s) {
+		while (*s == '%') {					/* remove comment */
+			 s++;							/* one char past % */
+			 while (*s && *s != '\n') s++;	/* find end of line */
+			 if (*s == '\0') goto done;
+			 s++;							/* first char after comment */
+		}
+		*p = *s;
+		p++;
+		s++;
+	}
+done:
+	*p = '\0';		
+	return dup;
 }
 
 char *
@@ -131,7 +204,7 @@ char *p, *t;
 	while (p >= t && (*p == ' ' || *p == '\n')) p--;	/* last non blank char */
 	
 	if (t>p) return strdup("");
-	return my_strndup(t,p-t+1);
+	return my_strndup(t,(size_t) (p-t+1));
 }
 
 char *
@@ -168,8 +241,8 @@ ExtractAndRemoveTag(char *tag, char *text)
 	char *s, *contents, *start, *end;
 
 	s = text;
-	diagnostics(1, "target tag = <%s>", tag);
-	diagnostics(1, "original text = <%s>", text);
+	diagnostics(5, "target tag = <%s>", tag);
+	diagnostics(5, "original text = <%s>", text);
 
 	while (s) {					/* find start of caption */
 		start = strstr(s,tag);
@@ -187,16 +260,13 @@ ExtractAndRemoveTag(char *tag, char *text)
     end = strstr(s,contents)+strlen(contents)+1; /* end just after '}' */
 
 	free(contents);
-	contents = my_strndup(start,end-start);
+	contents = my_strndup(start,(size_t) (end-start));
 	
     do *start++=*end++; while (*end);			/* erase "tag{contents}" */
 	*start='\0';
 	
-/*	end = text+strlen(text) -1;
-	while (end>text && (*end==' ' || *end=='\n')) {*end='\0'; *end--;}
-*/
-	diagnostics(1, "final contents = <%s>", contents);
-	diagnostics(1, "final text = <%s>", text);
+	diagnostics(5, "final contents = <%s>", contents);
+	diagnostics(5, "final text = <%s>", text);
 
 	return contents;
 }

@@ -37,12 +37,14 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 
 struct {
 	char * name;
+	char * opt_param;
 	char * def;
 	int  params;
 } Definitions[MAX_DEFINITIONS];
 
 struct {
 	char * name;
+	char * opt_param;
 	char * begname;
 	char * endname;
 	char * begdef;
@@ -80,9 +82,10 @@ strequal(char *a, char *b)
 int i=0;
 	fprintf(stderr, "\n");
 	while(i < iDefinitionCount ) {
-		fprintf(stderr, "[%d] name   =<%s>\n",i, Definitions[i].name);
-		fprintf(stderr, "    def    =<%s>\n", Definitions[i].def);
-		fprintf(stderr, "    params =<%d>\n", Definitions[i].params);
+		fprintf(stderr, "[%d] name     =<%s>\n",i, Definitions[i].name);
+		fprintf(stderr, "    opt_param=<%s>\n", Definitions[i].opt_param);
+		fprintf(stderr, "    def      =<%s>\n", Definitions[i].def);
+		fprintf(stderr, "    params   =<%d>\n", Definitions[i].params);
 		i++;
 	}
 }
@@ -101,22 +104,28 @@ int i=0;
 */
 
 static char *
-expandmacro(char *macro, int params)
+expandmacro(char *macro, char *opt_param, int params)
 /**************************************************************************
      purpose: retrieves and expands a defined macro 
 **************************************************************************/
 {
-	int i,param;
+	int i=0,param;
 	char * args[9], *dmacro, *macro_piece, *next_piece, *expanded, buffer[1024], *cs;
 
 	if (params<=0) 
 		return strdup(macro);
 	
-	for (i=0; i<params; i++) {
+	if (opt_param) {
+		args[i++] = getBracketParam();
+		if (!args[0]) args[0] = strdup(opt_param);
+	}
+
+	for (; i<params; i++) {
 		args[i] = getBraceParam();
-		diagnostics(5, "argument #%d <%s>", i+1, args[i]);
+		diagnostics(3, "argument #%d <%s>", i+1, args[i]);
 	}
 	
+	*buffer='\0';
 	expanded = buffer;
 	dmacro = strdup(macro);
 	macro_piece = dmacro;
@@ -173,7 +182,7 @@ expandmacro(char *macro, int params)
 }
 
 int
-maybeDefinition(char * s, int n)
+maybeDefinition(char * s, size_t n)
 /**************************************************************************
      purpose: checks to see if a named TeX definition possibly exists
      returns: the array index of the named TeX definition
@@ -213,7 +222,7 @@ existsDefinition(char * s)
 }
 
 void
-newDefinition(char *name, char *def, int params)
+newDefinition(char *name, char * opt_param, char *def, int params)
 /**************************************************************************
      purpose: allocates and initializes a named TeX definition 
               name should not begin with a '\'  for example to
@@ -241,6 +250,17 @@ newDefinition(char *name, char *def, int params)
 	if (Definitions[iDefinitionCount].name==NULL) {
 		diagnostics(ERROR, "\nCannot allocate name for definition \\%s\n", name);
 	}
+	
+	if (opt_param) {
+		Definitions[iDefinitionCount].opt_param=strdup(opt_param); 
+
+		if (Definitions[iDefinitionCount].opt_param==NULL) {
+			diagnostics(ERROR, "\nCannot allocate opt_param for definition \\%s\n", name);
+		}
+	}
+	else {
+	  Definitions[iDefinitionCount].opt_param=NULL;
+	}
 
 	Definitions[iDefinitionCount].def=strdup(def); 
 
@@ -249,10 +269,11 @@ newDefinition(char *name, char *def, int params)
 	}
 	
 	iDefinitionCount++;
+	diagnostics(3,"Successfully added macro #%d",iDefinitionCount);
 }
 
 void
-renewDefinition(char * name, char * def, int params)
+renewDefinition(char * name, char * opt_param, char * def, int params)
 /**************************************************************************
      purpose: allocates (if necessary) and sets a named TeX definition 
 **************************************************************************/
@@ -263,12 +284,23 @@ renewDefinition(char * name, char * def, int params)
 	i = existsDefinition(name);
 	
 	if (i<0) {
-		newDefinition(name, def, params);
+		newDefinition(name, opt_param, def, params);
 		diagnostics(WARNING, "No existing definition for \\%s", name);
 		
 	} else {
 		free(Definitions[i].def);
+		if (Definitions[i].opt_param) free(Definitions[i].opt_param); 
 		Definitions[i].params = params;
+		if (opt_param) {
+			Definitions[i].opt_param=strdup(opt_param); 
+			if (Definitions[i].opt_param==NULL) {
+				diagnostics(ERROR, "\nCannot allocate opt_param for definition \\%s\n", name);
+			}
+		}
+		else {
+			Definitions[i].opt_param=NULL;
+		}
+
 		Definitions[i].def = strdup(def);
 		if (Definitions[i].def==NULL) {
 			diagnostics(WARNING, "\nCannot allocate def for definition \\%s\n", name);
@@ -287,11 +319,13 @@ expandDefinition(int thedef)
 	if (thedef<0 || thedef>=iDefinitionCount)
 		return NULL;
 	
-	diagnostics(3, "expandDefinition name   =<%s>", Definitions[thedef].name);
-	diagnostics(3, "expandDefinition def    =<%s>", Definitions[thedef].def);
-	diagnostics(3, "expandDefinition params =<%d>", Definitions[thedef].params);
+	diagnostics(3, "expandDefinition name     =<%s>", Definitions[thedef].name);
+	diagnostics(3, "expandDefinition opt_param=<%s>", 
+	        (Definitions[thedef].opt_param) ? Definitions[thedef].opt_param : "");
+	diagnostics(3, "expandDefinition def      =<%s>", Definitions[thedef].def);
+	diagnostics(3, "expandDefinition params   =<%d>", Definitions[thedef].params);
 
-	return expandmacro(Definitions[thedef].def, Definitions[thedef].params);
+	return expandmacro(Definitions[thedef].def, Definitions[thedef].opt_param, Definitions[thedef].params);
 }
 
 int
@@ -301,7 +335,8 @@ existsEnvironment(char * s)
      returns: the array index of the \newenvironment
 **************************************************************************/
 {
-	int n, i=0;
+	int i=0;
+	size_t n;
 	
 	n = strlen(s);
 	while(i < iNewEnvironmentCount && !strequal(s,NewEnvironments[i].name)) {
@@ -316,7 +351,7 @@ existsEnvironment(char * s)
 }
 
 int
-maybeEnvironment(char * s, int n)
+maybeEnvironment(char * s, size_t n)
 /**************************************************************************
      purpose: checks to see if a named TeX environment possibly exists
      returns: the array index of the named TeX definition
@@ -340,7 +375,7 @@ maybeEnvironment(char * s, int n)
 }
 
 void
-newEnvironment(char *name, char *begdef, char *enddef, int params)
+newEnvironment(char *name, char *opt_param, char *begdef, char *enddef, int params)
 /**************************************************************************
      purpose: allocates and initializes a \newenvironment 
               name should not begin with a '\' 
@@ -358,6 +393,18 @@ newEnvironment(char *name, char *begdef, char *enddef, int params)
 	NewEnvironments[iNewEnvironmentCount].enddef=strdup(enddef); 
 	NewEnvironments[iNewEnvironmentCount].params=params; 
 
+	if (opt_param) {
+		NewEnvironments[iNewEnvironmentCount].opt_param=strdup(opt_param); 
+
+		if (NewEnvironments[iNewEnvironmentCount].opt_param==NULL) {
+			diagnostics(ERROR, "\nCannot allocate opt_param for \\newenvironment{%s}", name);
+		}
+	}
+	else {
+	  NewEnvironments[iNewEnvironmentCount].opt_param=NULL;
+	}
+
+
 	if (NewEnvironments[iNewEnvironmentCount].name   ==NULL ||
 		NewEnvironments[iNewEnvironmentCount].begdef ==NULL ||
 		NewEnvironments[iNewEnvironmentCount].begname==NULL ||
@@ -370,7 +417,7 @@ newEnvironment(char *name, char *begdef, char *enddef, int params)
 }
 
 void
-renewEnvironment(char *name, char *begdef, char *enddef, int params)
+renewEnvironment(char *name, char *opt_param, char *begdef, char *enddef, int params)
 /**************************************************************************
      purpose: allocates and initializes a \renewenvironment 
 **************************************************************************/
@@ -379,7 +426,7 @@ renewEnvironment(char *name, char *begdef, char *enddef, int params)
 	i = existsEnvironment(name);
 	
 	if (i<0) {
-		newEnvironment(name, begdef, enddef, params);
+		newEnvironment(name, opt_param, begdef, enddef, params);
 		diagnostics(WARNING, "No existing \\newevironment{%s}", name);
 		
 	} else {
@@ -387,8 +434,16 @@ renewEnvironment(char *name, char *begdef, char *enddef, int params)
 		free(NewEnvironments[i].enddef);
 		free(NewEnvironments[i].begname);
 		free(NewEnvironments[i].endname);
-		NewEnvironments[iNewEnvironmentCount].begname=strdup_together("\\begin{",name); 
-		NewEnvironments[iNewEnvironmentCount].endname=strdup_together("\\end{",name); 
+		if (NewEnvironments[i].opt_param) free(NewEnvironments[i].opt_param); 
+		if (opt_param) {
+			NewEnvironments[i].opt_param=strdup(opt_param); 
+			if (NewEnvironments[i].opt_param==NULL) {
+				diagnostics(ERROR, "\nCannot allocate opt_param for \\renewenvironment{%s}", name);
+			}
+		}
+		else {
+			NewEnvironments[i].opt_param=NULL;
+		}
 		NewEnvironments[i].params = params;
 		NewEnvironments[i].begdef = strdup(begdef);
 		NewEnvironments[i].enddef = strdup(enddef);
@@ -411,13 +466,15 @@ expandEnvironment(int thedef, int code)
 	
 		diagnostics(3, "\\begin{%s} <%s>", NewEnvironments[thedef].name, \
 										   NewEnvironments[thedef].begdef);
-		return expandmacro(NewEnvironments[thedef].begdef, NewEnvironments[thedef].params);
+		return expandmacro(NewEnvironments[thedef].begdef, 
+				   NewEnvironments[thedef].opt_param, 
+				   NewEnvironments[thedef].params);
 	
 	} else {
 
 		diagnostics(3, "\\end{%s} <%s>", NewEnvironments[thedef].name, \
 										 NewEnvironments[thedef].enddef);
-		return expandmacro(NewEnvironments[thedef].enddef, 0);
+		return expandmacro(NewEnvironments[thedef].enddef, NULL, 0);
 	}
 }
 
@@ -489,15 +546,15 @@ expandTheorem(int i, char *option)
 	if (NewTheorems[i].within) {
 		num = FormatUnitNumber(NewTheorems[i].within);
 		if (option)
-			sprintf(s,"%s %s.%d (%s)", NewTheorems[i].caption, num, ithm, option);
+			snprintf(s,128,"%s %s.%d (%s)", NewTheorems[i].caption, num, ithm, option);
 		else
-			sprintf(s,"%s %s.%d", NewTheorems[i].caption, num, ithm);
+			snprintf(s,128,"%s %s.%d", NewTheorems[i].caption, num, ithm);
 		free(num);
 	} else {
 		if (option)
-			sprintf(s,"%s %d (%s)", NewTheorems[i].caption, ithm, option);
+			snprintf(s,128,"%s %d (%s)", NewTheorems[i].caption, ithm, option);
 		else
-			sprintf(s,"%s %d", NewTheorems[i].caption, ithm);
+			snprintf(s,128,"%s %d", NewTheorems[i].caption, ithm);
 	}
 			
 	return strdup(s);

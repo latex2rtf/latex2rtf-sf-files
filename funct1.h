@@ -29,6 +29,17 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define PAR_LEFT       3
 #define PAR_CENTERLINE 4
 #define PAR_VCENTER    5
+#define PAR_RAGGEDRIGHT 6
+
+#define BOX_HBOX       1
+#define BOX_VBOX       2
+#define BOX_MBOX 	   3
+#define BOX_FBOX       4
+#define BOX_PARBOX     5
+
+#define FIRST_PAR      1
+#define ANY_PAR        2
+#define TITLE_PAR      3
 
 #define INDENT_NONE    1
 #define INDENT_INHIBIT 2
@@ -37,10 +48,17 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define VERBATIM_1   1
 #define VERBATIM_2   2
 #define VERBATIM_3   3
-
+#define VERBATIM_4   4
+      
 #define VERB_VERB    1
 #define VERB_STAR    2
 #define VERB_URL     3
+
+#define VSPACE_VSPACE     -1
+#define VSPACE_VSKIP       0
+#define VSPACE_SMALL_SKIP  1
+#define VSPACE_MEDIUM_SKIP 2
+#define VSPACE_BIG_SKIP    3
 
 void            CmdBeginEnd(int code);
 void            CmdStartParagraph(int code);
@@ -146,6 +164,8 @@ void            CmdMinipage(int code);
 #define NewPage 1
 #define NewColumn 2
 
+extern bool  g_processing_list_environment;
+
 void            CmdIgnoreEnviron(int code);
 void            CmdFigure(int code);
 void            Cmd_OptParam_Without_braces(int code);
@@ -155,16 +175,17 @@ void            GetInputParam(char *, int);
 void            CmdBottom(int code);
 void            CmdAbstract(int code);
 void            CmdTitlepage(int code);
-void            CmdHyphenation(int code);
-void            CmdFigure(int code);
 void            CmdAnnotation(int code);
 void            CmdLink(int code);
+void            CmdTextColor(int code);
 void            GetRequiredParam(char *string, int size);
 void            CmdQuad(int kk);
 void            CmdColsep(int code);
 void            CmdSpace(float kk);
 void            CmdVerbosityLevel(int code);
-void            CmdInclude(int code);
 void            CmdNonBreakSpace(int code);
 char            *FormatUnitNumber(char *name);
 void            CmdNewTheorem(int code);
+void            CmdInclude(int code);
+void			CmdEndInput(int code);
+void			CmdIf(int code);

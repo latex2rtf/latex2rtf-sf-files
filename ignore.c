@@ -86,6 +86,8 @@ returns : TRUE if variable was ignored correctly, otherwise FALSE
 		{}
 	else if (strcmp(RtfCommand, "PARAMETER") == 0)
 		CmdIgnoreParameter(No_Opt_One_NormParam);
+    else if (strcmp(RtfCommand, "TWOPARAMETER") == 0)
+         CmdIgnoreParameter(No_Opt_Two_NormParam);
 /*	else if (strcmp(RtfCommand, "LINE") == 0) skipToEOL(); */
 	else if (strcmp(RtfCommand, "ENVIRONMENT") == 0) {
 		char           *str;
@@ -146,10 +148,10 @@ parameter: searchstring : includes the string to search for
 
 	diagnostics(4, "Entering IgnoreEnvironment <%s>", cCommand);
 	
-	sprintf(unknown_environment, "\\%s%s%s", "end{", cCommand, "}");
+	snprintf(unknown_environment, 100, "\\%s%s%s", "end{", cCommand, "}");
 	font = TexFontNumber("Typewriter");
 	CmdEndParagraph(0);
-	CmdStartParagraph(0);
+	CmdStartParagraph(FIRST_PAR);
 	fprintRTF("\\qc [Sorry. Ignored ");
 	fprintRTF("{\\plain\\f%d\\\\begin\\{%s\\} ... \\\\end\\{%s\\}}]", font, cCommand, cCommand);
 	CmdEndParagraph(0);

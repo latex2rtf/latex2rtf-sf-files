@@ -123,7 +123,12 @@ CurrentFileName(void)
  purpose:     returns the filename of the text being processed
 ****************************************************************************/
 {
-	return g_parser_stack[g_parser_depth].file_name;
+	char *s = "(Not set)";
+	
+	if (g_parser_stack[g_parser_depth].file_name)
+		return g_parser_stack[g_parser_depth].file_name;
+	else
+		return s;
 }
 
 /*
@@ -412,9 +417,9 @@ getTexChar()
 	char            cThis;
 	char            cSave = g_parser_lastChar;
 	char            cSave2 = g_parser_penultimateChar;
-
+	
 	cThis = getRawTexChar();
-	while (cThis == '%' && g_parser_backslashes % 2 == 0) {
+	while (cThis == '%' && even(g_parser_backslashes)) {
 		skipToEOL();
 		g_parser_penultimateChar = cSave2;
 		g_parser_lastChar = cSave;
@@ -770,9 +775,9 @@ getTexUntil(char * target, int raw)
 	char            buffer[BUFFSIZE+1] = {'\0'};
 	int				last_i = -1;
 	int             i   = 0;       /* size of string that has been read */
-	int             j   = 0;       /* number of found characters */
+	size_t          j   = 0;       /* number of found characters */
 	bool			end_of_file_reached = FALSE;
-	int             len = strlen(target);
+	size_t          len = strlen(target);
 	
 	PushTrackLineNumber(FALSE);
 
@@ -889,35 +894,35 @@ getDimension(void)
 		
 		diagnostics(4,"getDimension() dimension is <%s>", buffer);
 		if (strstr(buffer,"pt"))
-			return num*20;
+			return (int) (num*20);
 		else if (strstr(buffer,"pc"))
-			return num*12*20;
+			return (int) (num*12*20);
 		else if (strstr(buffer,"in"))
-			return num*72.27*20;
+			return (int) (num*72.27*20);
 		else if (strstr(buffer,"bp"))
-			return num*72.27/72*20;
+			return (int) (num*72.27/72*20);
 		else if (strstr(buffer,"cm"))
-			return num*72.27/2.54*20;
+			return (int) (num*72.27/2.54*20);
 		else if (strstr(buffer,"mm"))
-			return num*72.27/25.4*20;
+			return (int) (num*72.27/25.4*20);
 		else if (strstr(buffer,"dd"))
-			return num*1238.0/1157.0*20;
+			return (int) (num*1238.0/1157.0*20);
 		else if (strstr(buffer,"dd"))
-			return num*1238.0/1157*20;
+			return (int) (num*1238.0/1157*20);
 		else if (strstr(buffer,"cc"))
-			return num*1238.0/1157.0*12.0*20;
+			return (int) (num*1238.0/1157.0*12.0*20);
 		else if (strstr(buffer,"sp"))
-			return num/65536.0*20;
+			return (int) (num/65536.0*20);
 		else if (strstr(buffer,"ex")) 
-			return num*CurrentFontSize()*0.5;
+			return (int) (num*CurrentFontSize()*0.5);
 		else if (strstr(buffer,"em")) 
-			return num*CurrentFontSize();
+			return (int) (num*CurrentFontSize());
 		else if (strstr(buffer,"in"))
-			return num*72.27*20;
+			return (int) (num*72.27*20);
 		else {
 			ungetTexChar(buffer[1]);
 			ungetTexChar(buffer[0]);
-			return num;
+			return (int) num;
 		}
 	} else {
 		char * s, *t;
@@ -927,14 +932,14 @@ getDimension(void)
 		diagnostics(4,"getDimension() dimension is <%s>", t);
 		num *= getLength(t);
 		free(s);
-		return num;
+		return (int) num;
 	}
 		
 }
 
 #define SECTION_BUFFER_SIZE 2048
 static char* section_buffer = NULL;
-static long section_buffer_size = SECTION_BUFFER_SIZE;
+static size_t section_buffer_size = SECTION_BUFFER_SIZE;
 
 static void increase_buffer_size(void)
 {
@@ -969,46 +974,53 @@ getSection(char **body, char **header, char **label)
 	int possible_match, found;
 	char cNext, *s,*text,*next_header,*str;
 	int i;
-	long delta;
-	int  match[30];
-	char * command[30] = {"",  /* 0 entry is for user definitions */
+	size_t delta;
+	int  match[35];
+	char * command[35] = {"",  /* 0 entry is for user definitions */
 	                      "",  /* 1 entry is for user environments */
-						  "\\begin{verbatim}", "\\begin{figure}", "\\begin{equation}", 
-						  "\\begin{eqnarray}", "\\begin{table}", "\\begin{description}",
-						  "\\end{verbatim}", "\\end{figure}", "\\end{equation}", 
-						  "\\end{eqnarray}", "\\end{table}", "\\end{description}",
-	                     "\\part", "\\chapter", "\\section", "\\subsection", "\\subsubsection", 
-	                     "\\section*", "\\subsection*", "\\subsubsection*", 
-	                     "\\label", "\\input", "\\include", "\\verb", "\\url",
-	                     "\\newcommand", "\\def" , "\\renewcommand"};
+	                      "\\begin{verbatim}", "\\begin{figure}", "\\begin{figure*}",     "\\begin{equation}", 
+	                      "\\begin{eqnarray}", "\\begin{table}",  "\\begin{description}", "\\begin{comment}",
+	                      "\\end{verbatim}",   "\\end{figure}",   "\\end{figure*}",       "\\end{equation}", 
+	                      "\\end{eqnarray}",   "\\end{table}",    "\\end{description}",   "\\end{comment}",
+	                      "\\part", "\\chapter", "\\section", "\\subsection", "\\subsubsection", 
+	                      "\\section*", "\\subsection*", "\\subsubsection*", 
+	                      "\\label", "\\input", "\\include", "\\verb", "\\url",
+	                      "\\newcommand", "\\def" , "\\renewcommand", "\\endinput",
+	                      };
 
-	int ncommands = 30;
+	int ncommands = 35;
 
 	const int b_verbatim_item   = 2;
 	const int b_figure_item     = 3;
-	const int b_equation_item   = 4;
-	const int b_eqnarray_item   = 5;
-	const int b_table_item      = 6;
-	const int b_description_item= 7;
-	const int e_verbatim_item   = 8;
-	const int e_figure_item     = 9;
-	const int e_equation_item   =10;
-	const int e_eqnarray_item   =11;
-	const int e_table_item      =12;
-	const int e_description_item=13;
+	const int b_figure_item2    = 4;
+	const int b_equation_item   = 5;
+	const int b_eqnarray_item   = 6;
+	const int b_table_item      = 7;
+	const int b_description_item= 8;
+	const int b_comment_item    = 9;
+	const int e_verbatim_item   = 10;
+	const int e_figure_item     = 11;
+	const int e_equation_item   = 12;
+	const int e_equation_item2  = 13;
+	const int e_eqnarray_item   = 14;
+	const int e_table_item      = 15;
+	const int e_description_item= 16;
+	const int e_comment_item    = 17;
 
-	const int label_item   = 22;
-	const int input_item   = 23;
-	const int include_item = 24;
-	const int verb_item    = 25;
-	const int url_item     = 26;
-	const int new_item     = 27;
-	const int def_item     = 28;
-	const int renew_item   = 29;
+	const int label_item   = 26;
+	const int input_item   = 27;
+	const int include_item = 28;
+	const int verb_item    = 29;
+	const int url_item     = 30;
+	const int new_item     = 31;
+	const int def_item     = 32;
+	const int renew_item   = 33;
+	const int endinput_item= 34;
 
 	int bs_count = 0;
-	int index = 0;
+	size_t index = 0;
 	int label_depth = 0;
+	int n_target = strlen(InterpretCommentString);
 	
 	if (section_buffer == NULL) {
 		section_buffer = malloc(section_buffer_size+1);
@@ -1034,32 +1046,48 @@ getSection(char **body, char **header, char **label)
 		}
 		
 		if (cNext == '\0')
-			diagnostics(5,"char=000 \\0");
+			diagnostics(5,"[%ld] xchar=000 '\\0' (backslash count=%d)",delta, bs_count);
 		else if (cNext =='\n')
-			diagnostics(5,"char=012 \\n");
+			diagnostics(5,"[%ld] xchar=012 '\\n' (backslash count=%d)",delta,bs_count);
 		else
-			diagnostics(5,"char=%03d %c", (int) cNext, cNext);
+			diagnostics(5,"[%ld] xchar=%03d '%c' (backslash count=%d)", delta, (int) cNext, cNext, bs_count);
 				
 		/* add character to buffer */
 		*(section_buffer+delta) = cNext;
 		
-		if (*(section_buffer+delta) == '\0') break;
+		if (cNext == '\0') break;
 
-		/* slurp TeX comments */
-		if (*(section_buffer+delta) == '%' && bs_count % 2) {	
+		/* slurp TeX comments but discard InterpretCommentString */
+		if (cNext == '%' && even(bs_count)) {	
+			int    n=0;
+
 			delta++;
-			while ((cNext=getRawTexChar()) != '\n') {
-				if (delta+2 >= section_buffer_size) increase_buffer_size();
-				*(section_buffer+delta) = cNext;
-				delta++;
-			}
 			*(section_buffer+delta) = cNext;
-		}
+			cNext=getRawTexChar();
+			
+			while (cNext != '\n' && cNext != '\0') {
+			
+				delta++;
+				n++;
+				*(section_buffer+delta) = cNext;
 
+				if (delta+2 >= section_buffer_size) increase_buffer_size();
+				
+                /* handle %latex2rtf: */
+                if (n == n_target && strncmp(InterpretCommentString, section_buffer+delta-n+1, n_target) ==0)
+                	break;
+
+				cNext=getRawTexChar();
+			}
+			
+            delta -= n+2;       /* remove '% .... \n', or '% ... \0' or just '%latex2rtf:' */
+			continue;			/* go get the next character */
+		}
+		
 		/* begin search if backslash found */
 		if (*(section_buffer+delta) == '\\') {
 			bs_count++;
-			if (bs_count % 2) {		/* avoid "\\section" and "\\\\section" */
+			if (odd(bs_count)) {		/* avoid "\\section" and "\\\\section" */
 				for(i=0; i<ncommands; i++) match[i]=TRUE;
 				index = 1;
 				continue;
@@ -1183,6 +1211,13 @@ getSection(char **body, char **header, char **label)
 					
 		if (!found) continue;
 			
+		if (i==endinput_item) {
+			delta -=  9;  			/* remove \endinput */
+			PopSource();
+			index = 0;				/* keep looking */
+			continue;
+		}
+
 		if (i==verb_item || i==url_item) {				/* slurp \verb#text# */
 			if (i==url_item && cNext=='{') cNext = '}';
 			delta++;
@@ -1218,7 +1253,7 @@ getSection(char **body, char **header, char **label)
 
 			} else {
 			
-				if (strstr(s, ".tex") == NULL) {
+				if (strstr(s, ".ltx") == NULL && strstr(s, ".tex") == NULL) {
 					/* extension .tex is appended automatically if missing*/
 					s2 = strdup_together(s, ".tex");
 					free(s);
@@ -1273,14 +1308,14 @@ getSection(char **body, char **header, char **label)
 			continue;
 		}
 			
-		if (i==b_figure_item || i==b_equation_item || i==b_eqnarray_item ||
+		if (i==b_figure_item || i==b_figure_item2 || i==b_equation_item || i==b_eqnarray_item ||
 			i==b_table_item  || i==b_description_item){
 			label_depth++;		/* labels now will not be the section label */
 			index = 0;
 			continue;
 		}
 
-		if (i==e_figure_item || i==e_equation_item || i==e_eqnarray_item ||
+		if (i==e_figure_item || i==e_equation_item || i==e_equation_item2 || i==e_eqnarray_item ||
 			i==e_table_item  || i==e_description_item){
 			label_depth--;		/* labels may now be the section label */
 			index = 0;
@@ -1304,6 +1339,23 @@ getSection(char **body, char **header, char **label)
 			continue;
 		} 
 		
+		if (i==b_comment_item) {			/* slurp environment to avoid inside */
+			delta++;
+			s=getTexUntil(command[e_comment_item],TRUE);
+
+			while (delta+strlen(s)+strlen(command[e_comment_item])+1 >= section_buffer_size)
+				increase_buffer_size();
+
+			strcpy(section_buffer+delta,s);				/* append s */
+			delta += strlen(s);
+			
+			strcpy(section_buffer+delta,command[e_comment_item]);	/* append command[i] */
+			delta += strlen(command[e_comment_item])-1;
+			free(s);
+			index = 0;				/* keep looking */
+			continue;
+		} 
+
 		diagnostics(5, "possible end of section");
 		diagnostics(5, "label_depth = %d", label_depth);
 		

@@ -40,12 +40,104 @@ char * g_figure_label = NULL;
 char * g_table_label = NULL;
 char * g_equation_label = NULL;
 char * g_section_label = NULL;
+int g_suppress_name = FALSE;
 
 #define MAX_LABELS 200
+#define MAX_CITATIONS 1000
+
 char * g_label_list[MAX_LABELS];
 int g_label_list_number=-1;
 
-char * ScanAux(char *token, char * reference, int code);
+static char * g_all_citations[MAX_CITATIONS];
+static int g_last_citation=0;
+static int g_current_cite_type = 0;
+static int g_current_cite_seen = 0;
+static int g_current_cite_paren = 0;
+static char g_last_author_cited[101];
+static int g_citation_longnamesfirst = 0;
+static int 	g_current_cite_item=0;
+
+void set_longnamesfirst(void)
+{
+	g_citation_longnamesfirst=TRUE;
+}
+
+static int citation_used(char *citation)
+/* 
+return 1 if citation used otherwise return 0 and add citation to list
+*/
+{
+	int i;
+	
+	for (i=0; i<g_last_citation; i++) {
+		if (strcmp(citation,g_all_citations[i])==0) return 1;
+	}
+	
+	if (g_last_citation>MAX_CITATIONS-1) {
+		diagnostics(WARNING,"Too many citations ... increase MAX_CITATIONS");
+	} else {
+		g_all_citations[g_last_citation] = strdup(citation);
+		g_last_citation++;
+	}
+	
+	return 0;		
+}
+
+static char * 
+ScanAux(char *token, char * reference, int code)
+/*************************************************************************
+purpose: obtains a reference from .aux file
+
+code=0 means \token{reference}{number}       -> "number"
+code=1 means \token{reference}{{sect}{line}} -> "sect"
+ ************************************************************************/
+{
+	static FILE    *fAux = NULL;
+	char            AuxLine[2048];
+	char            target[512];
+	char           *s,*t;
+	int				braces;
+
+	if (g_aux_file_missing || strlen(token) == 0) {
+		return NULL;
+	}
+
+	diagnostics(4,"seeking in .aux for <%s>",reference);
+	
+	snprintf(target, 512, "\\%s{%s}", token, reference);
+	
+	if (fAux == NULL && (fAux = my_fopen(g_aux_name, "r")) == NULL) {
+		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", g_aux_name);
+		g_aux_file_missing = TRUE;
+		return NULL;
+	}
+	
+	rewind(fAux);
+	
+	while (fgets(AuxLine, 2047, fAux) != NULL) {
+
+		s = strstr(AuxLine, target);
+		if (s) {
+		
+			s += strlen(target);		/* move to \token{reference}{ */			
+			if (code==1) s++;			/* move to \token{reference}{{ */
+
+			t = s;					
+			braces = 1;
+			while ( braces >= 1) {		/* skip matched braces */
+				t++;
+				if (*t == '{') braces++;
+				if (*t == '}') braces--;
+				if (*t == '\0') return NULL;
+			}
+			
+			*t = '\0';
+			diagnostics(4,"found <%s>",s+1);
+			return strdup(s+1);
+		}
+	}
+	return NULL;
+}
 
 void 
 CmdFootNote(int code)
@@ -139,37 +231,37 @@ CmdThebibliography(int code)
 		free(s);
 		
 		CmdEndParagraph(0);
-		CmdIndent(INDENT_NONE);
-		fprintRTF("{");
-		CmdStartParagraph(0);
-		fprintRTF("\\fs28\\b ");
+		CmdVspace(VSPACE_MEDIUM_SKIP);
+		CmdStartParagraph(TITLE_PAR);
+
+		fprintRTF("{\\plain\\b\\fs32 ");
 		if (g_document_type == FORMAT_ARTICLE)
 			ConvertBabelName("REFNAME");
 		else
 			ConvertBabelName("BIBNAME");
-		CmdEndParagraph(0);
 		fprintRTF("}");
+		CmdEndParagraph(0);
+		CmdVspace(VSPACE_SMALL_SKIP);
 
 		PushEnvironment(GENERIC_ENV);
 		setLength("parindent", -amount);
-		indent += amount;
+		g_left_margin_indent += 2*amount;
 	} else {
 		CmdEndParagraph(0);
-		CmdVspace(1);
+		CmdVspace(VSPACE_SMALL_SKIP);
 		PopEnvironment();
+		g_processing_list_environment=FALSE;
 	}
-
-	CmdIndent(INDENT_USUAL);
 }
 
 void 
 CmdBibitem(int code)
 {
-	char *label, *key, *signet, *s;
+	char *label, *key, *signet, *s, c;
 	
+	g_processing_list_environment=TRUE;
 	CmdEndParagraph(0);
-	CmdIndent(INDENT_USUAL);
-	CmdStartParagraph(0);
+	CmdStartParagraph(FIRST_PAR);
 	
 	label = getBracketParam();
 	key = getBraceParam();
@@ -183,20 +275,24 @@ CmdBibitem(int code)
 		fprintRTF("]");
 	} else {
 		diagnostics(4,"CmdBibitem <%s>",s);
-		fprintRTF("[");
-		fprintRTF("{\\*\\bkmkstart BIB_%s}",signet);
-		ConvertString(s);
-		fprintRTF("{\\*\\bkmkend BIB_%s}",signet);
-		fprintRTF("]");
+		if (g_document_bibstyle == BIBSTYLE_STANDARD) {
+			fprintRTF("[");
+			fprintRTF("{\\v\\*\\bkmkstart BIB_%s}",signet);
+			ConvertString(s);
+			fprintRTF("{\\*\\bkmkend BIB_%s}",signet);
+			fprintRTF("]");
+			fprintRTF("\\tab ");
+		}
+		/* else emit nothing for APALIKE */
 	}
-
+	
 	if (s) free(s);
 	if (label) free(label);
 	free(signet);
 	free(key);
 	
-	fprintRTF("\\tab ");
-	skipSpaces();
+	c=getNonBlank();
+	ungetTexChar(c);
 }
 
 void 
@@ -289,7 +385,11 @@ InsertBookmark(char *name, char *text)
 	} else {
 		diagnostics(3,"bookmark %s being inserted around <%s>",signet,text);
 		RecordBookmark(signet);
-		fprintRTF("{\\*\\bkmkstart BM%s}%s{\\*\\bkmkend BM%s}",signet,text,signet);
+		if (g_fields_use_REF) 
+			fprintRTF("{\\*\\bkmkstart BM%s}",signet);
+		fprintRTF("%s",text);
+		if (g_fields_use_REF) 
+			fprintRTF("{\\*\\bkmkend BM%s}",signet);
 	}
 	
 	free(signet);
@@ -300,8 +400,7 @@ void CmdLabel(int code)
 purpose: handles \label \ref \pageref \cite
 ******************************************************************************/
 {
-	char *text, *signet;
-	char *str1, *comma, *s, *str;
+	char *text, *signet, *s;
 	char *option = NULL;
 	int mode=GetTexMode();
 	
@@ -326,54 +425,29 @@ purpose: handles \label \ref \pageref \cite
 		case LABEL_REF:
 			signet = strdup_nobadchars(text);
 			s = ScanAux("newlabel", text, 1);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BM%s \\\\* MERGEFORMAT }}",signet);
-			fprintRTF("{\\fldrslt{");
+			if (g_fields_use_REF) {
+				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BM%s \\\\* MERGEFORMAT }}",signet);
+				fprintRTF("{\\fldrslt{");
+			}
 			if (s)
 				ConvertString(s);
 			else
 				fprintRTF("?");
-			fprintRTF("}}}");
+			if (g_fields_use_REF) fprintRTF("}}}");
 				
 			free(signet);
 			if (s) free(s);
 			break;
-		
-/* {\field{\*\fldinst{\lang1024 REF section31 \\* MERGEFORMAT }}{\fldrslt{?}}} */
-		case LABEL_CITE:
-			fprintRTF("\n[");
-			str = strdup_noblanks(text);
-			str1 = str;
-			do {
-				comma = strchr(str1, ',');
-				if (comma) *comma = '\0';	/* replace ',' with '\0' */
-				s = ScanAux("bibcite", str1, 0);
-				signet = strdup_nobadchars(str1);
-				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BIB_%s \\\\* MERGEFORMAT }}",signet);
-				fprintRTF("{\\fldrslt{");
-				if (s)
-					fprintRTF(s);
-				else
-					fprintRTF("?");
-				fprintRTF("}}}");
-				if (comma) fprintRTF(",");
-				str1 = comma + 1;
-				if (s) free(s);
-				free(signet);
-			} while (comma != NULL);
-
-			if (option) {
-				fprintRTF(", ");
-				ConvertString(option);
-			}
-			fprintRTF("]");
-			free(str);
-			break;
-		
+				
 		case LABEL_HYPERPAGEREF:
 		case LABEL_PAGEREF:
 			signet = strdup_nobadchars(text);
-			fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF BM%s \\\\* MERGEFORMAT }}",signet);
-			fprintRTF("{\\fldrslt{}}}",signet);
+			if (g_fields_use_REF) {
+				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 PAGEREF BM%s \\\\* MERGEFORMAT }}",signet);
+				fprintRTF("{\\fldrslt{");
+			}
+			fprintRTF("%s",signet);
+			if (g_fields_use_REF) fprintRTF("}}}");
 			free(signet);
 			break;
 	}
@@ -382,57 +456,272 @@ purpose: handles \label \ref \pageref \cite
 	if (option) free(option);
 }
 
-char * 
-ScanAux(char *token, char * reference, int code)
-/*************************************************************************
-purpose: obtains a reference from .aux file
-
-code=0 means \token{reference}{number}       -> "number"
-code=1 means \token{reference}{{sect}{line}} -> "sect"
- ************************************************************************/
+static char * popCommaName(char *s)
+/* given s="name1,name2,name3" returns "name2,name3" and makes s="name1"
+   no memory is allocated, commas are replaced by '\0' */
 {
-	static FILE    *fAux = NULL;
-	char            AuxLine[1024];
-	char            target[256];
-	char           *s,*t;
-	int				braces;
-
-	if (g_aux_file_missing || strlen(token) == 0) {
-		return NULL;
-	}
-
-	sprintf(target, "\\%s{%s}", token, reference);
-	
-	if (fAux == NULL && (fAux = my_fopen(g_aux_name, "r")) == NULL) {
-		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", g_aux_name);
-		g_aux_file_missing = TRUE;
-		return NULL;
-	}
-	
-	rewind(fAux);
-	
-	while (fgets(AuxLine, 1023, fAux) != NULL) {
-
-		s = strstr(AuxLine, target);
-		if (s) {
+		char *t;
+		if (s==NULL || *s=='\0') return NULL;
 		
-			s += strlen(target);		/* move to \token{reference}{ */			
-			if (code==1) s++;			/* move to \token{reference}{{ */
-
-			t = s;					
-			braces = 1;
-			while ( braces >= 1) {		/* skip matched braces */
-				t++;
-				if (*t == '{') braces++;
-				if (*t == '}') braces--;
-				if (*t == '\0') return NULL;
-			}
+		t = strchr(s, ',');
+		if (!t) return NULL;
 			
-			*t = '\0';
-			return strdup(s+1);
-		}
+		*t = '\0';			/* replace ',' with '\0' */
+		return t+1;			/* next string starts after ',' */
+}
+
+static char * 
+getAngleParam(void)
+/******************************************************************************
+  purpose: return bracketed parameter
+  			
+  \item<1>  --->  "1"        \item<>   --->  ""        \item the  --->  NULL
+       ^                           ^                         ^
+  \item <1>  --->  "1"        \item <>  --->  ""        \item  the --->  NULL
+       ^                           ^                         ^
+ ******************************************************************************/
+{
+	char            c, *text;
+	
+	c = getNonBlank();
+
+	if (c == '<') {
+		text = getDelimitedText('<','>',TRUE);
+		diagnostics(5, "getAngleParam [%s]", text);
+
+	} else {
+		ungetTexChar(c);
+		text = NULL;
+		diagnostics(5, "getAngleParam []");
 	}
-	return NULL;
+	
+	return text;
+}
+
+static int isEmptyName(char *s)
+{
+	if (s==NULL) return 1;
+	if (s[0]=='\0') return 1;
+	if (s[0]=='{' && s[1]=='}') return 1;
+	return 0;
+} 
+
+static void ConvertNatbib(char *s, int code, char *pre, char *post)
+{
+	char *n, *year, *abbv, *full, *v;
+	PushSource(NULL,s);
+	n=getBraceParam();
+	year=getBraceParam();
+	abbv=getBraceParam();
+	full=getBraceParam();
+	PopSource();
+	diagnostics(5,"natbib [%s] <%s> <%s> <%s> <%s>",pre,n,year,abbv,full);
+	switch (code) {
+		case CITE_CITE:
+		case CITE_T:
+		case CITE_T_STAR:
+			v=abbv;
+			if (CITE_T==code && g_citation_longnamesfirst && !g_current_cite_seen)
+				if (!isEmptyName(full)) v = full;
+			if (CITE_T_STAR==code)
+				if (!isEmptyName(full)) v = full;
+			if (CITE_CITE==code && g_citation_longnamesfirst)
+				if (!isEmptyName(full)) v = full;
+
+			ConvertString(v);
+
+			fprintRTF(" (");
+			ConvertString(year);
+			if (pre){ fprintRTF(", "); ConvertString(pre); }
+			if (post) { fprintRTF(", "); ConvertString(post); }
+			fprintRTF(")");
+			break;
+			
+		case CITE_P:
+		case CITE_P_STAR:
+			v=abbv;
+			if (CITE_P==code && g_citation_longnamesfirst && !g_current_cite_seen)
+				if (!isEmptyName(full)) v = full;
+			if (CITE_P_STAR==code)
+				if (!isEmptyName(full)) v = full;
+
+			if (pre && g_current_cite_item==1){ ConvertString(pre); fprintRTF(" "); }
+
+			if (strcmp(v,g_last_author_cited)!=0) {  /*suppress repeated names */
+				ConvertString(v);
+				strcpy(g_last_author_cited,v);
+			}
+			fprintRTF(", ");
+			ConvertString(year);
+			if (post && *post !='\0') {
+				fprintRTF(", ");
+				ConvertString(post);
+				fprintRTF(" ");
+			}
+			break;
+			
+		case CITE_AUTHOR:
+		case CITE_AUTHOR_STAR:
+			v=abbv;
+			if (CITE_AUTHOR==code && g_citation_longnamesfirst && !g_current_cite_seen)
+				v = full;
+			if (CITE_AUTHOR_STAR==code)
+				v = full;
+			ConvertString(v);
+			break;
+
+		case CITE_YEAR:
+		case CITE_YEAR_P:
+			if (pre){ ConvertString(pre); fprintRTF(" "); }
+			ConvertString(year);
+			if (post) { fprintRTF(", "); ConvertString(post); }
+			break;
+	}
+	free(n);
+	free(year);
+	free(abbv);
+	free(full);
+}
+
+void CmdCite(int code)
+/******************************************************************************
+purpose: handles \cite
+******************************************************************************/
+{
+	char punct[4]="[],";
+	char *text, *str1;
+	char *keys, *key, *next_keys;
+	char *option = NULL;
+	char *pretext = NULL;
+	
+	/* Setup punctuation and read options before citation */
+	g_current_cite_paren=TRUE;
+	*g_last_author_cited='\0';
+	
+	if (g_document_bibstyle == BIBSTYLE_STANDARD){
+		option  = getBracketParam();
+	}
+	
+	if (g_document_bibstyle == BIBSTYLE_APALIKE){
+		strcpy(punct,"();");
+		option  = getBracketParam();
+	}
+	
+	if (g_document_bibstyle == BIBSTYLE_AUTHORDATE){
+		strcpy(punct,"();");
+		option  = getBracketParam();
+	}
+	
+	if (g_document_bibstyle == BIBSTYLE_NATBIB){
+		pretext = getBracketParam();
+		option  = getBracketParam();
+		strcpy(punct,"();");
+		if (code!=CITE_P   && code!=CITE_P_STAR   &&
+		    code!=CITE_ALP && code!=CITE_ALP_STAR && code!=CITE_YEAR_P)
+			g_current_cite_paren=FALSE;
+	}
+	
+	if (g_document_bibstyle == BIBSTYLE_APACITE){
+		pretext = getAngleParam();
+		option  = getBracketParam();
+		strcpy(punct,"();");
+		if (code!=CITE_CITE && code!=CITE_FULL && code!=CITE_SHORT && code!=CITE_YEAR)
+			g_current_cite_paren=FALSE;
+		g_current_cite_type=code;
+	}
+
+	text = getBraceParam();
+	str1 = strdup_nocomments(text);
+	free(text);
+	text=str1;
+	
+	if (strlen(text)==0) {
+		free(text);
+		if (pretext) free(pretext);
+		if (option) free(option);
+		return;
+	}
+	
+	/* output text before citation */
+	if (g_current_cite_paren)
+		fprintRTF("\n%c", punct[0]);
+		
+	if (pretext && g_document_bibstyle == BIBSTYLE_APACITE ) {
+		ConvertString(pretext); 
+		fprintRTF(" ");
+	}
+	
+	/* now start processing keys */
+	keys = strdup_noblanks(text);
+	free(text);
+	key = keys;
+	next_keys = popCommaName(key);
+	
+	g_current_cite_item=0;
+	while (key) {
+		char *s, *t;
+		g_current_cite_item++;
+		
+		s = ScanAux("bibcite", key, 0);				/* look up bibliographic reference */
+
+		if (g_document_bibstyle == BIBSTYLE_APALIKE) {  /* can't use Word refs for APALIKE or APACITE*/
+			t = s ? s : key;							
+			ConvertString(t);
+		}
+		
+		if (g_document_bibstyle == BIBSTYLE_AUTHORDATE) { 
+			t = s ? s : key;							
+			if (code==CITE_SHORT) 
+				g_suppress_name=TRUE;
+			ConvertString(t);
+			if (code==CITE_SHORT) 
+				g_suppress_name=FALSE;
+		}
+		
+		if (g_document_bibstyle == BIBSTYLE_APACITE) {  /*  */
+			t = s ? s : key;							
+			g_current_cite_seen=citation_used(key);
+			ConvertString(t);
+		} 
+
+		if (g_document_bibstyle == BIBSTYLE_NATBIB) {
+			diagnostics(2,"natbib key=[%s] <%s>",key, s);
+			if (s) {
+				g_current_cite_seen=citation_used(key);
+				ConvertNatbib(s,code,pretext,option);
+			} else
+				ConvertString(key);
+		} 
+
+		if (g_document_bibstyle == BIBSTYLE_STANDARD) {  /*  */
+			char *signet = strdup_nobadchars(key);			
+			t = s ? s : signet;							/* if .aux is missing or incomplete use original citation */
+			if (g_fields_use_REF) {
+				fprintRTF("{\\field{\\*\\fldinst{\\lang1024 REF BIB_%s \\\\* MERGEFORMAT }}",signet);
+				fprintRTF("{\\fldrslt{");
+			}
+			ConvertString(t);
+			if (g_fields_use_REF) fprintRTF("}}}");
+			if (signet) free(signet);
+		}
+			
+		if (next_keys) fprintRTF("%c ",punct[2]);		/* punctuation between citations */
+		key=next_keys;
+		next_keys=popCommaName(key);					/* key modified to be a single key */
+		if (s) free(s);
+	}
+
+	/* final text after citation */
+	if (option && (g_document_bibstyle == BIBSTYLE_APACITE || g_document_bibstyle == BIBSTYLE_AUTHORDATE)) {
+		fprintRTF(", ");
+		ConvertString(option);
+	}
+	
+	if (g_current_cite_paren) fprintRTF("\n%c", punct[1]);
+
+	if (keys) free(keys);
+	if (option)  free(option);
+	if (pretext) free(pretext);
 }
 
 void
@@ -467,4 +756,159 @@ purpose: handles \htmladdnormallink{text}{link}
 		free(text);
 		free(ref);
 	}
+}
+
+void
+CmdBCAY(int code)
+{
+	char *s, *t, *v, *year;
+	
+	diagnostics(4,"Entering CmdBCAY", s);
+
+	s = getBraceParam();
+	t = getBraceParam();
+	year = getBraceParam();
+	v = g_current_cite_seen ? t : s;
+	
+	diagnostics(4,"s    = <%s>", s);
+	diagnostics(4,"t    = <%s>", t);
+	diagnostics(4,"year = <%s>", year);
+	diagnostics(4,"type = %d, seen = %d, item= %d",g_current_cite_type,g_current_cite_seen,g_current_cite_item);
+	
+	switch (g_current_cite_type){
+	
+		case CITE_CITE:
+		case CITE_CITE_NP:
+		case CITE_CITE_A:
+			if (strcmp(v,g_last_author_cited)!=0) {  /*suppress repeated names */
+				ConvertString(v);
+				strcpy(g_last_author_cited,v);
+	
+				if (g_current_cite_type==CITE_CITE_A) 
+					fprintRTF(" (");
+				else
+					fprintRTF(", ");
+			}
+	
+			ConvertString(year);
+			if (g_current_cite_type==CITE_CITE_A) 
+				fprintRTF(")");
+			break;
+			
+		case CITE_CITE_AUTHOR:
+			ConvertString(v);
+			break;
+	
+		case CITE_FULL:
+		case CITE_FULL_NP:
+		case CITE_FULL_A:
+			ConvertString(s);
+			if (g_current_cite_type==CITE_FULL_A) 
+				fprintRTF(" (");
+			else
+				fprintRTF(", ");
+	
+			ConvertString(year);
+			if (g_current_cite_type==CITE_FULL_A) 
+				fprintRTF(")");
+			break;
+			
+		case CITE_FULL_AUTHOR:
+			ConvertString(s);
+			break;
+	
+		case CITE_SHORT:
+		case CITE_SHORT_NP:
+		case CITE_SHORT_A:
+		case CITE_SHORT_AUTHOR:
+			ConvertString(t);
+			break;
+			
+		case CITE_YEAR:
+		case CITE_YEAR_NP:
+			ConvertString(year);
+			break;
+	
+	}
+	free(s);
+	free(t);
+	free(year);
+}
+
+void
+CmdApaCite(int code)
+/******************************************************************************
+purpose: handles apacite stuff
+******************************************************************************/
+{		
+	int n;
+	char *s;
+		
+	switch (code) {
+		case 0: fprintRTF("("); break; /* BBOP */
+		case 1: fprintRTF("&"); break; /* BBAA */
+		case 2: fprintRTF("and"); break; /* BBAB */
+		case 3: fprintRTF(", "); break; /* BBAY */
+		case 4: fprintRTF("; "); break; /* BBC */
+		case 5: fprintRTF(", "); break; /* BBN */
+		case 6: fprintRTF(")"); break; /* BBCP */
+		case 7: fprintRTF(""); break; /* BBOQ */
+		case 8: fprintRTF(""); break; /* BBCQ */
+		case 9: fprintRTF(","); break; /* BCBT */
+		case 10: fprintRTF(","); break; /* BCBL */
+		case 11: fprintRTF("et al."); break; /* BOthers */
+		case 12: fprintRTF("in press"); break; /* BIP */
+		case 13: fprintRTF("and"); break; /* BAnd */
+		case 14: fprintRTF("Ed."); break; /* BED */
+		case 15: fprintRTF("Eds."); break; /* BEDS */
+		case 16: fprintRTF("Trans."); break; /* BTRANS */
+		case 17: fprintRTF("Trans."); break; /* BTRANSS */
+		case 18: fprintRTF("Chair"); break; /* BCHAIR */
+		case 19: fprintRTF("Chairs"); break; /* BCHAIRS */
+		case 20: fprintRTF("Vol."); break; /* BVOL */
+		case 21: fprintRTF("Vols."); break; /* BVOLS */
+		case 22: fprintRTF("No."); break; /* BNUM */
+		case 23: fprintRTF("Nos."); break; /* BNUMS */
+		case 24: fprintRTF("ed."); break; /* BEd */
+		case 25: fprintRTF("p."); break; /* BPG */
+		case 26: fprintRTF("pp."); break; /* BPGS */
+		case 27: fprintRTF("Tech. Rep."); break; /* BTR */
+		case 28: fprintRTF("Doctoral dissertation"); break; /* BPhD */
+		case 29: fprintRTF("Unpublished doctoral dissertation"); break; /* BUPhD */
+		case 30: fprintRTF("Master's thesis"); break; /* BMTh */
+		case 31: fprintRTF("Unpublished master's thesis"); break; /* BUMTh */
+		case 32: fprintRTF("Original work published "); break; /* BOWP */
+		case 33: fprintRTF("Reprinted from "); break; /* BREPR */
+		case 34: s=getBraceParam();
+				 if (sscanf(s, "%d", &n)==1)
+				 	fprintRTF("%c", (char) 'a' + n - 1);
+				 free(s);
+				 break;
+		case 35: fprintRTF("%s", (g_current_cite_paren) ? "&" : "and");  /*BBA*/
+				 break;
+		case 36: s=getBraceParam();  /* \AX{entry} */
+				 diagnostics(4,"Ignoring \\AX{%s}",s);
+				 if (s) free(s);
+				 break;
+		default: ;
+	}
+}
+
+void
+CmdCiteName(int code)
+/******************************************************************************
+purpose: handles \citename from authordate bib style
+******************************************************************************/
+{		
+	char *s;
+	
+	diagnostics(4,"Entering CmdCitename", s);
+
+	s = getBraceParam();
+	
+	if (!g_suppress_name)
+		ConvertString(s);
+	
+	free(s);
+	
 }

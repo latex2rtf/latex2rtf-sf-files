@@ -37,6 +37,9 @@ Authors:
 #include "ignore.h"
 #include "commands.h"
 #include "counters.h"
+#include "xref.h"
+#include "direct.h"
+#include "style.h"
 
 static bool   g_preambleTwoside  = FALSE;
 static bool   g_preambleTwocolumn= FALSE;
@@ -71,7 +74,8 @@ setPackageBabel(char * option)
 			ReadLanguage("german");
 	}
 	
-	if (strcmp(option, "french") == 0)
+	if (strcmp(option, "french") == 0 ||
+	    strcmp(option, "frenchb") == 0)
 	{
 		FrenchMode = TRUE;
 		PushEnvironment(FRENCH_MODE);
@@ -118,6 +122,7 @@ setPackageInputenc(char * option)
 	         strcmp(option, "cp850") == 0    ||
 	         strcmp(option, "cp852") == 0    ||
 	         strcmp(option, "cp855") == 0    ||
+	         strcmp(option, "cp865") == 0    ||
 	         strcmp(option, "cp866") == 0    ||
 	         strcmp(option, "cp1250") == 0   ||
 	         strcmp(option, "cp1251") == 0   ||
@@ -127,6 +132,7 @@ setPackageInputenc(char * option)
 	         strcmp(option, "850") == 0    ||
 	         strcmp(option, "852") == 0    ||
 	         strcmp(option, "855") == 0    ||
+	         strcmp(option, "865") == 0    ||
 	         strcmp(option, "866") == 0    ||
 	         strcmp(option, "1250") == 0   ||
 	         strcmp(option, "1251") == 0   ||
@@ -360,13 +366,13 @@ setPointSize(char * option)
 		setLength("parindent",   15*20);
 		setLength("parskip",      0*20);
 
-	}else if (strcmp(option, "11pt") == 0){
+	} else if (strcmp(option, "11pt") == 0){
 		InitializeDocumentFont(-1, 22, -1, -1);
 		setLength("baselineskip",14*20);
 		setLength("parindent",   17*20);
 		setLength("parskip",      0*20);
 
-	}else {
+	} else {
 		InitializeDocumentFont(-1, 24, -1, -1);
 		setLength("baselineskip",(int) 14.5*20);
 		setLength("parindent",   18*20);
@@ -387,7 +393,7 @@ setDocumentOptions(char *optionlist)
 	while (option) {
 
 /*		while (*option == ' ') option++;  skip leading blanks */
-		diagnostics(4, "                    option   <%s>", option);
+		diagnostics(3, " (setDocumentOptions) option <%s>", option);
 		if      (strcmp(option, "10pt"       ) == 0 ||
 			     strcmp(option, "11pt"       ) == 0 || 
 				 strcmp(option, "12pt"       ) == 0) 
@@ -406,6 +412,7 @@ setDocumentOptions(char *optionlist)
 			     strcmp(option, "english") == 0 || 
 			     strcmp(option, "russian") == 0 || 
 			     strcmp(option, "czech"  ) == 0 || 
+			     strcmp(option, "frenchb"  ) == 0 || 
 				 strcmp(option, "french")  == 0) 
 			setPackageBabel(option);
 		else if (strcmp(option, "twoside") == 0) 
@@ -416,13 +423,35 @@ setDocumentOptions(char *optionlist)
 			g_preambleTitlepage = TRUE;
 		else if (strcmp(option, "isolatin1") == 0)
 			setPackageInputenc("latin1");
-		else if (strcmp(option, "hyperlatex") == 0) {
+		else if (strcmp(option, "hyperlatex") == 0)
 			PushEnvironment(HYPERLATEX); 
+		else if (strcmp(option, "apalike") == 0)
+			g_document_bibstyle = BIBSTYLE_APALIKE;
+		else if (strcmp(option, "apanat1b") == 0)
+			PushEnvironment(APACITE_MODE);
+		else if (strcmp(option, "natbib") == 0){
+			PushEnvironment(NATBIB_MODE);
+			g_document_bibstyle = BIBSTYLE_NATBIB;
+		} else if (strcmp(option, "authordate") == 0 ||
+			     strcmp(option, "authordate1") == 0 ||
+			     strcmp(option, "authordate2") == 0 ||
+			     strcmp(option, "authordate3") == 0 ||
+			     strcmp(option, "authordate4") == 0 ||
+			     strcmp(option, "authordate1-4") == 0 ){
+	/*		PushEnvironment(AUTHORDATE_MODE);*/
+			g_document_bibstyle = BIBSTYLE_AUTHORDATE;
+		} else if (strcmp(option, "apacite")==0   ||
+			     strcmp(option, "apacitex") == 0 ) {
+			PushEnvironment(APACITE_MODE);
+			g_document_bibstyle = BIBSTYLE_APACITE;
 		} else if (strcmp(option, "fancyhdr") == 0) {
 			diagnostics(WARNING, "Only partial support for %s", option);
 		} else if (strcmp(option, "textcomp")==0 ||
 				   strcmp(option, "fontenc")==0) {
 			/* do nothing ... but don't complain */
+		}
+		else if (strcmp(option, "color") == 0) {
+			diagnostics(WARNING, "Color support limited to eight basic colors");
 		}
 		else if (!TryVariableIgnore(option)) {
 			diagnostics(WARNING, "Unknown style option %s ignored", option);
@@ -507,12 +536,13 @@ CmdUsepackage(int code)
 	else if (strcmp(package, "isolatin1") == 0)
 		setPackageInputenc("latin1");
 
-	else if (strcmp(package, "babel") == 0 && options)
-		setPackageBabel(options);
-		
-	else if (strcmp(package, "german" )  == 0 ||
+	else if (strcmp(package, "babel") == 0) {
+		if (options) setPackageBabel(options);	
+			
+	} else if (strcmp(package, "german" )  == 0 ||
 		     strcmp(package, "ngerman")  == 0 ||
 		     strcmp(package, "czech"  )  == 0 ||
+		     strcmp(package, "frenchb")  == 0 ||
 		     strcmp(package, "french")  == 0) 
 		setPackageBabel(package);
 
@@ -525,8 +555,12 @@ CmdUsepackage(int code)
 	         strstr(package, "newcen")        ||
 	         strstr(package, "helvet") )
 		setPackageFont(package);
-		
-	else
+
+	else if (strcmp(package, "natbib") == 0) {
+		if (strstr(options, "")) set_longnamesfirst();
+		PushEnvironment(NATBIB_MODE);
+		g_document_bibstyle = BIBSTYLE_NATBIB;
+	} else
 		setDocumentOptions(package);
 	
 	if (options)
@@ -573,9 +607,9 @@ CmdMakeTitle(int code)
 	char            date_begin[10];
 
 	PushTrackLineNumber(FALSE);
-	sprintf(title_begin, "%s%2d", "\\fs", (30 * CurrentFontSize()) / 20);
-	sprintf(author_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
-	sprintf(date_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
+	snprintf(title_begin, 10, "%s%2d", "\\fs", (30 * CurrentFontSize()) / 20);
+	snprintf(author_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
+	snprintf(date_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 
 	alignment = CENTERED;
 	fprintRTF("\n\\par\\pard\\qc {%s ", title_begin);
@@ -593,8 +627,9 @@ CmdMakeTitle(int code)
 		ConvertString(g_preambleDate);
 	fprintRTF("}");
 	
-	fprintRTF("\n\\par\n\\par\\pard\\q%c ", alignment);
+	CmdEndParagraph(0);
 	alignment = JUSTIFIED;
+
 	if (g_preambleTitlepage)
 		fprintRTF("\\page ");
 
@@ -772,7 +807,7 @@ WriteFontHeader(void)
 	char                *font_type, *font_name;
 	int					 charset;
 
-	fprintRTF("{\\fonttbl\n");
+	fprintRTF("{\\fonttbl");
 
 	config_handle = CfgStartIterate(FONT_A);
 	i=3;
@@ -788,7 +823,7 @@ WriteFontHeader(void)
 		if (strncmp(font_type, "Cyrillic", 8)==0)	
 			charset = 204;
 					
-		fprintRTF(" {\\f%d\\fnil\\fcharset%d %s;}\n",i, charset, font_name);
+		fprintRTF("{\\f%d\\fnil\\fcharset%d %s;}\n",i, charset, font_name);
 
 		i++;
 	}
@@ -816,20 +851,20 @@ WriteStyleHeader(void)
          \par}
  ****************************************************************************/
 {
-	int DefFont = DefaultFontFamily();
-	fprintRTF("{\\stylesheet{\\fs%d\\lang1024\\snext0 Normal;}\n", CurrentFontSize());
-	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 1;}\n", HEADER11, DefFont, HEADER12);
-	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 2;}\n", HEADER21, DefFont, HEADER22);
-	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 3;}\n", HEADER31, DefFont, HEADER32);
-	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 4;}\n", HEADER41, DefFont, HEADER42);
-	fprintRTF("%s", HEADER03);
-	fprintRTF("%s", HEADER04);
-	fprintRTF("%s\n", HEADER05);
+	ConfigEntryT **style;
+	const char *rtf;
 	
-	fprintRTF("%s\n", HEADER13);
-	fprintRTF("%s\n", HEADER23);
-	fprintRTF("%s\n", HEADER33);
-	fprintRTF("%s\n", HEADER43);
+	fprintRTF("{\\stylesheet\n{\\s0\\fs%d\\snext0 Normal;}\n", CurrentFontSize());
+	
+	style = CfgStartIterate(STYLE_A);
+	while ((style = CfgNext(STYLE_A, style)) != NULL) {
+		rtf = (*style)->RtfCommand;
+		diagnostics(4,"style <%s>=<%s>", (*style)->TexCommand,rtf);
+		fprintRTF("{");
+		InsertBasicStyle(rtf, TRUE);
+		fprintRTF(";}\n");
+	}
+	fprintRTF("}\n");
 }
 
 static void
@@ -939,7 +974,13 @@ void CmdHeadFoot(int code)
  adapted from code by Taupin in ltx2rtf
  ******************************************************************************/
 {
-  char *HeaderText = getBraceParam();
+  char *HeaderText = NULL;
+  char *AlternText = NULL;
+  
+  AlternText = getBracketParam();
+  if (AlternText) free(AlternText);
+  
+  HeaderText = getBraceParam();
   
   diagnostics(4,"CmdHeadFoot code=%d <%s>",code, HeaderText);
   switch(code)
@@ -970,22 +1011,22 @@ WriteColorTable(void)
  ***************************************************************************/
 {
 	fprintRTF("{\\colortbl;\n");
-	fprintRTF("\\red0\\green0\\blue0;\n");
-	fprintRTF("\\red0\\green0\\blue255;\n");
-	fprintRTF("\\red0\\green255\\blue255;\n");
-	fprintRTF("\\red0\\green255\\blue0;\n");
-	fprintRTF("\\red255\\green0\\blue255;\n");
-	fprintRTF("\\red255\\green0\\blue0;\n");
-	fprintRTF("\\red255\\green255\\blue0;\n");
-	fprintRTF("\\red255\\green255\\blue255;\n");
-	fprintRTF("\\red0\\green0\\blue128;\n");
-	fprintRTF("\\red0\\green128\\blue128;\n");
-	fprintRTF("\\red0\\green128\\blue0;\n");
-	fprintRTF("\\red128\\green0\\blue128;\n");
-	fprintRTF("\\red128\\green0\\blue0;\n");
-	fprintRTF("\\red128\\green128\\blue0;\n");
-	fprintRTF("\\red128\\green128\\blue128;\n");
-	fprintRTF("\\red192\\green192\\blue192;\n");
+	fprintRTF("\\red0\\green0\\blue0;\n");      /* black */
+	fprintRTF("\\red0\\green0\\blue255;\n");    /* blue */
+	fprintRTF("\\red0\\green255\\blue255;\n");  /* cyan */
+	fprintRTF("\\red0\\green255\\blue0;\n");    /* green */
+	fprintRTF("\\red255\\green0\\blue255;\n");  /* magenta */
+	fprintRTF("\\red255\\green0\\blue0;\n");    /* red */
+	fprintRTF("\\red255\\green255\\blue0;\n");  /* yellow */
+	fprintRTF("\\red255\\green255\\blue255;\n");/* white */
+	fprintRTF("\\red0\\green0\\blue128;\n");    /* dark blue */
+	fprintRTF("\\red0\\green128\\blue128;\n");  /* dark cyan */
+	fprintRTF("\\red0\\green128\\blue0;\n");    /* dark green */
+	fprintRTF("\\red128\\green0\\blue128;\n");  /* dark magenta */
+	fprintRTF("\\red128\\green0\\blue0;\n");    /* dark red */
+	fprintRTF("\\red128\\green128\\blue0;\n");  /* dark yellow */
+	fprintRTF("\\red128\\green128\\blue128;\n");/* dark gray */
+	fprintRTF("\\red192\\green192\\blue192;\n");/* light gray */
 	fprintRTF("}\n");
 }
 
@@ -999,7 +1040,7 @@ WriteInfo(void)
   \keywords       Selected keywords for the document
   \comment        Comments; text is ignored
   \version<N>     The version number of the document
-  \doccomm        Comments displayed in Word’s Summary Info dialog
+  \doccomm        Comments displayed in Word's Summary Info dialog
   
 {\info {\title This is a page} {\author \'ca}}
  ***************************************************************************/
@@ -1015,11 +1056,12 @@ purpose: writes header info for the RTF file
  ****************************************************************************/
 {
 	int family = DefaultFontFamily();
-	int size   = DefaultFontSize();
+/*	int size   = DefaultFontSize(); */
 
 	diagnostics(4, "Writing header for RTF file");
 
-	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family);
+/*	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family); */
+	fprintRTF("{\\rtf1\\ansi\\deff%d\\deflang1024\n", family);
 	WriteFontHeader();
 	WriteColorTable();
 	WriteStyleHeader();

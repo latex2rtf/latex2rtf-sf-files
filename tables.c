@@ -194,7 +194,7 @@ TabularPreamble(char *text, char *width, char *pos, char *cols)
 	int i;
 	
 	colFmt = ConvertFormatString(cols);
-	colCount = strlen(colFmt);
+	colCount = (int) strlen(colFmt);
 	actCol = 0;
 	
 	tab.n = colCount;
@@ -210,7 +210,7 @@ TabularPreamble(char *text, char *width, char *pos, char *cols)
 
 	if (GetTexMode() != MODE_HORIZONTAL){
 		CmdIndent(INDENT_NONE);
-		CmdStartParagraph(0);
+		CmdStartParagraph(FIRST_PAR);
 	}
 	
 	fprintRTF("\\par\n");
@@ -228,8 +228,8 @@ TabularGetRow(char *table, char **row, char **next_row, int *height)
 {
 	char *s,*dimension,*dim_start;
 	int slash=0;
-	int row_chars=0;
-	int dim_chars=0;
+	size_t row_chars=0;
+	size_t dim_chars=0;
 	bool slashslash=FALSE;
 	
 	s=table;
@@ -290,7 +290,7 @@ TabularGetRow(char *table, char **row, char **next_row, int *height)
 		PopSource();
 	}
 
-	diagnostics(4,"height =<%s>=%d twpi",dimension,height);
+	diagnostics(3,"height =<%s>=%d twpi",dimension,height);
 	free(dimension);
 
 	/* skip blanks */
@@ -330,7 +330,7 @@ TabularNextCell(char *cell_start, char **cell_end)
 	end = TabularNextAmpersand(cell_start);
 
 	if (*end=='&') {
-		dup = my_strndup(cell_start,end-cell_start);
+		dup = my_strndup(cell_start, (size_t) (end-cell_start));
 		*cell_end = end+1;
 	} else {
 		dup = strdup(cell_start);
@@ -562,7 +562,10 @@ TabularWriteRow(TabularT tabular, char *this_row, char *next_row, int height, in
 	diagnostics(4, "TabularWriteRow height=%d twpi, row <%s>",height, this_row); 
 	
 	/* avoid writing anything for empty last row */
-	if (next_row == NULL && !strchr(this_row, '&')) return;
+	if (next_row == NULL) {
+		if (colCount==1 &&  strlen(this_row)==0)   return;
+		if (colCount >1 && !strchr(this_row, '&')) return;
+	}
 	
 	TabularBeginRow(tabular, this_row, next_row, first_row);
 	cell_start = this_row;
@@ -608,9 +611,12 @@ CmdTabular(int code)
  			\begin{array}[pos]{cols}            ... \end{array}
  ******************************************************************************/
 {
-	int             true_code,this_height, next_height, first_row;
-	char           *cols,*pos,*end,*width,*this_row, *next_row, *next_row_start, *row_start;
+	int             true_code,this_height, next_height, first_row, begins, ends;
+	char           *end,*begin,*this_row, *next_row, *next_row_start, *row_start;
 	char   		   *table=NULL;
+	char   		   *cols=NULL;
+	char   		   *pos=NULL;
+	char   		   *width=NULL;
 	TabularT        tabular;
 	
 	if (!(code & ON)) {
@@ -629,52 +635,94 @@ CmdTabular(int code)
 	switch (true_code) {
 		case TABULAR: 
 			end = strdup("\\end{tabular}");
+			begin = strdup("\\begin{tabular}");
 			break;
 		case TABULAR_STAR: 
 			end = strdup("\\end{tabular*}");
+			begin = strdup("\\begin{tabular*}");
 			width = getBraceParam();
 			break;
 		case TABULAR_LONG: 
 			end = strdup("\\end{longtable}");
+			begin = strdup("\\begin{longtable}");
 			break;
 		case TABULAR_LONG_STAR: 
 			end = strdup("\\end{longtable*}");
+			begin = strdup("\\begin{longtable*}");
 			width = getBraceParam();
 			break;
 	}
 
 	pos = getBracketParam();
-	cols = getBraceParam();		
+	cols = getBraceParam();
 	table = getTexUntil(end,FALSE);
-	diagnostics(3, "Entering CmdTabular() options [%s], format {%s}",pos, cols); 
-	tabular=TabularPreamble(table,width,pos,cols);
-	row_start=table;
-	TabularGetRow(row_start,&this_row,&next_row_start,&this_height);
-
-	diagnostics(2, "table_table_table_table_table\n%stable_table_table_table_table",table);
 	
-	first_row = TRUE;
-	while (this_row) {
-		row_start=next_row_start;
-		TabularGetRow(row_start,&next_row,&next_row_start,&next_height);
-		TabularWriteRow(tabular, this_row, next_row, this_height, first_row);
-		free(this_row);
-		this_row = next_row;
-		this_height = next_height;
-		first_row = FALSE;
+/* need to make sure that we don't have nested environments */
+	begins = strstr_count(table, begin);
+	ends   = strstr_count(table, end);
+
+	while (begins > ends) {
+		char *table2, *table3, *table4;
+
+		if (begins > ends) {
+			table2 = getTexUntil(end,FALSE);
+			table3 = strdup_together(table,end);
+			table4 = strdup_together(table3,table2);
+			free(table);
+			free(table2);
+			free(table3);
+			table=table4;
+		}
+		begins = strstr_count(table, begin);
+		ends   = strstr_count(table, end);
 	}
 	
-	ConvertString(end);
+	if (begins>0) {
+		char *p;
+		int num = TexFontNumber("Typewriter");
+		diagnostics(1, "Nest tabular/tabbing environments not allowed"); 
+		diagnostics(2, "table_table_table_table_table\n%stable_table_table_table_table",table);
+		fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
+		p=begin;
+		while (*p) putRtfChar(*p++);
+		p=table;
+		while (*p) putRtfChar(*p++);
+		p=end;
+		while (*p) putRtfChar(*p++);
 
-	if (pos  ) free(pos);
-	if (width) free(width);
-	if (cols ) free(cols);
+	} else {
+	
+		diagnostics(3, "Entering CmdTabular() options [%s], format {%s}",(pos)?pos:"", cols); 
+		tabular=TabularPreamble(table,width,pos,cols);
+		row_start=table;
+		TabularGetRow(row_start,&this_row,&next_row_start,&this_height);
+	
+		diagnostics(2, "table_table_table_table_table\n%stable_table_table_table_table",table);
+		
+		first_row = TRUE;
+		while (this_row) {
+			row_start=next_row_start;
+			TabularGetRow(row_start,&next_row,&next_row_start,&next_height);
+			TabularWriteRow(tabular, this_row, next_row, this_height, first_row);
+			free(this_row);
+			this_row = next_row;
+			this_height = next_height;
+			first_row = FALSE;
+		}
+		
+		free(tabular.cline);
+		free(tabular.align);
+		free(tabular.vert);
+		free(tabular.width);
+		if (cols)  free(cols);
+		if (pos  ) free(pos);
+		if (width) free(width);
+	}
+
+	ConvertString(end);
 	free(table);
 	free(end);
-	free(tabular.cline);
-	free(tabular.align);
-	free(tabular.vert);
-	free(tabular.width);
+	free(begin);
 }
 
 static int
@@ -707,7 +755,7 @@ TabbingNextCellEnd(char *t, char **cell_end, char **next_cell)
 		if (*s == '\\') {
 			s++;
 			if (*s=='=' || *s=='>' || *s=='<' || *s=='\'' || *s=='`') {
-				*cell_end = s-2;
+				*cell_end = s-1;
 				*next_cell = s+1;
 				return;
 			}
@@ -727,7 +775,7 @@ TabbingNextCell(char *cell_start, char **cell_end)
 	TabbingNextCellEnd(cell_start, &end, &next_cell);
 
 	if (end<cell_start) end=cell_start;
-	dup = my_strndup(cell_start, end-cell_start);
+	dup = my_strndup(cell_start, (size_t) (end-cell_start));
 	
 	if (*next_cell=='\0')
 		*cell_end = NULL;
@@ -747,7 +795,7 @@ TabbingNextCell(char *cell_start, char **cell_end)
 }
 
 static void
-TabbingBeginRow(int n, char *align)
+TabbingBeginRow(int n, int n_total, char *align)
 /******************************************************************************
  purpose:  emit RTF to start one row of a tabbing environment           
  ******************************************************************************/
@@ -759,7 +807,7 @@ TabbingBeginRow(int n, char *align)
 	fprintRTF("\\trowd");
 
 	for(i=0; i<n; i++)
-		fprintRTF("\\cellx%d", TabbingColumnPosition(i,n));
+		fprintRTF("\\cellx%d", TabbingColumnPosition(i,n_total));
 		
 	fprintRTF("\n");
 	for(i=0; i<g_tabbing_left_position; i++) {
@@ -770,7 +818,7 @@ TabbingBeginRow(int n, char *align)
 }
 
 static void
-TabbingWriteRow(char *this_row, int n, char *align)
+TabbingWriteRow(char *this_row, int n, int n_total, char *align)
 {
 	char *start, *end, *cell;
 	int i;
@@ -780,7 +828,7 @@ TabbingWriteRow(char *this_row, int n, char *align)
 	diagnostics(4, "TabbingWriteRow n=%d <%s> [%s]",n, align, this_row); 
 	if (strstr(this_row,"\\kill")) return;
 	
-	TabbingBeginRow(n,align);
+	TabbingBeginRow(n, n_total, align);
 	
 	start=this_row;
 	end=this_row+strlen(this_row);
@@ -806,7 +854,7 @@ TabbingGetRow(char *table, char **row, char **next_row)
   ******************************************************************************/
 {
 	char *s,*arow;
-	int row_chars=0;
+	size_t row_chars=0;
 	bool slash = FALSE;
 	
 	s=table;
@@ -841,6 +889,9 @@ TabbingGetRow(char *table, char **row, char **next_row)
 
 static void
 TabbingGetColumnAlignments(char* row, char *align, int *n, int *next_left)
+/******************************************************************************
+ purpose: 	scan one row of tabbing environment to obtain column alignments
+ ******************************************************************************/
 {
 	int i;
 	
@@ -894,7 +945,7 @@ CmdTabbing(int code)
  purpose: 	\begin{tabbing} ... \end{tabbing}
  ******************************************************************************/
 {
-	int             n,next_left;
+	int             n,n_total,next_left;
 	char           *end,*this_row, *next_row_start, *row_start;
 	char   		   *table=NULL;
 	char		   align[31];
@@ -923,18 +974,21 @@ CmdTabbing(int code)
 
 	if (GetTexMode() != MODE_HORIZONTAL){
 		CmdIndent(INDENT_NONE);
-		CmdStartParagraph(0);
+		CmdStartParagraph(FIRST_PAR);
 	}
 	
 	fprintRTF("\\par\n");
 	
+	n_total=0;
 	while (this_row && strlen(this_row)>0) {
 		diagnostics(4,"row=<%s>",this_row);
 		
 		TabbingGetColumnAlignments(this_row, align, &n, &next_left);
+		if (n>n_total) n_total=n;
+		
 		diagnostics(4,"this row n=%d <%s> left_tab=%d",n,align,g_tabbing_left_position);
 		
-		TabbingWriteRow(this_row, n, align);
+		TabbingWriteRow(this_row, n, n_total, align);
 
 		g_tabbing_left_position=next_left;		
 		row_start=next_row_start;
@@ -966,7 +1020,7 @@ parameter: type of array-environment
 		location = getBracketParam();
 		if (location) free(location);
 
-		CmdEndParagraph(0);
+		if (GetTexMode()!=MODE_VERTICAL) CmdEndParagraph(0);
 		CmdIndent(INDENT_NONE);
 
 		g_processing_table = TRUE;
@@ -977,7 +1031,7 @@ parameter: type of array-environment
 		free(table_contents);		
 	} else {
 		g_processing_table = FALSE;
-		CmdEndParagraph(0);
+		if (GetTexMode()!=MODE_VERTICAL) CmdEndParagraph(0);
 		if (g_table_label) free(g_table_label);
 	}
 }

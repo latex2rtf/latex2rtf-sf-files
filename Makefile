@@ -1,11 +1,11 @@
-# $Id: Makefile,v 1.76 2002/11/28 18:36:14 prahl Exp $
+# $Id: Makefile,v 1.101 2004/02/09 02:12:03 prahl Exp $
 
 CC=gcc
 MKDIR=mkdir -p
 
 CFLAGS:=-DUNIX
 #CFLAGS:=-DMSDOS         #Windows/DOS
-#CFLAGS:=-DMACINTOSH     #MacOS 8/9
+#CFLAGS:=-DMAC_CLASSIC   #MacOS 8/9
 #CFLAGS:=-DOS2           #OS/2
 
 #Uncomment for some windows machines (not needed for djgpp)
@@ -42,14 +42,14 @@ VERSION="`scripts/version`"
 SRCS=commands.c chars.c direct.c encode.c l2r_fonts.c funct1.c tables.c ignore.c \
 	main.c stack.c cfg.c util.c parser.c lengths.c counters.c letterformat.c \
 	preamble.c equation.c convert.c xref.c definitions.c graphics.c \
-	mygetopt.c
+	mygetopt.c style.c
 
 HDRS=commands.h chars.h direct.h encode.h l2r_fonts.h funct1.h tables.h ignore.h \
     main.h stack.h cfg.h util.h parser.h lengths.h counters.h letterformat.h \
     preamble.h equation.h convert.h xref.h definitions.h graphics.h encode_tables.h \
-    version.h mygetopt.h
+    version.h mygetopt.h style.h
 
-CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg \
+CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg cfg/style.cfg \
     cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
     cfg/catalan.cfg cfg/croatian.cfg cfg/czech.cfg cfg/danish.cfg cfg/dutch.cfg \
     cfg/english.cfg cfg/esperanto.cfg cfg/estonian.cfg cfg/finnish.cfg cfg/french.cfg \
@@ -57,21 +57,23 @@ CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg \
     cfg/latin.cfg cfg/lsorbian.cfg cfg/magyar.cfg cfg/norsk.cfg cfg/nynorsk.cfg \
     cfg/polish.cfg cfg/portuges.cfg cfg/romanian.cfg cfg/samin.cfg cfg/scottish.cfg \
     cfg/serbian.cfg cfg/slovak.cfg cfg/slovene.cfg cfg/spanish.cfg cfg/swedish.cfg \
-    cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg cfg/russian.cfg
+    cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg cfg/russian.cfg cfg/inc_test.tex
 
 DOCS= doc/latex2rtf.1   doc/latex2png.1    doc/latex2rtf.texi doc/latex2rtf.pdf \
       doc/latex2rtf.txt doc/latex2rtf.info doc/latex2rtf.html doc/credits \
-      doc/copying.txt   doc/Makefile       doc/latex2png.hlp  doc/latex2rtf.hlp
+      doc/copying.txt   doc/Makefile       doc/latex2pn.txt  doc/latex2rt.txt
 
-README= README README.DOS README.Mac Copyright ChangeLog 
+README= README README.DOS README.Mac README.OS2 README.Solaris Copyright ChangeLog
 
 SCRIPTS= scripts/version scripts/latex2png scripts/latex2png_1 scripts/latex2png_2 \
-	scripts/latex2png.bat scripts/README \
+	scripts/latex2pn.bat scripts/README \
 	scripts/Makefile scripts/test1.tex scripts/test2.tex scripts/test3.tex \
 	scripts/test3a.tex scripts/test4.tex scripts/test1fig.eps
 
 TEST=   test/Makefile test/bracecheck \
-	test/accentchars.tex test/array.tex test/cite.tex test/cite.bib \
+	test/accentchars.tex test/array.tex test/bib_simple.tex test/bib_simple.bib \
+	test/bib_apacite.tex test/bib_apalike.tex test/bib_apalike2.tex \
+	test/bib_natbib1.tex test/bib_natbib2.tex test/bib_natbib3.tex test/bib_apanat.tex \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
 	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty \
@@ -86,16 +88,18 @@ TEST=   test/Makefile test/bracecheck \
 	test/defs.tex test/excalibur.tex test/qualisex.tex test/include.tex \
 	test/include1.tex test/include2.tex test/include3.tex test/ch.tex test/spago1.tex \
 	test/theorem.tex test/picture.tex test/russian.tex test/eqns-koi8.tex \
-	test/tabbing.tex test/figtest.tex test/figtest.eps test/chem.tex \
-	test/apalike.tex test/apalike.bib test/linux.tex
+	test/tabbing.tex test/figtest.tex test/figtest.eps test/figtestb.pdf test/chem.tex \
+	test/linux.tex test/figtest2.tex test/figtestc.ps test/figtestc.pdf test/figtestd.ps \
+	test/figtestd.pdf test/color.tex test/subsup.tex \
+	test/figtest3.tex test/head_book.tex test/head_report.tex test/head_article.tex \
+	test/bib_authordate.tex
 
 OBJS=l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o util.o parser.o lengths.o counters.o \
 	preamble.o letterformat.o equation.o convert.o xref.o definitions.o graphics.o \
-	mygetopt.o
+	mygetopt.o style.o
 
-all : checkdir latex2rtf
-	touch stamp-build
+all : checkdir uptodate latex2rtf
 
 latex2rtf: $(OBJS) $(HDRS)
 	$(CC) $(CFLAGS) $(OBJS)	$(LIBS) -o $(BINARY_NAME)
@@ -109,6 +113,7 @@ main.o: Makefile main.c
 check test: latex2rtf
 	cd scripts && $(MAKE)
 	cd test && $(MAKE) 
+	cd test && $(MAKE) check
 
 checkdir: $(README) $(SRCS) $(HDRS) $(CFGS) $(SCRIPTS) $(TEST) doc/latex2rtf.texi
 
@@ -119,7 +124,7 @@ depend: $(SRCS)
 	$(CC) -MM $(SRCS) >makefile.depend
 	@echo "***** Append makefile.depend to Makefile manually ******"
 
-dist: $(SRCS) $(HDRS) $(CFGS) $(README) Makefile $(SCRIPTS) $(DOCS) $(TEST)
+dist: checkdir uptodate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile $(SCRIPTS) $(DOCS) $(TEST)
 	$(MKDIR) latex2rtf-$(VERSION)
 	$(MKDIR) latex2rtf-$(VERSION)/cfg
 	$(MKDIR) latex2rtf-$(VERSION)/doc
@@ -134,8 +139,12 @@ dist: $(SRCS) $(HDRS) $(CFGS) $(README) Makefile $(SCRIPTS) $(DOCS) $(TEST)
 	ln $(SCRIPTS)      latex2rtf-$(VERSION)/scripts
 	ln $(TEST)         latex2rtf-$(VERSION)/test
 	tar cvf - latex2rtf-$(VERSION) | \
-	    gzip -best > latex2rtf-$(VERSION).tar.gz
+	    gzip > latex2rtf-$(VERSION).tar.gz
 	rm -rf latex2rtf-$(VERSION)
+
+uptodate:
+	perl -pi.bak -e '$$date=scalar localtime; s/\(.*/($$date)";/' version.h
+	rm version.h.bak
 
 doc: doc/latex2rtf.texi doc/Makefile
 	cd doc && $(MAKE) -k
@@ -169,55 +178,63 @@ install: latex2rtf doc/latex2rtf.1 $(CFGS) scripts/latex2png
 
 install-info: doc/latex2rtf.info
 	$(MKDIR) $(INFO_INSTALL)
-	cp doc/latex2rtf.info $(BIN_INSTALL)
+	cp doc/latex2rtf.info $(INFO_INSTALL)
 	install-info --info-dir=$(INFO_INSTALL) doc/latex2rtf.info
 
 realclean: checkdir clean
-	rm -f stamp-build makefile.depend latex2rtf-$(VERSION).tar.gz
+	rm -f makefile.depend latex2rtf-$(VERSION).tar.gz
 	cd doc && $(MAKE) clean
 	cd test && $(MAKE) clean
 
-.PHONY: all check checkdir clean depend dist doc install install_info realclean latex2rtf
+splint: 
+	splint -weak $(SRCS) $(HDRS)
+	
+.PHONY: all check checkdir clean depend dist doc install install_info realclean latex2rtf uptodate splint
 
 # created using "make depend"
-commands.o : cfg.h main.h convert.h chars.h l2r_fonts.h preamble.h funct1.h \
-  tables.h equation.h letterformat.h commands.h parser.h xref.h ignore.h \
-  lengths.h definitions.h graphics.h 
-chars.o : main.h commands.h l2r_fonts.h cfg.h ignore.h encode.h parser.h \
-  chars.h funct1.h convert.h 
-direct.o : main.h direct.h l2r_fonts.h cfg.h 
-encode.o : main.h l2r_fonts.h funct1.h encode.h encode_tables.h 
-l2r_fonts.o : main.h convert.h l2r_fonts.h funct1.h commands.h cfg.h \
-  parser.h stack.h 
-funct1.o : main.h convert.h funct1.h commands.h stack.h l2r_fonts.h cfg.h \
-  ignore.h util.h encode.h parser.h counters.h lengths.h definitions.h \
-  preamble.h 
-tables.o : main.h convert.h l2r_fonts.h commands.h funct1.h tables.h \
-  stack.h cfg.h parser.h counters.h util.h 
-ignore.o : main.h direct.h l2r_fonts.h cfg.h ignore.h funct1.h commands.h \
-  parser.h convert.h 
-main.o : main.h convert.h commands.h chars.h l2r_fonts.h stack.h direct.h \
-  ignore.h version.h funct1.h cfg.h encode.h util.h parser.h lengths.h \
-  counters.h preamble.h xref.h mygetopt.h
-stack.o : main.h stack.h 
-cfg.o : main.h convert.h funct1.h cfg.h util.h 
-util.o : main.h util.h parser.h 
-parser.o : main.h commands.h cfg.h stack.h util.h parser.h l2r_fonts.h \
-  lengths.h definitions.h funct1.h 
-lengths.o : main.h util.h lengths.h parser.h 
-counters.o : main.h util.h counters.h 
-letterformat.o : main.h parser.h letterformat.h cfg.h commands.h funct1.h \
-  convert.h 
-preamble.o : main.h convert.h util.h preamble.h l2r_fonts.h cfg.h encode.h \
-  parser.h funct1.h lengths.h ignore.h commands.h counters.h 
-equation.o : main.h convert.h commands.h stack.h l2r_fonts.h cfg.h ignore.h \
-  parser.h equation.h counters.h funct1.h lengths.h util.h graphics.h 
-convert.o : main.h convert.h commands.h chars.h funct1.h l2r_fonts.h \
-  stack.h tables.h equation.h direct.h ignore.h cfg.h encode.h util.h \
-  parser.h lengths.h counters.h preamble.h 
-xref.o : main.h util.h convert.h funct1.h commands.h cfg.h xref.h parser.h \
-  preamble.h lengths.h l2r_fonts.h 
-mygetopt.o : mygetopt.h
-definitions.o : main.h convert.h definitions.h parser.h funct1.h util.h \
-  cfg.h counters.h 
-graphics.o : main.h graphics.h parser.h util.h 
+commands.o: commands.c cfg.h main.h convert.h chars.h l2r_fonts.h \
+  preamble.h funct1.h tables.h equation.h letterformat.h commands.h \
+  parser.h xref.h ignore.h lengths.h definitions.h graphics.h
+chars.o: chars.c main.h commands.h l2r_fonts.h cfg.h ignore.h encode.h \
+  parser.h chars.h funct1.h convert.h
+direct.o: direct.c main.h direct.h l2r_fonts.h cfg.h util.h
+encode.o: encode.c main.h l2r_fonts.h funct1.h encode.h encode_tables.h \
+  chars.h
+l2r_fonts.o: l2r_fonts.c main.h convert.h l2r_fonts.h funct1.h commands.h \
+  cfg.h parser.h stack.h
+funct1.o: funct1.c main.h convert.h funct1.h commands.h stack.h \
+  l2r_fonts.h cfg.h ignore.h util.h encode.h parser.h counters.h \
+  lengths.h definitions.h preamble.h xref.h equation.h direct.h style.h
+tables.o: tables.c main.h convert.h l2r_fonts.h commands.h funct1.h \
+  tables.h stack.h cfg.h parser.h counters.h util.h lengths.h
+ignore.o: ignore.c main.h direct.h l2r_fonts.h cfg.h ignore.h funct1.h \
+  commands.h parser.h convert.h
+main.o: main.c main.h mygetopt.h convert.h commands.h chars.h l2r_fonts.h \
+  stack.h direct.h ignore.h version.h funct1.h cfg.h encode.h util.h \
+  parser.h lengths.h counters.h preamble.h xref.h
+stack.o: stack.c main.h stack.h
+cfg.o: cfg.c main.h convert.h funct1.h cfg.h util.h
+util.o: util.c main.h util.h parser.h
+parser.o: parser.c main.h commands.h cfg.h stack.h util.h parser.h \
+  l2r_fonts.h lengths.h definitions.h funct1.h
+lengths.o: lengths.c main.h util.h lengths.h parser.h
+counters.o: counters.c main.h util.h counters.h
+letterformat.o: letterformat.c main.h parser.h letterformat.h cfg.h \
+  commands.h funct1.h convert.h
+preamble.o: preamble.c main.h convert.h util.h preamble.h l2r_fonts.h \
+  cfg.h encode.h parser.h funct1.h lengths.h ignore.h commands.h \
+  counters.h xref.h direct.h style.h
+equation.o: equation.c main.h convert.h commands.h stack.h l2r_fonts.h \
+  cfg.h ignore.h parser.h equation.h counters.h funct1.h lengths.h util.h \
+  graphics.h xref.h
+convert.o: convert.c main.h convert.h commands.h chars.h funct1.h \
+  l2r_fonts.h stack.h tables.h equation.h direct.h ignore.h cfg.h \
+  encode.h util.h parser.h lengths.h counters.h preamble.h
+xref.o: xref.c main.h util.h convert.h funct1.h commands.h cfg.h xref.h \
+  parser.h preamble.h lengths.h l2r_fonts.h
+definitions.o: definitions.c main.h convert.h definitions.h parser.h \
+  funct1.h util.h cfg.h counters.h
+graphics.o: graphics.c cfg.h main.h graphics.h parser.h util.h commands.h \
+  convert.h equation.h funct1.h
+mygetopt.o: mygetopt.c main.h
+style.o: style.c main.h direct.h l2r_fonts.h cfg.h util.h parser.h
