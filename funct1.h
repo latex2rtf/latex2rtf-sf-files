@@ -1,29 +1,6 @@
-/*
- * $Id: funct1.h,v 1.5 1998/11/04 13:39:40 glehner Exp $
- * History:
- * $Log: funct1.h,v $
- * Revision 1.5  1998/11/04 13:39:40  glehner
- * Changed ON-Flag to 0x4000 for little int compilers.
- *
- * Revision 1.4  1998/07/03 07:10:10  glehner
- * updated for latex2rtf V1.7
- *
- * Revision 1.3  1997/02/15 20:59:48  ralf
- * Mainly lclint-suggested changes
- *
- * Revision 1.2  1995/03/23 15:58:08  ralf
- * Reworked version by Friedrich Polzer and Gerhard Trisko
- *
- * Revision 1.1  1994/06/17  11:26:29  ralf
- * Initial revision
- *
- */
-/*** prototypes fof functions in funct1 ***/
-
+/* $Id: funct1.h,v 1.18 2001/09/26 03:31:50 prahl Exp $ */
 
 #define AST_FORM 100
-
-
 #define EMPHASIZE 1
 void            Format(int code);
 
@@ -34,19 +11,24 @@ void            Format(int code);
 #define CMD_END 2
 void            CmdBeginEnd(int code);
 
-#define PAR_CENTER 1
-#define PAR_RIGHT 2
-#define PAR_LEFT 3
+#define PAR_CENTER     1
+#define PAR_RIGHT      2
+#define PAR_LEFT       3
 #define PAR_CENTERLINE 4
-void            Paragraph(int code);
+#define PAR_VCENTER    5
 
+#define INDENT_NONE    1
+#define INDENT_INHIBIT 2
+#define INDENT_USUAL   3
+
+void            CmdStartParagraph(int code);
+void            CmdEndParagraph(int code);
+void            CmdIndent(int code);
+
+void            CmdAlign(int code);
 void            CmdToday(int code);
-
-
 void            CmdIgnore(int code);
 void            CmdLdots(int code);
-void            CmdEmphasize(int code);
-
 void            Environment(int code);
 
 #define SECT_NORM 1
@@ -77,24 +59,17 @@ void            CmdCounter(int code);
 #define LENGTH_NEW   1
 #define LENGTH_SET   2
 #define LENGTH_ADD   3
+
 void            CmdLength(int code);
-
 void            CmdCaption(int code);
-
 void            CmdBox(int code);
-
 void            CmdInclude(int code);
-
 void            CmdVerb(int code);
-
 void            CmdVerbatim(int code);
-
 void            CmdVerse(int code);
-
 void            TranslateGerman(void);
-void            CmdPrintRtf(int code);
-
 void            GermanPrint(int code);
+
 #define GP_CK 1
 #define GP_LDBL 2
 #define GP_L 3
@@ -108,6 +83,7 @@ void            IgnoreNewCmd(int code);
 #define LABEL 1
 #define REF 2
 #define PAGEREF 3
+
 /* LEG190498 Start */
 #define HYPER 100
 #define HYPERREF HYPER+REF
@@ -115,14 +91,8 @@ void            IgnoreNewCmd(int code);
 /* LEG190498 End */
 
 void            CmdLabel(int code);
-
-void            CmdUsepackage(int code);
-
 void            CmdIgnoreDef(int code);
-
 void            CmdItem(int code);
-
-void            ConvertString(char *string);
 
 /* LEG030598 Start */
 #define RIGHT_SIDE 347
@@ -131,3 +101,60 @@ void            ConvertString(char *string);
 /* LEG030598 End */
 
 int             ScanAux(char *token, char *reference, int code);
+
+#define FIGURE 1
+#define PICTURE 2
+#define MINIPAGE 3
+#define FIGURE_1 5
+
+#define No_Opt_One_NormParam 01
+#define No_Opt_Two_NormParam 02
+#define No_Opt_Three_NormParam 03
+#define One_Opt_No_NormParam 10
+#define One_Opt_One_NormParam 11
+#define One_Opt_Two_NormParam 12
+#define One_Opt_Three_NormParam 13
+#define Two_Opt_No_NormParam 20
+#define Two_Opt_One_NormParam 21
+#define Two_Opt_Two_NormParam 22
+#define Two_Opt_Three_NormParam 23
+
+#define One_Column 1
+#define Two_Column 2
+
+#define NewPage 1
+#define NewColumn 2
+
+#define ARRAY 1
+#define TABLE 2
+#define TABLE_1 3
+
+
+void            CmdIgnoreFigure(int code);
+
+void            CmdFigure(int code);
+
+void            Cmd_OptParam_Without_braces(int code);
+
+void            CmdColumn(int code);
+
+void            CmdNewPage(int code);
+
+void            GetInputParam(char *, int);
+
+void            CmdBottom(int code);
+
+void            CmdAbstract(int code);
+void            CmdTitlepage(int code);
+void            CmdHyphenation(int code);
+void            CmdFigure(int code);
+void            CmdMultiCol(int code);
+void            CmdAnnotation(int code);
+void            CmdLink(int code);
+void            CmdGraphics(int code);
+void            GetRequiredParam(char *string, int size);
+void 			CmdQuad(int kk);
+void			CmdColsep(int code);
+void		 	CmdSpace(float kk);
+void 			CmdVerbosityLevel(int code);
+

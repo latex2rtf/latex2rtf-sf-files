@@ -1,29 +1,8 @@
-/*
- * $Id: stack.c,v 1.5 1998/07/03 07:03:16 glehner Exp $
- * History:
- * $Log: stack.c,v $
- * Revision 1.5  1998/07/03 07:03:16  glehner
- * lclint cleaning
- *
- * Revision 1.4  1997/02/15 20:29:45  ralf
- * Did some corrections for lclint checking
- *
- * Revision 1.3  1995/05/10 06:37:43  ralf
- * Added own includefile (for consistency checking of decls)
- *
- * Revision 1.2  1995/03/23  15:58:08  ralf
- * Reworked version by Friedrich Polzer and Gerhard Trisko
- *
- * Revision 1.1  1994/06/17  11:26:29  ralf
- * Initial revision
- *
- */
-/***************************************************************************
-     name : stack.c
-   author : DORNER Fernando, GRANZER Andreas
-  purpose : this is an stack-model to handle braces and recursive calls
+/* $Id: stack.c,v 1.15 2001/09/09 19:41:40 prahl Exp $
+
+  purpose : code that implements a stack to handle braces and recursive calls
 	        created by environments, and open and closing-braces
- ******************************************************************************/
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +38,7 @@ BasicPush(int lev, int brack)
    return: top of stack
  ******************************************************************************/
 {
-	diagnostics(5,"pushing rec=%d and bra=%d on  stack",lev,brack);
+/*	diagnostics(5,"pushing rec=%d and bra=%d on  stack",lev,brack);*/
 	++top;
 	stack[top] = lev;
 	++top;
@@ -86,7 +65,7 @@ BasicPop(int *lev, int *brack)
 	if (top < 0) 
 		diagnostics(ERROR, "Nesting problem.  latex2rtf bug, if file TeXs properly");
 
-	diagnostics(5,"popped rec=%d and bra=%d off stack",*lev,*brack);
+/*	diagnostics(5,"popped rec=%d and bra=%d off stack",*lev,*brack); */
 	return top;
 }
 
@@ -155,7 +134,7 @@ int             PopLevel = 0, PopBrack, PPopLevel, PPopBrack, size;
 			break;
 		}
 	}
-	diagnostics(5, "Done Cleaning Stack");
+/*	diagnostics(5, "Done Cleaning Stack");*/
 }
 
 void 
@@ -165,7 +144,7 @@ PushBrace(void)
            enclosed by the braces to be completed
  ******************************************************************************/
 {
-	diagnostics(5,"Pushing Brace Level");
+/*	diagnostics(5,"Pushing Brace Level");*/
 	BasicPush(RecursionLevel,BraceLevel);
 	++BraceLevel;
 }
@@ -178,7 +157,7 @@ PopBrace(void)
 {
 int             PopLevel, PopBrack, PPopLevel, size;
 
-	diagnostics(5,"Popping Brace Level");
+/*	diagnostics(5,"Popping Brace Level");*/
 			
 	BraceLevel--;
 	PPopLevel = RecursionLevel;

@@ -13,6 +13,7 @@ char            getRawTexChar(void);
 char            getTexChar(void);
 char            getNonSpace(void);
 char            getNonBlank(void);
+int             getSameChar(char c);
 
 void            ungetTexChar(char c);
 
@@ -24,6 +25,5 @@ char           *getParam(void);
 char           *getMathParam(void);
 char           *getSimpleCommand(void);
 bool            getBracketParam(char *string, int size);
-void            getBraceParam(char *string, int size);
 char           *getTexUntil(char * target);
 int             getDimension(void);

@@ -4,7 +4,8 @@
 
 all:	accentchars.rtf array.rtf cite.rtf eqns.rtf fonts.rtf fontsize.rtf \
         frac.rtf list.rtf logo.rtf misc1.rtf misc2.rtf oddchars.rtf \
-        tabular.rtf percent.rtf essential.rtf misc3.rtf misc4.rtf
+        tabular.rtf percent.rtf essential.rtf misc3.rtf misc4.rtf fancy.rtf \
+	align.rtf german.rtf box.rtf
 
 LATEX= latex
 BIBTEX= bibtex
@@ -24,6 +25,11 @@ misc2.rtf: misc2.tex
 	$(LATEX) misc2 > latex.log
 	$(LATEX) misc2 > latex.log
 	$(LATEX2RTF) misc2
+
+german.rtf: german.tex
+	$(LATEX) german > latex.log
+	$(LATEX) german > latex.log
+	$(LATEX2RTF) german
 
 clean:
 	rm -f *.dvi *.rtf *.aux *.blg *.bbl *.log *.pdf *.toc *.lot

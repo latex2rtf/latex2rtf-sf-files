@@ -1,43 +1,50 @@
-/***************************************************************************
+/* $Id: preamble.c,v 1.10 2001/09/18 03:40:25 prahl Exp $
+
 purpose : Handles LaTeX commands that should only occur in the preamble.
           These are gathered together because the entire preamble must be
 		  parsed before the RTF header can be written.
 		  
 		  When \begin{document} is encountered, then the RTF header is created.
- ****************************************************************************/
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "main.h"
+#include "convert.h"
+#include "preamble.h"
 #include "l2r_fonts.h"
 #include "cfg.h"
 #include "util.h"
 #include "encode.h"
 #include "parser.h"
 #include "funct1.h"
-#include "funct2.h"
 #include "preamble.h"
 #include "lengths.h"
 #include "ignore.h"
 #include "commands.h"
 #include "counters.h"
 
-static int    g_preambleFormat   = FORMAT_ARTICLE;
+extern bool   pagestyledefined;
+extern enum   TexCharSetKind TexCharSet;
+
 static bool   g_preambleTwoside  = FALSE;
 static bool   g_preambleTwocolumn= FALSE;
 static bool   g_preambleTitlepage= FALSE;
-static bool   g_preambleLandscape= TRUE;
-
-extern bool   pagestyledefined;
-extern enum   TexCharSetKind TexCharSet;
+static bool   g_preambleLandscape= FALSE;
 
 static char * g_preambleTitle    = NULL;
 static char * g_preambleAuthor   = NULL;
 static char * g_preambleDate     = NULL;
-static char * g_preambleLanguage = NULL;
 static char * g_preambleEncoding = NULL;
+
+static char * g_preambleCFOOT = NULL;
+static char * g_preambleLFOOT = NULL;
+static char * g_preambleRFOOT = NULL;
+static char * g_preambleCHEAD = NULL;
+static char * g_preambleLHEAD = NULL;
+static char * g_preambleRHEAD = NULL;
 
 static void setPackageBabel(char * option);
 static void setPackageInputenc(char * option);
@@ -50,9 +57,19 @@ static void WritePageSize(void);
 static void
 setPackageBabel(char * option)
 {
-	g_preambleLanguage = strdup(option);
-	if (strcmp(option, "german") == 0)
-		GermanMode = TRUE;
+	if (strcmp(option, "german") == 0 ||
+	    strcmp(option, "ngerman") == 0 ) {
+			GermanMode = TRUE;
+			PushEnvironment(GERMAN_MODE);
+			g_language = strdup("german");
+	}
+	
+	if (strcmp(option, "french") == 0)
+	{
+		PushEnvironment(FRENCH_MODE);
+		g_language = strdup(option);
+	}
+		
 }
 
 static void
@@ -69,6 +86,19 @@ setPackageFont(char * font)
 }
 
 static void
+setThree(char * s, int ten, int eleven, int twelve)
+{
+	int n = DefaultFontSize();
+	
+	if (n==20)
+		setLength(s, ten*20);
+	else if (n==22)
+		setLength(s, eleven*20);
+	else
+		setLength(s, twelve*20);
+}
+
+static void
 setPaperSize(char * option)
 /******************************************************************************
    Should also try to reset some of the other sizes at this time
@@ -77,23 +107,157 @@ setPaperSize(char * option)
 	if (strcmp(option, "landscape") == 0) {
 		g_preambleLandscape = TRUE;
 		
-	} else if (strcmp(option, "a4paper") == 0 || strcmp(option, "a4") == 0) {
-		setLength("pagewidth", 21.0/2.54*72*20);
-		setLength("pageheight", 29.7/2.54*72*20);
+	} else if (strcmp(option, "a4paper") == 0 ) {
 	
+		setLength("pageheight",  845*20);
+		setLength("hoffset",       0*20);
+		setThree("oddsidemargin",53,46,31);
+		setLength("headheight",   12*20);
+		setThree("textheight",598,596,592);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   598*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",    17*20);
+		setLength("headsep",      25*20);	
+		setThree("textwidth",345,360,390);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
+
+	} else if (strcmp(option, "a4") == 0) {
+	
+		setLength("pageheight",  845*20);
+		setLength("hoffset",       0*20);
+		setThree("oddsidemargin",40,33,14);
+		setLength("headheight",   12*20);
+		setThree("textheight",646,637,621);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   598*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",     0*20);
+		setLength("headsep",      25*20);	
+		setThree("textwidth",361,376,412);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
+
 	} else if (strcmp(option, "a4wide") == 0 ) {
-		setLength("pagewidth", 5.875*72*20);
-		setLength("pageheight", 29.7/2.54*72*20);
+
+		setLength("pageheight",  845*20);
+		setLength("hoffset",       0*20);
+		setThree("oddsidemargin",18,9,0);
+		setLength("headheight",   12*20);
+		setThree("textheight",621,637,621);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   598*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",     0*20);
+		setLength("headsep",      25*20);	
+		setThree("textwidth",425,443,461);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
 
 	} else if (strcmp(option, "letterpaper") == 0) {
-		setLength("pagewidth", 8.5*72*20);
-		setLength("pageheight", 11*72*20);
+
+		setLength("pageheight",  795*20);
+		setLength("hoffset",       0*20);
+		setThree("oddsidemargin",62,54,39);
+		setLength("headheight",   12*20);
+		setThree("textheight",550,541,549);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   614*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",    18*20);
+		setLength("headsep",      25*20);	
+		setThree("textwidth",345,360,390);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
 
 	} else if (strcmp(option, "legalpaper") == 0) {
-		setLength("pagewidth", 8.5*72*20);
-		setLength("pageheight", 14*72*20);
+
+		setLength("pageheight", 1012*20);
+		setLength("hoffset",       0*20);
+		setThree("oddsidemargin",62,54,39);
+		setLength("headheight",   12*20);
+		setThree("textheight",766,759,766);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   614*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",    18*20);
+		setLength("headsep",      25*20);	
+		setThree("textwidth",345,360,390);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
+
+	} else if (strcmp(option, "a5paper") == 0) {
+
+		setLength("pageheight",  598*20);
+		setLength("hoffset",       0*20);
+		setLength("oddsidemargin", 0*20);
+		setLength("headheight",   12*20);
+		setLength("textheight",  350*20);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   421*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",    18*20);
+		setLength("headsep",      25*20);	
+		setLength("textwidth",   276*20);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
+
+	} else if (strcmp(option, "b5paper") == 0) {
+
+		setLength("pageheight",  711*20);
+		setLength("hoffset",       0*20);
+		setLength("oddsidemargin", 0*20);
+		setLength("headheight",   12*20);
+		setLength("textheight",  460*20);
+		setLength("footskip",     30*20);
+		setLength("marginparpush", 5*20);
+
+		setLength("pagewidth",   501*20);
+		setLength("voffset",       0*20);
+		setLength("topmargin",    19*20);
+		setLength("headsep",      25*20);	
+		setLength("textwidth",   350*20);
+		setLength("marginparsep", 10*20);
+		setLength("columnsep",    10*20);
 	}
 }
+
+static void
+setPointSize(char * option)
+{
+	if (strcmp(option, "10pt") == 0){
+		InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		setLength("baselineskip",12*20);
+		setLength("parindent",   15*20);
+		setLength("parskip",      0*20);
+
+	}else if (strcmp(option, "11pt") == 0){
+		InitializeDocumentFont(TexFontNumber("Roman"), 22, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		setLength("baselineskip",14*20);
+		setLength("parindent",   17*20);
+		setLength("parskip",      0*20);
+
+	}else {
+		InitializeDocumentFont(TexFontNumber("Roman"), 24, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM);
+		setLength("baselineskip",14.5*20);
+		setLength("parindent",   18*20);
+		setLength("parskip",      0*20);
+	}
+}
+
 
 static void 
 setDocumentOptions(char *optionlist)
@@ -106,16 +270,18 @@ setDocumentOptions(char *optionlist)
 
 	while (option) {
 		diagnostics(4, "                    option   %s", option);
-		if (strcmp(option, "11pt") == 0)
-			SetDocumentFontSize(22);
-		else if (strcmp(option, "12pt") == 0)
-			SetDocumentFontSize(24);
-		else if (strcmp(option, "a4")  == 0 ||
-			     strcmp(option, "a4paper") == 0 || 
-			     strcmp(option, "a4wide") == 0 || 
+		if      (strcmp(option, "10pt"       ) == 0 ||
+			     strcmp(option, "11pt"       ) == 0 || 
+				 strcmp(option, "12pt"       ) == 0) 
+			setPointSize(option);
+		else if (strcmp(option, "a4"         ) == 0 ||
+			     strcmp(option, "a4paper"    ) == 0 || 
+			     strcmp(option, "a4wide"     ) == 0 || 
+			     strcmp(option, "b5paper"    ) == 0 || 
+			     strcmp(option, "a5paper"    ) == 0 || 
 			     strcmp(option, "letterpaper") == 0 || 
-			     strcmp(option, "landscape") == 0 || 
-				 strcmp(option, "legalpaper")  == 0) 
+			     strcmp(option, "landscape"  ) == 0 || 
+				 strcmp(option, "legalpaper" ) == 0) 
 			setPaperSize(option);
 		else if (strcmp(option, "german")  == 0 ||
 			     strcmp(option, "spanish") == 0 || 
@@ -135,7 +301,9 @@ setDocumentOptions(char *optionlist)
 			fprintf(stderr, "converted into RTF-Commands!\n");
 		} else if (strcmp(option, "hyperlatex") == 0) {
 			PushEnvironment(HYPERLATEX); 
-		} else if (!TryVariableIgnore(option, fTex)) {
+		} else if (strcmp(option, "fancyhdr") == 0) {
+			diagnostics(WARNING, "Only partial support for %s", option);
+		} else if (!TryVariableIgnore(option)) {
 			diagnostics(WARNING, "Unknown style option %s ignored", option);
 		}
 		option = strtok(NULL, ",");
@@ -156,21 +324,21 @@ CmdDocumentStyle(int code)
 
 	diagnostics(4, "Documentstyle/class[%s]{%s}", optionlist,format);
 
-	g_preambleFormat = FORMAT_ARTICLE;
+	g_document_type = FORMAT_ARTICLE;
 	if (strcmp(format, "book") == 0)
-		g_preambleFormat = FORMAT_BOOK;
+		g_document_type = FORMAT_BOOK;
 		
 	else if (strcmp(format, "report") == 0)
-		g_preambleFormat = FORMAT_REPORT;
+		g_document_type = FORMAT_REPORT;
 
 	else if (strcmp(format, "letter") == 0)
-		g_preambleFormat = FORMAT_LETTER;
+		g_document_type = FORMAT_LETTER;
 
 	else if (strcmp(format, "article") == 0)
-		g_preambleFormat = FORMAT_ARTICLE;
+		g_document_type = FORMAT_ARTICLE;
 
 	else if (strcmp(format, "slides") == 0)
-		g_preambleFormat = FORMAT_SLIDES;
+		g_document_type = FORMAT_SLIDES;
 
 	else
 		fprintf(stderr, "\nDocument format <%s> unknown, using article format", format);
@@ -199,6 +367,11 @@ CmdUsepackage(int code)
 	else if (strcmp(package, "babel") == 0)
 		setPackageBabel(optionlist);
 		
+	else if (strcmp(package, "german")  == 0 ||
+		     strcmp(package, "ngerman")  == 0 ||
+		     strcmp(package, "french")  == 0) 
+		setPackageBabel(package);
+
 	else if (strcmp(package, "palatino") == 0 ||
 	         strcmp(package, "times") == 0    ||
 	         strcmp(package, "helvetica") == 0 )
@@ -209,11 +382,11 @@ CmdUsepackage(int code)
 	free(package);
 }
 
+void
+CmdTitle(int code)
 /******************************************************************************
   purpose: saves title, author or date information
  ******************************************************************************/
-void
-CmdTitle(int code)
 {
 	switch (code) {
 	case TITLE_TITLE:
@@ -248,66 +421,69 @@ CmdMakeTitle(int code)
 	sprintf(author_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 	sprintf(date_begin, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 
-	fprintf(fRtf, "\n\\par\\pard\\qc {%s ", title_begin);
+	fprintRTF("\n\\par\\pard\\qc {%s ", title_begin);
 	if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0)
 		ConvertString(g_preambleTitle);
-	fprintf(fRtf, "}");
+	fprintRTF("}");
 
-	fprintf(fRtf, "\n\\par\\qc {%s ", author_begin);
+	fprintRTF("\n\\par\\qc {%s ", author_begin);
 	if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0)
 		ConvertString(g_preambleAuthor);
-	fprintf(fRtf, "}");
+	fprintRTF("}");
 	
-	fprintf(fRtf, "\n\\par\\qc {%s ", date_begin);
+	fprintRTF("\n\\par\\qc {%s ", date_begin);
 	if (g_preambleDate != NULL && strcmp(g_preambleDate, "") != 0)
 		ConvertString(g_preambleDate);
-	fprintf(fRtf, "}");
+	fprintRTF("}");
 	
-	fprintf(fRtf, "\n\\par\n\\par\\pard\\q%c ", alignment);
+	fprintRTF("\n\\par\n\\par\\pard\\q%c ", alignment);
 	if (g_preambleTitlepage)
-		fprintf(fRtf, "\\page ");
+		fprintRTF("\\page ");
 }
 
 void 
 CmdPreambleBeginEnd(int code)
 /***************************************************************************
-   purpose: catch missed \begin{document} command ***************************************************************************/
+   purpose: catch missed \begin{document} command 
+***************************************************************************/
 {
 	char           *cParam = getParam();
 	
-	if (!strcmp(cParam,"document"))
+	if (strcmp(cParam,"document"))
 		diagnostics(ERROR, "\\begin{%s} found before \\begin{document}.  Giving up.  Sorry", cParam);
 		
 	CallParamFunc(cParam, ON);
 	free(cParam);
 }
 
+void
+PlainPagestyle(void)
 /******************************************************************************
   LEG030598
   purpose: sets centered page numbering at bottom in rtf-output
 
   globals : pagenumbering set to TRUE if pagenumbering is to occur, default
  ******************************************************************************/
-void
-PlainPagestyle(void)
 {
-	int fn = getTexFontNumber("Roman");
+	int fn = TexFontNumber("Roman");
 	pagenumbering = TRUE;
 	
 	if (g_preambleTwoside) {
-		fprintf(fRtf, "\n{\\footerr");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
-		fprintf(fRtf, "\n{\\footerl");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
+		fprintRTF("\n{\\footerr");
+		fprintRTF("\\pard\\plain\\f%d\\qc",fn);
+		fprintRTF("{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
+		fprintRTF("\n{\\footerl");
+		fprintRTF("\\pard\\plain\\f%d\\qc",fn);
+		fprintRTF("{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
 	} else {
-		fprintf(fRtf, "\n{\\footer");
-		fprintf(fRtf, "\\pard\\plain\\f%d\\qc",fn);
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
+		fprintRTF("\n{\\footer");
+		fprintRTF("\\pard\\plain\\f%d\\qc",fn);
+		fprintRTF("{\\field{\\*\\fldinst PAGE}{\\fldrslt ?}}\\par}");
 	}
 }
 
+void
+CmdPagestyle( /* @unused@ */ int code)
 /******************************************************************************
  * LEG030598
  purpose: sets page numbering in rtf-output
@@ -321,10 +497,7 @@ Produces latex-like headers and footers.
 Needs to be terminated for:
 - headings chapter, section informations and page numbering
 - myheadings page nunmbering, combined with markboth, markright.
-
  ******************************************************************************/
-void
-CmdPagestyle( /* @unused@ */ int code)
 {
 	static char    *style = "";
 
@@ -332,7 +505,7 @@ CmdPagestyle( /* @unused@ */ int code)
 	style = getParam();
 	if (strcmp(style, "empty") == 0) {
 		if (pagenumbering) {
-			fprintf(fRtf, "{\\footer}");
+			fprintRTF("{\\footer}");
 			pagenumbering = FALSE;
 		}
 	} else if (strcmp(style, "plain") == 0)
@@ -351,17 +524,14 @@ CmdPagestyle( /* @unused@ */ int code)
 	}
 }
 
-
-
+void
+CmdHeader(int code)
 /******************************************************************************
- * LEG030598
  purpose: converts the \markboth and \markright Command in Header information
  parameter: code: BOTH_SIDES, RIGHT_SIDE
 
  globals : twoside,
  ******************************************************************************/
-void
-CmdHeader(int code)
 {
 	if (code == BOTH_SIDES) {
 		if (g_preambleTwoside) {
@@ -373,26 +543,35 @@ CmdHeader(int code)
 		RtfHeader(BOTH_SIDES, NULL);
 }
 
+void CmdThePage(int code)
 /******************************************************************************
-  LEG030598
+ purpose: handles \thepage in headers and footers
+ ******************************************************************************/
+{  
+  diagnostics(4,"CmdThePage");
+  
+  fprintRTF("\\chpgn ");
+}
+
+void
+RtfHeader(int where, char *what)
+/******************************************************************************
   purpose: generates the header command in the rtf-output
   parameter: where: RIGHT_SIDE, LEFT_SIDE -handed page, BOTH_SIDES
            what:  NULL - Convert from LaTeX input, else put "what" into rtf
                   output
  ******************************************************************************/
-void
-RtfHeader(int where, char *what)
 {
-	int fn = getTexFontNumber("Roman");
+	int fn = TexFontNumber("Roman");
 	switch (where) {
 		case RIGHT_SIDE:
-		fprintf(fRtf, "\n{\\headerr \\pard\\plain\\f%d ",fn);
+		fprintRTF("\n{\\headerr \\pard\\plain\\f%d ",fn);
 		break;
 	case LEFT_SIDE:
-		fprintf(fRtf, "\n{\\headerl \\pard\\plain\\f%d ",fn);
+		fprintRTF("\n{\\headerl \\pard\\plain\\f%d ",fn);
 		break;
 	case BOTH_SIDES:
-		fprintf(fRtf, "\n{\\header \\pard\\plain\\f%d ",fn);
+		fprintRTF("\n{\\header \\pard\\plain\\f%d ",fn);
 		break;
 	default:
 		diagnostics(ERROR, "\n error -> called RtfHeader with illegal parameter\n ");
@@ -401,9 +580,9 @@ RtfHeader(int where, char *what)
 		diagnostics(4, "Entering Convert() from RtfHeader");
 		Convert();
 		diagnostics(4, "Exiting Convert() from RtfHeader");
-		fprintf(fRtf, "}");
+		fprintRTF("}");
 	} else
-		fprintf(fRtf, "%s}", what);
+		fprintRTF("%s}", what);
 }
 
 
@@ -422,46 +601,35 @@ static void
 WriteFontHeader(void)
 /****************************************************************************
  *   purpose: writes fontnumbers and styles for headers into Rtf-File
- * parameter: fRtf: File-Pointer to Rtf-File
- *   globals:
- *            DefFont (default font number)
- *   note;
-
+ 
  \fcharset0:    ANSI coding
  \fcharset1:    MAC coding
  \fcharset2:    PC coding (implies CodePage 437)
  \fcharset3:    PCA coding (implies CodePage 850)
  ****************************************************************************/
 {
-	int                  num = 0;
+	int                  num = 3;
 	ConfigEntryT       **config_handle;
 
-	fprintf(fRtf, "{\\fonttbl");
+	fprintRTF("{\\fonttbl\n");
 
 	config_handle = CfgStartIterate(FONT_A);
 	while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
 		if (strstr((*config_handle)->TexCommand, "MacRoman"))
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset1 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
+		
+			fprintRTF(" {\\f%d\\fnil\\fcharset1 %s;}\n",num,(*config_handle)->RtfCommand);
+				
 		else if (strstr((*config_handle)->RtfCommand, "Symbol"))
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset2 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
+
+			fprintRTF(" {\\f%d\\fnil\\fcharset2 %s;}\n",num,(*config_handle)->RtfCommand);
+
 		else
-			fprintf(fRtf
-				,"{\\f%u\\fnil\\fcharset0 %s;}"
-				,(unsigned int) num
-				,(*config_handle)->RtfCommand
-				);
+			fprintRTF(" {\\f%d\\fnil\\fcharset0 %s;}\n",num,(*config_handle)->RtfCommand);
+
 		++num;
 	}
 
-	fprintf(fRtf, "}");
+	fprintRTF("}\n");
 }
 
 static void
@@ -484,17 +652,18 @@ WriteStyleHeader(void)
          \par}
  ****************************************************************************/
 {
-	fprintf(fRtf, "{\\stylesheet{\\fs%d\\lang1031\\snext0 Normal;}", CurrentFontSize());
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 1;}\n", HEADER11, DefFont, HEADER12);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 2;}\n", HEADER21, DefFont, HEADER22);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 3;}\n", HEADER31, DefFont, HEADER32);
-	fprintf(fRtf, "{%s%u%s \\sbasedon0\\snext0 heading 4;}\n", HEADER41, DefFont, HEADER42);
-
-	fprintf(fRtf, "%s\n", HEADER03);
-	fprintf(fRtf, "%s\n", HEADER13);
-	fprintf(fRtf, "%s\n", HEADER23);
-	fprintf(fRtf, "%s\n", HEADER33);
-	fprintf(fRtf, "%s\n", HEADER43);
+	int DefFont = DefaultFontFamily();
+	fprintRTF("{\\stylesheet{\\fs%d\\lang1024\\snext0 Normal;}\n", CurrentFontSize());
+	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 1;}\n", HEADER11, DefFont, HEADER12);
+	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 2;}\n", HEADER21, DefFont, HEADER22);
+	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 3;}\n", HEADER31, DefFont, HEADER32);
+	fprintRTF("{%s\\f%d%s \\sbasedon0\\snext0 heading 4;}\n", HEADER41, DefFont, HEADER42);
+	fprintRTF("%s\n", HEADER03);
+	
+	fprintRTF("%s\n", HEADER13);
+	fprintRTF("%s\n", HEADER23);
+	fprintRTF("%s\n", HEADER33);
+	fprintRTF("%s\n", HEADER43);
 }
 
 static void
@@ -520,26 +689,26 @@ WritePageSize(void)
 {
 	int n;
 
-	fprintf(fRtf,"\\paperw%d", getLength("pagewidth"));
-	fprintf(fRtf,"\\paperh%d", getLength("pageheight"));
+	fprintRTF("\\paperw%d", getLength("pagewidth"));
+	fprintRTF("\\paperh%d", getLength("pageheight"));
 	if (g_preambleTwoside)
-		fprintf(fRtf,"\\facingp");
+		fprintRTF("\\facingp");
 	if (g_preambleLandscape)
-		fprintf(fRtf,"\\landscape");
+		fprintRTF("\\landscape");
 	if (g_preambleTwocolumn)
-		fprintf(fRtf, "\\cols2\\colsx709");	 /* two columns -- space between columns 709 */
+		fprintRTF("\\cols2\\colsx709");	 /* two columns -- space between columns 709 */
 
-	n = getLength("hoffset") + 72*20 + getLength("marginparsep");
-	fprintf(fRtf, "\\margl%d", n);
+	n = getLength("hoffset") + 72*20 + getLength("oddsidemargin");
+	fprintRTF("\\margl%d", n);
 	n = getLength("pagewidth") - (n + getLength("textwidth"));
-	fprintf(fRtf, "\\margr%d", n);
+	fprintRTF("\\margr%d", n);
 	n = getLength("voffset") + 72*20 + getLength("topmargin") + getLength("headheight")+getLength("headsep");
-	fprintf(fRtf, "\\margt%d", n);
+	fprintRTF("\\margt%d", n);
 	n = getLength("pageheight") - (n + getLength("textheight") + getLength("footskip"));
-	fprintf(fRtf, "\\margb%d", n);
+	fprintRTF("\\margb%d", n);
 	
-	fprintf(fRtf,"\\pgnstart%d", getCounter("page"));
-	fprintf(fRtf,"\\widowctrl\n");
+	fprintRTF("\\pgnstart%d", getCounter("page"));
+	fprintRTF("\\widowctrl\\qj\n");
 }
 
 static void
@@ -553,26 +722,74 @@ WriteHeadFoot(void)
   \footerf        The footer is on the first page only.
 ****************************************************************************/
 {
-	int n;
+/*	fprintRTF("\\ftnbj\\sectd\\linex0\\endnhere\\qj\n"); */
 
-	fprintf(fRtf,"\\paperw%d", getLength("pagewidth"));
-	fprintf(fRtf,"\\paperh%d", getLength("pageheight"));
-	if (g_preambleTwoside)
-		fprintf(fRtf,"\\facingp");
-	if (g_preambleLandscape)
-		fprintf(fRtf,"\\landscape");
+  	int textwidth = getLength("textwidth");
+  	
+  	if (g_preambleLFOOT || g_preambleCFOOT || g_preambleRFOOT) {
+  		fprintRTF("{\\footer\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth/2, textwidth);
+  		
+		if (g_preambleLFOOT)
+			ConvertString(g_preambleLFOOT);
 		
-	n = getLength("hoffset") + 72*20 + getLength("marginparsep");
-	fprintf(fRtf, "\\margl%d", n);
-	n = getLength("pagewidth") - (n + getLength("textwidth"));
-	fprintf(fRtf, "\\margr%d", n);
-	n = getLength("voffset") + 72*20 + getLength("topmargin") + getLength("headheight")+getLength("headsep");
-	fprintf(fRtf, "\\margt%d", n);
-	n = getLength("pageheight") - (n + getLength("textheight") + getLength("footskip"));
-	fprintf(fRtf, "\\margb%d", n);
-	
-	fprintf(fRtf,"\\pgnstart%d", getCounter("page"));
-	fprintf(fRtf, "\\widowctrl\\ftnbj\\sectd\\linex0\\endnhere\\qj \n");
+		fprintRTF("\\tab ");
+		if (g_preambleCFOOT)
+			ConvertString(g_preambleCFOOT);
+		
+		if (g_preambleRFOOT) {
+			fprintRTF("\\tab ");
+			ConvertString(g_preambleRFOOT);
+		}
+  		
+        fprintRTF("\\par}\n");
+    }
+
+  	if (g_preambleLHEAD || g_preambleCHEAD || g_preambleRHEAD) {
+  		fprintRTF("{\\header\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth/2, textwidth);
+  		
+		if (g_preambleLHEAD)
+			ConvertString(g_preambleLHEAD);
+		
+		fprintRTF("\\tab ");
+		if (g_preambleCHEAD)
+			ConvertString(g_preambleCHEAD);
+		
+		if (g_preambleRHEAD) {
+			fprintRTF("\\tab ");
+			ConvertString(g_preambleRHEAD);
+		}
+  		
+        fprintRTF("\\par}\n");
+    }
+}
+
+void CmdHeadFoot(int code)
+/******************************************************************************
+ purpose: performs \cfoot, \lfoot, \rfoot, \chead, \lhead, \rhead commands (fancyhdr)
+ adapted from code by Taupin in ltx2rtf
+ ******************************************************************************/
+{
+  char *HeaderText = getParam();
+  
+  diagnostics(4,"CmdHeadFoot code=%d <%s>",code, HeaderText);
+  switch(code)
+  {
+  	case CFOOT:	g_preambleCFOOT = HeaderText;
+  			break;
+  	case LFOOT:	g_preambleLFOOT = HeaderText;
+  			break;
+  	case RFOOT:	g_preambleRFOOT = HeaderText;
+  			break;
+  	case CHEAD:	g_preambleCHEAD = HeaderText;
+  			break;
+  	case LHEAD:	g_preambleLHEAD = HeaderText;
+  			break;
+  	case RHEAD: g_preambleRHEAD = HeaderText;
+  			break;
+  }
+  
+  if (!g_processing_preamble) 
+  	WriteHeadFoot();
 }
 
 static void
@@ -600,14 +817,17 @@ purpose: writes header info for the RTF file
 \rtf1 <charset> \deff? <fonttbl> <filetbl>? <colortbl>? <stylesheet>? <listtables>? <revtbl>?
  ****************************************************************************/
 {
+	int family = DefaultFontFamily();
+	int size   = DefaultFontSize();
+
 	diagnostics(4, "Writing header for RTF file");
 
-	fprintf(fRtf, "{\\rtf1\\PC\\fs%d\\deff0\\deflang1024\n", CurrentFontSize());
+	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family);
 	WriteFontHeader();
 	WriteStyleHeader();
 	WriteInfo();
-	WritePageSize();
 	WriteHeadFoot();
+	WritePageSize();
 }
 
 

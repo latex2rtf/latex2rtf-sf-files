@@ -6,7 +6,8 @@
 
 CC=gcc    # C-Compiler 
 #CFLAGS=-g -Wall -ansi -pedantic $(XCFLAGS)
-CFLAGS=$(XCFLAGS) # Use -O here if you want it optimized
+#CFLAGS=$(XCFLAGS) # Use -O here if you want it optimized
+CFLAGS=
 COPY=cp
 INSTALL=install
 DIR_MODE=755
@@ -104,15 +105,24 @@ LIBS=
 
 # Nothing to change below this line
 SOURCES=commands.c commands.h chars.c chars.h direct.c direct.h encode.c encode.h l2r_fonts.c \
-    l2r_fonts.h funct1.c funct1.h funct2.c funct2.h ignore.c ignore.h main.c \
+    l2r_fonts.h funct1.c funct1.h tables.c tables.h ignore.c ignore.h main.c \
     main.h stack.c stack.h version.h cfg.c cfg.h util.c util.h parser.c parser.h \
     lengths.c lengths.h counters.c counters.h letterformat.c letterformat.h \
-    preamble.c preamble.h equation.c equation.h \
+    preamble.c preamble.h equation.c equation.h convert.c convert.h biblio.c biblio.h\
     Makefile README README.DOS README.Mac Copyright\
     mygetopt.c optind.c version \
     debian.README debian.control debian.rules ChangeLog l2r.bat
-SUPPORT=cfg/direct.cfg cfg/fonts.cfg cfg/ignore.cfg \
-    cfg/english.cfg cfg/german.cfg cfg/spanish.cfg cfg/french.cfg
+
+SUPPORT=cfg/fonts.cfg     cfg/direct.cfg   cfg/ignore.cfg \
+    cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
+    cfg/catalan.cfg cfg/croatian.cfg cfg/czech.cfg cfg/danish.cfg cfg/dutch.cfg \
+    cfg/english.cfg cfg/esperanto.cfg cfg/estonian.cfg cfg/finnish.cfg cfg/french.cfg \
+    cfg/galician.cfg cfg/german.cfg cfg/icelandic.cfg cfg/irish.cfg cfg/italian.cfg \
+    cfg/latin.cfg cfg/lsorbian.cfg cfg/magyar.cfg cfg/norsk.cfg cfg/nynorsk.cfg \
+    cfg/polish.cfg cfg/portuges.cfg cfg/romanian.cfg cfg/samin.cfg cfg/scottish.cfg \
+    cfg/serbian.cfg cfg/slovak.cfg cfg/slovene.cfg cfg/spanish.cfg cfg/swedish.cfg \
+    cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg 
+
 MANUALS=latex2rtf.1
 MSDOS=l2r.bat l2r.exe
 DOCS= doc/l2r.html doc/credits doc/copying.txt doc/Makefile
@@ -121,10 +131,12 @@ TEST=   test/Makefile \
 	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
 	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
 	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty \
-	test/misc3.tex test/misc4.tex
-OBJS=l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o funct2.o \
+	test/misc3.tex test/misc4.tex test/fancy.tex test/align.tex \
+	test/german.tex test/box.tex
+
+OBJS=l2r_fonts.o direct.o encode.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o util.o parser.o mygetopt.o lengths.o counters.o \
-	preamble.o letterformat.o equation.o
+	preamble.o letterformat.o equation.o convert.o biblio.o
 
 ARCH="`dpkg --print-architecture`"
 
@@ -146,11 +158,8 @@ direct.o: direct.c main.h direct.h l2r_fonts.h cfg.h
 stack.o: stack.c stack.h
 	$(CC) $(CFLAGS) -c stack.c -o stack.o
 
-funct1.o: funct1.c main.h funct1.h funct2.h commands.h stack.h l2r_fonts.h cfg.h ignore.h util.h encode.h
+funct1.o: funct1.c main.h funct1.h tables.h commands.h stack.h l2r_fonts.h cfg.h ignore.h util.h encode.h
 	$(CC) $(CFLAGS) -c funct1.c -o funct1.o
-
-funct2.o: funct2.c main.h funct1.h commands.h funct2.h stack.h cfg.h util.h
-	$(CC) $(CFLAGS) -c funct2.c -o funct2.o
 
 ignore.o: ignore.c main.h direct.h l2r_fonts.h cfg.h ignore.h util.h
 	$(CC) $(CFLAGS) -c ignore.c -o ignore.o
@@ -164,11 +173,11 @@ cfg.o: cfg.c cfg.h util.h
 util.o: util.c util.h
 	$(CC) $(CFLAGS) -c util.c -o util.o
 
-main.o: main.c main.h commands.h funct1.h l2r_fonts.h stack.h funct2.h \
+main.o: main.c main.h commands.h funct1.h l2r_fonts.h stack.h \
 	direct.h ignore.h version.h cfg.h encode.h util.h
 	$(CC) $(CFLAGS) -c main.c -o main.o
 
-commands.o: commands.c main.h funct1.h commands.h funct2.h
+commands.o: commands.c main.h funct1.h commands.h 
 	$(CC) $(CFLAGS) -c commands.c -o commands.o
 
 parser.o: parser.c parser.h main.h
@@ -184,7 +193,7 @@ doc:	checkdir change.log
 	cd doc && $(MAKE) -k
 
 test: latex2rtf
-	cd test && $(MAKE) -k
+	cd test && $(MAKE) 
 
 clean: checkdir
 	rm -f $(OBJS) core latex2rtf.tar.gz \

@@ -1,66 +1,17 @@
-/*
- * $Id: funct1.c,v 1.9 1998/10/28 06:19:38 glehner Exp $
- * History:
- * $Log: funct1.c,v $
- * Revision 1.9  1998/10/28 06:19:38  glehner
- * Changed all occurences of eol-output to "\r\n" to allow
- * transport across different platforms.
- * Fixed (CmdTitle) which caused a "Could not write tempfile" error.
- * Fixed (CmdFormula) for \[ and \{, nested Formula - error.
- * Added support for \encode package with [isolatin] option (only).
- * Some fixes for character conversion and \emph.
- * Fixed (CmdLabel) and helpers, to not do swallow the parameter.
- * Converting now optional argument of \item in description env.3
- *
- * Revision 1.8  1998/07/03 06:58:24  glehner
- * LaTeX2e support, CmdUsepackage
- * twoside, language support
- *
- * Revision 1.7  1997/02/15 21:49:13  ralf
- * Corrected printing of german umlaut-accent characters as reported by
- * Oliver Moldenhauer
- *
- * Revision 1.6  1997/02/15 20:59:48  ralf
- * Mainly lclint-suggested changes
- *
- * Revision 1.5  1995/05/24 17:06:47  ralf
- * Removed bug with generation of include filenames
- *
- * Revision 1.4  1995/05/24  12:06:22  ralf
- * Changed two wrong checks after malloc
- *
- * Revision 1.3  1995/03/23  15:58:08  ralf
- * Reworked version by Friedrich Polzer and Gerhard Trisko
- *
- *
- * Revision 1.2  1994/06/21  08:14:11  ralf
- * Corrected Bug in keyword search
- *
- * Revision 1.1  1994/06/17  11:26:29  ralf
- * Initial revision
- *
- */
-/***************************************************************************
-   name : funct1.c
- author : DORNER Fernando, GRANZER Andreas
-          POLZER Friedrich,TRISKO Gerhard
- * in footnote: special characters treated correctly
- * now produces section-numbers
- * getParam allocates only the needed amount of memory
- * \c
- * footnotes treats \"o etc correctly
- * paragraph formatting properties of itemize/liste environment corrected
- *
-purpose : includes besides funct2.c all functions which are called from the programm commands.c;
- ****************************************************************************/
+/* $Id: funct1.c,v 1.23 2001/09/26 03:31:50 prahl Exp $ 
+ 
+This file contains routines that interpret various LaTeX commands and produce RTF
+
+Authors:  Dorner, Granzer, Polzer, Trisko, Schlatterbeck, Lehner, Prahl
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "main.h"
+#include "convert.h"
 #include "funct1.h"
-#include "funct2.h"
 #include "commands.h"
 #include "stack.h"
 #include "l2r_fonts.h"
@@ -73,113 +24,176 @@ purpose : includes besides funct2.c all functions which are called from the prog
 #include "lengths.h"
 #include "preamble.h"
 
-extern bool     bInDocument;	/* true if File-Pointer is in the document */
-extern bool     g_processing_equation;	/* true at a formula-convertion */
 extern bool     twocolumn;	/* true if twocolumn-mode is enabled */
-extern bool     article;	/* true if article-mode is set */
-extern int      indent;		/* includes the left margin e.g. for
-				 * itemize-commands */
-static bool     NoNewLine;
-extern bool     bNewPar;
-extern bool     mbox;
-extern int      DefFont;
-extern char    *language;
+extern int      indent;		/* includes the left margin e.g. for itemize-commands */
 extern enum     TexCharSetKind TexCharSet;
-extern int      curr_fontbold[MAXENVIRONS];
-extern int      curr_fontital[MAXENVIRONS];
-extern int      curr_fontscap[MAXENVIRONS];
-extern int      curr_fontnumb[MAXENVIRONS];
 
 static void     CmdLabel1_4(int code, char *text);
 static void     CmdLabelOld(int code, char *text);
 void            CmdPagestyle( /* @unused@ */ int code);
 void            CmdHeader(int code);
-void            putRtfChar(char cThis);
+
+static bool  g_paragraph_no_indent = FALSE;
+static bool  g_paragraph_inhibit_indent = FALSE;
+
+void
+CmdStartParagraph(int code)
+/******************************************************************************
+     purpose : RTF codes to create a new paragraph.  If the paragraph should
+               not be indented then emit \fi0 otherwise use the current value
+               of \parindent as the indentation of the first line.
+ ******************************************************************************/
+{
+	int parindent;
+	
+	diagnostics(4,"CmdStartParagraph mode = %d", GetTexMode());
+	
+	fprintRTF("\\q%c\\li%d ", alignment, indent);
+
+	if (g_paragraph_no_indent || g_paragraph_inhibit_indent) 
+		parindent = 0;
+	else
+		parindent = getLength("parindent");
+	
+	fprintRTF("\\fi%d ", parindent);
+	
+	SetTexMode(MODE_HORIZONTAL);
+	g_paragraph_no_indent = FALSE;
+	g_paragraph_inhibit_indent = FALSE;
+}
+
+void
+CmdEndParagraph(int code)
+/******************************************************************************
+     purpose : ends the current paragraph and return to MODE_VERTICAL.
+ ******************************************************************************/
+{
+	int mode = GetTexMode();
+
+	diagnostics(4,"CmdEndParagraph mode = %d", GetTexMode());
+	if (mode != MODE_VERTICAL) {
+		fprintRTF("\\par\n");
+		SetTexMode(MODE_VERTICAL);
+	}
+	g_paragraph_inhibit_indent = FALSE;
+}
+
+void
+CmdIndent(int code)
+/******************************************************************************
+ purpose : set flags so that CmdStartParagraph() does the right thing
+     
+     	   INDENT_INHIBIT allows the next paragraph to be indented if
+     	   a paragraph break occurs before CmdStartParagraph() is called
+     			     		
+           INDENT_NONE tells CmdStartParagraph() to not indent the next paragraph
+           
+           INDENT_USUAL has CmdStartParagraph() uses the value of \parindent
+ ******************************************************************************/
+{
+	if (code == INDENT_NONE)
+		g_paragraph_no_indent = TRUE;
+	
+	else if (code == INDENT_INHIBIT) 
+		g_paragraph_inhibit_indent = TRUE;
+
+	else if (code == INDENT_USUAL) {
+		g_paragraph_no_indent = FALSE;
+		g_paragraph_inhibit_indent = FALSE;
+	}
+}
 
 void 
 CmdBeginEnd(int code)
 /***************************************************************************
-   purpose: reads the parameter after the \begin or \end-command; ( see also getParam )
-	    after reading the parameter the CallParamFunc-function calls the
-	    handling-routine for that special environment
+ purpose: reads the parameter after the \begin or \end-command; ( see also getParam )
+	      after reading the parameter the CallParamFunc-function calls the
+	      handling-routine for that special environment
  parameter: code: CMD_BEGIN: start of environment
-		  CMD_END:   end of environment
+		          CMD_END:   end of environment
  ***************************************************************************/
 {
-	char           *cParam = getParam();
+/*	char            c;*/
+	char           *s = getParam();
+
 	switch (code) {
 	case CMD_BEGIN:
-		(void) CallParamFunc(cParam, ON);
+		(void) CallParamFunc(s, ON);
 		break;
 	case CMD_END:
-		(void) CallParamFunc(cParam, OFF);
+		(void) CallParamFunc(s, OFF);
+		CmdIndent(INDENT_INHIBIT);
 		break;
 	default:
 		assert(0);
 	}
-	free(cParam);
+	free(s);
 }
 
-/********************************************************************************/
 void 
-Paragraph(int code)
+CmdAlign(int code)
 /*****************************************************************************
     purpose : sets the alignment for a paragraph
   parameter : code: alignment centered, justified, left or right
-     globals: fRtf: Rtf-file-pointer
-              alignment: alignment of paragraphs
-              bNewPar
+     globals: alignment: alignment of paragraphs
  ********************************************************************************/
 {
+	char * s;
 	static char     old_alignment_before_center = JUSTIFIED;
 	static char     old_alignment_before_right = JUSTIFIED;
 	static char     old_alignment_before_left = JUSTIFIED;
 	static char     old_alignment_before_centerline = JUSTIFIED;
 
+	if (code == PAR_VCENTER){
+		s = getParam();
+		free(s);
+		return;
+	}
+	
+	CmdEndParagraph(0);
 	switch (code) {
 	case (PAR_CENTERLINE):
 		old_alignment_before_centerline = alignment;
 		alignment = CENTERED;
-		fprintf(fRtf, "\\par \\pard\\q%c{", alignment);
-		diagnostics(4,"Entering Convert from Paragraph");
+		fprintRTF("{");
+		diagnostics(4,"Entering Convert from CmdAlign (centerline)");
 		Convert();
-		diagnostics(4,"Exiting Convert from Paragraph");
+		diagnostics(4,"Exiting Convert from CmdAlign (centerline)");
 		alignment = old_alignment_before_centerline;
-		fprintf(fRtf, "}\\par \\pard\\q%c\n", alignment);
-		bNewPar = TRUE;
+		CmdEndParagraph(0);
+		fprintRTF("}");
 		break;
 
+
 	case (PAR_CENTER | ON):
+		CmdIndent(INDENT_NONE);
 		old_alignment_before_center = alignment;
 		alignment = CENTERED;
-		fprintf(fRtf, "\\pard \\q%c ", alignment);
 		break;
 	case (PAR_CENTER | OFF):
 		alignment = old_alignment_before_center;
-		fprintf(fRtf, "\\par \\pard \\q%c\n", alignment);
-		bNewPar = TRUE;
+		CmdEndParagraph(0);
+		CmdIndent(INDENT_INHIBIT);
 		break;
 
 	case (PAR_RIGHT | ON):
 		old_alignment_before_right = alignment;
 		alignment = RIGHT;
-		fprintf(fRtf, "\\pard \\q%c ", alignment);
+		CmdIndent(INDENT_NONE);
 		break;
 	case (PAR_RIGHT | OFF):
 		alignment = old_alignment_before_right;
-		fprintf(fRtf, "\\par \\pard\\q%c\n", alignment);
-		bNewPar = TRUE;
+		CmdIndent(INDENT_INHIBIT);
 		break;
 
 	case (PAR_LEFT | ON):
 		old_alignment_before_left = alignment;
 		alignment = LEFT;
-		fprintf(fRtf, "\\pard\\q%c\n", alignment);
+		CmdIndent(INDENT_NONE);
 		break;
 	case (PAR_LEFT | OFF):
 		alignment = old_alignment_before_left;
-		fprintf(fRtf, "\\par \\pard\\q%c\n", alignment);
-		bNewPar = TRUE;
+		CmdIndent(INDENT_INHIBIT);
 		break;
 	}
 }
@@ -187,11 +201,11 @@ Paragraph(int code)
 void 
 CmdToday( /* @unused@ */ int code)
 /******************************************************************************
-    purpose: converts the LaTex-date-command into a Rtf-chdate-command which
+    purpose: converts the LaTeX-date-command into a Rtf-chdate-command which
 	     prints the current date into an document
  ******************************************************************************/
 {
-	fprintf(fRtf, "\\chdate ");
+	fprintRTF("\\chdate ");
 }
 
 
@@ -207,125 +221,57 @@ CmdIgnore( /* @unused@ */ int code)
 void 
 CmdLdots( /* @unused@ */ int code)
 /******************************************************************************
- purpose: converts the LaTex-\ldots-command into "..." in Rtf
+ purpose: converts the LaTeX-\ldots-command into "..." in Rtf
  globals : fRtf
  ******************************************************************************/
 {
-	fprintf(fRtf, "...");
+	fprintRTF("...");
 }
 
-void 
-CmdEmphasize( /* @unused@ */ int code)
-/****************************************************************************
-CmdEmphasize
- purpose: turn on/off the emphasized style for characters
- globals : fRtf
- ******************************************************************************/
-{
-	if (!tabbing_on) {	/* tabbing-environment ignores
-				 * emphasized-style */
-		static bool     Em_on = FALSE;
-		if (!(Em_on))
-			fprintf(fRtf, "{\\i ");
-		else
-			fprintf(fRtf, "{\\plain ");
-		Em_on = !Em_on;
-		diagnostics(4,"Entering Convert from CmdEmphasize");
-		Convert();
-		diagnostics(4,"Exiting Convert from CmdEmphasize");
-		fprintf(fRtf, "}");
-		Em_on = !Em_on;
-	}
-}
-
-void 
-Format(int code)
-/******************************************************************************
- purpose: makes the same as the function CmdEmphasize above
-	  but this is an environment-handling-routine in contrast
-	  to the function above which converts an ordinary \em-command
- parameter: code: EMPHASIZED with ON at environment start;
-				  OFF at environment end
- globals : fRtf
-           tabbing_on
- ******************************************************************************/
-{
-	if (tabbing_on) {	/* tabbing-environment ignores
-				 * emphasized-style */
-		static bool     Em_on = FALSE;
-		switch (code) {
-		case (EMPHASIZE | ON):
-			if (!(Em_on))
-				fprintf(fRtf, "{\\i ");
-			else
-				fprintf(fRtf, "{ ");
-			Em_on = !Em_on;
-			break;
-		case (EMPHASIZE | OFF):
-			if ((Em_on))
-			{
-				fprintf(fRtf, "}");
-			}
-			Em_on = FALSE;
-			break;
-		}
-	}
-}
-
-/******************************************************************************/
 void 
 Environment(int code)
 /******************************************************************************
   purpose: pushes/pops the new environment-commands on/from the stack
 parameter: code includes the type of the environment
-globals  : bIndocument
  ******************************************************************************/
 {
-	if (code & ON) {	/* on switch */
+	if (code & ON) {
 		code &= ~(ON);	/* mask MSB */
-		diagnostics(4,"Entering Environment");
-		if (code == DOCUMENT) {
-			/* LEG Meanwhile commented out    ClearEnvironment(); */
-			bInDocument = TRUE;
-/*			if (!pagestyledefined) {
-				diagnostics(WARNING, "rtf 1.4 codes generated, funct1.c (Environment)");
-				PlainPagestyle();
-			}
-*/			ReadLg(language);
-		}
+		diagnostics(4,"Entering Environment (%d)", code);		
 		PushEnvironment(code);
 	} else {		/* off switch */
-		diagnostics(4,"Exiting Environment");
+		diagnostics(4,"Exiting  Environment (%d)", code);
 		PopEnvironment();
 	}
 }
 
-
 void 
 CmdSection(int code)
 /******************************************************************************
-  purpose: converts the LaTex-section-commands into similar Rtf-styles
+  purpose: converts the LaTeX-section-commands into similar Rtf-styles
 parameter: code: type of section-recursion-level
- globals : fRtf
-           DefFont: default-font-number
-           bNewPar
-           bBlankLine
  ******************************************************************************/
 {
 	char            optparam[100] = "";
 	char            *heading;
-	
+/*	char			c;
+	int				DefFont = DefaultFontFamily();
+*/	
 	getBracketParam(optparam, 99);
 	heading = getParam();
 	diagnostics(4,"entering CmdSection [%s]{%s}",optparam,heading);
+	
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_NONE);
+	CmdStartParagraph(0);
+	
 	switch (code) {
 	case SECT_PART:
 		incrementCounter("part");
-		fprintf(fRtf, "\\par\\pard\\page");
-		fprintf(fRtf, "{\\qc\\b\\fs40 ");
-		fprintf(fRtf, "%s %d\\par ", TranslateName("PART"), getCounter("part"));
-		ConvertString(heading);
-		fprintf(fRtf, "\\par}\n\\page\\par \\pard\\q%c", alignment);
+		fprintRTF("\\page");
+		fprintRTF("{\\qc\\b\\fs40 ");
+		ConvertBabelName("PARTNAME");
+		fprintRTF("%d\\par ", getCounter("part"));
 		break;
 
 	case SECT_CHAPTER:
@@ -333,70 +279,84 @@ parameter: code: type of section-recursion-level
 		setCounter("section",0);
 		setCounter("subsection",0);
 		setCounter("subsubsection",0);
-		fprintf(fRtf, "\\par\\pard\\page\\pard{\\pntext\\pard\\plain\\b\\fs32\\kerning28 ");
-		fprintf(fRtf, "%d\\par \\par }\\pard\\plain\n", getCounter("chapter"));
-		fprintf(fRtf, "%s%d%s{", HEADER11, DefFont, HEADER12);
-		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
-		bNewPar = FALSE;
-		bBlankLine = TRUE;
+/*		fprintRTF("\\pard\\page\\pard{\\pntext\\pard\\plain\\b\\fs32\\kerning28 ");
+		fprintRTF("%d\\par \\par }\\pard\\plain\n", getCounter("chapter"));
+		fprintRTF("%s\\f%d%s{", HEADER11, DefFont, HEADER12);
+*/
+		fprintRTF("\\page{\\plain\\b\\fs32\\kerning28 ");
+		ConvertBabelName("CHAPTERNAME");
+		fprintRTF(" %d\\par}", getCounter("chapter"));
+		fprintRTF("{\\fi0\\plain\\b\\fs40\\kerning28 ");
 		break;
 
 	case SECT_NORM:
 		incrementCounter("section");
 		setCounter("subsection",0);
 		setCounter("subsubsection",0);
-		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
-		if (article) {
-			fprintf(fRtf, "\\fs32\\kerning28 %d\\tab}\\pard\\plain\n", getCounter("section"));
-			fprintf(fRtf, "%s%d%s{", HEADER11, DefFont, HEADER12);
+/*
+		fprintRTF("{\\pard\\pntext\\plain\\b");
+		if (g_document_type == FORMAT_ARTICLE) {
+			fprintRTF("\\fs32\\kerning28 %d\\tab}\\pard\\plain\n", getCounter("section"));
+			fprintRTF("%s%s{", HEADER11, HEADER12);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("chapter"),getCounter("section"));
-			fprintf(fRtf, "%s%d%s{", HEADER21, DefFont, HEADER22);
+			fprintRTF("\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("chapter"),getCounter("section"));
+			fprintRTF("%s%s{", HEADER21, HEADER22);
+		}
+*/
+		fprintRTF("{\\plain\\b");
+		if (g_document_type == FORMAT_ARTICLE) {
+			fprintRTF("\\fs32 %d.  ", getCounter("section"));
+		} else {
+			fprintRTF("\\fs24 %d.%d  ", getCounter("chapter"),getCounter("section"));
 		}
 
-		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
-		bNewPar = FALSE;
-		bBlankLine = TRUE;
 		break;
 
 	case SECT_SUB:
 		incrementCounter("subsection");
 		setCounter("subsubsection",0);
-		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
-		if (article) {
-			fprintf(fRtf, "\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"));
-			fprintf(fRtf, "%s%d%s{", HEADER21, DefFont, HEADER22);
+/*		fprintRTF("{\\par\\pard\\pntext\\pard\\plain\\b");
+		if (g_document_type == FORMAT_ARTICLE) {
+			fprintRTF("\\fs24 %d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"));
+			fprintRTF("%s\\f%d%s{", HEADER21, DefFont, HEADER22);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"));
-			fprintf(fRtf, "%s%d%s{", HEADER31, DefFont, HEADER32);
+			fprintRTF("\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"));
+			fprintRTF("%s\\f%d%s{", HEADER31, DefFont, HEADER32);
 		}
-
-		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par \\pard\\plain\\f%d\\q%c\n", DefFont, alignment);
-		bNewPar = FALSE;
-		bBlankLine = TRUE;
+*/
+		fprintRTF("{\\plain\\b\\fs24 ");
+		if (g_document_type != FORMAT_ARTICLE) 
+			fprintRTF("%d.", getCounter("chapter"));
+		fprintRTF("%d.%d  ", getCounter("section"), getCounter("subsection"));
 		break;
 
 	case SECT_SUBSUB:
 		incrementCounter("subsubsection");
-		fprintf(fRtf, "{\\par\\pard\\pntext\\pard\\plain\\b");
-		if (article) {
-			fprintf(fRtf, "\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
-			fprintf(fRtf, "%s%d%s{", HEADER31, DefFont, HEADER32);
+/*		fprintRTF("{\\par\\pard\\pntext\\pard\\plain\\b");
+		if (g_document_type == FORMAT_ARTICLE) {
+			fprintRTF("\\fs24 %d.%d.%d\\tab}\\pard\\plain\n", getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+			fprintRTF("%s\\f%d%s{", HEADER31, DefFont, HEADER32);
 		} else {
-			fprintf(fRtf, "\\fs24 %d.%d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
-			fprintf(fRtf, "%s%d%s{", HEADER41, DefFont, HEADER42);
+			fprintRTF("\\fs24 %d.%d.%d.%d\\tab}\\pard\\plain\n", getCounter("chapter"), getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+			fprintRTF("%s\\f%d%s{", HEADER41, DefFont, HEADER42);
 		}
-
-		ConvertString(heading);
-		fprintf(fRtf, "}\n\\par\\pard\\plain\\f%d\\q%c\n",DefFont, alignment);
-		bNewPar = FALSE;
-		bBlankLine = TRUE;
+*/
+		fprintRTF("{\\plain\\b\\fs24 ");
+		if (g_document_type != FORMAT_ARTICLE) 
+			fprintRTF("%d.", getCounter("chapter"));
+		fprintRTF("%d.%d", getCounter("section"), getCounter("subsection"));
+		fprintRTF(".%d  ", getCounter("subsubsection"));
 		break;
 	}
+	
+	ConvertString(heading);
+	CmdEndParagraph(0);
+	fprintRTF("}");
+	if (code == SECT_PART)
+		fprintRTF("\\page");
+
 	if (heading) free(heading);
+	CmdIndent(INDENT_NONE);
 }
 
 
@@ -408,24 +368,43 @@ CmdCaption(int code)
 {
 	char           *thecaption;
 	char            lst_entry[300];
+	int				n;
+	char   			old_align;
 	
+	old_align = alignment;
+	alignment = CENTERED;
+
 	getBracketParam(lst_entry,299);  /* discard entry for list of tables or figures */
 	
 	diagnostics(4, "entering CmdCaption [%s]", lst_entry);
 
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_NONE);
+	CmdStartParagraph(0);
+	fprintRTF("{");
+
 	if (g_processing_figure) {
 		incrementCounter("figure");
-		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("FIGURE"), getCounter("figure"));
+		ConvertBabelName("FIGURENAME");
+		n = getCounter("figure");
 	} else {
 		incrementCounter("table");
-		fprintf(fRtf, "\n\\par\\pard\\qc {%s %d: ", TranslateName("TABLE"), getCounter("table"));
+		ConvertBabelName("TABLENAME");
+		n = getCounter("table");
 	}
+
+	fprintRTF(" ");
+	if (g_document_type != FORMAT_ARTICLE) 
+		fprintRTF("%d.", getCounter("chapter"));
+	fprintRTF("%d:  ", n);
 
 	thecaption = getParam();
 	diagnostics(4, "in CmdCaption [%s]", thecaption);
 	ConvertString(thecaption);
 	free(thecaption);
-	fprintf(fRtf, "}\n\\par\\pard\\q%c\n", alignment);
+	fprintRTF("}");
+	CmdEndParagraph(0);
+	alignment = old_align;
 	diagnostics(4, "exiting CmdCaption");
 }
 
@@ -531,15 +510,13 @@ CmdFootNote(int code)
 /******************************************************************************
  purpose: converts footnotes from LaTeX to Rtf
  params : code specifies whether it is a footnote or a thanks-mark
- globals: fTex, fRtf
-          DefFont
  ******************************************************************************/
 {
 	char            number[255];
 	static int      thankno = 1;
 	int             text_ref_upsize, foot_ref_upsize;
-	char            *footnote;
-
+	int				DefFont = DefaultFontFamily();
+	
 	diagnostics(4,"Entering ConvertFootNote");
 	getBracketParam(number, 254);	/* is ignored because of the
 					 * automatic footnumber-generation */
@@ -549,112 +526,85 @@ CmdFootNote(int code)
 
 	if (code == THANKS) {
 		thankno++;
-		fprintf(fRtf, "{\\up%d %d}\n", text_ref_upsize, thankno);
-		fprintf(fRtf, "{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
-		fprintf(fRtf, "\\fs%d {\\up%d %d}", CurrentFontSize(), foot_ref_upsize, thankno);
+		fprintRTF("{\\up%d %d}\n", text_ref_upsize, thankno);
+		fprintRTF("{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
+		fprintRTF("\\fs%d {\\up%d %d}", CurrentFontSize(), foot_ref_upsize, thankno);
 	} else {
-		fprintf(fRtf, "{\\up%d\\chftn}\n", text_ref_upsize);
-		fprintf(fRtf, "{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
-		fprintf(fRtf, "\\fs%d {\\up%d\\chftn}", CurrentFontSize(), foot_ref_upsize);
+		fprintRTF("{\\up%d\\chftn}\n", text_ref_upsize);
+		fprintRTF("{\\*\\footnote \\pard\\plain\\s246\\f%d",DefFont);
+		fprintRTF("\\fs%d {\\up%d\\chftn}", CurrentFontSize(), foot_ref_upsize);
 	}
 
-	footnote = getParam();
-	if (footnote) {
-		ConvertString(footnote);
-		free(footnote);
-	}
+	Convert();
 	diagnostics(4,"Exiting CmdFootNote");
-	fprintf(fRtf, "}\n ");
+	fprintRTF("}\n ");
 }
 
 void 
 CmdQuote(int code)
 /******************************************************************************
-  purpose: converts the LaTex-Quote-commands into similar Rtf-commands
-parameter: code: QUOTE and QUOTATION On/Off
-		 specifies the recursion-level of these commands
- globals : NoNewLine: true if no newline should be printed into the Rtf-File
-	   indent : includes the left-indent-position
+  purpose: handles \begin{quote} ... \end{quote} 
+                   \begin{quotation} ... \end{quotation}
+  globals:   indent which is the left-indent-position
  ******************************************************************************/
 {
+	CmdEndParagraph(0);
+
 	switch (code) {
 	case (QUOTATION | ON):
 		case (QUOTE | ON):
 		diagnostics(4,"Entering CmdQuote");
-		PushBrace();
 		indent += 512;
-		NoNewLine = TRUE;
-		fprintf(fRtf, "\n{\\par\\li%d ", indent);
+		CmdIndent(INDENT_NONE);
 		break;
 		
 	case (QUOTATION | OFF):
 	case (QUOTE | OFF):
 		diagnostics(4,"Exiting CmdQuote");
-		(void) PopBrace();
+		CmdIndent(INDENT_INHIBIT);
 		indent -= 512;
-		NoNewLine = FALSE;
-		if (indent>0)
-			fprintf(fRtf, "}\n\\par\\li%d ", indent);
-		else
-	    	fprintf(fRtf, "}\n\\par\\pard\\q%c ", alignment);
-		break;
 	}
 }
-
 
 void 
 CmdList(int code)
 /******************************************************************************
-  purpose : converts the LaTeX-environments itemize, description and enumerate
-	    to similar Rtf-styles
-	    (only the begin/end-commands and not the commands inside the environment
-	     see also function CmdItem)
-parameter : code : type of environment and on/off-state
- globals  : nonewline, indent: look at funtction CmdQuote
+  purpose : set indentation and counters for itemize, description and enumerate
+ globals  : indent
  ******************************************************************************/
 {
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_INHIBIT);
+
 	switch (code) {
 		case (ITEMIZE | ON):
 		PushEnvironment(ITEMIZE);
 		indent += 512;
-		NoNewLine = FALSE;
-		bNewPar = FALSE;
 		break;
 	case (ITEMIZE | OFF):
 		PopEnvironment();
 		indent -= 512;
-		NoNewLine = FALSE;
-		fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
-		bNewPar = TRUE;
 		break;
+
 	case (ENUMERATE | ON):
 		PushEnvironment(ENUMERATE);
 		g_enumerate_depth++;
 		CmdItem(RESET_ITEM_COUNTER);
 		indent += 512;
-		NoNewLine = TRUE;
-		bNewPar = FALSE;
 		break;
 	case (ENUMERATE | OFF):
 		PopEnvironment();
 		g_enumerate_depth--;
 		indent -= 512;
-		NoNewLine = FALSE;
-		fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
-		bNewPar = TRUE;
 		break;
+
 	case (DESCRIPTION | ON):
 		PushEnvironment(DESCRIPTION);
 		indent += 512;
-		NoNewLine = FALSE;
-		bNewPar = FALSE;
 		break;
 	case (DESCRIPTION | OFF):
 		PopEnvironment();
 		indent -= 512;
-		NoNewLine = FALSE;
-		fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
-		bNewPar = TRUE;
 		break;
 	}
 }
@@ -662,13 +612,9 @@ parameter : code : type of environment and on/off-state
 void 
 CmdItem(int code)
 /******************************************************************************
- purpose : makes the same as the function CmdList except that
-	   here are only \-commands are handled and in the function
-	   CmdList only the \begin or \end{environment}-command is handled
-parameter : code : type of environment and on/off-state
- globals  : nonewline, indent: look at function CmdQuote
-            bNewPar:
-            fRtf: Rtf-file-pointer
+ purpose : handles \item command.  Since the \item command is delimited by 
+           a later \item command or the ending of an environment (\end{itemize})
+           this routine will get called recursively.
  ******************************************************************************/
 {
 	char            itemlabel[100];
@@ -680,97 +626,88 @@ parameter : code : type of environment and on/off-state
 	}
 
 	diagnostics(4, "Entering CmdItem depth=%d item=%d",g_enumerate_depth,item_number[g_enumerate_depth]);
-	fprintf(fRtf, "\n\\par\\fi0\\li%d ", indent);
 
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_NONE);
+	CmdStartParagraph(0);
+	
 	if (getBracketParam(itemlabel, 99)) {	/* \item[label] */
 
-		fprintf(fRtf, "{\\b ");	/* bold on */
+		fprintRTF("{\\b ");	/* bold on */
 		diagnostics(5,"Entering ConvertString from CmdItem");
 		ConvertString(itemlabel);
 		diagnostics(5,"Exiting ConvertString from CmdItem");
-		fprintf(fRtf, "}\\tab ");	/* bold off */
+		fprintRTF("}\\tab ");	/* bold off */
 		
 	}
 	
-/*	if (item_number[g_enumerate_depth]>1) {
-		PopBrace();
-		PushBrace();
-	} else
-		PushBrace();
-*/
-
 	switch (code) {
 	case ITEMIZE:
-		fprintf(fRtf, "\\bullet\\tab ");
+		fprintRTF("\\bullet\\tab ");
 		break;
 
 	case ENUMERATE:
 		switch (g_enumerate_depth) {
 		case 1:
-			fprintf(fRtf, "%d.", item_number[g_enumerate_depth]);
+			fprintRTF("%d.", item_number[g_enumerate_depth]);
 			break;
 
 		case 2:
-			fprintf(fRtf, "(%c)", 'a' + item_number[g_enumerate_depth] - 1);
+			fprintRTF("(%c)", 'a' + item_number[g_enumerate_depth] - 1);
 			break;
 
 		case 3:
 			roman_item(item_number[g_enumerate_depth], itemlabel);
-			fprintf(fRtf, "%s.", itemlabel);
+			fprintRTF("%s.", itemlabel);
 			break;
 
 		case 4:
-			fprintf(fRtf, "%c.", 'A' + item_number[g_enumerate_depth] - 1);
+			fprintRTF("%c.", 'A' + item_number[g_enumerate_depth] - 1);
 			break;
 		}
-		fprintf(fRtf, "\\tab ");
+		fprintRTF("\\tab ");
 		item_number[g_enumerate_depth]++;
 		break;
 
 	case DESCRIPTION:
-		fprintf(fRtf, "\\tab ");	/* indent */
+		fprintRTF("\\tab ");	/* indent */
 		break;
 	}
 	
 	Convert();
+	CmdEndParagraph(0);
+	CmdIndent(INDENT_NONE);
 	diagnostics(4, "Exiting Convert() from CmdItem");
-	bNewPar = FALSE;
 }
 
 void 
-CmdBox( /* @unused@ */ int code)
+CmdBox(int code)
 /******************************************************************************
   purpose: converts the LaTeX \box-commands into  an similar Rtf-style
-  globals: mbox
  ******************************************************************************/
 {
-	char           *s;
+	int mode = GetTexMode();
 	
-	if (g_processing_equation) {
-		g_processing_equation = FALSE;
-		fprintf(fRtf, "}");	/* close math italics */
+	diagnostics(4, "Entering CmdBox()");
+	if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
+		fprintRTF("{\\i0 ");	/* brace level without math italics */
+	
+	SetTexMode(MODE_RESTRICTED_HORIZONTAL);
+	diagnostics(4, "Entering Convert() from CmdBox");
+	Convert();
+	diagnostics(4, "Exiting Convert() from CmdBox");
+	
+	if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
+		fprintRTF("}");	/* brace level without math italics */
 
-		mbox = TRUE;
-		s = getParam();
-		diagnostics(4, "Entering ConvertString(%s) from CmdBox",s);
-		ConvertString(s);
-		diagnostics(4, "Exiting Convert() from CmdBox");
-		free(s);
-		
-		mbox = FALSE;
-		g_processing_equation = TRUE;
-		fprintf(fRtf, "{\\i ");	/* reopen math italics */
-	} else {
-		mbox = TRUE;
-		Convert();
-		mbox = FALSE;
-	}
+	SetTexMode(mode);
+	diagnostics(4, "Exited CmdBox()");
 }
 
 void
 CmdInclude(int code)
 /******************************************************************************
- purpose: reads an extern-LaTex-File from the into the actual document and converts it to
+ purpose: reads an extern-LaTeX-File from the into the actual document and converts it to
 	  an similar Rtf-style
  globals: GermanMode: is set if germanstyles are included
           fTex
@@ -788,7 +725,12 @@ CmdInclude(int code)
 	fname = getParam();
 	if (strstr(fname, "german.sty") != NULL) {
 		GermanMode = TRUE;
-		PushEnvironment(GERMANMODE);
+		PushEnvironment(GERMAN_MODE);
+		return;
+	}
+
+	if (strstr(fname, "french.sty") != NULL) {
+		PushEnvironment(FRENCH_MODE);
 		return;
 	}
 	assert(fname != NULL);
@@ -856,28 +798,10 @@ CmdInclude(int code)
 	free(fname);
 }
 
-void
-putRtfChar(char cThis)
-/****************************************************************************
-purpose: filter for characters being written to RTF file
- ****************************************************************************/
-{
-	if (cThis == '\\')
-		fprintf(fRtf, "\\\\");
-	else if (cThis == '{')
-		fprintf(fRtf, "\\{");
-	else if (cThis == '}')
-		fprintf(fRtf, "\\}");
-	else if (cThis == '\n') 
-		fprintf(fRtf, "\n\\par ");
-	else
-		fprintf(fRtf, "%c", cThis);
-}
-
 void 
 CmdVerb(int code)
 /******************************************************************************
- purpose: converts the LaTex-verb-environment to a similar Rtf-style
+ purpose: converts the LaTeX-verb-environment to a similar Rtf-style
  ******************************************************************************/
 {
 	char            cThis;
@@ -885,36 +809,41 @@ CmdVerb(int code)
 	int             num;
 
 	while ((cThis = getRawTexChar())) {
-		if ((cThis != ' ') && (cThis != '*') && !isalpha(cThis)) {
+		if ((cThis != ' ') && (cThis != '*') && !isalpha((int)cThis)) {
 			markingchar = cThis;
 			break;
 		}
 	}
 
-	num = getTexFontNumber("Typewriter");
-	fprintf(fRtf, "{\\f%d ", num);
+	SetTexMode(MODE_HORIZONTAL);
+	num = TexFontNumber("Typewriter");
+	fprintRTF("{\\b0\\i0\\scaps0\\f%d ", num);
 
 	while ((cThis = getRawTexChar()) && cThis != markingchar) 
 		putRtfChar(cThis);
 	
-	fprintf(fRtf, "}");
+	fprintRTF("}");
 }
 
 void 
 CmdVerbatim(int code)
-{
 /******************************************************************************
-	 purpose: in this verb-environment each character is converted 1:1 from LaTex
-		  to Rtf without converting any LaTex-commands
+	convert characters 1:1 until \end{verbatim} or \end{Verbatim} is reached
+	There has got to be a better way of doing this
 ******************************************************************************/
+{
 	char            endstring[] = "\\end{verbatim}";
 	int             num, i = 0, j = 0;
 	char            cThis;
 
 	if (code & ON) {
+		
 		diagnostics(4, "Entering CmdVerbatim");
-		num = getTexFontNumber("Typewriter");
-		fprintf(fRtf, "{\\f%d ", num);
+		CmdEndParagraph(0);
+		CmdIndent(INDENT_NONE);
+		CmdStartParagraph(0);
+		num = TexFontNumber("Typewriter");
+		fprintRTF("\\b0\\i0\\scaps0\\f%d ", num);
 	
 		for (;;) {
 			cThis = getRawTexChar();
@@ -941,31 +870,35 @@ CmdVerbatim(int code)
 		}
 	} else {
 		diagnostics(4, "Exiting CmdVerbatim");
-		fprintf(fRtf, "}");
+		CmdEndParagraph(0);
 	}
 		
 }
 
-/******************************************************************************/
 void 
 CmdVerse(int code)
 /******************************************************************************
-  purpose: converts the LaTex-Verse-environment to a similar Rtf-style
-parameter: code: turns on/off handling routine
-  globals: fRtf: Rtf-file-pointer
-           NoNewLine
-           bNewPar
+  purpose: converts the LaTeX-Verse-environment to a similar Rtf-style
  ******************************************************************************/
 {
+	static int previous_indentation;
+	static int previous_parindent;
+	
+	CmdEndParagraph(0);
 	switch (code) {
 		case ON:
-		fprintf(fRtf, "\n\\par\\pard\\q%c\\fi-567\\li1134\\ri1134\\keep ", alignment);
-		NoNewLine = FALSE;
-		bNewPar = TRUE;
+		CmdIndent(INDENT_USUAL);
+		previous_indentation = indent;
+		previous_parindent = getLength("parindent");
+		indent = 1134;
+		setLength("parindent", -567);
+		CmdStartParagraph(0);
+		fprintRTF("\\ri1134\\keep ");
 		break;
 	case OFF:
-		fprintf(fRtf, "\n\\par\\pard\\q%c ", alignment);
-		bNewPar = TRUE;
+		setLength("parindent", previous_parindent);
+		indent = previous_indentation;
+		CmdIndent(INDENT_INHIBIT);
 		break;
 	}
 }
@@ -986,13 +919,11 @@ CmdIgnoreDef( /* @unused@ */ int code)
 	free(temp);
 }
 
-/******************************************************************************/
 void 
 TranslateGerman(void)
 /***************************************************************************
 purpose: called on active german-mode and " character in input file to
 	 handle " as an active (meta-)character.
-globals: reads from fTex and writes to fRtf
  ***************************************************************************/
 {
 	char            cThis;
@@ -1001,16 +932,16 @@ globals: reads from fTex and writes to fRtf
 
 	switch (cThis) {
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e4}");
+		fprintRTF("{\\'e4}");
 		break;
 	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f6}");
+		fprintRTF("{\\'f6}");
 		break;
 	case 'u':
-		fprintf(fRtf, "{\\ansi\\'fc}");
+		fprintRTF("{\\'fc}");
 		break;
 	case 's':
-		fprintf(fRtf, "{\\ansi\\'df}");
+		fprintRTF("{\\'df}");
 		break;
 	case '|':
 		break;		/* ignore */
@@ -1019,48 +950,37 @@ globals: reads from fTex and writes to fRtf
 	case '"':
 		break;		/* ignore */
 	case '\'':
-		fprintf(fRtf, "\\ldblquote ");
+		fprintRTF("\\ldblquote ");
 		break;
 	case '`':
-		fprintf(fRtf, "\\rdblquote ");
+		fprintRTF("{\\'84}");
 		break;
 	case '<':
 		break;
 	case '>':
 		break;
 	default:
-		fprintf(fRtf, "%c", cThis);
+		fprintRTF("%c", cThis);
 	}
-}
-
-/******************************************************************************/
-void 
-CmdPrintRtf(int code)
-/***************************************************************************
-purpose: writes string to RTF file
-globals: writes to fRtf
- ***************************************************************************/
-{
-	fprintf(fRtf, (char *) code);
 }
 
 void 
 GermanPrint(int code)
 {
 	switch (code) {
-		case GP_CK:fprintf(fRtf, "ck");
+		case GP_CK:fprintRTF("ck");
 		break;
 	case GP_LDBL:
-		fprintf(fRtf, "\\ldblquote");
+		fprintRTF("{\\'84}");
 		break;
 	case GP_L:
-		fprintf(fRtf, "\\lquote");
+		fprintRTF(",");
 		break;
 	case GP_R:
-		fprintf(fRtf, "\\rquote");
+		fprintRTF("\\lquote");
 		break;
 	case GP_RDBL:
-		fprintf(fRtf, "\\rdblquote");
+		fprintRTF("\\ldblquote");
 	}
 }
 
@@ -1089,11 +1009,11 @@ CmdIgnoreLet( /* @unused@ */ int code)
  *LEG250498
  * purpose: opens existing aux-file and scans for token, with value
  * reference.  Then outputs the corresponding ref-information to the
- * rtf-file parameters: code 0 = get the first parameter ( {refnumber}
- * -> refnumber)
- *                           1 = get the first par. of the first {
- * {{sectref}{line}} } -> sectref ) globals: input (name of
- * LaTeX-Inputfile) fRtf rtf-Outputfile
+ * rtf-file parameters: 
+ * code 0 = get the first parameter {refnumber} -> refnumber)
+ *      1 = get the first par. of the first {{{sectref}{line}} } -> sectref 
+ * 
+ * globals: input (name of LaTeX-Inputfile) fRtf rtf-Outputfile
  * returns 1 if target is found otherwise 0
  ************************************************************************/
 
@@ -1103,23 +1023,23 @@ ScanAux(char *token, char *reference, int code)
 	static FILE    *fAux = NULL;
 	static char     openbrace = '{';
 	static char     closebrace = '}';
-	char            tokenref[255];	/* should really be allocated
-					 * dynmically */
+	char            tokenref[255];	/* should really be allocated dynmically */
 	char            AuxLine[1024];
 	char           *s;
 
 	if (g_aux_file_missing || strlen(reference) == 0) {
-		fprintf(fRtf, "?");
+		fprintRTF("?");
 		return 0;
 	}
+	
 	if (fAux == NULL && (fAux = fopen(AuxName, "r")) == NULL) {	/* open .aux file if not
 									 * opened before */
-		fprintf(stderr, "Error opening AUX-file: %s\n", AuxName);
-		fprintf(stderr, "Try running LaTeX first\n");
+		diagnostics(WARNING, "No .aux file.  Run LaTeX to create %s\n", AuxName);
 		g_aux_file_missing = TRUE;
-		fprintf(fRtf, "?");
+		fprintRTF("?");
 		return 0;
 	}
+	
 	rewind(fAux);
 	sprintf(tokenref, "\\%s{%s}", token, reference);
 
@@ -1128,28 +1048,24 @@ ScanAux(char *token, char *reference, int code)
 		if ((s = strstr(AuxLine, tokenref)) != NULL) {
 			s += strlen(tokenref);
 
-			for (; code >= 0; code--) {	/* Do once or twice
-							 * depending on code */
+			for (; code >= 0; code--) {	/* Do once or twice depending on code */
 				s = strchr(s, openbrace);
-				if (s == NULL) {	/* no parameter found,
-							 * just print '?' and
-							 * return */
-					fprintf(fRtf, "?");
+				if (s == NULL) {	/* no parameter found, print '?' and return */
+					fprintRTF("?");
 					return 0;
 				}
 				s++;
 			}
 
-			while (*s != closebrace && *s != '\0')	/* print the number and
-								 * exit */
-				fprintf(fRtf, "%c", *s++);
+			while (*s != closebrace && *s != '\0')	/* print the number and exit */
+				fprintRTF("%c", *s++);
 
 			return 1;
 		}
 	}
 
 	diagnostics(WARNING, "\\%s{%s} not found in %s", token, reference, AuxName);
-	fprintf(fRtf, "?");
+	fprintRTF("?");
 	return 0;
 }
 
@@ -1196,14 +1112,12 @@ CmdLabel(int code)
 	/* LEG190498 */
 }
 
+void
+CmdLabel1_4(int code, char *text)
 /******************************************************************************
   purpose : label
   parameter : code  kind of label, text name of the label
-  globals : fRtf
-  LEG250498
  ******************************************************************************/
-void
-CmdLabel1_4(int code, char *text)
 {
 	switch (code) {
 		case LABEL:
@@ -1212,17 +1126,17 @@ CmdLabel1_4(int code, char *text)
 		 * encountered it's a severe bug
 		 */
 
-		fprintf(fRtf, "{\\*\\bkmkstart %s} {\\*\\bkmkend %s}", text, text);
+		fprintRTF("{\\*\\bkmkstart %s} {\\*\\bkmkend %s}", text, text);
 		break;
 	case REF:
 	case HYPERREF:
-		fprintf(fRtf, "{\\field\\fldlock{\\*\\fldinst REF %s  \\\\n}{\\fldrslt ", text);
+		fprintRTF("{\\field\\fldlock{\\*\\fldinst REF %s  \\\\n}{\\fldrslt ", text);
 		ScanAux("newlabel", text, 1);
-		fprintf(fRtf, "}}");
+		fprintRTF("}}");
 		break;
 	case PAGEREF:
 	case HYPERPAGEREF:
-		fprintf(fRtf, "{\\field{\\*\\fldinst PAGEREF %s}{\\fldrslt ?}}", text);
+		fprintRTF("{\\field{\\*\\fldinst PAGEREF %s}{\\fldrslt ?}}", text);
 		break;
 	default:
 		diagnostics(ERROR, "Called CmdLabel with wrong Code %d", code);
@@ -1230,85 +1144,35 @@ CmdLabel1_4(int code, char *text)
 }
 
 
+void
+CmdLabelOld(int code, char *text)
 /******************************************************************************
      purpose : label
    parameter : code  kind of label
-     globals : fRtf
  ******************************************************************************/
-void
-CmdLabelOld(int code, char *text)
 {
 	switch (code) {
 		case LABEL:
-		fprintf(fRtf, "{\\v[LABEL: %s]}", text);
+		fprintRTF("{\\v[LABEL: %s]}", text);
 		break;
 	case REF:
 	case HYPERREF:
-		fprintf(fRtf, "{\\v[REF: %s]}", text);
+		fprintRTF("{\\v[REF: %s]}", text);
 		break;
 	case PAGEREF:
 	case HYPERPAGEREF:
-		fprintf(fRtf, "{\\v[PAGEREF: %s]}", text);
+		fprintRTF("{\\v[PAGEREF: %s]}", text);
 		break;
 	default:
 		diagnostics(ERROR, "Called CmdLabel with wrong Code %d", code);
 	}
 }
 
-void 
-ConvertString(char *string)
-/******************************************************************************
-     purpose : converts string in TeX-format to Rtf-format
-   parameter : string   will be converted, result is written to Rtf-file
-     globals : linenumber
-               fTex
- ******************************************************************************/
-{
-	FILE           *fp, *LatexFile;
-	long            oldlinenumber;
-	int             test;
-	char            temp[31];
-	
-	if ((fp = tmpfile()) == NULL) {
-		fprintf(stderr, "%s: Fatal Error: cannot create temporary file\n", progname);
-		exit(EXIT_FAILURE);
-	}
-	
-	test = fwrite(string, strlen(string), 1, fp);
-	if (test != 1)
-		diagnostics(WARNING,
-			    "(ConvertString): "
-			    "Could not write `%s' to tempfile %s, "
-			    "fwrite returns %d, should be 1",
-			    string, "tmpfile()", test);
-	if (fseek(fp, 0L, SEEK_SET) != 0)
-		diagnostics(ERROR, "Could not position to 0 in tempfile (ConvertString)");
-
-	LatexFile = fTex;
-	fTex = fp;
-	diagnostics(5, "changing fTex file pointer in ConvertString");
-	oldlinenumber = linenumber;
-/*	linenumber = 1;*/
-
-	strncpy(temp,string,30);
-	diagnostics(5, "Entering Convert() from StringConvert() <%s>",temp);
-	Convert();
-	diagnostics(5, "Exiting Convert() from StringConvert()");
-
-	fTex = LatexFile;
-	diagnostics(5, "resetting fTex file pointer in ConvertString");
-	linenumber = oldlinenumber;
-	if (fclose(fp) != 0)
-		diagnostics(ERROR, "Could not close tempfile, (ConvertString).");
-}
-
-/******************************************************************************/
 void 
 IgnoreNewCmd( /* @unused@ */ int code)
 /******************************************************************************
      purpose : ignore \newcmd
    parameter : code  not used
-     globals : fTex
  ******************************************************************************/
 {
 	char            cThis;
@@ -1321,4 +1185,423 @@ IgnoreNewCmd( /* @unused@ */ int code)
 		CmdIgnoreDef(0);
 	else
 		CmdIgnoreParameter(No_Opt_Two_NormParam);
+}
+
+void CmdQuad(int kk)
+/******************************************************************************
+ purpose: inserts kk quad spaces (D. Taupin)
+ ******************************************************************************/
+{
+	int z;	
+	fprintRTF("{\\emspace ");
+	for (z=0; z<kk; z++) fprintRTF(" ");
+	fprintRTF("}");
+}
+
+void CmdSpace(float kk)
+/******************************************************************************
+ purpose: inserts a space of width kk*space 
+ ******************************************************************************/
+{
+	int size = CurrentFontSize()*kk;
+	fprintRTF("{\\fs%d  }", size);
+}
+
+void 
+CmdFigure(int code)
+/******************************************************************************
+  purpose: Process \begin{figure} ... \end{figure} environment
+ ******************************************************************************/
+{
+	char            loc[5];
+
+	if (code & ON) {
+		getBracketParam(loc,4);
+		diagnostics(4, "entering CmdFigure [%s]", loc);
+		g_processing_figure = TRUE;
+	} else {
+		g_processing_figure = FALSE;
+		diagnostics(4, "exiting CmdFigure");
+	}
+}
+
+void 
+CmdIgnoreFigure(int code)
+/******************************************************************************
+  purpose: function to ignore Picture and Minipage Environment
+ ******************************************************************************/
+{
+	if (code & ON) {
+	
+		switch (code & ~(ON)) {
+			case PICTURE:
+					getTexUntil("\\end{picture}");
+					break;
+			
+			case MINIPAGE:
+					getTexUntil("\\end{minipage}");
+					break;
+		}
+	}
+}
+
+/******************************************************************************
+CmdLink:
+
+  purpose: hyperlatex support. function, which translates the first parameter
+           to the rtf-file and ignores the second, the proposed optional
+	   parameter is also (still) ignored.
+  parameter: not (yet?) used.
+
+  The second parameter should be remembered for the \Cite (\Ref \Pageref)
+  command.
+  globals: hyperref, set to second Parameter
+
+The first parameter of a \link{anchor}[ltx]{label} is converted to the
+rtf-output. Label is stored to hyperref for later use, the optional
+parameter is ignored.
+[ltx] should be processed as Otfried recommends it, to use for
+exclusive latex output.e.g:
+
+	\link{readhere}[~\Ref]{explaining:chapter}.
+
+Since {explaining:chapter} is yet read by latex and hyperlatex when
+[...] is evaluated it produces the correct reference. We are only
+strolling from left to right through the text and can't remember what
+we will see in the future.
+
+ ******************************************************************************/
+void
+CmdLink(int code)
+{
+	char           *param2;
+	char            optparam[255] = "";
+
+	diagnostics(4, "Entering hyperlatex \\link command");
+	Convert();		/* convert routine is called again for
+				 * evaluating the contents of the first
+				 * parameter */
+	diagnostics(4, "  Converted first parameter");
+
+	getBracketParam(optparam, 255);
+	/* LEG190498 now should come processing of the optional parameter */
+	diagnostics(4, "  Converted optional parameter");
+
+	param2 = getParam();
+	diagnostics(4, "  Converted second parameter");
+
+	if (hyperref != NULL)
+		free(hyperref);
+
+	hyperref = (char *) malloc((strlen(param2) + 1));
+	if (hyperref == NULL)
+		error(" malloc error -> out of memory!\n");
+
+	strcpy(hyperref, param2);
+	free(param2);
+	/* LEG210698*** better? hyperref = param2 */
+}
+
+void 
+CmdColumn(int code)
+/******************************************************************************
+  purpose: chooses between one/two-columns
+parameter: number of columns
+ globals: twocolumn: true if twocolumn-mode is set
+ ******************************************************************************/
+{
+	switch (code) {
+		case One_Column:fprintRTF("\\page \\colsx709\\endnhere ");	/* new page & one column */
+		twocolumn = FALSE;
+		break;
+	case Two_Column:
+		fprintRTF("\\page \\cols2\\colsx709\\endnhere ");	/* new page & two
+									 * columns */
+		twocolumn = TRUE;
+		break;
+	}			/* switch */
+}
+
+void 
+CmdNewPage(int code)
+/******************************************************************************
+  purpose: starts a new page
+parameter: code: newpage or newcolumn-option
+ globals: twocolumn: true if twocolumn-mode is set
+ ******************************************************************************/
+{
+	CmdEndParagraph(0);
+	switch (code) {
+		case NewPage:
+			fprintRTF("\\page ");	/* causes new page */
+			break;
+			
+		case NewColumn:
+			if (twocolumn)
+				fprintRTF("\\column ");	/* new column */
+			else
+				fprintRTF("\\page ");	/* causes new page */
+			break;
+	}			/* switch */
+}
+
+void 
+Cmd_OptParam_Without_braces( /* @unused@ */ int code)
+/******************************************************************************
+ purpose: gets an optional parameter which isn't surrounded by braces but by spaces
+ ******************************************************************************/
+{
+	char            cNext = ' ';
+	char            cLast = ' ';
+
+	do {
+		cLast = cNext;
+		cNext = getTexChar();
+	} while ((cNext != ' ') &&
+		 (cNext != '\\') &&
+		 (cNext != '{') &&
+		 (cNext != '\n') &&
+		 (cNext != ',') &&
+		 ((cNext != '.') || (isdigit((unsigned char) cLast))) &&
+	/*
+	 * . doesn't mean the end of an command inside an number of the type
+	 * real
+	 */
+		 (cNext != '}') &&
+		 (cNext != '\"') &&
+		 (cNext != '[') &&
+		 (cNext != '$'));
+
+	ungetTexChar(cNext);
+}
+
+void 
+CmdBottom(int code)
+/******************************************************************************
+  purpose: ignore raggedbottom command
+ ******************************************************************************/
+{
+}
+
+/******************************************************************************
+parameter: code: on/off-option
+ globals : article and titlepage from the documentstyle
+ ******************************************************************************/
+void
+CmdAbstract(int code)
+{
+	static char     oldalignment;
+
+	fprintRTF("\n\\par\n\\par\\pard ");
+	if (code == ON) {
+		if (!(g_document_type == FORMAT_ARTICLE) || !titlepage) 
+			fprintRTF("\\page");
+
+		fprintRTF("\\pard\\qj ");
+		fprintRTF("{\\b\\fs%d ", CurrentFontSize());
+		ConvertBabelName("ABSTRACTNAME");
+		fprintRTF("}\\par ");
+		oldalignment = alignment;
+		alignment = JUSTIFIED;
+	} else {
+		fprintRTF("\\pard ");
+		alignment = oldalignment;
+		fprintRTF("\n\\par\\q%c ", alignment);
+	}
+}
+
+void 
+CmdTitlepage(int code)
+/******************************************************************************
+  purpose: \begin{titlepage} ... \end{titlepage}
+           add pagebreaks before and after this environment
+ ******************************************************************************/
+{
+	switch (code) {
+		case ON:
+		fprintRTF("\n\\par\\pard \\page ");	/* new page */
+		fprintRTF("\n\\par\\q%c ", alignment);
+		break;
+	case OFF:
+		fprintRTF("\\pard ");
+		fprintRTF("\n\\par\\q%c \\page ", alignment);
+		break;
+	}			/* switch */
+}
+
+void 
+CmdMultiCol( /* @unused@ */ int code)
+/******************************************************************************
+ purpose: converts the LaTex-Multicolumn to a similar Rtf-style
+	  this converting is only partially
+	  so the user has to convert some part of the Table-environment by hand
+ ******************************************************************************/
+{
+	char            inchar[10];
+	char            numColStr[100];
+	long            numCol, i, toBeInserted;
+	char            colFmtChar = 'u';
+	char           *eptr;	/* for srtol   */
+	static bool     bWarningDisplayed = FALSE;
+
+	if (!bWarningDisplayed) {
+		diagnostics(WARNING, "Multicolumn: Cells must be merged by hand!");
+		bWarningDisplayed = TRUE;
+	}
+	i = 0;
+	do {
+		inchar[0] = getTexChar();
+		if (isdigit((unsigned char) inchar[0]))
+			numColStr[i++] = inchar[0];
+	}
+	while (inchar[0] != '}');
+	numColStr[i] = '\0';
+	numCol = strtol(numColStr, &eptr, 10);
+	if (eptr == numColStr)
+		error(" multicolumn: argument num invalid\n");
+
+
+	do {
+		inchar[0] = getTexChar();
+		switch (inchar[0]) {
+		case 'c':
+		case 'r':
+		case 'l':
+			if (colFmtChar == 'u')
+				colFmtChar = inchar[0];
+			break;
+		default:
+			break;
+		}
+	}
+	while (inchar[0] != '}');
+	if (colFmtChar == 'u')
+		colFmtChar = 'l';
+
+	switch (colFmtChar) {
+	case 'r':
+		toBeInserted = numCol;
+		break;
+	case 'c':
+		toBeInserted = (numCol + 1) / 2;
+		break;
+	default:
+		toBeInserted = 1;
+		break;
+	}
+
+	for (i = 1; i < toBeInserted; i++, actCol++) {
+		fprintRTF(" \\cell \\pard \\intbl ");
+	}
+	fprintRTF("\\q%c ", colFmtChar);
+
+	diagnostics(4, "Entering Convert() from CmdMultiCol()");
+	Convert();
+	diagnostics(4, "Exiting Convert() from CmdMultiCol()");
+
+	for (i = toBeInserted; (i < numCol) && (actCol < colCount); i++, actCol++) {
+		fprintRTF(" \\cell \\pard \\intbl ");
+	}
+
+
+}
+
+void 
+CmdColsep(int code)
+/***************************************************************************
+ * purpose: hyperlatex support, handles '&' as in Convert() in convert.c
+ ***************************************************************************/
+{
+	if (!g_processing_tabular) {
+		fprintRTF("{\\'a7}");
+		return;
+	}
+	actCol++;
+
+	if (GetTexMode() == MODE_DISPLAYMATH) {	/* in an eqnarray or array environment */
+		fprintRTF("\\tab ");
+	} else {
+		fprintRTF(" \\cell \\pard \\intbl ");
+		if (colFmt == NULL)
+			diagnostics(WARNING, "Fatal, Fatal! CmdColsep called whith colFmt == NULL.");
+		else
+			fprintRTF("\\q%c ", colFmt[actCol]);
+	}
+}
+
+void 
+CmdGraphics(int code)
+{
+	char            options[255];
+	char            fullpath[1023];
+	char           *filename;
+	int             cc, i;
+	short           top, left, bottom, right;
+	FILE           *fp;
+
+	/* could be \includegraphics*[0,0][5,5]{file.pict} */
+
+	getBracketParam(options, 255);
+	getBracketParam(options, 255);
+	filename = getParam();
+
+	if (strstr(filename, ".pict") || strstr(filename, ".PICT")) {
+		/* SAP fixes for Mac Platform */
+#ifdef __MWERKS__
+		{
+		char           *dp;
+		strcpy(fullpath, latexname);
+		dp = strrchr(fullpath, ':');
+		if (dp != NULL) {
+			dp++;
+			*dp = '\0';
+		} else
+			strcpy(fullpath, "");
+		strcat(fullpath, filename);
+		}
+#else
+		strcpy(fullpath,filename);
+#endif
+
+		fprintf(stderr, "processing picture %s\n", fullpath);
+		fp = fopen(fullpath, "rb");
+
+		if (fseek(fp, 514L, SEEK_CUR) ||     /* skip 512 byte header + 2 bytes for version info */
+		    (fread(&top, 2, 1, fp) < 1) ||    /* read the pict file dimensions in points */
+		    (fread(&left, 2, 1, fp) < 1) || 
+			(fread(&bottom, 2, 1, fp) < 1) || 
+			(fread(&right, 2, 1, fp) < 1) || 
+			fseek(fp, -10L, SEEK_CUR)) {    /* move back ten bytes so that entire file will be encoded */
+				free(filename);
+				fclose(fp);
+				return;
+			}
+		fprintRTF("\n{\\pict\\macpict\\picw%d\\pich%d\n", right - left, bottom - top);
+
+		i = 0;
+		while ((cc = fgetc(fp)) != EOF) {
+			fprintRTF("%.2x", cc);
+			if (++i > 126) {
+				i = 0;
+				fprintRTF("\n");
+			}	/* keep lines 254 chars long */
+		}
+
+		fprintRTF("}\n");
+		fclose(fp);
+		free(filename);
+	}
+}
+
+void 
+CmdVerbosityLevel(int code)
+/***************************************************************************
+ * purpose: insert \verbositylevel{5} in the tex file to set the verbosity 
+            in the LaTeX file!
+ ***************************************************************************/
+{
+	char * s = getParam();
+	g_verbosity_level = atoi(s);
+	free(s);
+
 }

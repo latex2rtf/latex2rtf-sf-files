@@ -1,33 +1,4 @@
-/*
- * $Id: main.h,v 1.7 1998/11/04 13:40:57 glehner Exp $
- * History:
- * $Log: main.h,v $
- * Revision 1.7  1998/11/04 13:40:57  glehner
- * Added HAS_NO_GETOPT preprocessor flag
- *
- * Revision 1.6  1998/07/03 07:01:00  glehner
- * added diagnostics()
- *
- * Revision 1.5  1997/02/15 20:30:47  ralf
- * Added lclint comments and corrected some types.
- *
- * Revision 1.4  1995/03/23 15:58:08  ralf
- * Reworked version by Friedrich Polzer and Gerhard Trisko
- *
- *
- * Revision 1.3  1994/07/13  09:27:31  ralf
- * Corrected fpos/SEEK_SET bug for SunOs 4.3.1 reported by Ulrich Schmid
- * <schmid@dkrz.d400.de>
- *
- * Revision 1.2  1994/06/17  14:19:41  ralf
- * Corrected various bugs, for example interactive read of arguments
- *
- * Revision 1.1  1994/06/17  11:26:29  ralf
- * Initial revision
- *
- */
-/*** Main Includefile ***/
-/*** global definitons used in nearly all files ***/
+/* $Id: main.h,v 1.20 2001/09/26 03:31:50 prahl Exp $ */
 
 #undef HAS_NO_GETOPT
 
@@ -77,19 +48,16 @@ typedef long    fpos_t;
 
 typedef int     bool;
 
-void            Convert();	/* main convert routine */
 void            IgnoreTo(char cEnd);
  /* @exits@ */ void numerror(int num);
  /* @exits@ */ void error(char *text);
  /* @dependent@ */ FILE *open_cfg(const char *);
 long            getLinenumber(void);
- /* @only@ */ char *EmptyString(void);
 void            diagnostics(int level, char *format,...);
 /* level values */
 
 #define ERROR 0
 #define WARNING 1
-#define MAX_VERBOSITY 5
 
 bool            rtf_restrict(int major, int minor);
 
@@ -132,38 +100,30 @@ extern /* @observer@ */ char *progname;	/* name of the executable file */
 extern /* @only@ */ char *latexname;	/* name of LaTex-File */
 extern char     alignment;	/* default for justified: */
 extern fpos_t   pos_begin_kill;
-extern bool     bCite;		/* to produce citations */
 extern bool     GermanMode;
-extern int      DefFont;
 extern				/* @only@ */
  /* @null@ */ char *colFmt;
 /* @null@ */
 extern char    *hyperref;
 extern bool     pagenumbering;
 extern int      headings;
-//extern bool     pagestyledefined;
-//extern bool     twoside;
 
 /* Global flags of Convert routine */
 extern int      RecursionLevel;
-extern bool     mbox;
-extern bool     bNewPar;
 extern int      indent;
-extern bool     bInDocument;
 extern int      tabcounter;
 extern bool     tabbing_on;
 extern bool     g_processing_tabular;
-extern bool     bBlankLine;
 extern int      colCount;
 extern int      actCol;
 extern int      tabcounter;
 extern bool     twocolumn;
-extern bool     article;
 extern bool     titlepage;
 extern bool     g_processing_equation;
 extern long     linenumber;
 extern bool     tabbing_on_itself;	/* LEG220698*** lclint - really used? */
 extern bool     tabbing_return;	/* LEG220698*** lclint - really used? */
+extern bool     g_processing_preamble;
 extern bool     g_processing_figure;
 extern bool     g_processing_include;	
 extern bool     g_processing_eqnarray;
@@ -172,8 +132,11 @@ extern bool     g_show_equation_number;
 extern int      g_enumerate_depth;
 extern bool     g_suppress_equation_number;
 extern bool     g_aux_file_missing;
+extern int    	g_document_type;
+extern char    *g_language;
+extern int      g_verbosity_level;
 
-/****************************************************************************/
-
+void fprintRTF(char *format, ...);
+void putRtfChar(char cThis);
 
 #endif				/* __MAIN_H */

@@ -1,18 +1,7 @@
-/***************************************************************************
-   name : chars.c
- author : PRAHL, Scott
+/* $Id: chars.c,v 1.6 2001/09/26 03:31:50 prahl Exp $
 
- Contributions by,
-          DORNER Fernando,
-          GRANZER Andreas
-          POLZER, Friedrich,
-          TRISKO, Gerhard
-          TAUPIN, Daniel
-          LEHNER, Georg
-
-purpose : handles special characters and logos
-
- ****************************************************************************/
+   purpose : handles special characters and logos
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +16,8 @@ purpose : handles special characters and logos
 #include "encode.h"
 #include "parser.h"
 #include "chars.h"
+#include "funct1.h"
+#include "convert.h"
 
 void            TeXlogo();
 void            LaTeXlogo();
@@ -35,7 +26,64 @@ void
 CmdUmlauteChar(int code)
 /*****************************************************************************
  purpose : converts german symbols from LaTeX to RTF
- globals : fRtf
+ ******************************************************************************/
+{
+	int            num;
+	char           *cParam = getParam();
+	if (cParam == NULL)
+		return;
+
+	num = TexFontNumber("Roman");
+	switch (cParam[0]) {
+	case 'o':
+		fprintRTF("{\\'f6}");
+		break;
+	case 'O':
+		fprintRTF("{\\'d6}");
+		break;
+	case 'a':
+		fprintRTF("{\\'e4}");
+		break;
+	case 'A':
+		fprintRTF("{\\'c4}");
+		break;
+	case 'u':
+		fprintRTF("{\\'fc}");
+		break;
+	case 'U':
+		fprintRTF("{\\'dc}");
+		break;
+	case 'E':
+		fprintRTF("{\\'cb}");
+		break;
+	case 'I':
+		fprintRTF("{\\'cf}");
+		break;
+	case 'e':
+		fprintRTF("{\\'eb}");
+		break;
+	case 'i':
+		fprintRTF("{\\'ef}");
+		break;
+	case 'y':
+		fprintRTF("{\\'ff}");
+		break;
+
+	default:
+		num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\f%d\\'26\\'26))}", cParam[0], FORMULASEP, num);
+		fprintRTF("{\\fldrslt }}");
+		break;
+
+	}
+	free(cParam);
+}
+
+void 
+CmdLApostrophChar( int code)
+/******************************************************************************
+ purpose: converts special symbols from LaTeX to RTF
  ******************************************************************************/
 {
 	int            num;
@@ -44,106 +92,48 @@ CmdUmlauteChar(int code)
 		return;
 
 	switch (cParam[0]) {
-	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f6}");
-		break;
-	case 'O':
-		fprintf(fRtf, "{\\ansi\\'d6}");
-		break;
-	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e4}");
-		break;
 	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c4}");
-		break;
-	case 'u':
-		fprintf(fRtf, "{\\ansi\\'fc}");
-		break;
-	case 'U':
-		fprintf(fRtf, "{\\ansi\\'dc}");
+		fprintRTF("{\\'c0}");
 		break;
 	case 'E':
-		fprintf(fRtf, "{\\ansi\\'cb}");
+		fprintRTF("{\\'c8}");
 		break;
 	case 'I':
-		fprintf(fRtf, "{\\ansi\\'cf}");
-		break;
-	case 'e':
-		fprintf(fRtf, "{\\ansi\\'eb}");
-		break;
-	case 'i':
-		fprintf(fRtf, "{\\ansi\\'ef}");
-		break;
-	case 'y':
-		fprintf(fRtf, "{\\ansi\\'ff}");
-		break;
-
-	default:
-		num = GetFontNumber("MT Extra");
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'26\\'26))}", cParam[0], FORMULASEP, num);
-		fprintf(fRtf, "{\\fldrslt }}");
-		break;
-
-	}
-	free(cParam);
-}
-
-void 
-CmdLApostrophChar( /* @unused@ */ int code)
-/******************************************************************************
- purpose: converts special symbols from LaTeX to RTF
- globals : fRtf
- ******************************************************************************/
-{
-	int            num;
-	char           *cParam = getParam();
-	if (cParam == NULL)
-		return;
-
-	switch (cParam[0]) {
-	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c0}");
-		break;
-	case 'E':
-		fprintf(fRtf, "{\\ansi\\'c8}");
-		break;
-	case 'I':
-		fprintf(fRtf, "{\\ansi\\'cc}");
+		fprintRTF("{\\'cc}");
 		break;
 	case 'O':
-		fprintf(fRtf, "{\\ansi\\'d2}");
+		fprintRTF("{\\'d2}");
 		break;
 	case 'U':
-		fprintf(fRtf, "{\\ansi\\'d9}");
+		fprintRTF("{\\'d9}");
 		break;
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e0}");
+		fprintRTF("{\\'e0}");
 		break;
 	case 'e':
-		fprintf(fRtf, "{\\ansi\\'e8}");
+		fprintRTF("{\\'e8}");
 		break;
 	case 'i':
-		fprintf(fRtf, "{\\ansi\\'ec}");
+		fprintRTF("{\\'ec}");
 		break;
 	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f2}");
+		fprintRTF("{\\'f2}");
 		break;
 	case 'u':
-		fprintf(fRtf, "{\\ansi\\'f9}");
+		fprintRTF("{\\'f9}");
 		break;
 	default:
-		num = GetFontNumber("MT Extra");
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'23))}", cParam[0], FORMULASEP, num);
-		fprintf(fRtf, "{\\fldrslt }}");
+		num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\f%d\\'23))}", cParam[0], FORMULASEP, num);
+		fprintRTF("{\\fldrslt }}");
 		break;
 	}
 	free(cParam);
 }
 
 void 
-CmdRApostrophChar( /* @unused@ */ int code)
+CmdRApostrophChar(int code)
 /******************************************************************************
  purpose: converts special symbols from LaTeX to RTF
  ******************************************************************************/
@@ -154,45 +144,45 @@ CmdRApostrophChar( /* @unused@ */ int code)
 
 	switch (cParam[0]) {
 	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c1}");
+		fprintRTF("{\\'c1}");
 		break;
 	case 'E':
-		fprintf(fRtf, "{\\ansi\\'c9}");
+		fprintRTF("{\\'c9}");
 		break;
 	case 'I':
-		fprintf(fRtf, "{\\ansi\\'cd}");
+		fprintRTF("{\\'cd}");
 		break;
 	case 'O':
-		fprintf(fRtf, "{\\ansi\\'d3}");
+		fprintRTF("{\\'d3}");
 		break;
 	case 'U':
-		fprintf(fRtf, "{\\ansi\\'da}");
+		fprintRTF("{\\'da}");
 		break;
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e1}");
+		fprintRTF("{\\'e1}");
 		break;
 	case 'e':
-		fprintf(fRtf, "{\\ansi\\'e9}");
+		fprintRTF("{\\'e9}");
 		break;
 	case 'i':
-		fprintf(fRtf, "{\\ansi\\'ed}");
+		fprintRTF("{\\'ed}");
 		break;
 	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f3}");
+		fprintRTF("{\\'f3}");
 		break;
 	case 'u':
-		fprintf(fRtf, "{\\ansi\\'fa}");
+		fprintRTF("{\\'fa}");
 		break;
 	case 'y':
-		fprintf(fRtf, "{\\ansi\\'fd}");
+		fprintRTF("{\\'fd}");
 		break;
 	case 'Y':
-		fprintf(fRtf, "{\\ansi\\'dd}");
+		fprintRTF("{\\'dd}");
 		break;
 	default:
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\'b4))}", cParam[0], FORMULASEP);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\'b4))}", cParam[0], FORMULASEP);
+		fprintRTF("{\\fldrslt }}");
 		break;
 
 	}
@@ -230,16 +220,16 @@ CmdMacronChar(int code)
 	case 'x':
 	case 'y':
 	case 'z':
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\'af))}", cParam[0], FORMULASEP);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\'af))}", cParam[0], FORMULASEP);
+		fprintRTF("{\\fldrslt }}");
 		break;
 
 	default:
 		upsize = (0.05 * CurrentFontSize()) + 0.45;
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S\\\\up%d(\\'af))}", cParam[0], FORMULASEP, upsize);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S\\\\up%d(\\'af))}", cParam[0], FORMULASEP, upsize);
+		fprintRTF("{\\fldrslt }}");
 	}
 
 	free(cParam);
@@ -258,41 +248,41 @@ CmdHatChar(int code)
 
 	switch (cParam[0]) {
 	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c2}");
+		fprintRTF("{\\'c2}");
 		break;
 	case 'E':
-		fprintf(fRtf, "{\\ansi\\'ca}");
+		fprintRTF("{\\'ca}");
 		break;
 	case 'I':
-		fprintf(fRtf, "{\\ansi\\'ce}");
+		fprintRTF("{\\'ce}");
 		break;
 	case 'O':
-		fprintf(fRtf, "{\\ansi\\'d4}");
+		fprintRTF("{\\'d4}");
 		break;
 	case 'U':
-		fprintf(fRtf, "{\\ansi\\'db}");
+		fprintRTF("{\\'db}");
 		break;
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e2}");
+		fprintRTF("{\\'e2}");
 		break;
 	case 'e':
-		fprintf(fRtf, "{\\ansi\\'ea}");
+		fprintRTF("{\\'ea}");
 		break;
 	case 'i':
-		fprintf(fRtf, "{\\ansi\\'ee}");
+		fprintRTF("{\\'ee}");
 		break;
 	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f4}");
+		fprintRTF("{\\'f4}");
 		break;
 	case 'u':
-		fprintf(fRtf, "{\\ansi\\'fb}");
+		fprintRTF("{\\'fb}");
 		break;
 
 	default:
-		num = GetFontNumber("MT Extra");
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'24))}", cParam[0], FORMULASEP, num);
-		fprintf(fRtf, "{\\fldrslt }}");
+		num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\f%d\\'24))}", cParam[0], FORMULASEP, num);
+		fprintRTF("{\\fldrslt }}");
 		break;
 	}
 
@@ -313,24 +303,24 @@ CmdOaccentChar(int code)
 
 	switch (cParam[0]) {
 	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c5}");
+		fprintRTF("{\\'c5}");
 		break;
 
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e5}");
+		fprintRTF("{\\'e5}");
 		break;
 
 	case '\\':
 		if (strcmp(cParam, "\\i") == 0)
-			fprintf(fRtf, "\\'ee");
+			fprintRTF("\\'ee");
 		else
 			fprintf(stderr, "Cannot put \\r on '%s'", cParam);
 		break;
 
 	default:
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\'b0))}", cParam[0], FORMULASEP);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\'b0))}", cParam[0], FORMULASEP);
+		fprintRTF("{\\fldrslt }}");
 		break;
 	}
 
@@ -352,28 +342,28 @@ CmdTildeChar( int code)
 
 	switch (cParam[0]) {
 	case 'A':
-		fprintf(fRtf, "{\\ansi\\'c3}");
+		fprintRTF("{\\'c3}");
 		break;
 	case 'O':
-		fprintf(fRtf, "{\\ansi\\'d5}");
+		fprintRTF("{\\'d5}");
 		break;
 	case 'a':
-		fprintf(fRtf, "{\\ansi\\'e3}");
+		fprintRTF("{\\'e3}");
 		break;
 	case 'o':
-		fprintf(fRtf, "{\\ansi\\'f5}");
+		fprintRTF("{\\'f5}");
 		break;
 	case 'n':
-		fprintf(fRtf, "{\\ansi\\'f1}");
+		fprintRTF("{\\'f1}");
 		break;
 	case 'N':
-		fprintf(fRtf, "{\\ansi\\'d1}");
+		fprintRTF("{\\'d1}");
 		break;
 	default:
-		num = GetFontNumber("MT Extra");
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'25))}", cParam[0], FORMULASEP, num);
-		fprintf(fRtf, "{\\fldrslt }}");
+		num = RtfFontNumber("MT Extra");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\\\S(\\f%d\\'25))}", cParam[0], FORMULASEP, num);
+		fprintRTF("{\\fldrslt }}");
 		break;
 	}
 	free(cParam);
@@ -391,27 +381,27 @@ CmdCedillaChar(int code)
 
 	switch (cParam[0]) {
 	case 'C':
-		fprintf(fRtf, "{\\ansi\\'c7}");
+		fprintRTF("{\\'c7}");
 		break;
 	case 'c':
-		fprintf(fRtf, "{\\ansi\\'e7}");
+		fprintRTF("{\\'e7}");
 		break;
 
 	default:
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c\\'b8)}", cParam[0], FORMULASEP);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c\\'b8)}", cParam[0], FORMULASEP);
+		fprintRTF("{\\fldrslt }}");
 		break;
 	}
 
 	free(cParam);
 }
 
+void 
+CmdVecChar(int code)
 /*****************************************************************************
  purpose: converts \vec{o} from LaTeX to RTF
  ******************************************************************************/
-void 
-CmdVecChar( /* @unused@ */ int code)
 {
 	int             num;
 	int             upsize;
@@ -447,14 +437,16 @@ CmdVecChar( /* @unused@ */ int code)
 		upsize = (CurrentFontSize() * 3) / 4;
 	}
 
-	num = GetFontNumber("MT Extra");
+	num = RtfFontNumber("MT Extra");
 
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%d\\'72))}", cParam[0], FORMULASEP, upsize, num);
-	fprintf(fRtf, "{\\fldrslt }}");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+	fprintRTF("(%c%c\\\\S(\\up%d\\f%d\\'72))}", cParam[0], FORMULASEP, upsize, num);
+	fprintRTF("{\\fldrslt }}");
 	free(cParam);
 }
 
+void 
+CmdBreveChar(int code)
 /*****************************************************************************
  purpose: converts \u{o} and \breve{o} from LaTeX to RTF
           this version works on a Macintosh.
@@ -462,8 +454,6 @@ CmdVecChar( /* @unused@ */ int code)
 		  always treats \'28 as a '(' 
           we could just fake it with a u
  ******************************************************************************/
-void 
-CmdBreveChar( /* @unused@ */ int code)
 {
 	int             num;
 	char           *cParam;
@@ -472,11 +462,11 @@ CmdBreveChar( /* @unused@ */ int code)
 	if (cParam == NULL)
 		return;
 
-	num = getTexFontNumber("MacRoman");
+	num = TexFontNumber("MacRoman");
 
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'f9))}", cParam[0], FORMULASEP, num);
-	fprintf(fRtf, "{\\fldrslt }}");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+	fprintRTF("(%c%c\\\\S(\\f%d\\'f9))}", cParam[0], FORMULASEP, num);
+	fprintRTF("{\\fldrslt }}");
 
 	free(cParam);
 }
@@ -494,9 +484,9 @@ CmdUnderdotChar(int code)
 
 	dnsize = (0.2 * CurrentFontSize()) + 0.45;
 
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S\\\\do%d(\\'2e))}", cParam[0], FORMULASEP, dnsize);
-	fprintf(fRtf, "{\\fldrslt }}");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+	fprintRTF("(%c%c\\\\S\\\\do%d(\\'2e))}", cParam[0], FORMULASEP, dnsize);
+	fprintRTF("{\\fldrslt }}");
 
 	free(cParam);
 }
@@ -517,44 +507,21 @@ CmdHacekChar(int code)
 		return;
 
 	upsize = (0.4 * CurrentFontSize()) + 0.45;
-	num = GetFontNumber("Symbol");
+	num = RtfFontNumber("Symbol");
 
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\up%d\\f%d\\'da))}", cParam[0], FORMULASEP, upsize, num);
-	fprintf(fRtf, "{\\fldrslt }}");
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+	fprintRTF("(%c%c\\\\S(\\up%d\\f%d\\'da))}", cParam[0], FORMULASEP, upsize, num);
+	fprintRTF("{\\fldrslt }}");
 
 	free(cParam);
 }
 
-/******************************************************************************
- purpose: converts \.{o} and \dot{o} from LaTeX to RTF
-          need something that looks like \\O(a,\\S(\f2\'26)) in RTF file
- ******************************************************************************/
 void 
 CmdDotChar(int code)
-{
-	int             num;
-	char           *cParam;
-	
-	cParam = getParam();
-	if (cParam == NULL)
-		return;
-
-	num = GetFontNumber("MT Extra");
-
-	fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-	fprintf(fRtf, "(%c%c\\\\S(\\f%d\\'26))}", cParam[0], FORMULASEP, num);
-	fprintf(fRtf, "{\\fldrslt }}");
-
-	free(cParam);
-}
-
 /******************************************************************************
  purpose: converts \.{o} and \dot{o} from LaTeX to RTF
           need something that looks like \\O(a,\\S(\f2\'26)) in RTF file
  ******************************************************************************/
-void 
-CmdUnderbarChar(int code)
 {
 	int             num;
 	char           *cParam;
@@ -563,12 +530,35 @@ CmdUnderbarChar(int code)
 	if (cParam == NULL)
 		return;
 
-	num = GetFontNumber("MT Extra");
+	num = RtfFontNumber("MT Extra");
+
+	fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+	fprintRTF("(%c%c\\\\S(\\f%d\\'26))}", cParam[0], FORMULASEP, num);
+	fprintRTF("{\\fldrslt }}");
+
+	free(cParam);
+}
+
+void 
+CmdUnderbarChar(int code)
+/******************************************************************************
+ purpose: converts \.{o} and \dot{o} from LaTeX to RTF
+          need something that looks like \\O(a,\\S(\f2\'26)) in RTF file
+ ******************************************************************************/
+ {
+	int             num;
+	char           *cParam;
+	
+	cParam = getParam();
+	if (cParam == NULL)
+		return;
+
+	num = RtfFontNumber("MT Extra");
 
 	if (cParam[0]) {
-		fprintf(fRtf, "{\\field{\\*\\fldinst  EQ \\\\O");
-		fprintf(fRtf, "(%c%c_)}", cParam[0], FORMULASEP);
-		fprintf(fRtf, "{\\fldrslt }}");
+		fprintRTF("{\\field{\\*\\fldinst  EQ \\\\O");
+		fprintRTF("(%c%c_)}", cParam[0], FORMULASEP);
+		fprintRTF("{\\fldrslt }}");
 	}
 	free(cParam);
 }
@@ -584,7 +574,7 @@ TeXlogo()
 
 	DnSize = 0.3 * CurrentFontSize();
 	dnsize = DnSize + 0.45;
-	fprintf(fRtf, "T{\\dn%d E}X", dnsize);
+	fprintRTF("T{\\dn%d E}X", dnsize);
 }
 
 void 
@@ -605,7 +595,7 @@ LaTeXlogo()
 
 	UpSize = 0.25 * CurrentFontSize();
 	upsize = UpSize + 0.45;
-	fprintf(fRtf, "L{\\up%d\\fs%d A}", upsize, Asize);
+	fprintRTF("L{\\up%d\\fs%d A}", upsize, Asize);
 	TeXlogo();
 }
 
@@ -619,8 +609,9 @@ CmdLogo(int code)
 	float           FloatFsize;
 	float           DnSize;
 
-	font_num = GetFontNumber("Roman");
-	fprintf(fRtf, "{\\plain\\f%d ",font_num);
+	SetTexMode(MODE_HORIZONTAL);
+	font_num = RtfFontNumber("Roman");
+	fprintRTF("{\\b0\\i0\\scaps0\\f%d ",font_num);
 	
 	switch (code) {
 	case CMD_TEX:
@@ -630,11 +621,11 @@ CmdLogo(int code)
 		LaTeXlogo();
 		break;
 	case CMD_SLITEX:
-		fprintf(fRtf, "{\\scaps Sli}");  
+		fprintRTF("{\\scaps Sli}");  
 		TeXlogo();
 		break;
 	case CMD_BIBTEX:
-		fprintf(fRtf, "{\\scaps Bib}");
+		fprintRTF("{\\scaps Bib}");
 		TeXlogo();
 		break;
 	case CMD_LATEXE:
@@ -646,18 +637,71 @@ CmdLogo(int code)
 		};
 		DnSize = 0.3 * CurrentFontSize();
 		dnsize = DnSize + 0.45;
-		font_num = GetFontNumber("Symbol");
-		fprintf(fRtf, "2{\\dn%d\\f%d e}", dnsize, font_num);
+		font_num = RtfFontNumber("Symbol");
+		fprintRTF("2{\\dn%d\\f%d e}", dnsize, font_num);
 		break;
 	case CMD_AMSTEX:
-		fprintf(fRtf, "{\\ i AmS}-"); /* should be calligraphic */
+		fprintRTF("{\\i AmS}-"); /* should be calligraphic */
 		TeXlogo();
 		break;
 		
 	case CMD_AMSLATEX:
-		fprintf(fRtf, "{\\i AmS}-");  /* should be calligraphic */ 
+		fprintRTF("{\\i AmS}-");  /* should be calligraphic */ 
 		LaTeXlogo();
 		break;
 	}
-	fprintf(fRtf,"}");
+	fprintRTF("}");
+}
+
+void 
+CmdFrenchAbbrev(int code)
+/******************************************************************************
+  purpose: makes \\ier, \\ieme, etc
+ ******************************************************************************/
+{
+  float FloatFsize;
+  int up, size;
+  char *fuptext;
+
+  if (code == NUMERO) fprintRTF("n");
+  if (code == NUMEROS) fprintRTF("n");
+  if (code == CNUMERO) fprintRTF("N");
+  if (code == CNUMEROS) fprintRTF("N");
+  if (code == PRIMO) fprintRTF("1");
+  if (code == SECUNDO) fprintRTF("2");
+  if (code == TERTIO) fprintRTF("3");
+  if (code == QUARTO) fprintRTF("4");
+  
+  FloatFsize = CurrentFontSize();
+  
+  if(FloatFsize > 14) FloatFsize *= 0.75;
+
+  up = 0.3*FloatFsize+0.45;
+  size = FloatFsize+0.45;
+  
+  fprintRTF("{\\fs%d\\up%d ",size ,up);
+  switch(code)
+  {
+    case NUMERO : fprintRTF("o"); break;  	
+    case CNUMERO : fprintRTF("o"); break;  	
+    case NUMEROS : fprintRTF("os"); break;  	
+    case CNUMEROS : fprintRTF("os"); break;  	
+    case PRIMO : fprintRTF("o"); break;  	
+    case SECUNDO : fprintRTF("o"); break;  	
+    case TERTIO : fprintRTF("o"); break;  	
+    case QUARTO : fprintRTF("o"); break;  	
+    case IERF: fprintRTF("er"); break;  	
+    case IERSF: fprintRTF("ers"); break;  	
+    case IEMEF: fprintRTF("e"); break;  	
+    case IEMESF: fprintRTF("es"); break;  	
+    case IEREF: fprintRTF("re"); break;  	
+    case IERESF: fprintRTF("res"); break;  	
+    case FUP: 
+    			fuptext=getParam();
+        		ConvertString(fuptext); 
+        		free(fuptext);
+        		break;  	
+  }
+  
+  fprintRTF("}");
 }

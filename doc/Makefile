@@ -1,6 +1,11 @@
-# $Id: Makefile,v 1.2 1998/11/12 16:48:35 glehner Exp $
+# $Id: Makefile,v 1.1 2001/08/12 21:15:46 prahl Exp $
 # History:
 # $Log: Makefile,v $
+# Revision 1.1  2001/08/12 21:15:46  prahl
+#         Removed last two // comments
+#         Explicitly cast char to int in isalpha() and isdigit()
+#         Began the process of supporting Babel better
+#
 # Revision 1.2  1998/11/12 16:48:35  glehner
 # Updated and added r2l.txt target. Adapted for MS-DOS filenames
 #
