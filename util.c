@@ -183,6 +183,67 @@ char *strdup_nobadchars(char *text)
 }
 
 /******************************************************************************
+ purpose:  duplicates a string without newlines and CR replaced by '\n' or '\r'
+******************************************************************************/
+char *strdup_printable(char *s)
+{
+    char *dup;
+    int i;
+    
+    if (s == NULL) return NULL;
+
+    dup = malloc(2*strlen(s));
+
+    i=0;
+    while (*s) {
+        if (*s=='\r') {
+            dup[i++]='\\';
+            dup[i++]='r';
+         } else if (*s=='\n') {
+            dup[i++]='\\';
+            dup[i++]='n';
+         } else if (*s=='\t') {
+            dup[i++]='\\';
+            dup[i++]='t';
+         } else 
+            dup[i++]=*s;
+         s++;
+    }
+    dup[i]='\0';
+        
+    return dup;
+}
+
+/******************************************************************************
+ purpose:  duplicates a string without newlines and CR replaced by '\n' or '\r'
+******************************************************************************/
+void strncpy_printable(char* dst, char *src, int n)
+{
+    int i=0;
+    
+    if (dst == NULL)
+        return;
+
+    while (i<n-1 && *src) {
+
+        if (*src=='\r') {
+            dst[i++]='\\';
+            dst[i++]='r';
+         } else if (*src=='\n') {
+            dst[i++]='\\';
+            dst[i++]='n';
+         } else if (*src=='\t') {
+            dst[i++]='\\';
+            dst[i++]='t';
+         } else 
+            dst[i++]=*src;
+         src++;
+    }
+    
+    dst[i]='\0';
+}
+
+/******************************************************************************
  purpose:  duplicates a string without spaces or newlines at front or end
 ******************************************************************************/
 char *strdup_noendblanks(char *s)
@@ -206,7 +267,6 @@ char *strdup_noendblanks(char *s)
         return strdup("");
     return my_strndup(t, (size_t) (p - t + 1));
 }
-
 /******************************************************************************
   purpose: return a copy of tag from \label{tag} in the string text
  ******************************************************************************/
@@ -275,4 +335,74 @@ char *ExtractAndRemoveTag(char *tag, char *text)
     diagnostics(5, "final text = <%s>", text);
 
     return contents;
+}
+
+/* this extracts a comma-delimited, key-value pair from the string s
+   the string is untouched, and the return value from the function is
+   a pointer to the next character in the string to be parsed to get
+   the next pair.
+   
+   EXAMPLE: s= "  option=param,singleoptionname,opt2=crazy"
+   first  iteration return="singleoptionname,opt2=crazy", key="option", value="param"
+   second iteration return="opt2=crazy", key="singleoptionname", value=NULL
+   third  iteration return=NULL, key="opt2", value="crazy"
+*/  
+   
+char * keyvalue_pair(char *s, char **key, char **value)
+{
+	char *k, *v;	
+	*key = NULL;
+	*value = NULL;
+	if (s==NULL) return NULL;
+		
+	/* skip any blanks at start */
+	while (*s == ' ') s++;
+
+	if (*s=='\0') return NULL;  /*possibly all blanks*/
+	
+	/* find the end of the key */
+	k = s;
+	while (*k != '=' && *k != ',' && *k != '\0') 
+		k++;
+		
+	/* allocate and copy string into the key */
+	*key = my_strndup(s, k-s);
+	
+	if (*k == '\0') return NULL;
+	
+	if (*k == ',') return k+1;
+	
+	/* '=' found, now parse value */
+	s = k+1;
+	
+	/* skip any blanks at start */
+	while (*s == ' ') s++;
+	
+	/* find the end of the value */
+	v = s;
+	while (*v != ',' && *v != '\0') {
+	    if (*v == '{')
+		while (*(++v) != '}')
+		    ;
+	    else
+		v++;
+	}
+	/* allocate and copy this into the value */
+	*value = my_strndup(s, v-s);
+	
+	if (*v == '\0') return NULL;
+	return v+1;
+}
+
+int getStringDimension(char *s)
+{
+	int size = 0;
+	
+	if (s != NULL) {
+		PushSource(NULL, s);
+		size = getDimension();
+		PopSource();
+	}
+	
+	return size;
 }

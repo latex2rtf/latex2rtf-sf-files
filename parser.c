@@ -35,7 +35,7 @@ Authors:
 #include "stack.h"
 #include "util.h"
 #include "parser.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "lengths.h"
 #include "definitions.h"
 #include "funct1.h"
@@ -94,11 +94,10 @@ void PopTrackLineNumber(void)
     g_track_line_number--;
 }
 
-int CurrentLineNumber(void)
-
 /***************************************************************************
  purpose:     returns the current line number of the text being processed
 ****************************************************************************/
+int CurrentLineNumber(void)
 {
     return g_parser_line;
 }
@@ -117,6 +116,18 @@ void UpdateLineNumber(char *s)
             g_parser_line++;
         s++;
     }
+}
+
+/***************************************************************************
+ purpose:     returns the current file descriptor
+****************************************************************************/
+int CurrentFileDescriptor(void)
+{
+    int fd=0;
+    if (g_parser_file)
+    	fd = fileno(g_parser_file);
+    
+    return fd;
 }
 
 char *CurrentFileName(void)
@@ -159,7 +170,7 @@ int PushSource(char *filename, char *string)
                 diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
-                strncpy(s, g_parser_stack[i].string, 25);
+                strncpy_printable(s, g_parser_stack[i].string, 25);
                 diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
@@ -221,7 +232,7 @@ int PushSource(char *filename, char *string)
                 diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
-                strncpy(s, g_parser_stack[i].string, 25);
+                strncpy_printable(s, g_parser_stack[i].string, 25);
                 diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
@@ -271,7 +282,7 @@ void PopSource(void)
                 diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
-                strncpy(s, g_parser_stack[i].string, 25);
+                strncpy_printable(s, g_parser_stack[i].string, 25);
                 diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
@@ -324,7 +335,7 @@ void PopSource(void)
                 diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
-                strncpy(s, g_parser_stack[i].string, 25);
+                strncpy_printable(s, g_parser_stack[i].string, 25);
                 diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
@@ -367,10 +378,30 @@ char getRawTexChar()
 
         g_parser_currentChar = (char) thechar;
 
-    } else {                    /* no need to sanitize strings! */
+    } else {
+
         if (g_parser_string && *g_parser_string) {
-            g_parser_currentChar = *g_parser_string;
+			thechar = *g_parser_string;
+
+			/* convert CR, CRLF, or LF to \n */			
+			if (thechar == CR) {   
+				g_parser_string++;
+				thechar = *g_parser_string;
+				if (thechar != LF)
+					g_parser_string--;
+				thechar = '\n';
+			} else if (thechar == LF)
+				thechar = '\n';
+			else if (thechar == '\t')
+            	thechar = ' ';
+            	
+            g_parser_currentChar = thechar;
             g_parser_string++;
+        } 
+        else if (g_parser_depth > 15) 
+        {
+             PopSource();    /* go back to parsing parent */
+             g_parser_currentChar = getRawTexChar();  /* get next char from parent file */
         } else
             g_parser_currentChar = '\0';
     }
@@ -380,6 +411,15 @@ char getRawTexChar()
 
     g_parser_penultimateChar = g_parser_lastChar;
     g_parser_lastChar = g_parser_currentChar;
+    if (1) {
+		if (g_parser_currentChar=='\n')
+			diagnostics(6,"getRawTexChar = <\\n>");
+		else if (g_parser_currentChar=='\0')
+			diagnostics(6,"getRawTexChar = <\\0> depth=%d, files=%d", g_parser_depth, g_parser_include_level);
+		else
+			diagnostics(6,"getRawTexChar = <%2c>",g_parser_currentChar);
+	}
+	/* if (g_parser_currentChar=='\0') exit(0);*/
     return g_parser_currentChar;
 }
 
@@ -440,7 +480,14 @@ char getTexChar()
         g_parser_backslashes++;
     else
         g_parser_backslashes = 0;
-    diagnostics(6, "after getTexChar=<%c> backslashes=%d line=%d", cThis, g_parser_backslashes, g_parser_line);
+	if (1) {
+		if (cThis=='\n')
+			diagnostics(6,"getRawTexChar = <\\n> backslashes=%d line=%ld", g_parser_backslashes, g_parser_line);
+		else if (cThis=='\0')
+			diagnostics(6,"getRawTexChar = <\\0> backslashes=%d line=%ld", g_parser_backslashes, g_parser_line);
+		else
+			diagnostics(6,"getRawTexChar = <%2c> backslashes=%d line=%ld",cThis, g_parser_backslashes, g_parser_line);
+	}
     return cThis;
 }
 
@@ -465,7 +512,9 @@ char getNonBlank(void)
 {
     char c;
 
-    while ((c = getTexChar()) && (c == ' ' || c == '\n')) {
+	c = getTexChar();
+    while (c == ' ' || c == '\n') {
+    	c = getTexChar();
     }
     return c;
 }
@@ -730,7 +779,7 @@ char *getBraceParam(void)
         text = getSimpleCommand();
 
     } else if (s[0] == '{')
-        text = getDelimitedText('{', '}', TRUE);
+        text = getDelimitedText('{', '}', FALSE);
 
     else {
         s[1] = '\0';
@@ -906,7 +955,7 @@ int getDimension(void)
 
     if (i == 19 || sscanf(buffer, "%f", &num) != 1) {
         diagnostics(WARNING, "Screwy number in TeX dimension");
-        diagnostics(1, "getDimension() number is <%s>", buffer);
+        diagnostics(WARNING, "getDimension() number is <%s>", buffer);
         return 0;
     }
 
@@ -916,6 +965,9 @@ int getDimension(void)
     skipSpaces();
     buffer[0] = tolower((int) getTexChar());
 
+	if (buffer[0] == '\0')  /* no units specified ... assume points */
+        return (int) (num * 20);
+	
 /* skip "true" */
     if (buffer[0] == 't') {
         cThis = getTexChar();
@@ -975,6 +1027,63 @@ int getDimension(void)
 
 }
 
+void CmdInclude(int code)
+
+/******************************************************************************
+ purpose: handles \input file, \input{file}, \include{file}
+          code == 0 for \include
+          code == 1 for \input
+ ******************************************************************************/
+{
+    char name[50], cNext;
+    int i;
+    char *basename=NULL;
+    char *texname=NULL;
+
+    cNext = getNonSpace();
+
+    if (cNext == '{') {         /* \input{gnu} or \include{gnu} */
+        ungetTexChar(cNext);
+        basename = getBraceParam();
+
+    } else {                    /* \input gnu */
+        name[0] = cNext;
+        for (i = 1; i < 50; i++) {
+            name[i] = getTexChar();
+            if (isspace((int) name[i])) {
+                name[i] = '\0';
+                break;
+            }
+        }
+        basename = strdup(name);
+    }
+
+	if (strstr(basename, "german.sty") != NULL) {
+    	GermanMode = TRUE;
+     	PushEnvironment(GERMAN_MODE);
+     	free(basename);
+     	return;
+
+    } else if (strstr(basename, "french.sty") != NULL) {
+        FrenchMode = TRUE;
+        PushEnvironment(FRENCH_MODE);
+     	free(basename);
+     	return;
+	}
+	
+    if (basename && strstr(basename, ".tex") == NULL)         /* append .tex if missing */
+        texname = strdup_together(basename, ".tex");
+
+    if (texname && PushSource(texname, NULL) == 0)            /* Try the .tex name first*/
+        diagnostics(WARNING, "Including file <%s>", texname);
+      
+    else if (basename && PushSource(basename, NULL) == 0)     /* Try the basename second*/
+        diagnostics(WARNING, "Including file <%s>", basename);
+
+    if (basename) free(basename);
+    if (texname)  free(texname);
+}
+
 #define SECTION_BUFFER_SIZE 2048
 static char *section_buffer = NULL;
 static size_t section_buffer_size = SECTION_BUFFER_SIZE;
@@ -1013,47 +1122,62 @@ void getSection(char **body, char **header, char **label)
     char cNext, *s, *text, *next_header, *str;
     int i;
     size_t delta;
-    int match[35];
-    char *command[35] = { "",   /* 0 entry is for user definitions */
+    int match[42];
+    char *command[42] = { "",   /* 0 entry is for user definitions */
         "",                     /* 1 entry is for user environments */
-        "\\begin{verbatim}", "\\begin{figure}", "\\begin{figure*}", "\\begin{equation}",
-        "\\begin{eqnarray}", "\\begin{table}", "\\begin{description}", "\\begin{comment}",
-        "\\end{verbatim}", "\\end{figure}", "\\end{figure*}", "\\end{equation}",
-        "\\end{eqnarray}", "\\end{table}", "\\end{description}", "\\end{comment}",
-        "\\part", "\\chapter", "\\section", "\\subsection", "\\subsubsection",
+        "\\begin{verbatim}", 
+        "\\begin{figure}",      "\\begin{figure*}", 
+        "\\begin{equation}",    "\\begin{equation*}",
+        "\\begin{eqnarray}",    "\\begin{eqnarray*}",
+        "\\begin{table}",       "\\begin{table*}",
+        "\\begin{description}", "\\begin{comment}",
+        "\\end{verbatim}", 
+        "\\end{figure}",        "\\end{figure*}", 
+        "\\end{equation}",      "\\end{equation*}",
+        "\\end{eqnarray}",      "\\end{eqnarray*}",
+        "\\end{table}",         "\\end{table*}",
+        "\\end{description}",   "\\end{comment}",
+        "\\part", "\\chapter",  "\\section", "\\subsection", "\\subsubsection",
         "\\section*", "\\subsection*", "\\subsubsection*",
         "\\label", "\\input", "\\include", "\\verb", "\\url",
-        "\\newcommand", "\\def", "\\renewcommand", "\\endinput",
+        "\\newcommand", "\\def", "\\renewcommand", "\\endinput", "\\end{document}",
     };
 
-    int ncommands = 35;
+    int ncommands = 42;
 
     const int b_verbatim_item = 2;
     const int b_figure_item = 3;
     const int b_figure_item2 = 4;
     const int b_equation_item = 5;
-    const int b_eqnarray_item = 6;
-    const int b_table_item = 7;
-    const int b_description_item = 8;
-    const int b_comment_item = 9;
-    const int e_verbatim_item = 10;
-    const int e_figure_item = 11;
-    const int e_equation_item = 12;
-    const int e_equation_item2 = 13;
-    const int e_eqnarray_item = 14;
-    const int e_table_item = 15;
-    const int e_description_item = 16;
-    const int e_comment_item = 17;
+    const int b_equation_item2 = 6;
+    const int b_eqnarray_item = 7;
+    const int b_eqnarray_item2 = 8;
+    const int b_table_item = 9;
+    const int b_table_item2 = 10;
+    const int b_description_item = 11;
+    const int b_comment_item = 12;
+    const int e_verbatim_item = 13;
+    const int e_figure_item = 14;
+    const int e_figure_item2 = 15;
+    const int e_equation_item = 16;
+    const int e_equation_item2 = 17;
+    const int e_eqnarray_item = 18;
+    const int e_eqnarray_item2 = 19;
+    const int e_table_item = 20;
+    const int e_table_item2 = 21;
+    const int e_description_item = 22;
+    const int e_comment_item = 23;
 
-    const int label_item = 26;
-    const int input_item = 27;
-    const int include_item = 28;
-    const int verb_item = 29;
-    const int url_item = 30;
-    const int new_item = 31;
-    const int def_item = 32;
-    const int renew_item = 33;
-    const int endinput_item = 34;
+    const int label_item = 32;
+    const int input_item = 33;
+    const int include_item = 34;
+    const int verb_item = 35;
+    const int url_item = 36;
+    const int new_item = 37;
+    const int def_item = 38;
+    const int renew_item = 39;
+    const int endinput_item = 40;
+    const int e_document_item = 41;
 
     int bs_count = 0;
     size_t index = 0;
@@ -1161,7 +1285,8 @@ void getSection(char **body, char **header, char **label)
 
 /*				diagnostics(2,"index = %d, char = %c, failed to match %s, size=%d", \
 				index,*p,command[i],strlen(command[i]));
-*/ continue;
+*/ 
+				continue;
             }
             possible_match = TRUE;
         }
@@ -1267,6 +1392,13 @@ void getSection(char **body, char **header, char **label)
             continue;
         }
 
+		/* \end{document} reached! Stop processing */
+        if (i == e_document_item) {
+        	*(section_buffer + delta + 1) = '\0';
+	    	*body = strdup(section_buffer);
+	    	return;
+        }
+
         if (i == verb_item || i == url_item) {  /* slurp \verb#text# */
             if (i == url_item && cNext == '{')
                 cNext = '}';
@@ -1283,38 +1415,9 @@ void getSection(char **body, char **header, char **label)
         }
 
         if (i == input_item || i == include_item) {
-            char *s, *s2;
-
-            s = getBraceParam();
-            if (i == input_item)
-                diagnostics(4, "\\input{%s}", s);
-            else
-                diagnostics(4, "\\include{%s}", s);
-
-            if (strstr(s, "german.sty") != NULL) {
-                GermanMode = TRUE;
-                PushEnvironment(GERMAN_MODE);
-
-            } else if (strstr(s, "french.sty") != NULL) {
-                FrenchMode = TRUE;
-                PushEnvironment(FRENCH_MODE);
-
-            } else if (strcmp(s, "") == 0) {
-                diagnostics(WARNING, "Empty or invalid filename in \\include{}");
-
-            } else {
-
-                if (strstr(s, ".ltx") == NULL && strstr(s, ".tex") == NULL) {
-                    /* extension .tex is appended automatically if missing */
-                    s2 = strdup_together(s, ".tex");
-                    free(s);
-                    s = s2;
-                }
-
-                PushSource(s, NULL);    /* ignore return value */
-            }
+            
+            CmdInclude(0);
             delta -= (i == input_item) ? 6 : 8; /* remove \input or \include */
-            free(s);
             index = 0;          /* keep looking */
             continue;
         }
@@ -1360,15 +1463,21 @@ void getSection(char **body, char **header, char **label)
             continue;
         }
 
-        if (i == b_figure_item || i == b_figure_item2 || i == b_equation_item || i == b_eqnarray_item ||
-          i == b_table_item || i == b_description_item) {
+        if (i == b_figure_item   || i == b_figure_item2   || 
+            i == b_equation_item || i == b_equation_item2 || 
+            i == b_eqnarray_item || i == b_eqnarray_item2 ||
+            i == b_table_item    || i == b_table_item2    ||
+            i == b_description_item) {
             label_depth++;      /* labels now will not be the section label */
             index = 0;
             continue;
         }
 
-        if (i == e_figure_item || i == e_equation_item || i == e_equation_item2 || i == e_eqnarray_item ||
-          i == e_table_item || i == e_description_item) {
+        if (i == e_figure_item   || i == e_figure_item2   || 
+            i == e_equation_item || i == e_equation_item2 || 
+            i == e_eqnarray_item || i == e_eqnarray_item2 ||
+            i == e_table_item    || i == e_table_item2    ||
+            i == e_description_item)  {
             label_depth--;      /* labels may now be the section label */
             index = 0;
             continue;
@@ -1408,8 +1517,8 @@ void getSection(char **body, char **header, char **label)
             continue;
         }
 
-        diagnostics(5, "possible end of section");
-        diagnostics(5, "label_depth = %d", label_depth);
+        diagnostics(2, "possible end of section");
+        diagnostics(2, "label_depth = %d", label_depth);
 
         if (label_depth > 0)    /* still in a \begin{xxx} environment? */
             continue;
@@ -1431,4 +1540,7 @@ void getSection(char **body, char **header, char **label)
     *body = text;
     *header = next_header;
     PopTrackLineNumber();
+    
+    diagnostics(2, "body = %s", text);
+    diagnostics(2, "header = %s", next_header);
 }

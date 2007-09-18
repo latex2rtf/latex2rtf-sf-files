@@ -1,4 +1,4 @@
-/* $Id: main.h,v 1.65 2004/04/25 19:16:56 prahl Exp $ */
+/* $Id: main.h,v 1.69 2005/01/18 06:19:46 prahl Exp $ */
 
 #if defined(UNIX)
 #define ENVSEP ':'
@@ -89,6 +89,7 @@ extern int		tabcounter;
 
 extern bool		twocolumn;
 extern bool		titlepage;
+
 extern bool		g_processing_equation;
 extern bool		g_processing_preamble;
 extern bool		g_processing_figure;
@@ -107,13 +108,15 @@ extern bool		g_fields_use_EQ;
 extern bool		g_fields_use_REF;
 
 extern int		g_equation_number;
-extern bool		g_escape_parent;
+extern bool		g_escape_parens;
 extern bool		g_show_equation_number;
 extern int		g_enumerate_depth;
 extern bool		g_suppress_equation_number;
 extern bool		g_aux_file_missing;
+extern bool		g_bbl_file_missing;
 extern char		g_charset_encoding_name[20];
 extern int		g_fcharset_number;
+extern int      g_graphics_package;
 
 extern char		*g_figure_label;
 extern char		*g_table_label;
@@ -127,16 +130,21 @@ extern char		*g_preamble;
 extern double	g_png_equation_scale; 
 extern double	g_png_figure_scale;
 extern bool		g_latex_figures;
+extern bool		g_endfloat_figures;
+extern bool		g_endfloat_tables;
+extern bool		g_endfloat_markers;
 
 extern bool		g_equation_inline_rtf;
 extern bool		g_equation_display_rtf;
 extern bool		g_equation_inline_bitmap;
 extern bool		g_equation_display_bitmap;
 extern bool		g_equation_comment;
+extern bool     g_equation_raw_latex;
 extern bool		g_little_endian;
+extern bool		g_tableofcontents;
 
 void fprintRTF(char *format, ...);
-void putRtfChar(char cThis);
+void putRtfCharEscaped(char cThis);
 char *getTmpPath(void);
 char *my_strdup(const char *str);
 FILE *my_fopen(char *path, char *mode);

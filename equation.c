@@ -32,7 +32,7 @@ Authors:
 #include "convert.h"
 #include "commands.h"
 #include "stack.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "cfg.h"
 #include "ignore.h"
 #include "parser.h"
@@ -43,6 +43,7 @@ Authors:
 #include "util.h"
 #include "graphics.h"
 #include "xref.h"
+#include "chars.h"
 
 int g_equation_column = 1;
 
@@ -179,6 +180,20 @@ static void SlurpEquation(int code, char **pre, char **eq, char **post)
             *post = strdup("\\end{eqnarray}");
             *eq = getTexUntil(*post, 0);
             break;
+
+        case EQN_ALIGN_STAR:
+            diagnostics(4, "Entering CmdDisplayMath -- align* ");
+            *pre = strdup("\\begin{align*}");
+            *post = strdup("\\end{align*}");
+            *eq = getTexUntil(*post, 0);
+            break;
+
+        case EQN_ALIGN:
+            diagnostics(4, "SlurpEquation() --- align");
+            *pre = strdup("\\begin{align}");
+            *post = strdup("\\end{align}");
+            *eq = getTexUntil(*post, 0);
+            break;
     }
 }
 
@@ -224,7 +239,25 @@ static int EquationNeedsFields(char *eq)
         return 1;
     if (strstr(eq, "\\limsup"))
         return 1;
+    if (strstr(eq, "\\overline"))
+        return 1;
     return 0;
+}
+
+static void WriteEquationAsRawLatex(char *pre, char *eq, char *post)
+
+/******************************************************************************
+ purpose   : Writes equation to RTF file as text of COMMENT field
+ ******************************************************************************/
+{
+    fprintRTF("<<:");
+    while (*pre)
+        putRtfCharEscaped(*pre++);
+    while (*eq)
+        putRtfCharEscaped(*eq++);
+    while (*post)
+        putRtfCharEscaped(*post++);
+    fprintRTF(":>>");
 }
 
 static void WriteEquationAsComment(char *pre, char *eq, char *post)
@@ -235,11 +268,11 @@ static void WriteEquationAsComment(char *pre, char *eq, char *post)
 {
     fprintRTF("{\\field{\\*\\fldinst{ COMMENTS \" ");
     while (*pre)
-        putRtfChar(*pre++);
+        putRtfCharEscaped(*pre++);
     while (*eq)
-        putRtfChar(*eq++);
+        putRtfCharEscaped(*eq++);
     while (*post)
-        putRtfChar(*post++);
+        putRtfCharEscaped(*post++);
     fprintRTF("\" }{ }}{\\fldrslt }}");
 }
 
@@ -320,10 +353,20 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
             name = SaveEquationAsFile("\\begin{eqnarray*}", eq, "\\end{eqnarray*}");
         else
             name = SaveEquationAsFile(pre, eq, post);
+
+    } else if (strcmp(pre, "\\begin{align}") == 0) {
+        p = strstr(eq, "\\label");
+        if (p != NULL && strlen(p) > 6) /* found one ... is there a second? */
+            p = strstr(p + 6, "\\label");
+        if (p == NULL)
+            name = SaveEquationAsFile("\\begin{align*}", eq, "\\end{align*}");
+        else
+            name = SaveEquationAsFile(pre, eq, post);
     } else
+
         name = SaveEquationAsFile(pre, eq, post);
 
-    PutLatexFile(name, scale, pre);
+    PutLatexFile(name, 0, 0, scale, pre);
 }
 
 static void PrepareRtfEquation(int code, int EQ_Needed)
@@ -394,6 +437,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             diagnostics(4, "PrepareRtfEquation -- equation");
             g_equation_column = 5;  /* avoid adding \tabs when finishing */
             g_show_equation_number = TRUE;
+            g_suppress_equation_number = FALSE;
             fprintRTF("\\par\\par\n\\pard");
             fprintRTF("\\tqc\\tx%d\\tqr\\tx%d", b, width);
             fprintRTF("\\tab ");
@@ -405,6 +449,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             g_show_equation_number = FALSE;
             g_processing_eqnarray = TRUE;
             g_processing_tabular = TRUE;
+            g_suppress_equation_number = FALSE;
             g_equation_column = 1;
             fprintRTF("\\par\\par\n\\pard");
             fprintRTF("\\tqr\\tx%d\\tqc\\tx%d\\tql\\tx%d", a, b, c);
@@ -424,6 +469,31 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             SetTexMode(MODE_DISPLAYMATH);
             break;
 
+        case EQN_ALIGN_STAR:
+            diagnostics(4, "PrepareRtfEquation -- align* ");
+            g_show_equation_number = FALSE;
+            g_processing_eqnarray = TRUE;
+            g_processing_tabular = TRUE;
+            g_equation_column = 1;
+            fprintRTF("\\par\\par\n\\pard");
+            fprintRTF("\\tqr\\tx%d\\tql\\tx%d", a, b);
+            fprintRTF("\\tab ");
+            SetTexMode(MODE_DISPLAYMATH);
+            break;
+
+        case EQN_ALIGN:
+            diagnostics(4, "PrepareRtfEquation --- align");
+            g_show_equation_number = TRUE;
+            g_processing_eqnarray = TRUE;
+            g_processing_tabular = TRUE;
+            g_suppress_equation_number = FALSE;
+            g_equation_column = 1;
+            fprintRTF("\\par\\par\n\\pard");
+            fprintRTF("\\tqr\\tx%d\\tql\\tx%d\\tqr\\tx%d", a, b, width);
+            fprintRTF("\\tab ");
+            SetTexMode(MODE_DISPLAYMATH);
+            break;
+            
         default:
             diagnostics(ERROR, "calling PrepareRtfEquation with OFF code");
             break;
@@ -500,9 +570,18 @@ static void FinishRtfEquation(int code, int EQ_Needed)
             g_processing_tabular = FALSE;
             break;
 
+        case EQN_ALIGN_STAR:
+            diagnostics(4, "FinishRtfEquation -- align* ");
+            CmdEndParagraph(0);
+            CmdIndent(INDENT_INHIBIT);
+            g_processing_eqnarray = FALSE;
+            g_processing_tabular = FALSE;
+            break;
+
         case EQN_EQUATION:
         case EQN_ARRAY:
-            diagnostics(4, "FinishRtfEquation --- equation or eqnarray");
+        case EQN_ALIGN:
+            diagnostics(4, "FinishRtfEquation --- equation or eqnarray or align");
             if (g_show_equation_number && !g_suppress_equation_number) {
                 char number[20];
 
@@ -712,17 +791,16 @@ void CmdEquation(int code)
     if (g_equation_comment)
         WriteEquationAsComment(pre, eq, post);
 
+    if (g_equation_raw_latex)
+        WriteEquationAsRawLatex(pre, eq, post);
+
     diagnostics(4, "inline=%d  inline_bitmap=%d", inline_equation, g_equation_inline_bitmap);
     diagnostics(4, "inline=%d display_bitmap=%d", inline_equation, g_equation_display_bitmap);
     diagnostics(4, "inline=%d  inline_rtf   =%d", inline_equation, g_equation_inline_rtf);
     diagnostics(4, "inline=%d display_rtf   =%d", inline_equation, g_equation_display_rtf);
 
     if ((inline_equation && g_equation_inline_bitmap) || (!inline_equation && g_equation_display_bitmap)) {
-        if (true_code != EQN_ARRAY) {
-            PrepareRtfEquation(true_code, FALSE);
-            WriteLatexAsBitmap(pre, eq, post);
-            FinishRtfEquation(true_code, FALSE);
-        } else {
+        if (true_code == EQN_ARRAY) {
             char *s, *t;
 
             s = eq;
@@ -743,6 +821,33 @@ void CmdEquation(int code)
                 if (t)
                     s = t + 2;
             } while (t);
+            
+        } else  if (true_code == EQN_ALIGN) {
+            char *s, *t;
+
+            s = eq;
+            diagnostics(4, "align whole = <%s>", s);
+            do {
+                t = strstr(s, "\\\\");
+                if (t)
+                    *t = '\0';
+                diagnostics(4, "array piece = <%s>", s);
+                if (strstr(s, "\\notag"))
+                    g_suppress_equation_number = TRUE;
+                else
+                    g_suppress_equation_number = FALSE;
+
+                PrepareRtfEquation(true_code, FALSE);
+                WriteLatexAsBitmap("\\begin{align*}", s, "\\end{align*}");
+                FinishRtfEquation(true_code, FALSE);
+                if (t)
+                    s = t + 2;
+            } while (t);
+            
+        } else {
+            PrepareRtfEquation(true_code, FALSE);
+            WriteLatexAsBitmap(pre, eq, post);
+            FinishRtfEquation(true_code, FALSE);
         }
     }
 
@@ -752,9 +857,10 @@ void CmdEquation(int code)
     }
 
 /* balance \begin{xxx} with \end{xxx} call */
-    if (true_code == EQN_MATH || true_code == EQN_DISPLAYMATH ||
-      true_code == EQN_EQUATION || true_code == EQN_EQUATION_STAR ||
-      true_code == EQN_ARRAY || true_code == EQN_ARRAY_STAR)
+    if (true_code == EQN_MATH     || true_code == EQN_DISPLAYMATH   ||
+        true_code == EQN_EQUATION || true_code == EQN_EQUATION_STAR ||
+        true_code == EQN_ARRAY    || true_code == EQN_ARRAY_STAR    ||
+        true_code == EQN_ALIGN    || true_code == EQN_ALIGN_STAR)
         ConvertString(post);
 
     free(pre);
@@ -791,7 +897,6 @@ void CmdRoot(int code)
 {
     char *root = NULL;
     char *power = NULL;
-    int symfont;
 
     power = getBracketParam();
     root = getBraceParam();
@@ -809,8 +914,8 @@ void CmdRoot(int code)
             ConvertString(power);
             fprintRTF("}");
         }
-        symfont = RtfFontNumber("Symbol");
-        fprintRTF("{\\f%d\\'d6}(", symfont);
+        CmdSymbolChar(0xd6);
+        fprintRTF("(");
         ConvertString(root);
         fprintRTF(")");
     }
@@ -904,6 +1009,16 @@ void CmdArrows(int code)
             fprintRTF("}%c{\\dn%d ", g_field_separator, size);
             ConvertString("\\longleftarrow");
             break;
+
+        case LONG_LEFT:
+            ConvertString("\\leftarrow");
+        	CmdSymbolChar(0xbe);  /* extension character */
+            break;
+
+        case LONG_RIGHT:
+        	CmdSymbolChar(0xbe);  /* extension character */
+            ConvertString("\\rightarrow");
+            break;
     }
     fprintRTF("}) ");
 }
@@ -978,14 +1093,17 @@ parameter: type of operand
         command = getSimpleCommand();
         if (strcmp(command, "\\nolimits") == 0) {
             no_limits = TRUE;
-            diagnostics(WARNING, "no limits found");
+            diagnostics(WARNING, "\\nolimits found");
             free(command);
         } else if (strcmp(command, "\\limits") == 0) {
             limits = TRUE;
-            diagnostics(WARNING, "limits found");
+            diagnostics(WARNING, "\\limits found");
             free(command);
-        } else
+        } else {
+            diagnostics(WARNING, "pushing <%s>",command);
             PushSource(NULL, command);
+        }    
+        
         cThis = getNonBlank();
     }
 
@@ -1008,7 +1126,7 @@ parameter: type of operand
 
     if (g_fields_use_EQ) {
 
-        fprintRTF(" \\\\I");
+        fprintRTF(" \\\\i ");
         switch (code) {
             case 4:
                 if (limits)
@@ -1047,22 +1165,26 @@ parameter: type of operand
 
     } else {
 
-        int symfont = RtfFontNumber("Symbol");
-
         switch (code) {
-            case 4:
-                fprintRTF("{\\f%d\\'f2}", symfont); /* \iiint --- fall through */
-            case 3:
-                fprintRTF("{\\f%d\\'f2}", symfont); /* \iint --- fall through */
             case 0:
-                fprintRTF("{\\f%d\\'f2}", symfont);
+                CmdSymbolChar(0xf2);
                 break;
             case 1:
-                fprintRTF("{\\f%d\\'e5}", symfont);
+                CmdSymbolChar(0xe5);
                 break;
             case 2:
-                fprintRTF("{\\f%d\\'d5}", symfont);
+                CmdSymbolChar(0xd5);
                 break;
+            case 3:  /* \iint  */
+                CmdSymbolChar(0xf2);
+                CmdSymbolChar(0xf2);
+                break;
+            case 4:  /* \iiint  */
+                CmdSymbolChar(0xf2);
+                CmdSymbolChar(0xf2);
+                CmdSymbolChar(0xf2);
+                break;
+                
             default:
                 diagnostics(ERROR, "Illegal code to CmdIntegral");
         }
@@ -1096,6 +1218,7 @@ void SubSupWorker(bool big)
     char *upper_limit = NULL;
     char *lower_limit = NULL;
 
+    diagnostics(4, "SubSupWorker() ... big=%d",big);
     for (;;) {
         cThis = getNonBlank();
         if (cThis == '_') {
@@ -1111,6 +1234,9 @@ void SubSupWorker(bool big)
             break;
         }
     }
+
+    diagnostics(4, "...subscript  ='%s'",lower_limit ? lower_limit : "");
+    diagnostics(4, "...superscript='%s'",upper_limit ? upper_limit : "");
 
     if (big)
         vertical_shift = CurrentFontSize() / 1.4;
@@ -1153,6 +1279,8 @@ void CmdSuperscript(int code)
 {
     char *s = NULL;
 
+    diagnostics(4, "CmdSuperscript() ... ");
+
     if (code == 0 && g_fields_use_EQ) {
         ungetTexChar('^');
         SubSupWorker(FALSE);
@@ -1172,53 +1300,121 @@ void CmdSubscript(int code)
 /******************************************************************************
  purpose   : Handles subscripts _\alpha, _a, _{a},           code=0
                                 \textsubscript{script}       code=1
+                                \lower4emA                   code=2
  ******************************************************************************/
 {
     char *s = NULL;
+    int size;
+    
 
-    if (code == 0 && g_fields_use_EQ) {
-        ungetTexChar('_');
-        SubSupWorker(FALSE);
-        return;
+    if (code == 0) {
+        diagnostics(4, "CmdSubscript() code==0, equation ");
+    	if (g_fields_use_EQ) {
+			ungetTexChar('_');
+			SubSupWorker(FALSE);
+       }
     }
 
-    if ((s = getBraceParam())) {
+    if (code == 1) {
+        diagnostics(4, "CmdSubscript() code==1, \\textsubscript ");
+        s=getBraceParam();
         fprintRTF("{\\dn%d\\fs%d ", script_shift(), script_size());
         ConvertString(s);
         fprintRTF("}");
         free(s);
     }
+
+    if (code == 2) {
+        diagnostics(4, "CmdSubscript() code==2, \\lower ");
+		size = getDimension();  /* size is in half-points */
+        fprintRTF("{\\dn%d ", size);
+        s=getBraceParam();
+        if (strcmp(s,"\\hbox")==0)
+        	CmdBox(BOX_HBOX);
+        else
+        	ConvertString(s);
+        fprintRTF("}");
+        free(s);
+    }
+
 }
 
-void CmdLeftRight(int code)
+/* slight extension of getSimpleCommand to allow \{ and \| */
+static void getDelimOrCommand(char *delim, char **s)
+{
+    *delim = '\0';
+    
+    ungetTexChar('\\');
+    *s = getSimpleCommand();
+    
+/* handle special cases \{ \} and \| */
+    if (strlen(*s) == 1) {
+        free(*s);
+        *s = malloc(3 * sizeof(char));
+        (*s)[0] = '\\';
+        (*s)[1] = getTexChar();
+        (*s)[2] = '\0';
+    } 
+
+/* commands have a simple delimiter should just use the delimiter */
+    if (*s) {
+        if (strcmp(*s,"\\{")      ==0 || strcmp(*s,"\\lbrace")==0)
+            *delim = '{';
+        if (strcmp(*s,"\\}")      ==0 || strcmp(*s,"\\rbrace")==0)
+            *delim = '}';
+        if (strcmp(*s,"\\bracevert")==0)
+            *delim = '|';
+        if (strcmp(*s,"\\langle") ==0)
+            *delim = '<';
+        if (strcmp(*s,"\\rangle") ==0) {
+            *delim ='>';
+        }
+        
+        if (*delim) {
+            free (*s);
+            *s = NULL;
+        }
+    }
+}
 
 /******************************************************************************
  purpose   : Handles \left \right
  			 to properly handle \left. or \right. would require prescanning the
  			 entire equation.  
  ******************************************************************************/
+void CmdLeftRight(int code)
 {
     char ldelim, rdelim;
     char *contents;
+    char *lcommand = NULL;
+    char *rcommand = NULL;
 
+    diagnostics(4, "CmdLeftRight() ... ");
     ldelim = getNonSpace();
-    if (ldelim == '\\')         /* might be \{ or \} */
-        ldelim = getTexChar();
+    
+    if (ldelim=='\0') {
+        diagnostics(1,"right here");
+        PopSource();
+        ldelim = getNonSpace();
+     }
+
+    if (ldelim == '\\') getDelimOrCommand(&ldelim, &lcommand);
 
     contents = getLeftRightParam();
     rdelim = getNonSpace();
 
-    if (rdelim == '\\')         /* might be \{ or \} */
-        rdelim = getTexChar();
-
+    if (rdelim == '\\') getDelimOrCommand(&rdelim, &rcommand);
+    
     if (code == 1)
         diagnostics(ERROR, "\\right without opening \\left");
 
     diagnostics(4, "CmdLeftRight() ... \\left <%c> \\right <%c>", ldelim, rdelim);
-
+      
     if (g_fields_use_EQ) {
 
         fprintRTF(" \\\\b ");
+
+        /* these first four cases () {} [] <> are most common and work best without \lc and \rc */
         if (ldelim == '(' && rdelim == ')') {
             fprintRTF("(");
             goto finish;
@@ -1234,22 +1430,33 @@ void CmdLeftRight(int code)
             goto finish;
         }
 
-        if (ldelim == '{' || ldelim == '}') {
+        if (ldelim == '<' && rdelim == '>') {
+            fprintRTF("\\\\bc\\\\< (");
+            goto finish;
+        }
+
+        /* insert left delimiter if it is not a '.' */
+        if (ldelim == '{' || ldelim == '}' || ldelim == '(' || ldelim == ')')
             fprintRTF("\\\\lc\\\\\\%c", ldelim);
-        } else {
-            if (ldelim != '.')
-                fprintRTF("\\\\lc\\\\%c", ldelim);
+        else if (ldelim && ldelim != '.')
+            fprintRTF("\\\\lc\\\\%c", ldelim);
+        else if (lcommand) {
+            fprintRTF("\\\\lc\\\\");
+            ConvertString(lcommand);
         }
 
-        if (rdelim == '{' || rdelim == '}') {
-            fprintRTF("\\\\rc\\\\\\%c (", ldelim);
-
-        } else {
-            if (rdelim != '.')
-                fprintRTF("\\\\rc\\\\%c (", ldelim);
-            else
-                fprintRTF("(");
+        /* insert right delimiter if it is not a '.' */
+        if (rdelim == '{' || rdelim == '}' || rdelim == '(' || rdelim == ')')
+            fprintRTF("\\\\rc\\\\\\%c", rdelim);
+        else if (rdelim && rdelim != '.')
+            fprintRTF("\\\\rc\\\\%c", rdelim);
+        else if (rcommand) {
+             fprintRTF("\\\\rc\\\\");
+             ConvertString(rcommand);
         }
+        
+        /* start bracketed equation */
+        fprintRTF(" (");
 
       finish:
         ConvertString(contents);
@@ -1258,12 +1465,13 @@ void CmdLeftRight(int code)
 
     } else {                    /* g_fields_use_EQ */
 
-        putRtfChar(ldelim);
+        putRtfCharEscaped(ldelim);
         ConvertString(contents);
-        putRtfChar(rdelim);
+        putRtfCharEscaped(rdelim);
     }
 
-
+    if (lcommand) free(lcommand);
+    if (rcommand) free(rcommand);
 }
 
 void CmdArray(int code)
@@ -1346,4 +1554,29 @@ void CmdStackrel(int code)
 
     free(numer);
     free(denom);
+}
+
+/******************************************************************************
+ purpose   : Handles \overline{a}
+ ******************************************************************************/
+void CmdOverLine(int code)
+{
+    char *argument;
+
+    argument = getBraceParam();
+    diagnostics(4, "CmdOverLine() ... \\overline{%s}", argument);
+
+    if (g_fields_use_EQ) {
+        fprintRTF(" \\\\x\\\\to( ");
+        ConvertString(argument);
+        fprintRTF(") ");
+
+    } else {
+        diagnostics(WARNING, "sorry overline requires fields");
+        fprintRTF("{");
+        ConvertString(argument);
+        fprintRTF("}");
+    }
+
+    free(argument);
 }

@@ -1,4 +1,3 @@
-
 /* preamble.c - Handles LaTeX commands that should only occur in the preamble.
 
 Copyright (C) 2001-2002 The Free Software Foundation
@@ -25,11 +24,14 @@ Authors:
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "main.h"
 #include "convert.h"
 #include "util.h"
 #include "preamble.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "cfg.h"
 #include "encode.h"
 #include "parser.h"
@@ -42,10 +44,18 @@ Authors:
 #include "direct.h"
 #include "style.h"
 
+extern char *Version;  /*storage and definition in version.h */
+
 static bool g_preambleTwoside = FALSE;
 static bool g_preambleTwocolumn = FALSE;
 static bool g_preambleTitlepage = FALSE;
 static bool g_preambleLandscape = FALSE;
+static bool g_preambleGeometry = FALSE;
+
+static int g_geomMargl = 0;
+static int g_geomMargr = 0;
+static int g_geomMargt = 0;
+static int g_geomMargb = 0;
 
 static char *g_preambleTitle = NULL;
 static char *g_preambleAuthor = NULL;
@@ -64,6 +74,8 @@ static void setDocumentOptions(char *optionlist);
 static void WriteFontHeader(void);
 static void WriteStyleHeader(void);
 static void WritePageSize(void);
+void ParseOptGeometry(char *options);
+void ExecGeomOptions (char *option, char *value1, char *value2);
 
 void setPackageBabel(char *option)
 {
@@ -83,6 +95,10 @@ void setPackageBabel(char *option)
         RussianMode = TRUE;
         PushEnvironment(RUSSIAN_MODE);
         ReadLanguage("russian");
+    }
+
+    if (strcmp(option, "spanish") == 0) {
+        ReadLanguage("spanish");
     }
 
     if (strcmp(option, "czech") == 0) {
@@ -132,7 +148,9 @@ void setPackageInputenc(char *option)
       strcmp(option, "1251") == 0 ||
       strcmp(option, "1252") == 0 ||
       strcmp(option, "maccyr") == 0 ||
-      strcmp(option, "macukr") == 0 || strcmp(option, "koi8-r") == 0 || strcmp(option, "koi8-u") == 0) {
+      strcmp(option, "macukr") == 0 || 
+      strcmp(option, "koi8-r") == 0 || 
+      strcmp(option, "koi8-u") == 0) {
 
         strcpy(g_charset_encoding_name, option);
         g_fcharset_number = 0;  /* ANSI in RTF Specification */
@@ -160,6 +178,14 @@ void setPackageInputenc(char *option)
     } else if (strcmp(option, "raw1253") == 0) {
         g_fcharset_number = 161;    /* Greek in RTF Specification */
         strcpy(g_charset_encoding_name, "raw");
+        
+    } else if (strcmp(option, "utf8") == 0) {
+        diagnostics(WARNING, "\n Input Encoding utf8 - experimental support");
+        strcpy(g_charset_encoding_name, "utf8");
+
+    } else if (strcmp(option, "utf8x") == 0) {
+        diagnostics(WARNING, "\n Input Encoding utf8x - experimental support");
+        strcpy(g_charset_encoding_name, "utf8");
 
     } else
         diagnostics(WARNING, "\n Input Encoding <%s> not supported", option);
@@ -193,9 +219,9 @@ static void setPackageFont(char *font)
     else if (strstr(font, "book"))
         fnumber = RtfFontNumber("Bookman");
 
-    InitializeDocumentFont(fnumber, -1, -1, -1);
+/*    InitializeDocumentFont(fnumber, -1, -1, -1); */
     if (fnumber == -1)
-        fprintf(stderr, "\n Font Package <%s> not supported yet", font);
+        diagnostics(1, "Font Package <%s> not supported.", font);
 }
 
 static void setThree(char *s, int ten, int eleven, int twelve)
@@ -405,11 +431,15 @@ static void setDocumentOptions(char *optionlist)
         else if (strcmp(option, "isolatin1") == 0)
             setPackageInputenc("latin1");
         else if (strcmp(option, "hyperlatex") == 0)
-            PushEnvironment(HYPERLATEX);
+            PushEnvironment(HYPERLATEX_MODE);
         else if (strcmp(option, "apalike") == 0)
             g_document_bibstyle = BIBSTYLE_APALIKE;
         else if (strcmp(option, "apanat1b") == 0)
             PushEnvironment(APACITE_MODE);
+        else if (strcmp(option, "endfloat") == 0)
+            g_endfloat_figures = TRUE;
+        else if (strcmp(option, "bibentry") == 0)
+            /* do nothing */;
         else if (strcmp(option, "harvard") == 0) {
             PushEnvironment(HARVARD_MODE);
             g_document_bibstyle = BIBSTYLE_HARVARD;
@@ -491,11 +521,237 @@ void CmdDocumentStyle(int code)
 /******************************************************************************
  purpose: handle \usepackage[option]{packagename}
 ******************************************************************************/
+static void CmdUseOnepackage(char* package, char *options)
+{
+    if (strcmp(package, "inputenc") == 0 && options)
+	setPackageInputenc(options);
+    
+    else if (strcmp(package, "graphics") == 0)
+        g_graphics_package = GRAPHICS_GRAPHICS;
+    
+    else if (strcmp(package, "graphicx") == 0)
+        g_graphics_package = GRAPHICS_GRAPHICX;
+
+    else if (strcmp(package, "isolatin1") == 0)
+		setPackageInputenc("latin1");
+
+    else if (strcmp(package, "spanish") == 0)
+		setPackageBabel(package);
+
+    else if (strcmp(package, "babel") == 0) {
+		if (options)
+			setPackageBabel(options);
+
+    } else if (strcmp(package, "german") == 0 ||
+	    strcmp(package, "ngerman") == 0 ||
+	    strcmp(package, "czech") == 0 || strcmp(package, "frenchb") == 0 || strcmp(package, "french") == 0)
+		setPackageBabel(package);
+
+    else if (strcmp(package, "palatino") == 0 ||
+	     strcmp(package, "times") == 0 ||
+	     strcmp(package, "bookman") == 0 ||
+	     strcmp(package, "chancery") == 0 ||
+	     strcmp(package, "courier") == 0 ||
+	     strstr(package, "avant") || strstr(package, "newcen") || strstr(package, "helvet"))
+		setPackageFont(package);
+
+    else if (strcmp(package, "endfloat") == 0) {
+		g_endfloat_figures = TRUE;
+		g_endfloat_tables  = TRUE;
+		if (options && strstr(options,"nomarkers")) g_endfloat_markers = FALSE;
+
+    } else if (strcmp(package, "cite") == 0) {
+		set_sorted_citations();
+		set_compressed_citations();
+
+    } else if (strcmp(package, "natbib") == 0) {
+	if (options && strstr(options, "longnamesfirst"))
+	    set_longnamesfirst();
+	if (options && strstr(options, "super"))
+	    set_bibpunct_style_super();
+	if (options && strstr(options, "comma"))
+	    set_bibpunct_style_separator(",");
+	if (options && strstr(options, "colon"))
+	    set_bibpunct_style_separator(":");
+	if (options && strstr(options, "round"))
+	    set_bibpunct_style_paren("(",")");
+	if (options && strstr(options, "square"))
+	    set_bibpunct_style_paren("[","]");
+	if (options && strstr(options, "curly"))
+	    set_bibpunct_style_paren("{","}");
+	if (options && strstr(options, "angle"))
+	    set_bibpunct_style_paren("<",">");
+	if (options && strstr(options, "sort"))
+	    set_sorted_citations();
+	if (options && strstr(options, "compress"))
+	    set_compressed_citations();
+      
+	PushEnvironment(NATBIB_MODE);
+	g_document_bibstyle = BIBSTYLE_NATBIB;
+	
+    } else if (strcmp(package, "geometry") == 0) {
+
+	/* Set default values for geometry package */        
+        g_preambleGeometry = TRUE;
+        if(g_preambleTwoside==FALSE) {
+			g_geomMargr = (getLength("pagewidth") * 0.15);
+			g_geomMargl = g_geomMargr;
+		} else {
+			g_geomMargr = (getLength("pagewidth") * 0.3 * 0.4);
+			g_geomMargl = (getLength("pagewidth") * 0.3 * 0.6);
+		}
+        g_geomMargt = (getLength("pageheight") * 0.3 * 0.4);
+        g_geomMargb = (getLength("pageheight") * 0.3 * 0.6);
+	
+        if (options) {
+	    	ParseOptGeometry(options);
+	    }
+	
+    } else
+	setDocumentOptions(package);
+	  
+}
+
+/******************************************************************************
+ purpose: collect options from \geometry{options} 
+ ******************************************************************************/
+void CmdGeometry(int code)
+{
+    char *options;
+    options = getBraceParam();
+    if (options) {
+    	diagnostics(WARNING, "geometry command, argument %s\n", options);
+    	ParseOptGeometry(options);
+    	free(options);
+    }
+}
+
+
+
+/**********************************************************************************
+purpose: parse options from \usepackage[options]{geometry} and \geometry{options}
+**********************************************************************************/
+void ParseOptGeometry(char *options)
+{
+    char *key, *value1, *value2, *next, *comma = ", ", *colon = ": ";
+
+    while (options) {
+		next = keyvalue_pair(options,&key,&value1);
+				
+		if (value1 == NULL) {
+			diagnostics(WARNING, "geometry package, single option=[%s]\n", key);
+			ExecGeomOptions (key, NULL, NULL);
+		}
+		else if (*value1 == '{') {
+			PushSource(NULL, value1);
+			free(value1);
+			value1 = getBraceParam();
+			PopSource();
+			value1 = strtok(value1, comma);
+			value2 = strtok(NULL, comma);
+			diagnostics(WARNING, "option=%s with values %s and %s\n", key, value1, value2);
+			ExecGeomOptions (key, value1, value2);
+			free(value1);
+		}
+		else if (strchr(value1, ':')) {
+			value1 = strtok(value1, colon);
+			value2 = strtok(NULL, colon);
+			diagnostics(WARNING, "option=%s with ratio '%s:%s'\n", key, value1, value2);
+			ExecGeomOptions (key, value1, value2);
+			free(value1);
+		}
+		else {
+			diagnostics(WARNING, "geometry package, option=[%s], value=%s\n", key, value1);
+			value2=value1;
+			ExecGeomOptions (key, value1, value2);
+			free(value1);
+		}
+				
+		if (key) free(key);
+		options = next;
+    }
+}
+
+/******************************************************************************
+ purpose: implement geometry options 
+******************************************************************************/
+
+void ExecGeomOptions (char *key, char *value1, char *value2)
+{
+    int dist1, dist2, dist3, dist4, ratio_sum, margin_sum;
+    char *value1b = NULL, *value2b = NULL;
+
+    if (strstr(key, "ratio")) {
+	if (strchr(value1, ':')) { /* each value is a ratio */
+	    value1 = strtok(value1, ": ");
+	    value1b = strtok(NULL, ": ");
+	    value2 = strtok(value2, ": ");
+	    value2b = strtok(NULL, ": ");
+	} else { /* each value is part of a single ratio */
+	    dist1 = dist3 = atoi(value1);
+	    dist2 = dist4 = atoi(value2);
+	    diagnostics(WARNING, "one ratio parameter, %d:%d\n", dist1, dist2);
+	}
+    } else if (strstr(key, "centering") == NULL) {
+		dist1=getStringDimension(value1);
+		dist2=getStringDimension(value2);
+		diagnostics(WARNING, "twips paramters, %d and %d\n", dist1, dist2);
+    }
+
+    if (strcmp(key, "vmargin") == 0) {
+		diagnostics(WARNING, "vmargin distance(top)=%d, distance (bottom)=%d twips\n", dist1, dist2);
+		g_geomMargt = dist1;
+		g_geomMargb = dist2;
+    } else if (strcmp(key, "hmargin") == 0) {
+		diagnostics(WARNING, "hmargin distance(left)=%d, distance (right)=%d twips\n", dist1, dist2);
+		g_geomMargl = dist1;
+		g_geomMargr = dist2;
+    } else if (strcmp(key, "margin") == 0) {
+		ExecGeomOptions ("hmargin", value1, value2);
+		ExecGeomOptions ("vmargin", value1, value2);
+    } else if ((strcmp(key, "left") == 0) || (strcmp(key, "lmargin") == 0) || (strcmp(key, "inner") == 0) ) {
+		g_geomMargl = dist1;
+    } else if ((strcmp(key, "right") == 0) || (strcmp(key, "rmargin") == 0) || (strcmp(key, "outer") == 0) ) {
+		g_geomMargr = dist1;
+    } else if ((strcmp(key, "top") == 0) || (strcmp(key, "tmargin") == 0)) {
+		g_geomMargt = dist1;
+    } else if ((strcmp(key, "bottom") == 0) || (strcmp(key, "bmargin") == 0)) {
+		g_geomMargb = dist1;
+    } else if (strcmp(key, "hmarginratio") == 0) {
+		ratio_sum = dist1 + dist2;
+		margin_sum = g_geomMargl + g_geomMargr;
+		g_geomMargl = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
+		diagnostics(WARNING, "g_geomMargl %d\n", g_geomMargl);
+		g_geomMargr = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
+		diagnostics(WARNING, "g_geomMargr %d\n", g_geomMargr);
+    } else if (strcmp(key, "vmarginratio") == 0) {
+		ratio_sum = dist1 + dist2;
+		margin_sum = g_geomMargt + g_geomMargb;
+		g_geomMargt = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
+		g_geomMargb = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
+    } else if ((strcmp(key, "marginratio") == 0) || (strcmp(key, "ratio") == 0)) {
+		ExecGeomOptions ("hmarginratio", value1, value1b);
+		ExecGeomOptions ("vmarginratio", value2, value2b);
+    } else if (strcmp(key, "hcentering") == 0) {
+		ExecGeomOptions ("hmarginratio", "1", "1");
+    } else if (strcmp(key, "vcentering") == 0) {
+		ExecGeomOptions ("vmarginratio", "1", "1");
+    } else if (strcmp(key, "centering") == 0) {
+		ExecGeomOptions ("vmarginratio", "1", "1");
+		ExecGeomOptions ("hmarginratio", "1", "1");
+    }
+
+}
+
+/******************************************************************************
+ purpose: handle \usepackage[option]{pack1,pack2,pack3}
+******************************************************************************/
 void CmdUsepackage(int code)
 {
     char *package, *package_with_spaces;
     char *options, *options_with_spaces;
-
+	char *p,*comma;
+	
     options = NULL;
     options_with_spaces = getBracketParam();
     package_with_spaces = getBraceParam();
@@ -505,68 +761,23 @@ void CmdUsepackage(int code)
     if (options_with_spaces) {
         options = strdup_noblanks(options_with_spaces);
         free(options_with_spaces);
-        diagnostics(4, "Package {%s} with options [%s]", package, options);
+        diagnostics(2, "Package {%s} with options [%s]", package, options);
     } else
-        diagnostics(4, "Package {%s} with no options", package);
-
-    if (strcmp(package, "inputenc") == 0 && options)
-        setPackageInputenc(options);
-
-    else if (strcmp(package, "isolatin1") == 0)
-        setPackageInputenc("latin1");
-
-    else if (strcmp(package, "babel") == 0) {
-        if (options)
-            setPackageBabel(options);
-
-    } else if (strcmp(package, "german") == 0 ||
-      strcmp(package, "ngerman") == 0 ||
-      strcmp(package, "czech") == 0 || strcmp(package, "frenchb") == 0 || strcmp(package, "french") == 0)
-        setPackageBabel(package);
-
-    else if (strcmp(package, "palatino") == 0 ||
-      strcmp(package, "times") == 0 ||
-      strcmp(package, "bookman") == 0 ||
-      strcmp(package, "chancery") == 0 ||
-      strcmp(package, "courier") == 0 ||
-      strstr(package, "avant") || strstr(package, "newcen") || strstr(package, "helvet"))
-        setPackageFont(package);
-
-    else if (strcmp(package, "cite") == 0) {
-       set_sorted_citations();
-       set_compressed_citations();
-
-    } else if (strcmp(package, "natbib") == 0) {
-        if (options && strstr(options, ""))
-            set_longnamesfirst();
-        if (options && strstr(options, "super"))
-            set_bibpunct_style_super();
-        if (options && strstr(options, "comma"))
-            set_bibpunct_style_separator(",");
-        if (options && strstr(options, "colon"))
-            set_bibpunct_style_separator(":");
-        if (options && strstr(options, "round"))
-            set_bibpunct_style_paren("(",")");
-        if (options && strstr(options, "square"))
-            set_bibpunct_style_paren("[","]");
-        if (options && strstr(options, "curly"))
-            set_bibpunct_style_paren("{","}");
-        if (options && strstr(options, "angle"))
-            set_bibpunct_style_paren("<",">");
-        if (options && strstr(options, "sort"))
-            set_sorted_citations();
-        if (options && strstr(options, "compress"))
-        	set_compressed_citations();
-
-        PushEnvironment(NATBIB_MODE);
-        g_document_bibstyle = BIBSTYLE_NATBIB;
-    } else
-        setDocumentOptions(package);
-
-    if (options)
-        free(options);
+        diagnostics(2, "Package {%s} with no options", package);
+        
+    /* process package names one at a time */
+    p = package;
+    do {
+    	comma = strchr(p,',');
+    	if (comma) *comma = '\0';	/* replace ',' by '\0' */
+    	CmdUseOnepackage(p,options);
+    	if (comma) p = comma+1;
+    } while (comma != NULL);
+    
+    if (options) free(options);
     free(package);
 }
+
 
 void CmdTitle(int code)
 
@@ -596,11 +807,36 @@ void CmdTitle(int code)
     }
 }
 
-void CmdMakeTitle(int code)
+void CmdTableOfContents(int code)
+{
+	CmdStartParagraph(TITLE_PAR);
+	fprintRTF("{");
+	InsertStyle("contents_no_style");
+	fprintRTF(" ");
+	ConvertBabelName("CONTENTSNAME");
+	CmdEndParagraph(0);
+	fprintRTF("}");
+	CmdVspace(VSPACE_SMALL_SKIP);
+	
+	g_tableofcontents = TRUE;
+	fprintRTF("{\\field{\\*\\fldinst TOC \\\\o \"1-3\" }{\\fldrslt }}\n");  
+	CmdNewPage(NewPage);
+}
+
+/******************************************************************************
+  purpose: Handle \and in \author{A \and B}
+ ******************************************************************************/
+void CmdAnd(int code)
+{
+	CmdEndParagraph(0);
+	CmdStartParagraph(TITLE_PAR);
+}
+
 
 /******************************************************************************
   purpose: Creates a title page based on saved values for author, title, and date
  ******************************************************************************/
+void CmdMakeTitle(int code)
 {
     char title_begin[10];
     char author_begin[10];
@@ -617,12 +853,12 @@ void CmdMakeTitle(int code)
         ConvertString(g_preambleTitle);
     fprintRTF("}");
 
-    fprintRTF("\n\\par\\qc {%s ", author_begin);
+    fprintRTF("\n\\par\\pard\\qc {%s ", author_begin);
     if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0)
         ConvertString(g_preambleAuthor);
     fprintRTF("}");
 
-    fprintRTF("\n\\par\\qc {%s ", date_begin);
+    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
     if (g_preambleDate != NULL && strcmp(g_preambleDate, "") != 0)
         ConvertString(g_preambleDate);
     fprintRTF("}");
@@ -690,7 +926,7 @@ void CmdPagestyle( /* @unused@ */ int code)
 
 Produces latex-like headers and footers.
 Needs to be terminated for:
-- headings chapter, section informations and page numbering
+- headings chapter, section information and page numbering
 - myheadings page nunmbering, combined with markboth, markright.
  ******************************************************************************/
 {
@@ -815,7 +1051,7 @@ static void WriteFontHeader(void)
     fprintRTF("{\\fonttbl");
 
     config_handle = CfgStartIterate(FONT_A);
-    i = 3;
+    i = 0;
     while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
 
         font_type = (char *) (*config_handle)->TexCommand;
@@ -899,6 +1135,7 @@ static void WritePageSize(void)
 ****************************************************************************/
 {
     int n;
+    int family = DefaultFontFamily();
 
     fprintRTF("\\paperw%d", getLength("pagewidth"));
     fprintRTF("\\paperh%d", getLength("pageheight"));
@@ -909,21 +1146,32 @@ static void WritePageSize(void)
     if (g_preambleTwocolumn)
         fprintRTF("\\cols2\\colsx709"); /* two columns -- space between columns 709 */
 
-    n = getLength("hoffset") + 72 * 20 + getLength("oddsidemargin");
-    fprintRTF("\\margl%d", n);
-    diagnostics(4, "Writepagesize left margin   =%d pt", n / 20);
-    n = getLength("pagewidth") - (n + getLength("textwidth"));
-    fprintRTF("\\margr%d", n);
-    diagnostics(4, "Writepagesize right margin  =%d pt", n / 20);
-    n = getLength("voffset") + 72 * 20 + getLength("topmargin") + getLength("headheight") + getLength("headsep");
-    fprintRTF("\\margt%d", n);
-    diagnostics(4, "Writepagesize top    margin =%d pt", n / 20);
-    n = getLength("pageheight") - (n + getLength("textheight") + getLength("footskip"));
-    fprintRTF("\\margb%d", n);
-    diagnostics(4, "Writepagesize bottom margin =%d pt", n / 20);
+    if(!g_preambleGeometry){
+      n = getLength("hoffset") + 72 * 20 + getLength("oddsidemargin");
+      fprintRTF("\\margl%d", n);
+      diagnostics(4, "Writepagesize left margin   =%d pt", n / 20);
+      n = getLength("pagewidth") - (n + getLength("textwidth"));
+      fprintRTF("\\margr%d", n);
+      diagnostics(4, "Writepagesize right margin  =%d pt", n / 20);
+      n = getLength("voffset") + 72 * 20 + getLength("topmargin") + getLength("headheight") + getLength("headsep");
+      fprintRTF("\\margt%d", n);
+      diagnostics(4, "Writepagesize top    margin =%d pt", n / 20);
+      n = getLength("pageheight") - (n + getLength("textheight") + getLength("footskip"));
+      fprintRTF("\\margb%d", n);
+      diagnostics(4, "Writepagesize bottom margin =%d pt", n / 20);
+    } else {
+      /* Insert geometry dimensions here */
+      diagnostics(WARNING, "Using geometry package");
+      diagnostics(WARNING, "[l,r,t,b] = [%d,%d,%d,%d]",g_geomMargl,g_geomMargr,
+                                                       g_geomMargt,g_geomMargb);
+      fprintRTF("\\margl%d", g_geomMargl);
+      fprintRTF("\\margr%d", g_geomMargr);
+      fprintRTF("\\margt%d", g_geomMargt);
+      fprintRTF("\\margb%d", g_geomMargb);
+    }
 
     fprintRTF("\\pgnstart%d", getCounter("page"));
-    fprintRTF("\\widowctrl\\qj\\ftnbj\\aftnnar\n");
+    fprintRTF("\\widowctrl\\qj\\ftnbj\\f%d\\aftnnar\n", family);
 }
 
 static void WriteHeadFoot(void)
@@ -940,6 +1188,8 @@ static void WriteHeadFoot(void)
 
 /*	fprintRTF("\\ftnbj\\sectd\\linex0\\endnhere\\qj\n"); */
 
+    int family = DefaultFontFamily();
+	int size   = DefaultFontSize(); 
     int textwidth = getLength("textwidth");
 
     if (g_preambleLFOOT || g_preambleCFOOT || g_preambleRFOOT) {
@@ -958,6 +1208,8 @@ static void WriteHeadFoot(void)
         }
 
         fprintRTF("\\par}\n");
+    } else {
+		fprintRTF("{\\footer\\pard\\plain\\f%d\\fs%d\\qc\\chpgn\\par}\n",family,size);
     }
 
     if (g_preambleLHEAD || g_preambleCHEAD || g_preambleRHEAD) {
@@ -1060,9 +1312,18 @@ static void WriteInfo(void)
   \version<N>     The version number of the document
   \doccomm        Comments displayed in Word's Summary Info dialog
   
-{\info {\title This is a page} {\author \'ca}}
+{\info {\title This is a page} {\doccomm Converted using}}
  ***************************************************************************/
 {
+/*	struct stat sb;*/
+	time_t tm;
+
+	fprintRTF("{\\info\n{\\title Original file was %s}\n",CurrentFileName());
+	tm = time(NULL);
+	fprintRTF("{\\doccomm Created using latex2rtf %s on %s}\n", Version, ctime(&tm));
+/*	if (fstat(CurrentFileDescriptor(),&sb)) {} */
+/*	fprintRTF("{\\creatim %s}\n", ctime(&tm)); */
+	fprintRTF("}\n");
 }
 
 void WriteRtfHeader(void)
@@ -1080,7 +1341,7 @@ purpose: writes header info for the RTF file
     diagnostics(4, "Writing header for RTF file");
 
 /*	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family); */
-    fprintRTF("{\\rtf1\\ansi\\deff%d\\deflang1024\n", family);
+    fprintRTF("{\\rtf1\\ansi\\uc1\\deff%d\\deflang1024\n", family);
     WriteFontHeader();
     WriteColorTable();
     WriteStyleHeader();

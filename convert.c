@@ -54,7 +54,7 @@ correctly, as well as vertical and horizontal space.
 #include "commands.h"
 #include "chars.h"
 #include "funct1.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "stack.h"
 #include "tables.h"
 #include "equation.h"
@@ -122,13 +122,13 @@ void ConvertString(char *string)
     }
 
     if (PushSource(NULL, string) == 0) {
-        diagnostics(4, "Entering Convert() from StringConvert()\n******\n%s\n*****", temp);
+        diagnostics(4, "Entering Convert() from ConvertString()\n******\n%s\n*****", temp);
 
         while (StillSource())
             Convert();
 
         PopSource();
-        diagnostics(4, "Exiting Convert() from StringConvert()");
+        diagnostics(4, "Exiting Convert() from ConvertString()");
     }
 }
 
@@ -171,7 +171,7 @@ void ConvertAllttString(char *s)
                     break;
 
                 default:
-                    putRtfChar(cThis);
+                    fprintRTF("%c",cThis);
                     break;
             }
         }
@@ -198,6 +198,8 @@ globals: fTex, fRtf and all global flags for convert (see above)
 
     while ((cThis = getTexChar()) && cThis != '\0') {
 
+        mode = GetTexMode();
+
         if (cThis == '\n')
             diagnostics(5, "Current character is '\\n' mode = %d ret = %d level = %d", GetTexMode(), ret,
               RecursionLevel);
@@ -205,9 +207,44 @@ globals: fTex, fRtf and all global flags for convert (see above)
             diagnostics(5, "Current character is '%c' mode = %d ret = %d level = %d", cThis, GetTexMode(), ret,
               RecursionLevel);
 
-        mode = GetTexMode();
-
         pending_new_paragraph--;
+
+		/* preliminary support for utf8 sequences.  Thanks to CSH */
+        if ((cThis & 0x8000) && (strcmp(g_charset_encoding_name, "utf8") == 0)) {
+        	unsigned char byte;
+        	unsigned int len, value, i;
+
+        	/* Get the number of bytes in the sequence        */
+        	/* Must use an unsigned character for comparisons */
+        	byte = cThis;
+        	if (byte >= 0xF0) { 
+        		len = 3; 
+        		value = byte & ~0xF0; 
+        	} 
+        	else if (byte >= 0xE0) { 
+        		len = 2; 
+        		value = byte & ~0xE0; 
+        	}		
+        	else if (byte >= 0xC0) { 
+        		len = 1; 
+        		value = byte & ~0xC0; 
+        	}
+        	
+        	/* reassemble the character */
+        	for ( i=0; i<len; i++) {
+        		byte = getTexChar() & ~0xC0;
+        		value = (value << 6) + byte;
+        	}
+        	
+        	diagnostics(4,"(flag = 0x%X) char value = 0X%04X or %ud (%d bytes)", (unsigned char) cThis, value, value, len);
+
+        	/* values above 0x8000 must be negative! */
+			if (value < 0x8000)
+				fprintRTF("\\u%d?", value);
+			else
+				fprintRTF("\\u%d?", (int)((double)value-0x10000));
+        }        	        	
+		else
 
         switch (cThis) {
 
@@ -298,14 +335,6 @@ globals: fTex, fRtf and all global flags for convert (see above)
                     ungetTexChar(cNext);
                     CmdEquation(EQN_DOLLAR | ON);
                 }
-
-                /* 
-                   Formulas need to close all Convert() operations when they end This works for \begin{equation} but
-                   not $$ since the BraceLevel and environments don't get pushed properly.  We do it explicitly here. */
-                /* 
-                   if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) PushBrace(); else { ret =
-                   RecursionLevel - PopBrace(); if (ret > 0) { ret--; RecursionLevel--; diagnostics(5, "Exiting Convert 
-                   via Math ret = %d", ret); return; } } */
                 break;
 
             case '&':
@@ -315,7 +344,9 @@ globals: fTex, fRtf and all global flags for convert (see above)
                 }
 
                 if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) {    /* in eqnarray */
-                    fprintRTF("\\tab ");
+                    if (g_processing_fields) fprintRTF("}}}{\\fldrslt }}");
+					fprintRTF("\\tab ");
+                    if (g_processing_fields) fprintRTF("{{\\field{\\*\\fldinst{ EQ ");
                     g_equation_column++;
                     break;
                 }
@@ -342,7 +373,7 @@ globals: fTex, fRtf and all global flags for convert (see above)
 
             case '-':
                 if (mode == MODE_MATH || mode == MODE_DISPLAYMATH)
-                    fprintRTF("-");
+                	CmdSymbolChar(0x2d);
                 else {
                     SetTexMode(MODE_HORIZONTAL);
 
@@ -507,14 +538,14 @@ globals: fTex, fRtf and all global flags for convert (see above)
                 break;
 
             case '(':
-                if (g_processing_fields && g_escape_parent)
+                if (g_processing_fields && g_escape_parens)
                     fprintRTF("\\\\(");
                 else
                     fprintRTF("(");
                 break;
 
             case ')':
-                if (g_processing_fields && g_escape_parent)
+                if (g_processing_fields && g_escape_parens)
                     fprintRTF("\\\\)");
                 else
                     fprintRTF(")");
@@ -530,10 +561,23 @@ globals: fTex, fRtf and all global flags for convert (see above)
                 break;
 
             case ',':
-                if (g_field_separator == ',' && g_processing_fields)
-                    fprintRTF("\\\\,");
-                else
-                    fprintRTF(",");
+                if (g_field_separator == ',' && g_processing_fields) {
+                	if (g_processing_arrays) {
+                	/* this is crazy, fields fail if \, is present in EQ array! */
+                	/* substitute semi-colon because it is least worst option   */
+						fprintRTF(";"); 
+                	} else {
+						fprintRTF("\\\\,"); 
+                	}
+                } else {
+                /* ,, is \quotedblbase nearly always */
+                    if ((cNext = getTexChar()) && cNext == ',') {
+                        fprintRTF("\\'84");
+                    } else {
+                        fprintRTF(",");
+                        ungetTexChar(cNext);
+                    }
+                }
                 break;
 
             default:
@@ -576,7 +620,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 {
     char cCommand[MAXCOMMANDLEN];
     int i, mode;
-    int cThis;
+    int cThis,cNext;
 
 
     cThis = getTexChar();
@@ -585,6 +629,14 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
     diagnostics(5, "Beginning TranslateCommand() \\%c", cThis);
 
     switch (cThis) {
+        case 'a':
+            if (!g_processing_tabbing) break;
+            cNext = getTexChar();
+            if (cNext=='=' ) {CmdMacronChar(0); return;}
+            if (cNext=='\'') {CmdAcuteChar(0); return;}
+            if (cNext=='`' ) {CmdAcuteChar(0); return;}
+            ungetTexChar(cNext);
+            break;
         case '}':
             if (mode == MODE_VERTICAL)
                 SetTexMode(MODE_HORIZONTAL);
@@ -641,8 +693,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
             if (g_processing_tabbing) {
                 (void) PopBrace();
                 PushBrace();
-            } else
-                fprintRTF("\\-");
+            } 
             return;
 
         case '+':
@@ -681,7 +732,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
                 (void) PopBrace();
                 PushBrace();
             } else
-                CmdLApostrophChar(0);
+                CmdGraveChar(0);
             return;
 
         case '\'':
@@ -692,7 +743,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
                 PushBrace();
                 return;
             } else
-                CmdRApostrophChar(0);   /* char ' =?= \' */
+                CmdAcuteChar(0);   /* char ' =?= \' */
             return;
 
         case '=':
@@ -777,7 +828,7 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
     }
 
 
-    /* LEG180498 Commands consist of letters and can have an optional * at the end */
+    /* Commands consist of letters and can have an optional * at the end */
     for (i = 0; i < MAXCOMMANDLEN-1; i++) {
         if (!isalpha((int) cThis) && (cThis != '*')) {
             bool found_nl = FALSE;
@@ -820,7 +871,9 @@ globals: fTex, fRtf, command-functions have side effects or recursive calls;
 
     if (CallCommandFunc(cCommand)) {    /* call handling function for command */
         if (strcmp(cCommand, "end") == 0) {
+    		diagnostics(5, "before PopBrace()");
             ret = RecursionLevel - PopBrace();
+    		diagnostics(5, "after PopBrace(), ret=%d",ret);
             fprintRTF("}");
         }
         return;

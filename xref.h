@@ -6,13 +6,14 @@
 #define LABEL_LABEL 		1
 #define LABEL_HYPERREF		2
 #define LABEL_REF			3
-#define LABEL_HYPERCITE	4
+#define LABEL_HYPERCITE	    4
 #define LABEL_CITE			5
 #define LABEL_HYPERPAGEREF	6
 #define LABEL_PAGEREF		7
 #define LABEL_HTMLADDNORMALREF 8
 #define LABEL_HTMLREF       9
 #define LABEL_EQREF			10
+#define LABEL_VREF          11
 
 #define BIBSTYLE_STANDARD   1
 #define BIBSTYLE_APALIKE    2
@@ -49,6 +50,12 @@
 #define CITE_AUTHOR_STAR   26
 #define CITE_YEAR_P        27
 
+#define CITE_T_CAP         128
+#define CITE_P_CAP         129
+#define CITE_ALT_CAP       130
+#define CITE_ALP_CAP       131
+#define CITE_AUTHOR_CAP    132
+
 #define CITE_AS_NOUN            28
 #define CITE_POSSESSIVE         29
 #define CITE_AFFIXED            30
@@ -77,6 +84,7 @@ void CmdIndex(int code);
 void CmdPrintIndex(int code);
 void CmdHtml(int code);
 void InsertBookmark(char *name, char *text);
+void InsertContentMark(char marker, char *s1, char *s2, char *s3);
 void CmdCite(int code);
 void CmdHarvardCite(int code);
 void CmdBCAY(int code);
@@ -97,3 +105,5 @@ void CmdListOf(int code);
 void CmdHarvard(int code);
 void CmdNatbibCite(int code);
 void CmdBibpunct(int code);
+void CmdBibEntry(int code);
+

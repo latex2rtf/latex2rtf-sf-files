@@ -1,7 +1,7 @@
 
 /* main.c - LaTeX to RTF conversion program
 
-Copyright (C) 1995-2002 The Free Software Foundation
+Copyright (C) 1995-2007 The Free Software Foundation
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@ Authors:
 #include "convert.h"
 #include "commands.h"
 #include "chars.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "stack.h"
 #include "direct.h"
 #include "ignore.h"
@@ -60,6 +60,7 @@ char *g_toc_name = NULL;
 char *g_lof_name = NULL;
 char *g_lot_name = NULL;
 char *g_fff_name = NULL;
+char *g_ttt_name = NULL;
 char *g_bbl_name = NULL;
 char *g_home_dir = NULL;
 
@@ -93,6 +94,7 @@ bool g_show_equation_number = FALSE;
 int g_enumerate_depth = 0;
 bool g_suppress_equation_number = FALSE;
 bool g_aux_file_missing = FALSE;    /* assume that it exists */
+bool g_bbl_file_missing = FALSE;    /* assume that it exists */
 
 bool g_document_type = FORMAT_ARTICLE;
 int g_document_bibstyle = BIBSTYLE_STANDARD;
@@ -108,17 +110,23 @@ char *g_script_path = NULL;
 char *g_tmp_path = NULL;
 char *g_preamble = NULL;
 char g_field_separator = ',';
-bool g_escape_parent = TRUE;
+bool g_escape_parens = FALSE;
 
 bool g_equation_display_rtf = TRUE;
 bool g_equation_inline_rtf = TRUE;
 bool g_equation_inline_bitmap = FALSE;
 bool g_equation_display_bitmap = FALSE;
 bool g_equation_comment = FALSE;
+bool g_equation_raw_latex = FALSE;
+bool g_tableofcontents = FALSE;
 
 double g_png_equation_scale = 1.22;
 double g_png_figure_scale = 1.35;
 bool g_latex_figures = FALSE;
+bool g_endfloat_figures = FALSE;
+bool g_endfloat_tables = FALSE;
+bool g_endfloat_markers = TRUE;
+int  g_graphics_package = GRAPHICS_NONE;
 
 int indent = 0;
 char alignment = JUSTIFIED;     /* default for justified: */
@@ -154,7 +162,7 @@ int main(int argc, char **argv)
     InitializeLatexLengths();
 	InitializeBibliography();
 	
-    while ((c = my_getopt(argc, argv, "lhpvFSWZ:o:a:b:d:f:i:s:C:D:M:P:T:")) != EOF) {
+    while ((c = my_getopt(argc, argv, "lhpuvFSWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:")) != EOF) {
         switch (c) {
             case 'a':
                 g_aux_name = optarg;
@@ -185,7 +193,7 @@ int main(int argc, char **argv)
                 g_rtf_name = strdup(optarg);
                 break;
             case 'p':
-                g_escape_parent = FALSE;
+                g_escape_parens = TRUE;
                 break;
             case 'v':
                 print_version();
@@ -204,19 +212,21 @@ int main(int argc, char **argv)
             case 'M':
                 sscanf(optarg, "%d", &x);
                 diagnostics(2, "Math option = %s x=%d", optarg, x);
-                g_equation_display_rtf = (x & 1) ? TRUE : FALSE;
-                g_equation_inline_rtf = (x & 2) ? TRUE : FALSE;
-                g_equation_display_bitmap = (x & 4) ? TRUE : FALSE;
-                g_equation_inline_bitmap = (x & 8) ? TRUE : FALSE;
-                g_equation_comment = (x & 16) ? TRUE : FALSE;
-                diagnostics(2, "Math option g_equation_display_rtf      = %d", g_equation_display_rtf);
-                diagnostics(2, "Math option g_equation_inline_rtf	      = %d", g_equation_inline_rtf);
-                diagnostics(2, "Math option g_equation_display_bitmap   = %d", g_equation_display_bitmap);
-                diagnostics(2, "Math option g_equation_inline_bitmap    = %d", g_equation_inline_bitmap);
-                diagnostics(2, "Math option g_equation_comment	      = %d", g_equation_comment);
-                if (!g_equation_comment && !g_equation_inline_rtf && !g_equation_inline_bitmap)
+                g_equation_display_rtf   = (x &  1) ? TRUE : FALSE;
+                g_equation_inline_rtf    = (x &  2) ? TRUE : FALSE;
+                g_equation_display_bitmap= (x &  4) ? TRUE : FALSE;
+                g_equation_inline_bitmap = (x &  8) ? TRUE : FALSE;
+                g_equation_comment       = (x & 16) ? TRUE : FALSE;
+                g_equation_raw_latex     = (x & 32) ? TRUE : FALSE;
+                diagnostics(2, "Math option g_equation_display_rtf    = %d", g_equation_display_rtf);
+                diagnostics(2, "Math option g_equation_inline_rtf     = %d", g_equation_inline_rtf);
+                diagnostics(2, "Math option g_equation_display_bitmap = %d", g_equation_display_bitmap);
+                diagnostics(2, "Math option g_equation_inline_bitmap  = %d", g_equation_inline_bitmap);
+                diagnostics(2, "Math option g_equation_comment        = %d", g_equation_comment);
+                diagnostics(2, "Math option g_equation_raw_latex      = %d", g_equation_raw_latex);
+                if (!g_equation_comment && !g_equation_inline_rtf && !g_equation_inline_bitmap && !g_equation_raw_latex)
                     g_equation_inline_rtf = TRUE;
-                if (!g_equation_comment && !g_equation_display_rtf && !g_equation_display_bitmap)
+                if (!g_equation_comment && !g_equation_display_rtf && !g_equation_display_bitmap && !g_equation_raw_latex)
                     g_equation_display_rtf = TRUE;
                 break;
 
@@ -329,6 +339,9 @@ int main(int argc, char **argv)
     if (g_fff_name == NULL && basename != NULL)
         g_fff_name = strdup_together(basename, ".fff");
 
+    if (g_ttt_name == NULL && basename != NULL)
+        g_ttt_name = strdup_together(basename, ".ttt");
+
     if (basename) {
         diagnostics(3, "latex filename is <%s>", g_tex_name);
         diagnostics(3, "  rtf filename is <%s>", g_rtf_name);
@@ -378,8 +391,8 @@ static void ConvertWholeDocument(void)
     char *body, *sec_head, *sec_head2, *label;
     char t[] = "\\begin{document}";
 
-    PushEnvironment(DOCUMENT);  /* because we use ConvertString in preamble.c */
-    PushEnvironment(PREAMBLE);
+    PushEnvironment(DOCUMENT_MODE);  /* because we use ConvertString in preamble.c */
+    PushEnvironment(PREAMBLE_MODE);
     SetTexMode(MODE_VERTICAL);
     ConvertLatexPreamble();
     WriteRtfHeader();
@@ -416,12 +429,40 @@ static void ConvertWholeDocument(void)
         free(sec_head);
         sec_head = sec_head2;
     }
+    
+    if (g_endfloat_figures && g_fff_name) {
+    	g_endfloat_figures = FALSE;
+        if (PushSource(g_fff_name, NULL) == 0) {
+        	CmdNewPage(NewPage);
+        	CmdListOf(LIST_OF_FIGURES);
+			getSection(&body, &sec_head2, &g_section_label);
+			ConvertString(sec_head);
+			ConvertString(body);
+			if (g_section_label) free(g_section_label);
+			free(body);
+			free(sec_head);
+        }
+     }
+    
+    if (g_endfloat_tables && g_ttt_name) {
+    	g_endfloat_tables = FALSE;
+        if (PushSource(g_ttt_name, NULL) == 0) {
+        	CmdNewPage(NewPage);
+        	CmdListOf(LIST_OF_TABLES);
+			getSection(&body, &sec_head2, &g_section_label);
+			ConvertString(sec_head);
+			ConvertString(body);
+			if (g_section_label) free(g_section_label);
+			free(body);
+			free(sec_head);
+        }
+     }
 }
 
 static void print_version(void)
 {
     fprintf(stdout, "latex2rtf %s\n\n", Version);
-    fprintf(stdout, "Copyright (C) 2002 Free Software Foundation, Inc.\n");
+    fprintf(stdout, "Copyright (C) 2007 Free Software Foundation, Inc.\n");
     fprintf(stdout, "This is free software; see the source for copying conditions.  There is NO\n");
     fprintf(stdout, "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n");
     fprintf(stdout, "Written by Prahl, Lehner, Granzer, Dorner, Polzer, Trisko, Schlatterbeck.\n");
@@ -518,7 +559,7 @@ purpose: Writes the message to stderr depending on debugging level
                     vsnprintf(buffer, 512, format, apf);
                     fprintRTF("{\\plain\\cf2 [latex2rtf:");
                     while (*buff_ptr) {
-                        putRtfChar(*buff_ptr);
+                        putRtfCharEscaped(*buff_ptr);
                         buff_ptr++;
                     }
                     fprintRTF("]}");
@@ -593,6 +634,8 @@ static void InitializeLatexLengths(void)
     setCounter("footnote", 0);
     setCounter("mpfootnote", 0);
     setCounter("secnumdepth", 2);
+    setCounter("endfloatfigure", 0);
+    setCounter("endfloattable", 0);
 
 /* vertical separation lengths */
     setLength("topsep", 3 * 20);
@@ -620,10 +663,11 @@ static void InitializeLatexLengths(void)
     setLength("marginparsep", 10 * 20);
 }
 
+static void RemoveInterpretCommentString(char *s)
+
 /****************************************************************************
 purpose: removes %InterpretCommentString from preamble (usually "%latex2rtf:")
  ****************************************************************************/
-static void RemoveInterpretCommentString(char *s)
 {
     char *p, *t;
     int n = strlen(InterpretCommentString);
@@ -704,9 +748,14 @@ globals: g_tex_name;
     int i;
 
     CmdEndParagraph(0);
-    if (BraceLevel > 1)
+    if (BraceLevel > 1) {
         diagnostics(WARNING, "Mismatched '{' in RTF file, Conversion may cause problems.");
-
+        diagnostics(WARNING, "This is often caused by having environments that span ");
+        diagnostics(WARNING, "\\section{}s.  For example ");
+        diagnostics(WARNING, "   \\begin{small} ... \\section{A} ... \\section{B} ... \\end{small}");
+        diagnostics(WARNING, "will definitely fail.");
+	}
+	
     if (BraceLevel - 1 > g_safety_braces)
         diagnostics(WARNING, "Try translating with 'latex2rtf -Z%d %s'", BraceLevel - 1, g_tex_name);
 
@@ -722,34 +771,37 @@ globals: g_tex_name;
     diagnostics(4, "Closed RTF file");
 }
 
-void putRtfChar(char cThis)
+void putRtfCharEscaped(char cThis)
 
 /****************************************************************************
-purpose: output filter to escape characters written to an RTF file
-		 all output to the RTF file passes through this routine or the one below
+purpose: output a single escaped character to the RTF file
+         this is primarily useful for the verbatim-like enviroments
  ****************************************************************************/
 {
-    if (cThis == '\\')
-        fprintf(fRtf, "\\\\");
+	if (cThis == '\\')
+        fprintRTF("%s","\\\\");
     else if (cThis == '{')
-        fprintf(fRtf, "\\{");
+        fprintRTF("%s", "\\{");
     else if (cThis == '}')
-        fprintf(fRtf, "\\}");
+        fprintRTF("%s", "\\}");
     else if (cThis == '\n')
-        fprintf(fRtf, "\n\\par ");
+        fprintRTF("%s", "\n\\par ");
     else
-        fputc(cThis, fRtf);
+        fprintRTF("%c",cThis);
 }
 
 void fprintRTF(char *format, ...)
 
 /****************************************************************************
-purpose: output filter to track of brace depth and font settings
-		 all output to the RTF file passes through this routine or the one above
+purpose: output a formatted string to the RTF file.  It is assumed that the
+         formatted string has been properly escaped for the RTF file.  
+         *ALL* output to the RTF file passes through this routine.
  ****************************************************************************/
 {
     char buffer[1024];
     char *text;
+    char last='\0';
+    
     va_list apf;
 
     va_start(apf, format);
@@ -759,23 +811,19 @@ purpose: output filter to track of brace depth and font settings
 
     while (*text) {
 
-        if ((unsigned char) *text > 127) {
-
-            WriteEightBitChar(text[0]);
-
-        } else {
-            fputc(*text, fRtf);
-
-            if (*text == '{')
-                PushFontSettings();
-
-            if (*text == '}')
-                PopFontSettings();
-
-            if (*text == '\\')
-                MonitorFontChanges(text);
-        }
-        text++;
+		WriteEightBitChar(text[0]);
+	
+		if (*text == '{' && last != '\\')
+			PushFontSettings();
+	
+		if (*text == '}' && last != '\\')
+			PopFontSettings();
+	
+		if (*text == '\\' && last != '\\')
+			MonitorFontChanges(text);
+	
+		last= *text;
+		text++;
     }
 }
 

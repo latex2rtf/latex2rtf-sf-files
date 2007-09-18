@@ -28,6 +28,7 @@ Authors:
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
+#include <math.h>
 #ifdef UNIX
 #include <unistd.h>
 #endif
@@ -40,8 +41,10 @@ Authors:
 #include "convert.h"
 #include "equation.h"
 #include "funct1.h"
+#include "preamble.h"
 
-#define POINTS_PER_M 2834.65
+/* number of points (72/inch) in a meter */
+#define POINTS_PER_METER 2834.65
 
 /* Little endian macros to convert to and from host format to network byte ordering */
 #define LETONS(A) ((((A) & 0xFF00) >> 8) | (((A) & 0x00FF) << 8))
@@ -138,19 +141,17 @@ typedef struct _GdiCommentMultiFormats {
     EMRFORMAT *Data;            /* Array of comment data */
 } GDICOMMENTMULTIFORMATS;
 
-static void my_unlink(char *filename)
-
 /******************************************************************************
      purpose : portable routine to delete filename
  ******************************************************************************/
+static void my_unlink(char *filename)
 {
 #ifdef UNIX
     unlink(filename);
 #endif
 }
 
-static
-void PicComment(short label, short size, FILE * fp)
+static void PicComment(short label, short size, FILE * fp)
 {
     short long_comment = 0x00A1;
     short short_comment = 0x00A0;
@@ -188,11 +189,10 @@ static char *strdup_new_extension(char *s, char *old_ext, char *new_ext)
     return new_name;
 }
 
-static char *strdup_absolute_path(char *s)
-
 /******************************************************************************
      purpose : return a string containing an absolute path
  ******************************************************************************/
+static char *strdup_absolute_path(char *s)
 {
     char c = PATHSEP;
     char *abs_path = NULL;
@@ -207,12 +207,10 @@ static char *strdup_absolute_path(char *s)
     return abs_path;
 }
 
-
-static char *strdup_tmp_path(char *s)
-
 /******************************************************************************
      purpose : create a tmp file name using only the end of the filename
  ******************************************************************************/
+static char *strdup_tmp_path(char *s)
 {
     char *tmp, *p, *fullname, c;
 
@@ -233,9 +231,6 @@ static char *strdup_tmp_path(char *s)
     return fullname;
 }
 
-
-static char *eps_to_pict(char *s)
-
 /******************************************************************************
      purpose : create a pict file from an EPS file and return file name for
                the pict file.  Ideally this file will contain both the bitmap
@@ -243,6 +238,7 @@ static char *eps_to_pict(char *s)
                bitmap cannot be created, then the EPS is still embedded in the PICT
                file so that at least the printed version will be good.
  ******************************************************************************/
+static char *eps_to_pict(char *s)
 {
     char *cmd, *p, buffer[560];
     size_t cmd_len;
@@ -285,10 +281,10 @@ static char *eps_to_pict(char *s)
     eps = strdup_together(g_home_dir, s);
 
     /* create a bitmap version of the eps file */
-    cmd_len = strlen(eps) + strlen(pict_bitmap) + strlen("convert -crop 0x0 -density ") + 40;
+    cmd_len = strlen(eps) + strlen(pict_bitmap) + strlen("convert -crop 0x0 -density ") + 15;
     cmd = (char *) malloc(cmd_len);
     snprintf(cmd, cmd_len, "convert -crop 0x0 -density %d %s %s", g_dots_per_inch, eps, pict_bitmap);
-    diagnostics(2, "system graphics command = [%s]", cmd);
+    diagnostics(2, "system command = [%s]", cmd);
     err = system(cmd);
     free(cmd);
 
@@ -386,98 +382,118 @@ static char *eps_to_pict(char *s)
     return return_value;
 }
 
-static char *eps_to_png(char *eps)
-
 /******************************************************************************
      purpose : create a png file from an EPS or PS file and return file name
  ******************************************************************************/
+static char *eps_to_png(char *name)
 {
-    char *cmd, *s1, *p, *png;
+    char *cmd, *png, *outfile;
     size_t cmd_len;
 
-    diagnostics(1, "filename = <%s>", eps);
+	outfile = NULL;
+	
+    diagnostics(2, " eps_to_png file = <%s>", name);
 
-    s1 = strdup(eps);
-    if ((p = strstr(s1, ".eps")) == NULL && (p = strstr(s1, ".EPS")) == NULL &&
-      (p = strstr(s1, ".ps")) == NULL && (p = strstr(s1, ".PS")) == NULL) {
-        diagnostics(1, "<%s> is not an EPS or PS file", eps);
-        free(s1);
-        return NULL;
-    }
-
-    strcpy(p, ".png");
-    png = strdup_tmp_path(s1);
-    cmd_len = strlen(eps) + strlen(png) + 40;
+    if (strstr(name, ".eps") != NULL)
+    	outfile = strdup_new_extension(name, ".eps", ".png");
+	else if (strstr(name, ".EPS") != NULL)
+    	outfile = strdup_new_extension(name, ".EPS", ".png");
+	else if (strstr(name, ".ps") != NULL)
+    	outfile = strdup_new_extension(name, ".ps", ".png");
+	else if (strstr(name, ".PS") != NULL)
+    	outfile = strdup_new_extension(name, ".PS", ".png");
+	
+	if (outfile == NULL) return NULL;
+	
+    png = strdup_tmp_path(outfile);
+    cmd_len = strlen(name) + strlen(png) + strlen("convert -units PixelsPerInch -density ") + 15;
     cmd = (char *) malloc(cmd_len);
-    snprintf(cmd, cmd_len, "convert -density %d %s %s", g_dots_per_inch, eps, png);
-    diagnostics(2, "system graphics command = [%s]", cmd);
+    snprintf(cmd, cmd_len, "convert -units PixelsPerInch -density %d %s %s", g_dots_per_inch, name, png);
+    diagnostics(2, "eps_to_png command = [%s]", cmd);
     system(cmd);
 
     free(cmd);
-    free(s1);
+    free(outfile);
     return png;
 }
-
-static char *pdf_to_png(char *pdf)
 
 /******************************************************************************
-     purpose : create a png file from an PDF file and return file name
+     purpose : create a png file from a PDF file and return file name
  ******************************************************************************/
+static char *pdf_to_png(char *name)
 {
-    char *cmd, *s1, *p, *png;
+    char *cmd, *png, *outfile;
     size_t cmd_len;
+    
+/*
+    wh, 2007-08-31 changed back to ImageMagick convert because gs (gswin32c)
+    fails to execute with message "Program too large for working storage" 
+    (in German: "Programm zu gross fuer den Arbeitsspeicher") 
+    under WinXP commandprompt (compiled with djgpp)
+   
+    char *base = "gs -dNOPAUSE -dSAFER -dBATCH -sDEVICE=pngalpha -sOutputFile="; 
+*/
+    char *base = "convert -crop 0x0 -units PixelsPerInch -density";
 
-    diagnostics(1, "filename = <%s>", pdf);
+    outfile = NULL;
+    diagnostics(2, "filename = <%s>", name);
 
-    s1 = strdup(pdf);
-    if ((p = strstr(s1, ".pdf")) == NULL && (p = strstr(s1, ".PDF")) == NULL) {
-        diagnostics(1, "<%s> is not a PDF file", pdf);
-        free(s1);
-        return NULL;
-    }
+    if (strstr(name, ".pdf") != NULL)
+    	outfile = strdup_new_extension(name, ".pdf", ".png");
+	else if (strstr(name, ".PDF") != NULL)
+    	outfile = strdup_new_extension(name, ".PDF", ".png");
 
-    strcpy(p, ".png");
-    png = strdup_tmp_path(s1);
-    cmd_len = strlen(pdf) + strlen(png) + 40;
+    png = strdup_tmp_path(outfile);
+
+    /* 
+    ImageMagick apparently reads the wrong /MediaBox for PDF files and can give
+    us a full-page image (especially a problem with Quartz-generated PDF files).
+    Since GhostScript is required anyway for working with PDF, use it directly.
+    wh, 2007-08-31 changed back to ImageMagick convert:
+        -crop 0x0 solves this problem with producing a full page image,
+        -units PixelsPerInch solves the problem of wrong resolution identification
+    */
+    cmd_len = strlen(name) + strlen(png) + strlen(base) + 40;
     cmd = (char *) malloc(cmd_len);
-    snprintf(cmd, cmd_len, "convert -density %d %s %s", g_dots_per_inch, pdf, png);
-    diagnostics(2, "system graphics command = [%s]", cmd);
+/*  snprintf(cmd, cmd_len, "convert -density %d %s %s", g_dots_per_inch, pdf, png); */
+/*  snprintf(cmd, cmd_len, "%s%s -r%d %s", base, png, g_dots_per_inch, pdf); */
+    snprintf(cmd, cmd_len, "%s %d %s %s", base, g_dots_per_inch, name, png);
+    diagnostics(2, "pdf_to_png command = [%s]", cmd);
     system(cmd);
 
     free(cmd);
-    free(s1);
+    free(outfile);
     return png;
 }
-
-static char *eps_to_emf(char *eps)
 
 /******************************************************************************
      purpose : create a wmf file from an EPS file and return file name
  ******************************************************************************/
+static char *eps_to_emf(char *name)
 {
     FILE *fp;
-    char *cmd, *s1, *p, *emf;
+    char *cmd, *emf, *outfile;
     size_t cmd_len;
-
+	
     char ans[50];
     long width, height;
 
-    diagnostics(1, "filename = <%s>", eps);
+	outfile = NULL;
+    diagnostics(2, "filename = <%s>", name);
 
-    s1 = strdup(eps);
-    if ((p = strstr(s1, ".eps")) == NULL && (p = strstr(s1, ".EPS")) == NULL) {
-        diagnostics(1, "<%s> is not an EPS file", eps);
-        free(s1);
-        return NULL;
-    }
+    if (strstr(name, ".eps") != NULL)
+    	outfile = strdup_new_extension(name, ".eps", ".wmf");
+	else if (strstr(name, ".EPS") != NULL)
+    	outfile = strdup_new_extension(name, ".EPS", ".wmf");
 
-    strcpy(p, ".wmf");
-    emf = strdup_tmp_path(s1);
+	if (outfile == NULL) return NULL;
+
+    emf = strdup_tmp_path(outfile);
 
     /* Determine bounding box for EPS file */
-    cmd_len = strlen(eps) + strlen("identify -format \"%w %h\" ") + 1;
+    cmd_len = strlen(name) + strlen("identify -format \"%w %h\" ") + 1;
     cmd = (char *) malloc(cmd_len);
-    snprintf(cmd, cmd_len, "identify -format \"%%w %%h\" %s", eps);
+    snprintf(cmd, cmd_len, "identify -format \"%%w %%h\" %s", name);
     fp = popen(cmd, "r");
     if (fgets(ans, 50, fp) != NULL)
         sscanf(ans, "%ld %ld", &width, &height);
@@ -492,17 +508,36 @@ static char *eps_to_emf(char *eps)
 
     /* write EMRFORMAT containing EPS */
 
-    free(s1);
+    free(outfile);
     fclose(fp);
     return emf;
 }
 
+/******************************************************************************
+     purpose : figure out appropriate x and y scaling
+		h        and w        are the actual height and width of the image in twips
+        target_h and target_w are the desired height and width of the image in twips
+        s                     is the scaling desired as a fraction
+ ******************************************************************************/
+static void AdjustScaling(double h, double w, double target_h, double target_w, double s, int *sx, int *sy)
+{
+	if (target_h != 0 && h != 0) 
+		*sy = (int) (100.0 * target_h / h);
+	else
+		*sy = (int) (s * 100);
+	
+	if (target_w == 0 || w == 0)
+		*sx = *sy;
+	else
+		*sx = (int) (100.0 * target_w / w);
 
-static void PutHexFile(FILE * fp)
+	diagnostics(4,"AdjustScaling xscale=%d yscale=%d", *sx, *sy);
+}
 
 /******************************************************************************
      purpose : write entire file to RTF as hex
  ******************************************************************************/
+static void PutHexFile(FILE * fp)
 {
     int i, c;
 
@@ -516,23 +551,23 @@ static void PutHexFile(FILE * fp)
     }
 }
 
-static void PutPictFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
      purpose : Include .pict file in RTF
  ******************************************************************************/
+static void PutPictFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     FILE *fp;
     char *pict;
     short buffer[5];
     short top, left, bottom, right;
     int width, height;
+    int sx,sy;
 
     if (full_path)
         pict = strdup(s);
     else
         pict = strdup_together(g_home_dir, s);
-    diagnostics(1, "PutPictFile <%s>", pict);
+    diagnostics(2, "PutPictFile <%s>", pict);
 
     fp = fopen(pict, "rb");
     free(pict);
@@ -564,11 +599,10 @@ static void PutPictFile(char *s, double scale, double baseline, int full_path)
     diagnostics(4, "left = %d, right = %d", left, right);
     diagnostics(4, "width = %d, height = %d", width, height);
     fprintRTF("\n{\\pict\\macpict\\picw%d\\pich%d\n", width, height);
-    if (scale != 1.0) {
-        int iscale = (int) (scale * 100);
 
-        fprintRTF("\\picscalex%d\\picscaley%d", iscale, iscale);
-    }
+	AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
+    if (sx != 100 && sy != 100)
+        fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
     fseek(fp, -10L, SEEK_CUR);
     PutHexFile(fp);
@@ -576,108 +610,233 @@ static void PutPictFile(char *s, double scale, double baseline, int full_path)
     fclose(fp);
 }
 
-static void GetPngSize(char *s, unsigned long *w, unsigned long *h)
+/*
+typedef struct _PngChunk
+{
+    DWORD DataLength;   Size of Data field in bytes
+    DWORD Type;         Code identifying the type of chunk
+    BYTE  Data[];       The actual data stored by the chunk
+    DWORD Crc;          CRC-32 value of the Type and Data fields
+} PNGCHUNK;
+
+typedef struct _pHYsChunkEntry
+{
+   DWORD PixelsPerUnitX;    Pixels per unit, X axis 
+   DWORD PixelsPerUnitY;    Pixels per unit, Y axis 
+   BYTE  UnitSpecifier;     0 = unknown, 1 = meter 
+} PHYSCHUNKENTRY;
+*/
+
+static unsigned char * getPngChunk(FILE *fp, char *s)
+{
+	unsigned long size, crc;
+	char head[5];
+	unsigned char *data;
+	
+	head[4]='\0';
+	
+	diagnostics(4, "getPngChunk ... seeking <%s>",s);
+	data = NULL;
+	do {
+		int i;
+		if (data!=NULL) free(data);
+				
+		fread(&size, 4, 1, fp);
+		if (g_little_endian) size = LETONL(size);
+		
+		for (i=0; i<4; i++) {
+			head[i] = (char) fgetc(fp);
+			if (feof(fp)) return NULL;
+		}
+
+		if (strcmp(head,"IEND") == 0) return NULL;
+		
+		diagnostics(4,"found chunk <%s> size %ld bytes",head,size);
+		data = malloc(size);
+		if (data == NULL) return NULL;
+		
+		fread(data, size, 1, fp);
+		fread(&crc, 4, 1, fp);
+	
+		
+	} while (strcmp(s,head)!=0);
+	
+	return data;	
+}
 
 /******************************************************************************
      purpose : determine height and width of file
+               w is the size in pixels
+               xres is the number of pixels per meter
  ******************************************************************************/
+static void GetPngSize(char *s, unsigned long *w, unsigned long *h, unsigned long *xres, unsigned long *yres, int *bad_res)
 {
     FILE *fp;
+    unsigned long *p;
     unsigned char buffer[16];
-    unsigned long width, height;
     char reftag[9] = "\211PNG\r\n\032\n";
-    char refchunk[5] = "IHDR";
+    unsigned char *data = NULL;
 
     *w = 0;
     *h = 0;
+    *xres = (unsigned long) POINTS_PER_METER;
+    *yres = (unsigned long) POINTS_PER_METER;
+    *bad_res = 1;
+    
     fp = fopen(s, "rb");
     if (fp == NULL)
         return;
 
-    if (fread(buffer, 1, 16, fp) < 16) {
+    if (fread(buffer, 1, 8, fp) < 8) {
         diagnostics(WARNING, "Cannot read graphics file <%s>", s);
         fclose(fp);
         return;
     }
 
-    if (memcmp(buffer, reftag, 8) != 0 || memcmp(buffer + 12, refchunk, 4) != 0) {
+    if (memcmp(buffer, reftag, 8) != 0) {
         diagnostics(WARNING, "Graphics file <%s> is not a PNG file!", s);
         fclose(fp);
         return;
     }
 
-    if (fread(&width, 4, 1, fp) != 1 || fread(&height, 4, 1, fp) != 1) {
-        diagnostics(WARNING, "Cannot read graphics file <%s>", s);
-        fclose(fp);
+	data = getPngChunk(fp,"IHDR");
+	if (data == NULL) {
+        diagnostics(WARNING, "Graphics file <%s>: could not locate IHDR chunk!", s);
         return;
-    }
+	}
 
-    if (g_little_endian) {
-        width = LETONL(width);
-        height = LETONL(height);
-    }
+	p = (unsigned long *) data;	
+	*w = (g_little_endian) ? LETONL(*p) : *p;
+	p++;
+	*h = (g_little_endian) ? LETONL(*p) : *p;
+	free(data);
+	
+	data = getPngChunk(fp,"pHYs");
+	if (data == NULL) {
+        diagnostics(4, "Graphics file <%s>: could not locate pHYs chunk!", s);
+        return;
+	}
 
-    *w = width;
-    *h = height;
+	p = (unsigned long *) data;	
+	*xres = (g_little_endian) ? LETONL(*p) : *p;
+	p++;
+	*yres = (g_little_endian) ? LETONL(*p) : *p;
+	
+	free(data);
+
+	/* dots per inch, not per meter! */
+	if (*xres < POINTS_PER_METER) {
+		*bad_res = 1;
+		diagnostics(4, "bogus resolution in png image! ");
+		diagnostics(4, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
+		diagnostics(4, "xres = %ld, yres = %ld, pixels/in", 
+		(unsigned long)( (double)(*xres *72.0)/POINTS_PER_METER), 
+		(unsigned long)((double)(*yres * 72.0) /POINTS_PER_METER));
+		*xres *= POINTS_PER_METER/72.0;
+		*yres *= POINTS_PER_METER/72.0;
+	} else 
+		*bad_res = 0;
+	
+	
+    diagnostics(4, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
+    diagnostics(4, "xres = %ld, yres = %ld, pixels/in", 
+    (unsigned long)( (double)(*xres *72.0)/POINTS_PER_METER), 
+    (unsigned long)((double)(*yres * 72.0) /POINTS_PER_METER));
+    
     fclose(fp);
 }
 
-void PutPngFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
      purpose : Include .png file in RTF
+     
+\pict {...}
+\picscalex22\picscaley22
+\piccropl0\piccropr0\piccropt0\piccropb0
+\picw32032\pich29633\picwgoal18160\pichgoal16800
+\pngblip
+
+There are three scaling factors floating around
+	convert_scale = the scaling factor from converting the PNG ... 
+	encode_scale  = POINTS_PER_METER/xres (scaling factor inside the PNG)
+	scale         = the scaling factor given by \includegraphics
+
+Basically, if the PNG was created with a correct value for the resolution
+then we leave things as they are.  On the other hand, an incorrect value 
+means that the Word will assume the image resolution is 1/72 of an inch.  
+Consequently, when this happens, scale must be altered by the convert_scale 
+value.  As you can see below, we never use encode_scale.
+
+On entry baseline should be in pixels.
  ******************************************************************************/
+void PutPngFile(char *s, double height_goal, double width_goal, double scale, 
+                         double convert_scale, double baseline, int full_path)
 {
     FILE *fp;
     char *png;
-    unsigned long width, height, w, h, b;
-    int iscale;
-
+    unsigned long width, height, w, h, b, xres, yres;
+	int sx, sy, bad_res;
+	
     if (full_path)
         png = strdup(s);
     else
         png = strdup_together(g_home_dir, s);
-    diagnostics(2, "PutPngFile <%s>", png);
+    diagnostics(4, "PutPngFile <%s>", png);
 
-    GetPngSize(png, &width, &height);
+    GetPngSize(png, &width, &height, &xres, &yres,&bad_res);
+    if (width == 0 || height == 0) return;
 
-    diagnostics(4, "width = %ld, height = %ld, baseline = %g", width, height, baseline);
-
-    if (width == 0 || height == 0)
-        return;
-
+	/* make sure that we can open the file */
     fp = fopen(png, "rb");
     free(png);
-    if (fp == NULL)
-        return;
+    if (fp == NULL) return;
 
-    w = (unsigned long) (100000.0 * width) / (20 * POINTS_PER_M);
-    h = (unsigned long) (100000.0 * height) / (20 * POINTS_PER_M);
-    b = (unsigned long) (100000.0 * baseline * scale) / (20 * POINTS_PER_M);
-
-    diagnostics(4, "width = %ld, height = %ld, baseline = %ld", w, h, b);
-
+	/* only modify when the PNG resolution is bad and convert_scale is non-zero */
+	if (bad_res && convert_scale != 0) 
+		scale *= convert_scale;
+		
+	/* twips calculation                                             */
+	/*                       points        meter       20 twips      */
+	/* width =  (pixels) * ----------- * ---------  * -----------    */
+	/*                       meter         pixels      1 point       */
+	width    *= POINTS_PER_METER / xres * 20.0;
+	height   *= POINTS_PER_METER / yres * 20.0;
+	
+    /* size is in units that equal 1/100 of a millimeter  (10 microns). */    
+	/*       dwips       100,000 (units)     1 points        meter      */
+	/* w =  -------- * ------------------ * ---------  * -----------    */
+	/*         1            1 meter          20 dwips      1 point      */
+    w = (unsigned long) (100000.0 * width           ) / (20 * POINTS_PER_METER);
+    h = (unsigned long) (100000.0 * height          ) / (20 * POINTS_PER_METER);
+    b = (unsigned long) (100000.0 * baseline * scale) / (20 * POINTS_PER_METER); 
+    
+	AdjustScaling(height,width,height_goal,width_goal,scale,&sx,&sy);
+	
+	diagnostics(4, "scale      = %6.3f,            convert     = %6.3f", scale, convert_scale);
+    diagnostics(4, "width_goal = %6ld twips,      height_goal = %6ld twips", (int)width_goal, (int)height_goal);
+    diagnostics(4, "picw       = %6ld microns,    pich        = %6ld microns", w*10, h*10);
+    diagnostics(4, "picwgoal   = %6ld twips,      pichgoal    = %6ld twips", width, height);
+    diagnostics(4, "sx         = %6ld percent,    sy          = %6ld percent", sx, sy);
+    
+    /* Write the header for the png bitmap */
     fprintRTF("\n{");
-    if (b)
-        fprintRTF("\\dn%ld", b);
-    fprintRTF("\\pict\\pngblip\\picw%ld\\pich%ld", w, h);
-    fprintRTF("\\picwgoal%ld\\pichgoal%ld", width * 20, height * 20);
-    if (scale != 1.0) {
-        iscale = (int) (scale * 100);
-        fprintRTF("\\picscalex%d\\picscaley%d", iscale, iscale);
-    }
-    fprintRTF("\n");
+    if (b) fprintRTF("\\dn%ld", b); 
+    fprintRTF("\\pict");
+    if (sx != 100 && sy != 100) fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
+    fprintRTF("\\picw%ld\\pich%ld", w, h);
+    fprintRTF("\\picwgoal%ld\\pichgoal%ld", width, height);
+    fprintRTF("\\pngblip\n");
+
+	/* Now actually write the PNG file out */
     rewind(fp);
     PutHexFile(fp);
     fprintRTF("}\n");
     fclose(fp);
 }
 
-static void PutJpegFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
      purpose : Include .jpeg file in RTF
  ******************************************************************************/
+static void PutJpegFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     FILE *fp;
     char *jpg;
@@ -685,6 +844,7 @@ static void PutJpegFile(char *s, double scale, double baseline, int full_path)
     int m=0, c;
     unsigned short width, height;
     unsigned long w, h;
+    int sx, sy;
 
     jpg = strdup_together(g_home_dir, s);
     fp = fopen(jpg, "rb");
@@ -725,15 +885,14 @@ static void PutJpegFile(char *s, double scale, double baseline, int full_path)
 
     diagnostics(4, "width = %d, height = %d", width, height);
 
-    w = (unsigned long) (100000.0 * width) / (20 * POINTS_PER_M);
-    h = (unsigned long) (100000.0 * height) / (20 * POINTS_PER_M);
+    w = (unsigned long) (100000.0 * width) / (20 * POINTS_PER_METER);
+    h = (unsigned long) (100000.0 * height) / (20 * POINTS_PER_METER);
     fprintRTF("\n{\\pict\\jpegblip\\picw%ld\\pich%ld", w, h);
     fprintRTF("\\picwgoal%ld\\pichgoal%ld\n", width * 20, height * 20);
-    if (scale != 1.0) {
-        int iscale = (int) (scale * 100);
 
-        fprintRTF("\\picscalex%d\\picscaley%d", iscale, iscale);
-    }
+	AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
+    if (sx != 100 && sy != 100)
+        fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
     rewind(fp);
     PutHexFile(fp);
@@ -741,7 +900,7 @@ static void PutJpegFile(char *s, double scale, double baseline, int full_path)
     fclose(fp);
 }
 
-static void PutEmfFile(char *s, double scale, double baseline, int full_path)
+static void PutEmfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     FILE *fp;
     char *emf;
@@ -757,12 +916,13 @@ static void PutEmfFile(char *s, double scale, double baseline, int full_path)
     long FrameBottom;           /* Bottom side of inclusive picture frame */
     unsigned long Signature;    /* Signature ID (always 0x464D4520) */
     unsigned long w, h, width, height;
-
+	int sx, sy;
+	
     if (full_path)
         emf = strdup(s);
     else
         emf = strdup_together(g_home_dir, s);
-    diagnostics(1, "PutEmfFile <%s>", emf);
+    diagnostics(2, "PutEmfFile <%s>", emf);
     fp = fopen(emf, "rb");
     free(emf);
     if (fp == NULL)
@@ -811,16 +971,15 @@ static void PutEmfFile(char *s, double scale, double baseline, int full_path)
     height = (unsigned long) (BoundsBottom - BoundsTop);
     width = (unsigned long) (BoundsRight - BoundsLeft);
 
-    w = (unsigned long) ((100000.0 * width) / (20 * POINTS_PER_M));
-    h = (unsigned long) ((100000.0 * height) / (20 * POINTS_PER_M));
+    w = (unsigned long) ((100000.0 * width) / (20 * POINTS_PER_METER));
+    h = (unsigned long) ((100000.0 * height) / (20 * POINTS_PER_METER));
     diagnostics(4, "width = %ld, height = %ld", width, height);
     fprintRTF("\n{\\pict\\emfblip\\picw%ld\\pich%ld", w, h);
     fprintRTF("\\picwgoal%ld\\pichgoal%ld\n", width * 20, height * 20);
-    if (scale != 1.0) {
-        int iscale = (int) (scale * 100);
 
-        fprintRTF("\\picscalex%d\\picscaley%d", iscale, iscale);
-    }
+	AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
+    if (sx != 100 && sy != 100)
+        fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
 /* write file */
     rewind(fp);
@@ -834,11 +993,10 @@ static void PutEmfFile(char *s, double scale, double baseline, int full_path)
     fclose(fp);
 }
 
-static void PutWmfFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
  purpose   : Insert WMF file (from g_home_dir) into RTF file
  ******************************************************************************/
+static void PutWmfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     FILE *fp;
     char *wmf;
@@ -850,12 +1008,12 @@ static void PutWmfFile(char *s, double scale, double baseline, int full_path)
     short Top;                  /* Top coordinate in twips */
     short Right;                /* Right coordinate in twips */
     short Bottom;               /* Bottom coordinate in twips */
-    int width, height;
+    int width, height, sx, sy;
     unsigned long int magic_number = (unsigned long int) 0x9AC6CDD7;
 
     /* open the proper file */
     wmf = strdup_together(g_home_dir, s);
-    diagnostics(1, "PutWmfFile <%s>", wmf);
+    diagnostics(2, "PutWmfFile <%s>", wmf);
     fp = fopen(wmf, "rb");
     free(wmf);
     if (fp == NULL)
@@ -914,11 +1072,10 @@ static void PutWmfFile(char *s, double scale, double baseline, int full_path)
 
     diagnostics(4, "width = %d, height = %d", width, height);
     fprintRTF("\n{\\pict\\wmetafile1\\picw%d\\pich%d\n", width, height);
-    if (scale != 1.0) {
-        int iscale = (int) (scale * 100);
 
-        fprintRTF("\\picscalex%d\\picscaley%d", iscale, iscale);
-    }
+	AdjustScaling(height,width,height0,width0,scale,&sx,&sy);
+    if (sx != 100 && sy != 100)
+        fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
     rewind(fp);
     PutHexFile(fp);
@@ -931,32 +1088,39 @@ static void PutWmfFile(char *s, double scale, double baseline, int full_path)
     fclose(fp);
 }
 
-static void PutPdfFile(char *s, double scale, double baseline, int full_path)
+/******************************************************************************
+ purpose   : convert pdf to png and insert in RTF file
+ ******************************************************************************/
+static void PutPdfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     char *png;
-
-    diagnostics(2, "PutPdfFile filename = <%s>", s);
+    double convert_scale = 72.0 / g_dots_per_inch;
+    
+    diagnostics(4, "PutPdfFile filename = <%s>", s);
 
     png = pdf_to_png(s);
-    scale *= 72.0 / g_dots_per_inch;
+        	
     if (png) {
-        PutPngFile(png, scale, baseline, TRUE);
+        PutPngFile(png, height0, width0, scale, convert_scale, baseline, TRUE);
         my_unlink(png);
         free(png);
     }
 }
 
-static void PutEpsFile(char *s, double scale, double baseline, int full_path)
+/******************************************************************************
+ purpose   : convert eps to png and insert in RTF file
+ ******************************************************************************/
+static void PutEpsFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     char *png, *emf, *pict;
+    double convert_scale = 72.0 / g_dots_per_inch;
 
-    diagnostics(2, "PutEpsFile filename = <%s>", s);
+    diagnostics(4, "PutEpsFile filename = <%s>, scale=%f5.3", s,scale);
 
     if (1) {
         png = eps_to_png(s);
-        scale *= 72.0 / g_dots_per_inch;
         if (png) {
-            PutPngFile(png, scale, baseline, TRUE);
+            PutPngFile(png, height0, width0, scale, convert_scale, baseline, TRUE);
             my_unlink(png);
             free(png);
         }
@@ -965,7 +1129,7 @@ static void PutEpsFile(char *s, double scale, double baseline, int full_path)
     if (0) {
         pict = eps_to_pict(s);
         if (pict) {
-            PutPictFile(pict, scale, baseline, TRUE);
+            PutPictFile(pict, height0, width0, scale, baseline, TRUE);
             my_unlink(pict);
             free(pict);
         }
@@ -974,23 +1138,23 @@ static void PutEpsFile(char *s, double scale, double baseline, int full_path)
     if (0) {
         emf = eps_to_emf(s);
         if (emf) {
-            PutEmfFile(emf, scale, baseline, TRUE);
+            PutEmfFile(emf, height0, width0, scale, baseline, TRUE);
             my_unlink(emf);
             free(emf);
         }
     }
 }
 
-static void PutTiffFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
  purpose   : Insert TIFF file (from g_home_dir) into RTF file as a PNG image
  ******************************************************************************/
+static void PutTiffFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     char *cmd, *tiff, *png, *tmp_png;
     size_t cmd_len;
+    double convert_scale = 0.0;
 
-    diagnostics(1, "filename = <%s>", s);
+    diagnostics(2, "filename = <%s>", s);
     png = strdup_new_extension(s, ".tiff", ".png");
     if (png == NULL) {
         png = strdup_new_extension(s, ".TIFF", ".png");
@@ -1007,7 +1171,7 @@ static void PutTiffFile(char *s, double scale, double baseline, int full_path)
     diagnostics(2, "system graphics command = [%s]", cmd);
     system(cmd);
 
-    PutPngFile(tmp_png, scale, baseline, TRUE);
+    PutPngFile(tmp_png, height0, width0, scale, convert_scale, baseline, TRUE);
     my_unlink(tmp_png);
 
     free(tmp_png);
@@ -1016,16 +1180,16 @@ static void PutTiffFile(char *s, double scale, double baseline, int full_path)
     free(png);
 }
 
-static void PutGifFile(char *s, double scale, double baseline, int full_path)
-
 /******************************************************************************
  purpose   : Insert GIF file (from g_home_dir) into RTF file as a PNG image
  ******************************************************************************/
+static void PutGifFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
 {
     char *cmd, *gif, *png, *tmp_png;
     size_t cmd_len;
-
-    diagnostics(1, "filename = <%s>", s);
+	double convert_scale = 0.0;
+	
+    diagnostics(2, "filename = <%s>", s);
     png = strdup_new_extension(s, ".gif", ".png");
     if (png == NULL) {
         png = strdup_new_extension(s, ".GIF", ".png");
@@ -1042,7 +1206,7 @@ static void PutGifFile(char *s, double scale, double baseline, int full_path)
     diagnostics(2, "system graphics command = [%s]", cmd);
     system(cmd);
 
-    PutPngFile(tmp_png, scale, baseline, TRUE);
+    PutPngFile(tmp_png, height0, width0, scale, convert_scale, baseline, TRUE);
     my_unlink(tmp_png);
 
     free(tmp_png);
@@ -1051,11 +1215,10 @@ static void PutGifFile(char *s, double scale, double baseline, int full_path)
     free(png);
 }
 
-static int ReadLine(FILE * fp)
-
 /****************************************************************************
 purpose: reads up to and and including a line ending (CR, CRLF, or LF)
  ****************************************************************************/
+static int ReadLine(FILE * fp)
 {
     int thechar;
 
@@ -1081,12 +1244,12 @@ purpose: reads up to and and including a line ending (CR, CRLF, or LF)
     }
 }
 
-long GetBaseline(char *s, char *pre)
-
 /****************************************************************************
 purpose: reads a .pbm file to determine the baseline for an equation
-		 the .pbm file should have dimensions of 1xheight
+		 the .pbm file should have dimensions of 1 x height
+		 returns the baseline height in pixels
  ****************************************************************************/
+long GetBaseline(char *s, char *pre)
 {
     FILE *fp;
     int thechar;
@@ -1168,43 +1331,46 @@ static char *get_latex2png_name()
 #endif
 }
 
-void PutLatexFile(char *s, double scale, char *pre)
-
 /******************************************************************************
  purpose   : Convert LaTeX to Bitmap and insert in RTF file
  ******************************************************************************/
+void PutLatexFile(char *s, double height0, double width0, double scale, char *pre)
 {
     char *png, *cmd, *l2p;
-    int err, baseline, second_pass;
+    int err, baseline, second_pass, bmoffset,bad_res;
     size_t cmd_len;
-    unsigned long width, height, rw, rh;
+    unsigned long width, height, rw, rh, xres, yres;
     unsigned long maxsize = (unsigned long) (32767.0 / 20.0);
     int resolution = g_dots_per_inch;   /* points per inch */
-
-    diagnostics(4, "Entering PutLatexFile");
+	double convert_scale = 72.0 / g_dots_per_inch;
+	
+    diagnostics(WARNING, "Rendering LaTeX construct (e.g. equation) as a bitmap...");
 
     png = strdup_together(s, ".png");
     l2p = get_latex2png_name();
+    bmoffset = resolution / 72 + 2;
 
-    cmd_len = strlen(l2p) + strlen(s) + 25;
+    cmd_len = strlen(l2p) + strlen(s) + 14;
     if (g_home_dir)
-        cmd_len += strlen(g_home_dir);
+        cmd_len += strlen(g_home_dir) + 6;
+    if (bmoffset > 9)
+        cmd_len += 1;
 
     cmd = (char *) malloc(cmd_len);
 
     do {
         second_pass = FALSE;    /* only needed if png is too large for Word */
         if (g_home_dir == NULL)
-            snprintf(cmd, cmd_len, "%s -d %d %s", l2p, resolution, s);
+            snprintf(cmd, cmd_len, "%s -d %d -o %d %s", l2p, resolution, bmoffset, s);
         else
-            snprintf(cmd, cmd_len, "%s -d %d -H \"%s\" %s", l2p, resolution, g_home_dir, s);
+            snprintf(cmd, cmd_len, "%s -d %d -o %d -H \"%s\" %s", l2p, resolution, bmoffset, g_home_dir, s);
 
         diagnostics(2, "system graphics command = [%s]", cmd);
         err = system(cmd);
         if (err)
             break;
 
-        GetPngSize(png, &width, &height);
+        GetPngSize(png, &width, &height,&xres,&yres,&bad_res);
         baseline = GetBaseline(s, pre);
         diagnostics(4, "png size height=%d baseline=%d width=%d", height, baseline, width);
 
@@ -1216,8 +1382,9 @@ void PutLatexFile(char *s, double scale, char *pre)
         }
     } while (resolution > 10 && ((width > maxsize) || (height > maxsize)));
 
+	
     if (err == 0)
-        PutPngFile(png, scale * 72.0 / resolution, (double) baseline, TRUE);
+        PutPngFile(png, height0, width0, scale, convert_scale, (double) baseline, TRUE);
 
     free(l2p);
     free(png);
@@ -1243,11 +1410,10 @@ char *upper_case_string(char *s)
     return t;
 }
 
-char *exists_with_extension(char *s, char *ext)
-
 /******************************************************************************
  purpose   : return s.ext or s.EXT if it exists otherwise return NULL
  ******************************************************************************/
+char *exists_with_extension(char *s, char *ext)
 {
     char *t, *x;
     FILE *fp;
@@ -1276,11 +1442,10 @@ char *exists_with_extension(char *s, char *ext)
     return NULL;
 }
 
-int has_extension(char *s, char *ext)
-
 /******************************************************************************
  purpose   : return true if ext is at end of s (case insensitively)
  ******************************************************************************/
+int has_extension(char *s, char *ext)
 {
     char *t;
 
@@ -1360,65 +1525,224 @@ char *append_graphic_extension(char *s)
 
 }
 
+/******************************************************************************
+  purpose: handle Includegraphics options 
+
+		bb=llx lly urx ury (bounding box),
+		width=h_length,
+		height=v_length,
+		angle=angle,
+		scale=factor,
+		clip=true/false,
+		draft=true/false.
+ ******************************************************************************/
+static void HandleGraphicsOptions(char *opt, char *opt2, double *h, double *w, double *s)
+{
+	char *key, *value;
+	double llx=0;
+	double lly=0;
+	double urx=0;
+	double ury=0;
+
+	*s=1.0;
+	*h=0;
+	*w=0;
+
+	diagnostics(2,"HandleGraphicsOptions <%s> <%s>",opt,opt2);
+			
+/*  \includegraphics[llx,lly][urx,ury]{filename} */
+	if (opt && opt2) {
+		
+		opt = keyvalue_pair(opt,&key,&value);
+		if (!key) return;
+		llx=getStringDimension(key);
+		free(key);
+		
+		opt = keyvalue_pair(opt,&key,&value);
+		if (!key) return;
+		lly=getStringDimension(key);
+		free(key);
+
+		opt2 = keyvalue_pair(opt2,&key,&value);
+		if (!key) return;
+		urx=getStringDimension(key);
+		free(key);
+		
+		opt2 = keyvalue_pair(opt2,&key,&value);
+		if (!key) return;
+		ury=getStringDimension(key);
+		free(key);
+
+		*h = ury-lly;
+		*w = urx-llx;
+		return;
+	} 
+		
+
+/*  \includegraphics[width,height]{filename} for graphics */
+
+	if (g_graphics_package == GRAPHICS_GRAPHICS && opt) {
+
+		opt = keyvalue_pair(opt,&key,&value);
+		if (!key) return;
+		*w=getStringDimension(key);
+		free(key);
+		
+		opt = keyvalue_pair(opt,&key,&value);
+		if (!key) return;
+		*h=getStringDimension(key);
+		free(key);
+
+		return;
+	}
+
+/*  \includegraphics[key=value,key1=value1]{filename} for graphicx */
+
+	while (opt) {		
+		opt = keyvalue_pair(opt,&key,&value);
+		
+		if (key) {
+			diagnostics(5,"graphicx key=%s, value=%s", key, value);
+
+			if (strstr(key,"height"))
+				*h=getStringDimension(value);
+	
+			else if (strstr(key,"natheight")) 
+				*h=getStringDimension(value);
+	
+			else if (strstr(key,"totalheight"))
+				*h=getStringDimension(value);
+	
+			else if (strstr(key,"width")) 
+				*w=getStringDimension(value);
+	
+			else if (strstr(key,"natwidth")) 
+				*w=getStringDimension(value);
+			
+			else if (strstr(key,"bbllx")) 
+				llx=getStringDimension(value);
+	
+			else if (strstr(key,"bblly"))
+				lly=getStringDimension(value);
+	
+			else if (strstr(key,"bburx"))
+				urx=getStringDimension(value);
+	
+			else if (strstr(key,"bbury"))
+				ury=getStringDimension(value);
+			
+			else if (strstr(key,"bb")) {
+				llx=getStringDimension(value);
+				lly=getStringDimension(value);
+				urx=getStringDimension(value);
+				ury=getStringDimension(value);
+				
+			} else if (strstr(key,"scale")) {
+				sscanf(value, "%lf", s);   /* just a float, not a dimension */
+			}
+			
+			free(key);
+		}
+		
+		if (value) free(value);	
+	}
+
+    diagnostics(3, "image scale  = %lf", *s);
+    diagnostics(3, "image height = %lf", *h);
+    diagnostics(3, "image width  = %lf", *w);
+	
+	if (urx)
+		*w=urx-llx;
+	if (ury)
+		*h=ury-lly;
+}
+
+/******************************************************************************
+  purpose: handle psfig options \psfig{figure=filename.ps,height=1in,width=3mm}
+ ******************************************************************************/
+static void HandlePsfigOptions(char *opt, char **filename, double *h, double *w, double *s)
+{
+	*s=1.0;
+	*h=0.0;
+	*w=0.0;
+	*filename = NULL;
+	
+	diagnostics(2,"HandlePsfigOptions <%s>",opt);
+		
+	while (opt) {
+		char *key, *value;
+		
+		opt = keyvalue_pair(opt,&key,&value);
+		
+		if (key) {
+			diagnostics(5,"psfig key=%s, value=%s", key, value);
+			if (strstr(key,"figure"))
+				*filename=strdup(value);
+	
+			else if (strstr(key,"height")) {
+				*h = getStringDimension(value);
+			}
+	
+			else if (strstr(key,"width")) {
+				*w = getStringDimension(value);
+			}
+			
+			free(key);
+		}
+		
+		if (value) free(value);	
+	}
+}
+
+
+/******************************************************************************
+  purpose: handle various methods for importing graphics
+           usually by converting to png image and inserting
+			   \includegraphics*[0,0][5,5]{file.pict}
+			   \epsffile{filename.eps}
+			   \epsfbox[0 0 30 50]{filename.ps}
+			   \BoxedEPSF{filename [scaled nnn]}
+			   \psfig{figure=filename,height=hhh,width=www}
+ ******************************************************************************/
 void CmdGraphics(int code)
-
-/*
-\includegraphics[parameters]{filename}
-
-where parameters is a comma-separated list of any of the following: 
-bb=llx lly urx ury (bounding box),
-width=h_length,
-height=v_length,
-angle=angle,
-scale=factor,
-clip=true/false,
-draft=true/false.
-
-code=0 => includegraphics
-code=1 => epsffile
-code=2 => epsfbox
-code=3 => \BoxedSPSF
-code=4 => psfig
-*/
 {
     char *options, *options2;
     char *filename=NULL, *fullpathname, *fullname;
     double scale = 1.0;
     double baseline = 0.0;
-    double x;
-    char *p;
+    double height =0;
+    double width = 0;
 
-    if (code == 0) {            /* could be \includegraphics*[0,0][5,5]{file.pict} */
+    if (code == FIGURE_INCLUDEGRAPHICS) {
         options = getBracketParam();
         options2 = getBracketParam();
-        if (options2)
-            free(options2);
+        filename = getBraceParam();
 
-        if (options) {          /* \includegraphics[scale=0.5]{file.png} */
-            p = strstr(options, "scale");
-            if (p) {
-                p = strchr(p, '=');
-                if (p && (sscanf(p + 1, "%lf", &x) == 1))
-                    scale = x;
-            }
-            free(options);
+        HandleGraphicsOptions(options,options2,&height,&width,&scale);
+        
+        if (options) free(options);
+        if (options2)free(options2);
+    }
+
+    if (code == FIGURE_EPSFFILE) {
+        filename = getBraceParam();
+    }
+
+    if (code == FIGURE_EPSFBOX) { 
+        int n,llx,lly,urx,ury;
+        options = getBracketParam();
+        if (options) {
+        	n = sscanf(options,"%d %d %d %d", &llx,&lly,&urx,&ury);
+        	if (n==4) {
+        		width  = (urx - llx) * 20;
+        		height = (ury - lly) * 20;
+        	}
+        	free(options);
         }
         filename = getBraceParam();
-        diagnostics(1, "image scale = %g", scale);
     }
 
-    if (code == 1) {            /* \epsffile{filename.eps} */
-        filename = getBraceParam();
-    }
-
-    if (code == 2) {            /* \epsfbox[0 0 30 50]{filename.ps} */
-        options = getBracketParam();
-        if (options)
-            free(options);
-        filename = getBraceParam();
-    }
-
-    if (code == 3) {            /* \BoxedEPSF{filename [scaled nnn]} */
+    if (code == FIGURE_BOXEDEPSF) { 
         char *s;
 
         filename = getBraceParam();
@@ -1427,77 +1751,69 @@ code=4 => psfig
             *s = '\0';
     }
 
-    if (code == 4) {            /* \psfig{figure=filename,height=hhh,width=www} */
-        char *s, *t;
-
-        filename = getBraceParam();
-        s = strstr(filename, "figure=");
-        if (!s)
-            return;
-        s += strlen("figure=");
-        t = strchr(s, ',');
-        if (t)
-            *t = '\0';
-        t = strdup(s);
-        free(filename);
-        filename = t;
+    if (code == FIGURE_PSFIG) { 
+        options = getBraceParam();
+        HandlePsfigOptions(options,&filename,&height,&width,&scale);
+        diagnostics(4,"figure=%s, height=%d, width=%d, scale=%d",filename, height, width, scale);
+        free(options);
     }
 
-    SetTexMode(MODE_HORIZONTAL);
-
-    fullname = strdup_absolute_path(filename);
-    fullpathname = append_graphic_extension(fullname);
-    free(fullname);
-
-    if (has_extension(fullpathname, ".pict"))
-        PutPictFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".png"))
-        PutPngFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".gif"))
-        PutGifFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".emf"))
-        PutEmfFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".wmf"))
-        PutWmfFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".eps"))
-        PutEpsFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".pdf"))
-        PutPdfFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".ps"))
-        PutEpsFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".tiff"))
-        PutTiffFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".tif"))
-        PutTiffFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".jpg"))
-        PutJpegFile(fullpathname, scale, baseline, TRUE);
-
-    else if (has_extension(fullpathname, ".jpeg"))
-        PutJpegFile(fullpathname, scale, baseline, TRUE);
-
-    else
-        diagnostics(WARNING, "Conversion of '%s' not supported", filename);
-
-    free(filename);
-    free(fullpathname);
+    if (filename) {
+		SetTexMode(MODE_HORIZONTAL);
+	
+		fullname = strdup_absolute_path(filename);
+		fullpathname = append_graphic_extension(fullname);
+		free(fullname);
+		
+		if (has_extension(fullpathname, ".pict"))
+			PutPictFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".png"))
+			PutPngFile(fullpathname, height, width, scale, 0.0, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".gif"))
+			PutGifFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".emf"))
+			PutEmfFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".wmf"))
+			PutWmfFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".eps"))
+			PutEpsFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".pdf"))
+			PutPdfFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".ps"))
+			PutEpsFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".tiff"))
+			PutTiffFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".tif"))
+			PutTiffFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".jpg"))
+			PutJpegFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else if (has_extension(fullpathname, ".jpeg"))
+			PutJpegFile(fullpathname, height, width, scale, baseline, TRUE);
+	
+		else
+			diagnostics(WARNING, "Conversion of '%s' not supported", filename);
+	
+		free(filename);
+		free(fullpathname);
+    }
 }
-
-void CmdPicture(int code)
 
 /******************************************************************************
   purpose: handle \begin{picture} ... \end{picture}
            by converting to png image and inserting
  ******************************************************************************/
+void CmdPicture(int code)
 {
     char *pre, *post, *picture;
 
@@ -1513,11 +1829,10 @@ void CmdPicture(int code)
     }
 }
 
-void CmdMusic(int code)
-
 /******************************************************************************
   purpose: Process \begin{music} ... \end{music} environment
  ******************************************************************************/
+void CmdMusic(int code)
 {
     char *contents;
     char endmusic[] = "\\end{music}";

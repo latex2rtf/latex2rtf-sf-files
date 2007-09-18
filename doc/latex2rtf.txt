@@ -1,11 +1,11 @@
 LaTeX2RTF
 *********
 
-   This file documents LaTeX2RTF , a converter that translates LaTeX
-to RTF.
+This file documents LaTeX2RTF , a converter that translates LaTeX  to
+RTF.
 
    Copyright 1998-2002 Georg Lehner,
-updates Copyright 1999-2004 by Wilfried Hennings and Scott Prahl,
+updates Copyright 1999-2007 by Wilfried Hennings and Scott Prahl,
 with contributions by Mikhail Polianski.
 
    Permission is granted to make and distribute verbatim copies of this
@@ -24,33 +24,33 @@ manual into another language, under the above conditions for modified
 versions, except that this permission notice may be stated in a
 translation approved by the Free Software Foundation.
 
-Introduction
-************
+1 Introduction
+**************
 
-   LaTeX2RTF  is a translator program from LaTeX  text into "rich text
-format" files.  These files are commonly referred to as RTF files.  RTF
-is a published standard format by Microsoft.  This standard can be
-ambiguous in places and Microsoft ignores parts of the standard it
-finds inconvenient, but RTF is widely used by many WYSIWIG text editors
-and is supported by Microsoft Word and most text processors.
+LaTeX2RTF  is a translator program from LaTeX  text into "rich text
+format" files. These files are commonly referred to as RTF files. RTF
+is a published standard format by Microsoft. This standard can be
+ambiguous in places and Microsoft ignores parts of the standard it finds
+inconvenient, but RTF is widely used by many WYSIWIG text editors and is
+supported by Microsoft Word and most text processors.
 
-   LaTeX2RTF  translates the text and as much of the formatting
-information from LaTeX  to RTF.  Be forewarned that the typeset output
-is not nearly as good as what you would get from using LaTeX  directly.
-So, why bother translating? Consider,
+LaTeX2RTF  translates the text and as much of the formatting information
+from LaTeX  to RTF. Be forewarned that the typeset output is not nearly
+as good as what you would get from using LaTeX  directly. So, why
+bother translating? Consider,
 
   1. You use LaTeX  and hate everything beginning with MS-....
      Nevertheless, you have to share your documents with people who
-     don't even now that there exist other things than MS-....
+     don't even know that there are alternatives to MS-....
 
   2. You know somebody who frequently sends you very fine LaTeX
-     documents. Unfortunately, you are "on the other side" and need to
+     documents.  Unfortunately, you are "on the other side" and need to
      import her files, steal some part, and then desktop publish it in
      your fine MS-... environment.
 
-  3. You like LaTeX  and BibTeX .  You interact with the rest of the
-     world.  You know someone that wants to include your writing in a
-     her Word document.
+  3. You like LaTeX  and BibTeX . You interact with the rest of the
+     world. You know someone that wants to include your writing in a
+     Word document.
 
 
    There are drawbacks to the conversion process. In fact, don't expect
@@ -59,7 +59,7 @@ be converted without errors or warnings, and don't be especially
 surprised when it doesn't convert at all.  LaTeX2RTF  is known to have
 many bugs and many missing features. Paradoxically, this number seems to
 grow more and more with each day.  However, we can categorically state
-that there are some special cases,  in which a LaTeX  file will be
+that there are some special cases in which a LaTeX  file will be
 translated to RTF satisfactorily by LaTeX2RTF  -- This was sort of
 disclaimer, ok? OK!
 
@@ -68,57 +68,59 @@ the logical structure of a document, whilst RTF is meant to be a
 transport format for a family of Desktop Publishing Software, dealing
 mostly with the design of a text.
 
-   Although the possible different commands and styles in LaTeX  are
-much more flexible and standardized than in RTF, only a small subset of
-commands has been implemented to date.  *Note Unimplemented Features::.
+   Although the commands and styles in LaTeX  are much more flexible and
+standardized than in RTF, only a small subset of commands has been
+implemented to date (*note Unimplemented Features::).
 
    Some of the capabilities of LaTeX2RTF  are restricted in scope or
-buggy. *Note Known Bugs::.
+buggy (*note Known Bugs::).
 
    RTF is a moving target, because Microsoft does not stop inventing
-new extensions and features, consequently you cannot view newer RTF
+new extensions and features; consequently you cannot view newer RTF
 files with older word processors.  The syntax and semantics of RTF are
 somewhat artistic, i.e., you can generate a syntactically correct RTF
 file that cannot be displayed by some/most word processors.  For more
 details on RTF the specification consult the links at
 `http://latex2rtf.sf.net/'
 
-Installation
-************
+2 Installation
+**************
 
-General
-=======
+2.1 General
+===========
 
-   The documentation of the program is found in the `doc/' directory in
-the file `latex2rtf.texi' in the GNU TeXInfo format.  For your
-convenience, you can find HTML and PDF versions of the manual there as
-well.
+The documentation of the program is found in the `doc/' directory in the
+file `latex2rtf.texi' in the GNU TeXInfo format.  For your convenience,
+you can find HTML and PDF versions of the manual there as well.
 
-Obtaining LaTeX2RTF
-===================
+2.2 Obtaining LaTeX2RTF
 
-   LaTeX2RTF  is available for many Unix Platforms, for the Macintosh,
-and for MS-DOS, including all versions of MS Windows.
+========================
 
-   The latest version of LaTeX2RTF  is available at SourceForge
+LaTeX2RTF  is available for many Unix Platforms, for the Macintosh, and
+for MS-DOS, including all versions of MS Windows.
+
+The latest version of LaTeX2RTF  is available at SourceForge
 (http://sourceforge.net/projects/latex2rtf/) and -- with some delay --
 on CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
 
    The MS-DOS version (1.8aa and up) will also run under all MS Windows
-versions. It requires an i386 processor or better.
+versions (probably except Windows Vista). It requires an i386 processor
+or better.
 
    The Win32 distribution (starting from LaTeX2RTF  1.9.15) is the
 MS-DOS version plus Win32 GUI program (l2rshell).
 
-   There is one person working on LaTeX2RTF , coordinated by Wilfried
-Hennings (W.Hennings "at" fz-juelich.de).  See the SourceForge
+   There are a few people working on LaTeX2RTF , and some more make
+contributions, coordinated by Wilfried Hennings (W.Hennings "at"
+fz-juelich.de).  See the SourceForge
 (http://sourceforge.net/projects/latex2rtf/) project pages for the
 latest news.
 
-UNIX
-====
+2.3 UNIX
+========
 
-   To install,
+To install,
   1. Edit `Makefile' for your local configuration.  In particular, pay
      attention to the `PREFIX' variable.  If you do not have root
      access you might wish to set the makefile variable `PREFIX' to be
@@ -138,8 +140,8 @@ UNIX
   3. `make'
 
      If this is not your first time installation, you may want to
-     preserve   your old configuration (`*.cfg') files. Copy them to a
-     safe place before   installing.
+     preserve your old configuration (`*.cfg') files. Copy them to a
+     safe place before installing.
 
      On IBM AIX, the IBM make utility does not support some of the
      commands used in Makefile. In this case use `gmake' (from GNU)
@@ -155,11 +157,11 @@ UNIX
 
   4. `make install'
 
-     If your `mkdir' doesn't support the `-p' option, then create   the
+     If your `mkdir' doesn't support the `-p' option, then create the
      necessary directories by hand and remove the option from the
-     `$MKDIR' variable.    If you have other problems, just copy
-     `latex2rtf' and `latex2png' to   a binary directory, and move the
-     contents of the `cfg/' directory to   the location specified by
+     `$MKDIR' variable. If you have other problems, just copy
+     `latex2rtf' and `latex2png' to a binary directory, and move the
+     contents of the `cfg/' directory to the location specified by
      `$CFG_INSTALL'.
 
   5. `make check'
@@ -181,23 +183,33 @@ is only necessary if you move the directory containing the `.cfg' files.
 Just define `RTFPATH' to be the path for the new location of the `cfg'
 directory.
 
-DOS or Windows
-==============
+2.4 DOS or Windows
+==================
 
-   The UNIX and Mac distributions do not contain an executable for DOS
-or Windows. Instead, get the DOS port as file `latex2rtf-x.x.x_dos.zip'
+The UNIX and Mac distributions do not contain an executable for DOS or
+Windows.  Instead, get the DOS port as file `latex2rtf-x.x.x_dos.zip'
 or the Windows (Win32 = Win95, Win98, WinME, WinNT, Win2000, WinXP)
 version as file `latex2rtf-x.x.x_win.exe' (where x.x.x is the version
 number) from SourceForge (http://sourceforge.net/projects/latex2rtf/)
-The DOS distribution contains a precompiled executable which should run
-under plain DOS and also in the command prompt (or "console") of any MS
-Windows system.
-The Win32 version starting from 1.9.14a has the same executable but
-additionally an optional Win32 GUI interface (LaTeX2RTF Shell) and is
-wrapped in an automatic installer, *Note Win32 systems::.
-To install latex2rtf, extract all files from the zip archive to `C:\l2r'
-or to another folder (i.e. directory) of your choice, preserving the
-folder structure (winzip: check "use folder names").
+The DOS distribution contains a precompiled executable (djgpp compiler)
+which should run under plain DOS and also in the command prompt (or
+"console") of any MS Windows system up to XP and Server 2003.
+However in Windows Vista the DPMI memory is limited to 32 MB, and we
+yet don't know whether this is sufficient to run LaTeX2RTF  or not, so
+please tell us any experiences regarding Windows Vista.
+If the memory limitation under Windows Vista turns out to be a problem,
+one can use an executable compiled with Cygwin, but for now this isn't
+provided in the distributions.
+Moreover, the command processor "command.com" is not provided by Vista,
+so conversion of pictures and of equations to bitmaps will definitely
+not work under Vista.
+
+   The Win32 version starting from 1.9.14a has the same executable but
+additionally an optional Win32 GUI interface (LaTeX2RTF  Shell) and is
+wrapped in an automatic installer, see *Note Win32 systems::.
+To install LaTeX2RTF , extract all files from the zip archive to
+`C:\l2r' or to another folder (i.e. directory) of your choice,
+preserving the folder structure (winzip: check "use folder names").
 If you extracted them to another folder (e.g. `C:\Program Files\l2r'),
 edit the files `L2R.BAT', `L2RSEM.BAT' and `L2RPREP.BAT' and change the
 folder `C:\l2r' to where you put them.  If there is a blank in any of
@@ -247,17 +259,16 @@ prompt (with no arguments).
 
         * Click "OK"
 
-   To start the program under Windows,
-open a command prompt (or console window)
-- under DOS you are already at the command prompt -,
-use `cd <folder>' to make the folder with your TeX files the current
-folder,
-then enter either `L2R <filename> <options>' or `L2RSEM <filename>
-<options>'
-where <filename> is the name of your TeX file without the .tex
-extension.
-`L2R.BAT' and `L2RSEM.BAT' only differ in the character being used as
-parameter separator in the EQ fields, see chapter *Note Equations::.
+   To start the program under Windows:
+   * open a command prompt (or console window)
+     - under DOS you are already at the command prompt -,
+   * use `cd <folder>' to make the folder with your TeX files the
+     current folder,
+   * then enter either `L2R <filename> <options>' or `L2RSEM <filename>
+     <options>' where <filename> is the name of your TeX file without
+     the .tex extension.
+     `L2R.BAT' and `L2RSEM.BAT' only differ in the character being used
+     as parameter separator in the EQ fields, see *Note Equations::.
 
    If your LaTeX  document refers to external graphic files, e.g. eps,
 or you want to use the option to convert equations to bitmaps (-M# where
@@ -277,8 +288,9 @@ before calling `l2r', `l2rsem' or `latex2rt'.  Under Windows you can
 create another command prompt link in which you can include the call to
 `L2RPREP.BAT'.
 
-   LaTeX2RTF  first writes a temporary .tex file to disk which consists
-of only the equation to be converted. It then sends the call for
+   When equations are to be converted to bitmaps, for each equation
+LaTeX2RTF  first writes a temporary .tex file to disk which consists of
+only the equation to be converted. It then sends the call for
 latex2pn.bat to the operating system. There were problems that this
 didn't work although manually calling latex2pn.bat from the command
 prompt worked.
@@ -297,12 +309,18 @@ add to your config.sys a line like the following
 or, if there already is such a line, modify it so that it supplies a
 sufficiently large environment space `/E:'.  Shutdown and reboot the PC.
 
-Win32 systems
-=============
+2.5 Win32 systems
+=================
 
-   To install LaTeX2RTF  on a Win32 system (Win9x, WinME, WinNT,
-Win2000, WinXP), download and execute the `latex2rtf-x.x.x_win.exe'
-(where x.x.x is the version number) and follow the instructions.
+To install LaTeX2RTF  on a Win32 system (Win9x, WinME, WinNT, Win2000,
+WinXP), download and execute the `latex2rtf-x.x.x_win.exe' (where x.x.x
+is the version number) and follow the instructions.
+
+   If there is a newer version of LaTeX2RTF  for DOS but not for
+Windows, you can download the newer DOS package and unzip it to the
+same folder where the windows version is installed, thus overwriting
+the files with their newer versions. The GUI shell is not updated in
+this case.
 
    To start the program double-click the LaTeX2RTF  icon, or drag and
 drop a `.tex' file onto the icon.
@@ -326,14 +344,17 @@ add to your config.sys a line like the following
 or, if there already is such a line, modify it so that it supplies a
 sufficiently large environment space `/E:'.  Shutdown and reboot the PC.
 
-Macintosh
-=========
+2.6 Macintosh
+=============
 
-   If you want a MacOS X version, make sure that you have installed the
+If you want a MacOS X version, make sure that you have installed the
 developer tools CD that is appropriate for your OS version, and then
 follow the directions above for a UNIX installation.  Alternatively you
 can install using fink `http://fink.sourceforge.net/' or as an
 i-installer package `http://www.rna.nl/ii.html'.
+
+   As of 2006-01-30 there also is a GUI shell for Macintosh.
+See `http://www.inf.ethz.ch/personal/fischerk/LaTeX2rtf/index.html'
 
    There is a PPC port of an old version 1.9k for Classic MacOS
 LaTeX2RTF .  To convert a LaTeX  file using this version,  drag the
@@ -341,11 +362,10 @@ file onto the LaTeX2RTF  icon.  The translation is best if there are
 `.aux' and `.bbl' files in the same folder as the `.tex' file to be
 converted.  These should be generated using LaTeX  and `bibtex'.
 
-Problems Compiling
-==================
+2.7 Problems Compiling
+======================
 
-   The code for LaTeX2RTF  is standard ANSI C.  Some possible pitfalls
-are
+The code for LaTeX2RTF  is standard ANSI C.  Some possible pitfalls are
    * Not correctly defining your compiler in the Makefile.  The default
      is to use `gcc'.
 
@@ -357,35 +377,35 @@ are
      compiler options.
 
 
-Problems with `make check'
-==========================
+2.8 Problems with `make check'
+==============================
 
-   All the files in the `test' directory are converted (with varying
+All the files in the `test' directory are converted (with varying
 degrees of success) using LaTeX2RTF  and are tested before most CVS
 check-ins and with all released tarballs.  There will be many warning
 messages, but there should be no actual error messages.  If you do not
 have a working latex2png script, then some of the files will fail to be
 translated.
 
-Using LaTeX2RTF
-***************
+3 Using LaTeX2RTF
+*****************
 
-General Assumptions
-===================
+3.1 General Assumptions
+=======================
 
-   LaTeX2RTF  assumes that the `.tex' file you want to convert is a
-valid LaTeX  document.  The chances of a successful LaTeX2RTF
-conversion are slightly better than the proverbial snowball's if the
-`.tex' file doesn't `latex' properly.  Use LaTeX  to find and correct
-errors before using LaTeX2RTF .
+LaTeX2RTF  assumes that the `.tex' file you want to convert is a valid
+LaTeX  document.  The chances of a successful LaTeX2RTF  conversion are
+slightly better than the proverbial snowball's if the `.tex' file
+doesn't `latex' properly.  Use LaTeX  to find and correct errors before
+using LaTeX2RTF .
 
-   To correctly convert font names you must edit the `fonts.cfg'
+To correctly convert font names you must edit the `fonts.cfg'
 configuration file.  This file is used to specify the needed font names
-and how the LaTeX  default font names should be converted to RTF.
-*Note Font Configuration::. LaTeX  variables and user defined commands
-are not evaluated. They will be simply ignored. To let LaTeX2RTF  know
-the names of variables you can add them in the `ignore.cfg' file.
-*Note Ignore Command::.
+and how the LaTeX  default font names should be converted to RTF (*note
+Font Configuration::). LaTeX  variables and user defined commands are
+not evaluated. They will be simply ignored. To let LaTeX2RTF  know the
+names of variables you can add them in the `ignore.cfg' file (*note
+Ignore Command::).
 
    The environment variable RTFPATH may contain a search path for the
 support files (all files ending in `.cfg'). If no file is found during
@@ -400,22 +420,22 @@ separator may appear at the beginning or ending of RTFPATH.
    Make sure that the configuration files are in the correct directory.
 LaTeX2RTF  will need at least `fonts.cfg', `direct.cfg', `ignore.cfg',
 `english.cfg'. You may have to change one ore more of them to suit your
-needs. *Note Configuration::.
+needs (*note Configuration::).
 
    *Note Missing options::, for actual implementations irregularities.
 
    *Note Reporting Bugs::, for information on how to reach the
 maintainer.
 
-LaTeX2RTF Options
-=================
+3.2 LaTeX2RTF
+ Options
+======================
 
-   The LaTeX2RTF  command converts a LaTeX  file into RTF text format.
-The text and much of the formatting information is translated to RTF
-making the new file look similar to the original.  The command line
-syntax is:
+The LaTeX2RTF  command converts a LaTeX  file into RTF text format. The
+text and much of the formatting information is translated to RTF making
+the new file look similar to the original.  The command line syntax is:
 
-     latex2rtf [-options] inputfile.[tex]
+     latex2rtf [-options] inputfile[.tex]
 
    The `-options' may consist of one or more of the following
 
@@ -437,14 +457,16 @@ syntax is:
      used to specify the character set (code page) used in the LaTeX
      document. This is only important when non-ansi characters are
      included in the LaTeX  document. Typically this is done in a
-     LaTeX2e  file by using `\usepackage[codepage]{inputenc}' This
-     command is not needed if the above command is already in the
-     LaTeX2e  file.  You may select any of the following code pages:
-     ansinew, applemac, cp437, cp437de, cp850, cp852, cp865, decmulti,
-     cp1250, cp1252, latin1, latin2, latin3, latin4, latin5, latin9,
-     next.  The default behavior is to use ansinew (code page 1252).
-     Cyrillic support includes conversion of koi8-r, koi8-u, cp1251,
-     cp855, cp866, maccyr, and macukr encodings.
+     LaTeX2e  file by using `\usepackage[codepage]{inputenc}' and in
+     this case you need not specify the -C codepage option.  If NO
+     `\usepackage[codepage]{inputenc}' is in the LaTeX2e  file, you must
+     inform the converter about the codepage by the -C codepage option.
+     You may select any of the following code pages: ansinew, applemac,
+     cp437, cp437de, cp850, cp852, cp865, decmulti, cp1250, cp1252,
+     latin1, latin2, latin3, latin4, latin5, latin9, next.  The default
+     behavior is to use ansinew (code page 1252).  Cyrillic support
+     includes conversion of koi8-r, koi8-u, cp1251, cp855, cp866,
+     maccyr, and macukr encodings.
 
 `-d debug_level'
      The `-d' option determines the amount of debugging information to
@@ -498,7 +520,7 @@ syntax is:
      in the babel system are supported so far as translations for
      "Chapter," "References," and the like.  Furthermore, some commands
      found in the style files for german, french, russian, and czech
-     style are supported. *Note Language Configuration::.
+     style are supported (*note Language Configuration::).
 
 `-l'
      same as `-i latin1' (Note that the default behavior is to use
@@ -521,8 +543,15 @@ syntax is:
 
     `-M16'
           insert Word comment field that contains the original equation
-          text     These switches can be added together to get the
-     desired conversion.  Handy examples are
+          text
+
+    `-M32'
+          insert the raw latex equation delimited by `<<:' and `:>>'.
+          This     is potential useful when using version 6 of the
+          MathType equation editor.
+
+     These switches can be combined to get different effects.  Handy
+     examples are
     `-M3'
           convert both inline and displayed equations to RTF (default)
 
@@ -541,11 +570,14 @@ syntax is:
      `inputfile' and appending `.rtf'.
 
 `-p'
-     Do not quote printed parentheses in mathematical formulas, as some
-     versions of Word (e.g., Word 2000) have deep psychological
-     problems with EQ fields using quoted parentheses.  If Word
-     displays some formulas with parentheses as "Error!", try this
-     option.  See also the -S option.
+     Escape parentheses in mathematical formulas.  This has no effect
+     unless EQ fields are being generated.  When this option is used,
+     then in a `(' or `)' that appears in an EQ field will be preceeded
+     by a backslash.  Despite documentation to the contrary (which says
+     that all parentheses should be escaped), adding escapes usually
+     produces a worse result than doing nothing. If Word displays some
+     formulas with parentheses as "Error!", you might try this option
+     as a last resort.  See also the -S option.
 
      This is an option because it will break typesetting equations with
      non-matching parentheses (because an unmatched unquoted
@@ -571,6 +603,7 @@ syntax is:
      This is useful for files that are not cleanly converted by
      LaTeX2RTF .
 
+
    With no arguments other than switches starting with a "-", LaTeX2RTF
 acts as a filter, i.e., it reads from `stdin' and writes to `stdout'.
 In addition, diagnostic messages are sent to `stderr'. If these standard
@@ -583,10 +616,10 @@ name of the input file. The file must have extension ".tex" but the
 extension is optional. The output file is constructed from the input
 file name by removing the extension ".tex" and adding ".rtf".
 
-Debugging
-=========
+3.3 Debugging
+=============
 
-   With the `-d' option you can specify how much processing information
+With the `-d' option you can specify how much processing information
 LaTeX2RTF  reports.  If there is a logfile specified the output goes to
 this file. Nonetheless Warnings and Errors are logged to stderr always.
 
@@ -605,24 +638,33 @@ this file. Nonetheless Warnings and Errors are logged to stderr always.
 
   6. Show processing of characters as they are output as well
 
-Features
-********
+4 Features
+**********
 
-   In this chapter you find what styles is LaTeX2RTF  supposed to
-translate correctly to RTF.
+In this chapter you find what styles is LaTeX2RTF  supposed to translate
+correctly to RTF.
 
-LaTeX2e
-=======
+4.1 LaTeX2e
+===========
 
-   LaTeX2RTF  understands most of the commands introduced with LaTeX2e
-.  It supports both the old 2.09 version of
+LaTeX2RTF  understands most of the commands introduced with LaTeX2e .
+It translates both the old 2.09 version of
 `\documentstyle[options]{format#}' and the newer
 `\documentclass[options]{format}'.
 
-Input Encoding
-==============
+4.2 Unicode Support
+===================
 
-   It is not necesary to specify the `-C' option if you use
+As of version 1.9.17, LaTeX2RTF  has limited unicode support.  LaTeX
+files that use unicode sequences are just emitted directly into the RTF
+file.  Symbols and odd characters in math sequences may also be
+converted to a unicode sequence if there is no corresponding symbol in
+the "Symbol" or "MT Extra" fonts.
+
+4.3 Input Encoding
+==================
+
+It is not necesary to specify the `-C' option if you use
 `\usepackage{isolatin1}' or `\documentstyle[isolatin1]{...}'. LaTeX2RTF
 automagically detects these packages/style options and switches to
 processing of ISO-Latin1 codes.  The following encodings are supported:
@@ -632,15 +674,15 @@ koi8-r, koi8-u, cp1251, cp855, cp866, maccyr, and macukr.  The encoding
 used in RTF files is cp1252.  If cyrillic fonts are present, then these
 are represented in the RTF file using cp1251 (Windows Cyrillic).
 
-Language Support
-================
+4.4 Language Support
+====================
 
-   The following languages from the Babel package are supported:
-afrikaans, german, nynorsk, spanish, bahasa, dutch, icelandic, polish,
-swedish, basque, english, portuges, turkish, brazil, esperanto, irish,
-romanian, usorbian, breton, estonian, italian, samin, welsh, catalan,
-finnish, latin, scottish, croatian, lsorbian, serbian, czech, french,
-magyar, slovak, danish, galician, norsk, slovene,
+The following languages from the Babel package are supported: afrikaans,
+german, nynorsk, spanish, bahasa, dutch, icelandic, polish, swedish,
+basque, english, portuges, turkish, brazil, esperanto, irish, romanian,
+usorbian, breton, estonian, italian, samin, welsh, catalan, finnish,
+latin, scottish, croatian, lsorbian, serbian, czech, french, magyar,
+slovak, danish, galician, norsk, slovene,
 
    The only thing that these files do is to translate various words
 usually emitted by LaTeX  during processing.  For example, this ensures
@@ -665,14 +707,14 @@ cyrillic languages.
    *Note Language Configuration::, for details on how to write a
 `language.cfg' file for your language by yourself.
 
-Cross References
-================
+4.5 Cross References
+====================
 
-   Cross references include everything that you might expect and then
-some: bibliographic citations, equation references, table references,
-figure references, and section references.  Section, equation, table
-and figure references are implemented by placing RTF bookmarks around
-the equation number (or table number or figure number).
+Cross references include everything that you might expect and then some:
+bibliographic citations, equation references, table references, figure
+references, and section references.  Section, equation, table and
+figure references are implemented by placing RTF bookmarks around the
+equation number (or table number or figure number).
 
    Page references work but are implemented as "warm" cross-references.
 This means that Word does not automatically update the page references
@@ -688,10 +730,9 @@ this yet.
    LaTeX2RTF  relies on BibTeX  to convert and format bibliographic
 entries.  Usually the style file for a particular BibTeX  format does
 not use any special LaTeX  commands and therefore the bibliography file
-`file.bbl' can be processed by LaTeX2RTF
-
-   without difficulty.  As a consequence, LaTeX2RTF  can handle most
-bibliography styles without problem.
+`file.bbl' can be processed by LaTeX2RTF  without difficulty. As a
+consequence, LaTeX2RTF  can handle most bibliography styles without
+problem.
 
    There are several latex style packages that add additional latex
 commands to enhance bibliographic formatting.  LaTeX2RTF  currently
@@ -700,9 +741,11 @@ apacite, apalike, authordate, harvard, natbib (also with apanat1b).
 These packages have many, many options and you may encounter problems
 with formatting in special cases.
 
-   Footnotes are implemented and appear at the bottom of each page.
+   As of LaTeX2RTF  1.9.17, the natbib command bibpunct is supported.
 
-   Indexing is reasonable well supported.  The simple mark-up of
+   Footnotes are implemented and appear at the bottom of each page.  
+
+   Indexing is reasonably-well supported.  The simple mark-up of
 `makeindex'
      \index{topic!subtopic@\textit{subtopic}}
    is supported.  The rest of the fancy indexing stuff is not
@@ -720,11 +763,21 @@ there are multiple `\label' in a figure, table, or section environment
 then only the first gets processed.  It is also possible to confuse the
 LaTeX2RTF  in eqnarray environments.
 
-Equations
-=========
+4.6 Page Formatting
+===================
 
-   There are four separate levels of equation translation based on the
--M switch, *Note LaTeX2RTF Options::.  Each equation is now converted
+LaTeX2RTF  will handle some basic page formatting options, including
+\doublespacing (as implemented in the setspace package), and the margin
+setting options provided by the geometry package including commands in
+the ratio, centering and margin families. Not all geometry options are
+implemented yet, in part because there are no corresponding rtf commands
+for many of them.
+
+4.7 Equations
+=============
+
+There are five separate levels of equation translation based on the -M
+switch, see *Note LaTeX2RTF Options::.  Each equation is now converted
 either to an EQ field or to a bitmap.
 
    This is an interim solution (for some definition of "interim").
@@ -739,29 +792,83 @@ Windows, the default parameter separator is the comma, in German
 versions the default is the semicolon. If the parameter in the RTF file
 does not match the Windows setting, some EQ fields are not interpreted
 correctly. You can check and set the separator in [Windows control panel
-- country settings - numbers - list separator]. By default, latex2rtf
-uses the comma as separator. If latex2rtf is called with the command
+- country settings - numbers - list separator]. By default, LaTeX2RTF
+uses the comma as separator. If LaTeX2RTF  is called with the command
 line parameter -S , the semicolon is inserted as parameter delimiter.
 
-Tables
-======
+4.8 Math and Special Symbols
+============================
 
-   The table code is currently barely working.  It needs to be
-rewritten.
+The way that symbols are converted in the RTF is based on the following
+observations.  If the symbol is found in the latin 1 character set, then
+the current font is used.  The font "Symbol" is widely available, and
+therefore it is used for as many translations as possible.  The font
+"MT Extra" is less common, but is free (as in beer from Design Science,
+see below) and characters from this font are used when possible.  Note
+that early versions of "MT Extra" were missing some characters;  the
+most recent version of this font should be installed for best results.
+Finally, if the symbol is not found in any of the previous fonts, then
+LaTeX2RTF  will use the unicode sequence for that symbol.
 
-Graphics
-========
+   The means that on the system where the `.rtf' file is opened, a
+unicode font should be available or these glyphs will not be displayed
+correctly. On Windows machines the unicode font is "Lucida Sans
+Unicode", on MacOS X the font is "Lucida Grande".  Even when these
+fonts are installed, support for these unicode sequences seems to be
+hit-or-miss in various versions of Word since many of these symbols are
+not (yet) contained in the standard unicode fonts.
 
-   There is now rudimentary support for `\includegraphics'.  Three file
-types will be inserted into the RTF file without needing conversion:
-.pict, .jpeg, and .png files.  EPS files are converted to PNG using
-`convert' from the ImageMagick package.
+   Many mathematical and special symbols are directly supported by
+LaTeX2RTF .  Less common symbols (not found in the fonts "Symbol" or
+"MT Extra") are supported by the conversion table in the file
+`direct.cfg', see *Note Direct Conversion::.  An alternative
+`direct.cfg' is available in which "MT Extra" is not used and the
+symbols which normally are taken from "MT Extra" are instead taken from
+"Lucida Sans Unicode".  To use "Lucida Sans Unicode" instead of MT
+Extra, rename `direct.cfg' (to e.g., ` direct_mt.cfg') and rename
+`direct_ucs.cfg' to `direct.cfg'.
 
-Pagestyles
+   Required fonts are:
+
+   * "Times" / "Times New Roman", preferably with Unicode extension
+     (i.e.  supporting all European languages including Cyrillic,
+     Greek, and Hebrew). "Times" or "Times New Roman" is standard on
+     all systems, but not its Unicode extension.
+
+   * "Symbol", which is standard on all systems.
+
+   * "MT Extra". This font is installed with the Microsoft Equation
+     Editor, which comes with Microsoft Word, or its full version
+     MathType.  If you don't have Word or MathType, you can get this
+     font from `http://www.mathtype.com/en/dl/fonts/'
+
+
+4.9 Tables
 ==========
 
-   If there is no `\pagestyle' command, the RTF output is generated as
-with plain pagestyle, i.e. each page get's its page number centered at
+Conversion of tabular and tabbing environments is somewhat lame.  The
+main difficulty is that LaTeX  (and html) will size the columns of a
+table automatically.  There is no such feature in RTF.  Consequently,
+the conversion defaults to making all the columns have equal size.  This
+is suboptimal and should be revised.  One interesting suggestion is to
+have an option to handle these environments the same way that equations
+are handles and have latex render them as bitmaps and insert the bitmaps
+into the RTF file.  Such a feature remains to be written.
+
+4.10 Graphics
+=============
+
+There is now rudimentary support for `\includegraphics'.  Three file
+types will be inserted into the RTF file without needing conversion:
+`.pict', `.jpeg', and `.png' files.  EPS and PDF files are converted to
+PNG using `convert' from the ImageMagick package.  Some options are
+even handled properly.
+
+4.11 Pagestyles
+===============
+
+If there is no `\pagestyle' command, the RTF output is generated as
+with plain pagestyle, i.e. each page has its page number centered at
 the bottom.
 
    You must turn this off with the \pagestyle{empty} command in the
@@ -770,68 +877,95 @@ styles are silently ignored by now.  The twosided option to the
 \documentstyle or \documentclass produces the corresponding RTF tokens.
 Note that these features require RTF Version 1.4.
 
-Hyperlatex
-==========
+4.12 Hyperlatex
+===============
 
-   Hyperlatex support is largely broken at the moment, but continues to
+Hyperlatex support is largely broken at the moment, but continues to
 improve.
 
    Otfried Schwarzkopf has created the "Hyperlatex Markup Language"
 which is a "little package that allows you to use LaTeX  to prepare
 documents in HTML."  It brings an Emacs lisp program with it to convert
 the Hyperlatex file to HTML.  Hyperlatex can be obtained from the
-CTAN-sites, *Note Obtaining LaTeX2RTF::.  There are two convenient
+CTAN-sites, see *Note Obtaining LaTeX2RTF::.  There are two convenient
 commands that avoid typing: \link and \xlink that generate an
 "internal" label which then is used in the following \Ref and \Pageref
 commands.
 
    LaTeX  makes it possible to write `\link{anchor}[ltx]{label}', which
 typesets: `anchor ltx'. LaTeX2RTF  does NOT support this aproach since
-the optional parameter is thrown away right now, *Note LaTeX2RTF under
-Development::.
+the optional parameter is thrown away right now, see *Note LaTeX2RTF
+under Development::.
 
    Note that you have to update your `.cfg' files if you are upgrading,
 since there are a lot of HTML oriented commands in Hyperlatex that we
 simply can `ignore'.
 
-Configuration
-*************
+5 Configuration
+***************
 
-Input processing
-================
+5.1 Input processing
+====================
 
-   On processing input LaTeX2RTF  first converts the LaTeX  special
+On processing input LaTeX2RTF  first converts the LaTeX  special
 characters. If it encounters one of the standard commands it is
 converted internally. If a command is not known to LaTeX2RTF  it is
 first looked up in `direct.cfg' and the RTF code specified there is
 output. If not found there it is looked up in the section `ignore.cfg'.
-This file includes a lot of LaTeX
-
-   commands that do not affect the output (cross reference information
-and the like), or that we are not able or willing to convert to RTF.
+This file includes a lot of LaTeX  commands that do not affect the
+output (cross reference information and the like), or that we are not
+able or willing to convert to RTF.
 
    You can use `ignore.cfg' if you get tired of seeing
      WARNING: command: `foo' not found - ignored
-    and you don't need `foo' in your RTF document.  It would be nice to
-send your additions to the LaTeX2RTF  mailing list for inclusion in
-later distributions.
 
-LaTeX2RTF  accepts Unix, MS-DOS, and Macintosh line ending codes (\n,
-\r\n and \r).  The files it creates are the line ending for the
+and you don't need `foo' in your RTF document. It would be nice to send
+your additions to the LaTeX2RTF  mailing list for inclusion in later
+distributions.
+
+   LaTeX2RTF  accepts Unix, MS-DOS, and Macintosh line ending codes
+(\n, \r\n and \r).  The files it creates are the line ending for the
 platform on which LaTeX2RTF  was compiled.
 
-The LaTeX  file may have been created with a wide variety of character
-sets.  If the LaTeX  lacks the `\package[codepage]{inputenc}'
+   The LaTeX  file may have been created with a wide variety of
+character sets.  If the LaTeX  lacks the `\package[codepage]{inputenc}'
 definition, then you may need to use the command line switch to manually
-select the proper code page. *Note Input Encoding::.
+select the proper code page (*note Input Encoding::).
 
-Output formatting
-=================
+   As of LaTeX2RTF  1.9.17, there are two options for including content
+that will be ignored by LaTeX  but parsed by LaTeX2RTF . The first is
+simply to begin a line with `%latex2rtf:', as in the following:
 
-   On writing output, LaTeX2RTF  generates `\n' as line ending code.
-Your RTF Reader should accept this on any platform. If you ftp your RTF
-file from or to MS-DOS platforms the line ending code can be converted
-to `\r\n'. As this should also be legal to any RTF Reader the resulting
+     %latex2rtf: These lines will only appear in the latex2rtf output,
+     %latex2rtf: not in the LaTeX output.
+
+   More sophisticated processing is available with the `\iflatextortf'
+command:
+
+     \newif\iflatextortf  %all \newif constructs ignored by latex2rtf
+     \latextortffalse     %ignored by latex2rtf, so file works in latex
+     \iflatextortf
+     This code is processed only by latex2rtf
+     \else
+     This code is processed only by latex
+     \fi
+
+   Note that `\iflatextortf' will only work within a section; you
+cannot use this command to conditionally parse code that crosses section
+boundaries. Also, it will only work on complete table or figure
+environments. Due to the mechanism used by LaTeX2RTF  in processing
+these environments, at this time the only way to conditionally parse
+tables and figures is to include two complete versions of the
+environment in question, nested within an appropriate \iflatex2rtf
+structure.
+
+5.2 Output formatting
+=====================
+
+On writing output, LaTeX2RTF  generates `\n' as line ending code.  Your
+RTF Reader should accept this on any platform. If you ftp your RTF file
+from or to MS-DOS platforms the line ending code can be converted to
+`\r\n'. As this should also be legal to any RTF Reader the resulting
 RTF rendering should not be affected.
 
    LaTeX2RTF  does not offer a whole lot of flexibility in how files
@@ -839,24 +973,36 @@ are translated, but it does offer some.  This flexibility resides in
 four files `direct.cfg', `ignore.cfg', `fonts.cfg', and `language.cfg'.
 These filese are documented in the next four sections.
 
-Direct Conversion
-=================
+5.3 Direct Conversion
+=====================
 
-   The file `direct.cfg' is used for converting LaTeX  commands by
-simple text replacement. The format consists of lines with a LaTeX
-command with backslash followed by comma. The rest of the line until a
-`.' character will be written to the RTF file when the command is found
-in the LaTeX  file. Lines starting with a `#' character are ignored.
-After the `.' everything is ignored to end of line. To select a
-specific font use `*fontname*', where `fontname' be defined in
-`fonts.cfg'.  To write the `*' character use `**'.
-     \alpha,{\f*Symbol* a}. #alpha in the Symbol Font
-     \copyright,\'a9.
+The file `direct.cfg' is used for converting LaTeX  commands by simple
+text replacement. The format consists of lines with a LaTeX  command
+with backslash followed by comma. The rest of the line until a `.'
+character will be written to the RTF file when the command is found in
+the LaTeX  file. Lines starting with a `#' character are ignored. After
+the `.' everything is ignored to end of line. To select a specific font
+use `*fontname*', where `fontname' be defined in `fonts.cfg'.  To write
+the `*' character use `**'.
 
-Ignore Command
-==============
 
-   The file `ignore.cfg' is used for defining how to ignore specific
+\bigstar,{\u8727**}.
+\copyright,\'a9.
+
+   In general, specific fonts should not be specified in this file.
+There is a mechanism to do this, but it turns out that this is not as
+useful as originally thought.  The main reason that this fails is
+because the conversion of equations from Word fields to Equation Editor
+objects is buggy.  The consequence is that to have symbols show up
+properly, they must be encoded differently when the Symbol and MT Extra
+fonts are used -- depending on whether Word fields are active or not.
+It was all very tedious to figure out a mechanism that was "least
+broken."
+
+5.4 Ignore Command
+==================
+
+The file `ignore.cfg' is used for defining how to ignore specific
 commands. This file is used for recognition of LaTeX  variables, user
 defined variables, and some simple commands. All variables are ignored
 but the converter must know the names to correctly ignore assignments
@@ -904,12 +1050,12 @@ Lines starting with a `#' character are ignored. After the `.'
 everything is ignored to end of line. Example:
      \pagelength,MEASURE.
 
-Font Configuration
-==================
+5.5 Font Configuration
+======================
 
-   The file `fonts.cfg' contains the font name mapping.  For example,
-this file determines what font is used to represent `\rm' characters in
-the RTF file.
+The file `fonts.cfg' contains the font name mapping.  For example, this
+file determines what font is used to represent `\rm' characters in the
+RTF file.
 
    A line consists of a font name in LaTeX  followed by comma and a font
 name in RTF. The end is marked by a `.'. No spaces are allowed. The
@@ -930,10 +1076,10 @@ like in the following
 names. The default fonts are named Roman `\rm', Slanted `\sl', Sans
 Serif `\sf', Typewriter `\tt', or Calligraphic `\cal'.
 
-Language Configuration
-======================
+5.6 Language Configuration
+==========================
 
-   The file(s) `language.cfg' control the translation of LaTeX 's
+The file(s) `language.cfg' control the translation of LaTeX 's
 "hardcoded" sectioning names.  The standard LaTeX  styles have some
 fixed Title names like `Part', `Reference' or `Bibliography' that
 appeared in English or German in the output with the original versions
@@ -943,10 +1089,10 @@ of LaTeX2RTF .
 file.  However, just look at one of the existing files and follow the
 pattern.  The format is really simple.
 
-Error Messages and Logging
-**************************
+6 Error Messages and Logging
+****************************
 
-   As stated in the Debugging section, LaTeX2RTF  provides a means to
+As stated in the Debugging section, LaTeX2RTF  provides a means to
 control the amount of debugging information through the `-d#' switch.
 By using a debugging level of 4, you can get a pretty good idea of what
 LaTeX  command caused the problem and what line that command might be
@@ -954,7 +1100,7 @@ found on.
 
 `Fatal error messages'
      indicate a bug in the source code. PLEASE report them, if they do
-     not apear in the documentation. *Note Reporting Bugs::.
+     not apear in the documentation (*note Reporting Bugs::).
 
 `Error messages'
      always abort the program and are caused by conditions that prevent
@@ -980,43 +1126,44 @@ example,
      \verbositylevel{5}
      problematic code
      \verbositylevel{0}
-    will cause a huge amount of debugging information to be emitted for
+   will cause a huge amount of debugging information to be emitted for
 the problematic code.
 
-Error reporting and logging still has many inconsistencies, but it gets
-better with each release.  Don't try to make any sense in debugging
-levels above 4, these are for my own delight only and can change
-significantly between versions.
+   Error reporting and logging still has many inconsistencies, but it
+gets better with each release.  Don't try to make any sense in
+debugging levels above 4, these are for my own delight only and can
+change significantly between versions.
 
    The `inputfile' may be incorrectly identified if it is incorporated
 through `\input' or `\include'.  The line may be also be wrong at
 times.  *Note Known Bugs::.
 
-History & Copyright
-*******************
+7 History & Copyright
+*********************
 
-   In 1994 the first Version of LaTeX2RTF  was written by Fernando
-Dorner and Andreas Granzer of the Viena University supervised by Ralf
+In 1994 the first Version of LaTeX2RTF  was written by Fernando Dorner
+and Andreas Granzer of the Viena University supervised by Ralf
 Schlatterbeck in a one-semester course. They created a simple LaTeX
 parser and added most of the infrastructure for the program.  This was
 version 1.0 of LaTeX2RTF .  In 1995, work on LaTeX2RTF  was continued
 in another one-semester course by Friedrich Polzer and Gerhard Trisko.
-The result was LaTeX2RTF  version 1.5.  Ralf Schlatterbeck
-<ralf@zoo.priv.at> maintained and extended LaTeX2RTF  until 1998.
+The result was LaTeX2RTF  version 1.5.  Ralf Schlatterbeck (ralf "at"
+zoo.priv.at) maintained and extended LaTeX2RTF  until 1998.
 
-   In 1998 Georg Lehner <jorge_lehner@gmx.net> found the reference to
-LaTeX2RTF  on the TeX Conversion Webpage
-(http://tug.org/utilities/texconv/index.html)  of Wilfried Hennings and
+   In 1998 Georg Lehner (jorge_lehner "at" gmx.net) found the reference
+to LaTeX2RTF  on the TeX Conversion Webpage
+(http://tug.org/utilities/texconv/index.html) of Wilfried Hennings and
 added some functionality and took over the maintainence of the program.
 The last version release by Georg is 1.8aa.  The bulk of development
 post 1.8aa was done by Scott Prahl.  Wilfried Hennings now coordinates
 the development of the program and maintains the project on SourceForge
 (http://sourceforge.net/projects/latex2rtf/) where there are also (low
-volume) mailing lists for users <latex2rtf-users@lists.sourceforge.net>
-and developers <latex2rtf-developers@lists.sourceforge.net>.  For
-subscription to these lists:
-<latex2rtf-users-request@lists.sourceforge.net?subject=subscribe> or
-<latex2rtf-developers-request@lists.sourceforge.net?subject=subscribe>
+volume) mailing lists for users and developers. Mailing via one of
+these lists requires subscription to the list (to prevent spam).  For
+subscription to these lists visit the page: users list
+(http://lists.sourceforge.net/lists/listinfo/latex2rtf-users) or
+developers list
+(http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers)
 
    As of October 2004, version 1.9.16 of LaTeX2RTF  is available.  One
 day there shall be a jump to Version 2.0, but this is not history but
@@ -1025,29 +1172,28 @@ future ...
    The contents of this manual were composed by copying shamelessly
 what was available in the original sources and documentation.
 
-LaTeX2RTF under Development
-***************************
+8 LaTeX2RTF under Development
+*****************************
 
-Unimplemented Features
-======================
+8.1 Unimplemented Features
+==========================
 
    * LaTeX2RTF  ignores some optional parameters of `\documentstyle'
 
-   * Add the code to produce the corresponding chapter, section,
-     and page numbering with headings and myheadings pagestyles.
-     Implement       `\markboth' and `\markright'.
+   * Add the code to produce the corresponding chapter, section, and
+     page numbering with headings and myheadings pagestyles. Implement
+     `\markboth' and `\markright'.
 
    * To support `\tableofcontents' there would be two approaches:
-     Transfer       sectioning information, title text and then produce
-     page numbers by the rtf-       reader. Scan and label all of the
-     sectioning commands while reading and       then construct the
-     sectioning information using these labels. Needs two       passes
-     on LaTeX  input.
+     Transfer sectioning information, title text and then produce page
+     numbers by the rtf- reader. Scan and label all of the sectioning
+     commands while reading and then construct the sectioning
+     information using these labels. Needs two passes on LaTeX  input.
 
-Missing options
-===============
+8.2 Missing options
+===================
 
-   Missing or buggy command line options.
+Missing or buggy command line options.
 
 `-d'
      Information logging and Error reporting is not implemented
@@ -1059,26 +1205,26 @@ Missing options
      `-debug', `-output_file', `-quiet', etc.  This could be done by
      switching to the GNU getopt package.
 
-Known Bugs
-==========
-
-  1. The first parameter of a \link{anchor}[ltx]{label} is converted to
-     the       rtf-output. Label is stored to hyperref for later use,
-     the optional       parameter is ignored. [ltx] should be processed
-     as Otfried recommends it,       to use for exclusive LaTeX
-     output.e.g: \link{readhere}[~\Ref]{explaining:       chapter}.
-     Since {explaining:chapter} is yet read by LaTeX  and hyperlatex
-       when [...] is evaluated it produces the correct reference.
-     LaTeX2RTF  is       only strolling from left to right through the
-     text and can't remember       what she will see in the future.
-
-  2. The diagnostics routine does not output the correct (actual)
-     inputfilename. (`.aux', `.bbl', `\input').
-
-Reporting Bugs
+8.3 Known Bugs
 ==============
 
-   Report bugs to to the bug tracking system at SourceForge
+  1. The first parameter of a \link{anchor}[ltx]{label} is converted to
+     the rtf-output. Label is stored to hyperref for later use, the
+     optional parameter is ignored. [ltx] should be processed as
+     Otfried recommends it, to use for exclusive LaTeX  output.e.g:
+     \link{readhere}[~\Ref]{explaining: chapter}. Since
+     {explaining:chapter} is yet read by LaTeX  and hyperlatex when
+     [...]  is evaluated it produces the correct reference. LaTeX2RTF
+     is only strolling from left to right through the text and can't
+     remember what she will see in the future.
+
+  2. The diagnostics routine does not output the correct (actual) input
+     filename. (`.aux', `.bbl', `\input').
+
+8.4 Reporting Bugs
+==================
+
+Report bugs to to the bug tracking system at SourceForge
 (http://sourceforge.net/projects/latex2rtf/).  Only report bugs for the
 latest version of LaTeX2RTF  that is available.   Please provide the
 following information and observe the following guidelines when
@@ -1106,21 +1252,19 @@ reporting a bug in the program:
      your question. I will, however, try to fix reported bugs in
      upcoming releases.
 
-Todo List
-=========
+8.5 Todo List
+=============
 
-   Scott's ToDo list
+Scott's ToDo list
    * Use lex/yacc to implement getSection
 
    * Add support for pagestyle
 
-   * Improve graphic/graphicx support
-
    * Better support for ignoring commands
 
-   Georg's todo list
+Georg's todo list
    * Make this Manual more consistent, the ToDo and Known Bug List
-     shorter and       the Features List longer.
+     shorter and the Features List longer.
 
    * Harmonize all of the error and warning messages.
 
@@ -1129,15 +1273,1812 @@ Todo List
    * Provide an Error and Warning recovery guide to the user.
 
    * Add a chapter with lists of all LaTeX  commands that convert, and
-     that do       not convert to RTF, including their status (for
-     future releases, never,       partially functional, ...).
+     that do not convert to RTF, including their status (for future
+     releases, never, partially functional, ...).
 
-Index
-*****
+8.6 Command List
+================
 
-Copyright issues:
-          See ``History & Copyright''.
-History of the programm:
-          See ``History & Copyright''.
+Listed here are all the LaTeX  commands currently parsed by LaTeX2RTF .
+Note: inclusion in this list does not mean that a command is fully and
+correctly handled by LaTeX2RTF . In some cases the commands here are
+place-holders only, and are not implemented at all. The list is provided
+to encourage developers to note any departures from the behaviour that
+LaTeX  users will expect. The location of the commands is noted to
+assist anyone interested in hacking on the C source code. This list is a
+work in progress, and may not be immediately useful to general users,
+other than to indicate those commands that we have at least contemplated
+implementing.
 
-...Table of Contents...
+8.6.1 General Commands
+----------------------
+
+These commands are found in the `commands[]' array in commands.c.  They
+are arranged alphabetically within sections according to function.
+
+8.6.1.1 Basic Commands
+......................
+
+All listed commands work as expected.
+
+begin
+
+centerline
+
+end
+
+endnote
+
+footnote
+
+raggedright
+
+the
+
+today
+
+vcenter
+
+8.6.1.2 Font Commands
+.....................
+
+All listed commands work as expected.
+
+bf
+
+bfseries
+
+cal
+
+em
+
+emph
+
+enotesize
+
+footnotesize
+
+HUGE
+
+Huge
+
+huge
+
+it
+
+itshape
+
+LARGE
+
+Large
+
+large
+
+mathbf
+
+mathcal
+
+mathit
+
+mathmd
+
+mathnormal
+
+mathrm
+
+mathsc
+
+mathsf
+
+mathsl
+
+mathtt
+
+mathup
+
+mdseries
+
+mit
+
+normalfont
+
+normalsize
+
+rm
+
+rmfamily
+
+sc
+
+scfamily
+
+scriptsize
+
+scshape
+
+sf
+
+sffamily
+
+sl
+
+slshape
+
+small
+
+ssmall
+
+textbf
+
+textfont
+
+textit
+
+textmd
+
+textnormal
+
+textrm
+
+textsc
+
+textsf
+
+textsl
+
+texttt
+
+textup
+
+tiny
+
+tt
+
+ttfamily
+
+underbar
+
+underline
+
+upshape
+
+8.6.1.3 Logos
+.............
+
+All listed commands work as expected.
+
+AmSLaTeX
+
+AmSTeX
+
+BibTeX
+
+kern
+
+LaTeX
+
+latex
+
+LaTeXe
+
+lower
+
+LyX
+
+SLiTeX
+
+TeX
+
+8.6.1.4 Special Characters
+..........................
+
+These commands all work as expected.
+
+\
+
+acute
+
+b
+
+bar
+
+breve
+
+c
+
+check
+
+d
+
+ddot
+
+dot
+
+grave
+
+H
+
+hat
+
+i
+
+j
+
+l
+
+L
+
+r
+
+tilde
+
+u
+
+v
+
+vec
+
+8.6.1.5 Sectioning Commands
+...........................
+
+chapter
+
+chapter*
+
+paragraph
+
+paragraph*
+
+part
+
+part*
+
+section
+
+section*
+
+subparagraph
+
+subparagraph*
+
+subsection
+
+subsection*
+
+subsubsection
+
+subsubsection*
+
+8.6.1.6 Uncategorized
+.....................
+
+These commands need to be organized into new or existing sections.
+
+abstract
+
+addcontents
+     Ignored
+
+addcontentsline
+     Ignored
+
+addvspace
+     Ignored
+
+aleph
+
+Alph
+
+alph
+     Ignored
+
+alpha
+
+Alpha
+     Ignored
+
+amalg
+
+and
+
+angle
+
+appendix
+     Ignored
+
+approx
+
+arabic
+     Ignored
+
+ast
+
+author
+
+baselineskip
+
+because
+
+beta
+
+Beta
+
+bibentry
+
+bibitem
+
+bibliography
+
+bibliographystyle
+
+bibliographystyle
+     Ignored
+
+bigskip
+
+bot
+
+BoxedEPSF
+
+bullet
+
+cap
+
+caption
+
+cdot
+
+cdots
+
+centering
+
+char
+
+chi
+
+Chi
+
+circ
+
+cite
+
+citeonline
+
+cleardoublepage
+
+clearpage
+
+clubsuit
+
+cong
+
+contentsline
+
+coprod
+
+cup
+
+date
+
+ddots
+
+delta
+
+Delta
+
+dfrac
+
+Diamond
+
+diamondsuit
+
+div
+
+doteq
+
+dotfill
+     There is no rtf code for dotfill; LaTeX2RTF  inserts an ellipsis
+     only.
+
+dots
+
+dots
+
+downarrow
+
+Downarrow
+
+efloatseparator
+
+ell
+
+emptyset
+
+endinput
+
+endnotemark
+     Ignored
+
+ensuremath
+
+epsfbox
+
+epsffile
+
+epsilon
+
+eqref
+
+equiv
+
+eta
+
+exists
+
+fbox
+
+fbox
+
+fnsymbol
+     Ignored
+
+footnotemark
+     Ignored
+
+forall
+
+frac
+
+Frac
+
+framebox
+     Ignored
+
+frenchspacing
+     Ignored
+
+gamma
+
+Gamma
+
+ge
+
+geq
+
+gg
+
+glossary
+     Ignored
+
+glossaryentry
+     Ignored
+
+hbar
+
+hbox
+
+heartsuit
+
+hsize
+
+hslash
+
+hspace
+     Ignored
+
+hspace*
+     Ignored
+
+htmladdnormallink
+
+htmlref
+
+iiint
+
+iint
+
+Im
+
+in
+
+include
+
+includegraphics
+
+includegraphics*
+
+includeonly
+     Ignored
+
+indent
+
+index
+
+indexentry
+     Ignored
+
+infty
+
+input
+
+int
+
+int
+
+iota
+
+kappa
+
+label
+
+lambda
+
+Lambda
+
+land
+
+langle
+
+lceil
+
+ldots
+
+le
+
+left
+
+leftarrow
+
+Leftarrow
+
+leftharpoondown
+
+leftleftarrows
+
+leftrightarrow
+
+Leftrightarrow
+
+leftrightarrows
+
+leq
+
+let
+     Ignored
+
+letterspace
+
+lfloor
+
+lim
+
+liminf
+
+limsup
+
+linebreak
+     Ignored
+
+lineskip
+
+listoffigures
+
+listoftables
+
+ll
+
+longleftarrow
+
+longleftrightarrows
+
+longrightarrow
+
+lor
+
+makebox
+     Ignored
+
+maketitle
+
+mapsto
+
+marginpar
+     Ignored
+
+markboth
+     Ignored
+
+markright
+     Ignored
+
+matrix
+
+mbox
+
+measuredangle
+
+medskip
+
+mho
+
+moveleft
+
+moveright
+
+mp
+
+mu
+
+multicolumn
+
+nabla
+
+ne
+
+nearrow
+
+neg
+
+neq
+
+newblock
+
+newcount
+     Ignored
+
+newfont
+     Ignored
+
+newpage
+
+newsavebox
+     Ignored
+
+nobibliography
+     Ignored
+
+nobreakspace
+
+nocite
+
+noindent
+
+nolinebreak
+     Ignored
+
+nonfrenchspacing
+     Ignored
+
+nonumber
+
+nopagebreak
+     Ignored
+
+notag
+
+nu
+
+numberline
+
+nwarrow
+
+omega
+
+Omega
+
+omicron
+
+onecolumn
+
+onlinecite
+
+oplus
+
+oslash
+
+otimes
+
+output
+     Ignored
+
+overline
+
+pagebreak
+
+pagenumbering
+     Ignored
+
+pageref
+
+pagestyle
+     Ignored
+
+par
+
+parbox
+
+partial
+
+perp
+
+phi
+
+Phi
+
+pi
+
+Pi
+
+pm
+
+prec
+
+printindex
+
+prod
+
+prod
+
+propto
+
+protect
+     Ignored
+
+psfig
+
+psfrag
+     Ignored
+
+psi
+
+Psi
+
+qquad
+
+quad
+
+raisebox
+     Ignored
+
+rangle
+
+rceil
+
+Re
+
+ref
+
+refstepcounter
+
+rfloor
+
+rho
+
+right
+
+Rightarrow
+
+rightarrow
+
+rightharpoonup
+
+rightleftarrows
+
+rightleftharpoons
+
+rightrightarrows
+
+Roman
+     Ignored
+
+roman
+     Ignored
+
+rule
+
+samepage
+     Ignored
+
+savebox
+     Ignored
+
+sbox
+     Ignored
+
+searrow
+
+setbox
+
+settowidth
+     Ignored
+
+sigma
+
+Sigma
+
+sim
+
+simeq
+
+smallskip
+
+spadesuit
+
+sqrt
+
+stackrel
+
+stepcounter
+     Ignored
+
+stretch
+     Ignored
+
+subset
+
+subseteq
+
+succ
+
+sum
+
+sum
+
+supset
+
+supseteq
+
+surd
+
+swarrow
+
+tableofcontents
+
+tau
+
+textalpha
+
+textbeta
+
+textbullet
+
+textchi
+
+textcolor
+
+textDelta
+
+textdelta
+
+textellipsis
+
+textepsilon
+
+texteta
+
+textGamma
+
+textgamma
+
+textiota
+
+textkappa
+
+textLambda
+
+textlambda
+
+textmu
+
+textnu
+
+textOmega
+
+textomega
+
+textperiodcentered
+
+textPhi
+
+textphi
+
+textPi
+
+textpi
+
+textPsi
+
+textpsi
+
+textSigma
+
+textsigma
+
+textsubscript
+
+textsuperscript
+
+textTau
+
+texttau
+
+textTheta
+
+texttheta
+
+textXi
+
+textxi
+
+textzeta
+
+thanks
+
+therefore
+
+Theta
+
+theta
+
+times
+
+title
+
+to
+
+triangleleft
+
+triangleright
+
+twocolumn
+
+typeaout
+     Ignored
+
+Typein
+     Ignored
+
+typein
+     Ignored
+
+typeout
+     Ignored
+
+Uparrow
+
+uparrow
+
+updownarrow
+
+Updownarrow
+
+upsilon
+
+Upsilon
+
+url
+
+usebox
+     Ignored
+
+value
+
+varepsilon
+
+varnothing
+
+varphi
+
+varpi
+
+varpropto
+
+varsigma
+
+vartheta
+
+vbox
+
+vdots
+
+vee
+
+verb
+
+verb*
+
+vref
+
+vsize
+
+vskip
+
+vspace
+
+vspace*
+
+wedge
+
+wp
+
+xi
+
+Xi
+
+zeta
+
+8.6.2 Preamble Commands
+-----------------------
+
+These commands are found in `PreambleCommands[]' in commands.c, and are
+implemented in preamble.c.
+
+addtocounter
+
+addtolength
+
+baselineskip
+
+celsius
+
+cfoot
+
+chead
+
+cline
+
+DeclareRobustCommand
+
+DeclareRobustCommand*
+
+def
+
+degreecelsius
+
+documentclass
+
+documentstyle
+
+doublespacing
+     Currently, the only command from the setspace package that is
+     implemented, and the only way to modify line spacing.
+
+endnotetext
+
+EUR
+
+euro
+
+evensidemargin
+
+fancyfoot
+
+fancyhead
+
+flushbottom
+
+footnotetext
+
+geometry
+     Currently recognizes *ratio, *centering, *margin, left, right,
+     inner, outer, top, bottom, right, left (including vmargin, hratio
+     etc.)
+
+headheight
+
+headsep
+
+hline
+
+hoffset
+
+htmladdnormallink
+
+htmlref
+
+hyphenation
+
+iflatextortf
+
+ifx
+
+include
+
+input
+
+latextortffalse
+     Ignored
+
+latextortftrue
+     Ignored
+
+lfoot
+
+lhead
+
+listoffiles
+     Ignored
+
+makeglossary
+     Ignored
+
+makeindex
+     Ignored
+
+makelabels
+     Ignored
+
+markboth
+     Ignored
+
+markright
+     Ignored
+
+newcommand
+
+newcounter
+
+newenvironment
+
+newif
+
+newlength
+
+newtheorem
+
+nobreakspace
+
+nofiles
+     Ignored
+
+oddsidemargin
+
+pagenumbering
+     Ignored
+
+pagestyle
+
+parindent
+
+parskip
+
+providecommand
+
+raggedbottom
+
+renewcommand
+
+renewenvironment
+
+renewtheorem
+     Ignored
+
+resizebox
+
+resizebox*
+
+rfoot
+
+rhead
+
+setcounter
+
+setlength
+
+signature
+
+textheight
+
+textwidth
+
+theendnotes
+
+thepage
+
+thispagestyle
+     Ignored
+
+topmargin
+
+usepackage
+
+verbositylevel
+
+voffset
+
+8.6.3 Letter Commands
+---------------------
+
+Found in `LetterCommands[]' in commands.c.
+
+address
+
+cc
+
+closing
+
+encl
+
+opening
+
+ps
+
+signature
+
+8.6.4 Language Commands
+-----------------------
+
+8.6.4.1 German Commands
+.......................
+
+Found in `GermanModeCommands[]' in commands.c.
+
+ck
+
+glqq
+
+glq
+
+grq
+
+grqq
+
+8.6.4.2 Czech Commands
+......................
+
+uv
+
+8.6.4.3 French Commands
+.......................
+
+deuxpoints
+
+dittomark
+
+FCS
+
+fg
+
+fup
+
+ieme
+
+iemes
+
+ier
+
+iere
+
+ieres
+
+iers
+
+inferieura
+
+LCS
+
+lq
+
+lqq
+
+numero
+
+Numero
+
+numeros
+
+Numeros
+
+og
+
+pointexclamation
+
+pointinterrogation
+
+pointvirgule
+
+primo
+
+quarto
+
+rq
+
+rqq
+
+secundo
+
+superieura
+
+tertio
+
+up
+
+8.6.4.4 Russian Commands
+........................
+
+CYRA
+
+cyra
+
+CYRB
+
+cyrb
+
+CYRC
+
+cyrc
+
+CYRCH
+
+cyrch
+
+CYRCHSH
+
+cyrchsh
+
+CYRD
+
+cyrd
+
+CYRE
+
+cyre
+
+CYREREV
+
+cyrerev
+
+CYRERY
+
+cyrery
+
+CYRF
+
+cyrf
+
+CYRG
+
+cyrg
+
+CYRH
+
+cyrh
+
+CYRHRDSN
+
+cyrhrdsn
+
+CYRI
+
+cyri
+
+CYRISHRT
+
+cyrishrt
+
+CYRK
+
+cyrk
+
+CYRL
+
+cyrl
+
+CYRM
+
+cyrm
+
+CYRN
+
+cyrn
+
+CYRO
+
+cyro
+
+CYRP
+
+cyrp
+
+CYRR
+
+cyrr
+
+CYRS
+
+cyrs
+
+CYRSFTSN
+
+cyrsftsn
+
+CYRSH
+
+cyrsh
+
+CYRT
+
+cyrt
+
+CYRU
+
+cyru
+
+CYRV
+
+cyrv
+
+CYRYA
+
+cyrya
+
+CYRYU
+
+cyryu
+
+CYRZ
+
+cyrz
+
+CYRZH
+
+cyrzh
+
+8.6.5 Citation Commands
+-----------------------
+
+8.6.5.1 Apacite Commands
+........................
+
+AX
+
+BAnd
+
+BBA
+
+BBAA
+
+BBAB
+
+BBAY
+
+BBC
+
+BBCP
+
+BBCQ
+
+BBN
+
+BBOP
+
+BBOQ
+
+BCAY
+
+BCBL
+
+BCBT
+
+BCHAIR
+
+BCHAIRS
+
+BCnt
+
+BCntIP
+
+BED
+
+BEd
+
+BEDS
+
+Bem
+
+BIP
+
+BMTh
+
+BNUM
+
+BNUMS
+
+BOthers
+
+BOWP
+
+BPG
+
+BPGS
+
+BPhD
+
+BREPR
+
+BTR
+
+BTRANS
+
+BTRANSS
+
+BUMTh
+
+BUPhD
+
+BVOL
+
+BVOLS
+
+citeA
+
+citeauthor
+
+citeNP
+
+citeyear
+
+citeyearNP
+
+fullcite
+
+fullciteA
+
+fullciteauthor
+
+fullciteNP
+
+shortcite
+
+shortciteA
+
+shortciteauthor
+
+shortciteNP
+
+8.6.5.2 AuthorDate Commands
+...........................
+
+citename
+
+shortcite
+
+8.6.5.3 Harvard Commands
+........................
+
+cite
+
+citeaffixed
+
+citeasnoun
+
+citename
+
+citeyear
+
+citeyear*
+
+harvardand
+
+harvarditem
+
+harvardyearleft
+
+harvardyearright
+
+possessivecite
+
+8.6.5.4 HyperLatex Commands
+...........................
+
+Cite
+
+link
+
+Pageref
+
+Ref
+
+S
+
+xlink
+
+8.6.5.5 Apacite Commands
+........................
+
+bibpunct
+
+cite
+
+citealp
+
+Citealp
+
+citealp*
+
+citealt
+
+Citealt
+
+citealt*
+
+citeauthor
+
+Citeauthor
+
+citeauthor*
+
+citep
+
+Citep
+
+citep*
+
+citet
+
+Citet
+
+citet*
+
+citetext
+
+citeyear
+
+citeyearpar
+
+8.6.6 Other Commands
+--------------------
+
+Other Commands:
+item
+caption
+center
+8.6.7 Environments
+------------------
+
+Environments processed - found in `params[]' in commands.c.
+
+abstract
+
+acknowledgments
+
+align
+
+align*
+
+alltt
+
+array
+
+bf
+
+bfseries
+
+center
+
+comment
+
+compactenum
+
+compactitem
+
+description
+
+displaymath
+
+document
+
+em
+
+enumerate
+
+eqnarray
+
+eqnarray*
+
+equation
+
+equation*
+
+figure
+
+figure*
+
+flushleft
+
+flushright
+
+htmlonly
+     Ignored
+
+it
+
+itemize
+
+itshape
+
+landscape
+
+latexonly
+     Ignored
+
+letter
+
+list
+
+longtable
+
+longtable*
+
+math
+
+mdseries
+
+minipage
+
+multicolumn
+
+music
+
+picture
+
+quotation
+
+quote
+
+rawhtml
+     Ignored
+
+rm
+
+rmfamily
+
+sc
+
+scshape
+
+sf
+
+sffamily
+
+sl
+
+sloppypar
+
+slshape
+
+small
+
+tabbing
+
+table
+
+table*
+
+tabular
+
+tabular*
+
+thebibliography
+
+theindex
+     Ignored
+
+titlepage
+
+tt
+
+ttfamily
+
+verbatim
+
+Verbatim
+
+verse
+
+9 Function Index
+****************
+
+10 Concept Index
+****************
+

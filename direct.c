@@ -27,15 +27,16 @@ Authors:
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "main.h"
 #include "direct.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "cfg.h"
 #include "util.h"
 
 #define MAXFONTLEN 100
 
-void WriteFontName(const char **buffpoint)
+int WriteFontName(const char **buffpoint)
 
 /******************************************************************************
   purpose: reads the fontname at buffpoint and writes the appropriate font
@@ -53,7 +54,7 @@ void WriteFontName(const char **buffpoint)
     buff = *buffpoint;
     if (**buffpoint == '*') {
         fprintRTF("*");
-        return;
+        return -1;
     }
 
     i = 0;
@@ -73,10 +74,11 @@ void WriteFontName(const char **buffpoint)
         diagnostics(ERROR, "Unknown font <%s>\nFound in cfg file command <%s>", fontname, buff);
     else
         fprintRTF("%u", (unsigned int) fnumber);
+    
+    return fnumber;
 }
 
 bool TryDirectConvert(char *command)
-
 /******************************************************************************
   purpose: uses data from direct.cfg to try and immediately convert some
            LaTeX commands into RTF commands.  
@@ -85,6 +87,7 @@ bool TryDirectConvert(char *command)
     const char *buffpoint;
     const char *RtfCommand;
     char *TexCommand;
+    int font_number;
 
     TexCommand = strdup_together("\\", command);
     RtfCommand = SearchRtfCmd(TexCommand, DIRECT_A);
@@ -94,8 +97,8 @@ bool TryDirectConvert(char *command)
     buffpoint = RtfCommand;
     diagnostics(4, "Directly converting %s to %s", TexCommand, RtfCommand);
     while (buffpoint[0] != '\0') {
-        if (buffpoint[0] == '*')
-            WriteFontName(&buffpoint);
+        if (buffpoint[0] == '*') 
+            font_number = WriteFontName(&buffpoint);
         else
             fprintRTF("%c", *buffpoint);
 

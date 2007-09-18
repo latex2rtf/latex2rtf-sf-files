@@ -12,6 +12,8 @@
 #define EQN_DOLLAR_DOLLAR 14  /* \begin{displaymath} ... \end{displaymath} */
 #define EQN_NO_NUMBER     15	/* \nonumber */
 #define EQN_ENSUREMATH    16	/* \ensuremath */
+#define EQN_ALIGN         17	/* align environment */
+#define EQN_ALIGN_STAR    18	/* align* environment */
 
 #define LEFT_RIGHT 1
 #define RIGHT_LEFT 2
@@ -19,6 +21,8 @@
 #define LONG_RIGHTLEFT 4
 #define LEFT_LEFT 5
 #define RIGHT_RIGHT 6
+#define LONG_LEFT 7
+#define LONG_RIGHT 8
 
 void CmdEquation(int code);
 void CmdFraction(int code);
@@ -37,3 +41,4 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post);
 int  script_shift(void);
 int  script_size(void);
 void CmdEnsuremath(int code);
+void CmdOverLine(int code);

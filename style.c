@@ -27,7 +27,7 @@ Authors:
 #include <string.h>
 #include "main.h"
 #include "direct.h"
-#include "l2r_fonts.h"
+#include "fonts.h"
 #include "cfg.h"
 #include "util.h"
 #include "parser.h"
@@ -45,6 +45,7 @@ void InsertBasicStyle(const char *rtf, bool include_header_info)
 {
     const char *style;
     char *comma;
+    int font_number;
 
     if (rtf == NULL)
         return;
@@ -69,7 +70,7 @@ void InsertBasicStyle(const char *rtf, bool include_header_info)
     while (*style != '\0') {
 
         if (*style == '*')
-            WriteFontName(&style);
+            font_number = WriteFontName(&style);
         else
             fprintRTF("%c", *style);
 
