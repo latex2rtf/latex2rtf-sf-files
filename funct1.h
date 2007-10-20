@@ -38,9 +38,9 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define BOX_FBOX       4
 #define BOX_PARBOX     5
 
-#define FIRST_PAR      1
-#define ANY_PAR        2
-#define TITLE_PAR      3
+#define FIRST_INDENT      1
+#define ANY_INDENT        2
+#define TITLE_INDENT      3
 
 #define INDENT_NONE    1
 #define INDENT_INHIBIT 2
@@ -62,12 +62,12 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define VSPACE_BIG_SKIP    3
 
 void CmdBeginEnd(int code);
-void CmdStartParagraph(int code);
 void CmdEndParagraph(int code);
 void CmdIndent(int code);
 void CmdVspace(int code);
 void CmdSlashSlash(int code);
 void CmdDoubleSpacing(int code);
+void CmdStartParagraph(const char *style, int indenting);
 
 #define DEF_NEW    1
 #define DEF_RENEW  2
@@ -198,3 +198,4 @@ void CmdRule(int code);
 void CmdTolerateEnviron(int code);
 void CmdIflatextortf(int code);
 void CmdNewif(int code);
+void CmdAppendix(int code);

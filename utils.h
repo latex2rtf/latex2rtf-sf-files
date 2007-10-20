@@ -1,4 +1,4 @@
-/* util.h - handy strings routines
+/* utils.h - handy strings routines
 
 Copyright (C) 1995-2002 The Free Software Foundation
 
@@ -26,9 +26,12 @@ Authors:
 
 int     odd(int n);
 int     even(int n);
+double  my_rint(double nr);
 int     strstr_count(char *s, char *t);
 char *  my_strndup(char *s, size_t n);
 char *  strdup_together(char *s, char *t);
+char *  strdup_together3(char *s, char *t, char *u);
+char *  strdup_together4(char *s, char *t, char *u, char *v);
 char *	strdup_noblanks(char *s);
 char *	strdup_nocomments(char *s);
 char *	strdup_nobadchars(char *s);
@@ -39,4 +42,4 @@ char *	ExtractLabelTag(char *text);
 char *	ExtractAndRemoveTag(char *tag, char *text);
 char *  keyvalue_pair(char *t, char **key, char **value);
 int     getStringDimension(char *s);
-
+char *  getStringBraceParam(char **s);

@@ -79,11 +79,8 @@ extern int		g_right_margin_indent;
 extern char		alignment;
 
 /* table  & tabbing variables */
-extern char		*colFmt;
 extern long		pos_begin_kill;
 extern int		tabcounter;
-extern int		colCount;
-extern int		actCol;
 extern int		g_equation_column;
 extern int		tabcounter;
 
@@ -123,7 +120,7 @@ extern char		*g_table_label;
 extern char		*g_equation_label;
 extern char		*g_section_label;
 extern char		*g_config_path;
-extern char		*g_script_path;
+extern char		*g_script_dir;
 extern char		g_field_separator;
 extern char		*g_preamble;
 
@@ -140,6 +137,10 @@ extern bool		g_equation_inline_bitmap;
 extern bool		g_equation_display_bitmap;
 extern bool		g_equation_comment;
 extern bool     g_equation_raw_latex;
+
+extern bool 	g_tabular_display_rtf;
+extern bool 	g_tabular_display_bitmap;
+
 extern bool		g_little_endian;
 extern bool		g_tableofcontents;
 

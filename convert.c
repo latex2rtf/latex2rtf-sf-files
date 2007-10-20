@@ -57,12 +57,12 @@ correctly, as well as vertical and horizontal space.
 #include "fonts.h"
 #include "stack.h"
 #include "tables.h"
-#include "equation.h"
+#include "equations.h"
 #include "direct.h"
 #include "ignore.h"
 #include "cfg.h"
-#include "encode.h"
-#include "util.h"
+#include "encodings.h"
+#include "utils.h"
 #include "parser.h"
 #include "lengths.h"
 #include "counters.h"
@@ -88,7 +88,7 @@ void SetTexMode(int mode)
     }
 
     if (g_TeX_mode == MODE_VERTICAL && mode == MODE_HORIZONTAL)
-        CmdStartParagraph(ANY_PAR);
+        CmdStartParagraph("body", ANY_INDENT);
 
     if (g_TeX_mode == MODE_HORIZONTAL && mode == MODE_VERTICAL)
         CmdEndParagraph(0);
@@ -352,8 +352,11 @@ globals: fTex, fRtf and all global flags for convert (see above)
                 }
 
                 if (g_processing_tabular) { /* in tabular */
+                	diagnostics(0,"this should not happen tabular should handle this!");
+                	/*
                     actCol++;
                     fprintRTF("\\cell\\pard\\intbl\\q%c ", colFmt[actCol]);
+                    */
                     break;
                 }
                 fprintRTF("&");

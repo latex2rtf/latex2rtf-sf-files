@@ -1,5 +1,5 @@
 
-/* equation.c - Translate TeX equations
+/* equations.c - Translate TeX equations
 
 Copyright (C) 1995-2002 The Free Software Foundation
 
@@ -36,14 +36,15 @@ Authors:
 #include "cfg.h"
 #include "ignore.h"
 #include "parser.h"
-#include "equation.h"
+#include "equations.h"
 #include "counters.h"
 #include "funct1.h"
 #include "lengths.h"
-#include "util.h"
+#include "utils.h"
 #include "graphics.h"
-#include "xref.h"
+#include "xrefs.h"
 #include "chars.h"
+#include "preamble.h"
 
 int g_equation_column = 1;
 
@@ -247,7 +248,7 @@ static int EquationNeedsFields(char *eq)
 static void WriteEquationAsRawLatex(char *pre, char *eq, char *post)
 
 /******************************************************************************
- purpose   : Writes equation to RTF file as text of COMMENT field
+ purpose   : Writes equation to RTF file as plain text 
  ******************************************************************************/
 {
     fprintRTF("<<:");
@@ -274,99 +275,6 @@ static void WriteEquationAsComment(char *pre, char *eq, char *post)
     while (*post)
         putRtfCharEscaped(*post++);
     fprintRTF("\" }{ }}{\\fldrslt }}");
-}
-
-static char *SaveEquationAsFile(char *pre, char *eq_with_spaces, char *post)
-{
-    FILE *f;
-    char name[15];
-    char *tmp_dir, *fullname, *texname, *eq;
-    static int file_number = 0;
-
-    if (!pre || !eq_with_spaces || !post)
-        return NULL;
-
-    eq = strdup_noendblanks(eq_with_spaces);
-
-/* create needed file names */
-    file_number++;
-    tmp_dir = getTmpPath();
-    snprintf(name, 15, "l2r_%04d", file_number);
-    fullname = strdup_together(tmp_dir, name);
-    texname = strdup_together(fullname, ".tex");
-
-    diagnostics(4, "SaveEquationAsFile =%s", texname);
-
-    f = fopen(texname, "w");
-    while (eq && (*eq == '\n' || *eq == ' '))
-        eq++;                   /* skip whitespace */
-    if (f) {
-        fprintf(f, "%s", g_preamble);
-        fprintf(f, "\\thispagestyle{empty}\n");
-        fprintf(f, "\\begin{document}\n");
-        fprintf(f, "\\setcounter{equation}{%d}\n", getCounter("equation"));
-        if ((strcmp(pre, "$") == 0) || (strcmp(pre, "\\begin{math}") == 0) || (strcmp(pre, "\\(") == 0)) {
-            fprintf(f, "%%INLINE_DOT_ON_BASELINE\n");
-            fprintf(f, "%s\n.\\quad %s\n%s", pre, eq, post);
-        } else if (strstr(pre, "equation"))
-            fprintf(f, "$$%s$$", eq);
-        else
-            fprintf(f, "%s\n%s\n%s", pre, eq, post);
-        fprintf(f, "\n\\end{document}");
-        fclose(f);
-    } else {
-        free(fullname);
-        fullname = NULL;
-    }
-
-    free(eq);
-    free(tmp_dir);
-    free(texname);
-    return (fullname);
-}
-
-
-void WriteLatexAsBitmap(char *pre, char *eq, char *post)
-
-/******************************************************************************
- purpose   : Convert LaTeX to Bitmap and write to RTF file
- ******************************************************************************/
-{
-    char *p, *name;
-    double scale;
-
-    diagnostics(4, "Entering WriteEquationAsBitmap");
-
-    if (eq == NULL)
-        return;
-
-    scale = g_png_equation_scale;
-    if (strstr(pre, "music") || strstr(pre, "figure") || strstr(pre, "picture"))
-        scale = g_png_figure_scale;
-
-/* suppress bitmap equation numbers in eqnarrays with zero or one \label{}'s*/
-    if (strcmp(pre, "\\begin{eqnarray}") == 0) {
-        p = strstr(eq, "\\label");
-        if (p != NULL && strlen(p) > 6) /* found one ... is there a second? */
-            p = strstr(p + 6, "\\label");
-        if (p == NULL)
-            name = SaveEquationAsFile("\\begin{eqnarray*}", eq, "\\end{eqnarray*}");
-        else
-            name = SaveEquationAsFile(pre, eq, post);
-
-    } else if (strcmp(pre, "\\begin{align}") == 0) {
-        p = strstr(eq, "\\label");
-        if (p != NULL && strlen(p) > 6) /* found one ... is there a second? */
-            p = strstr(p + 6, "\\label");
-        if (p == NULL)
-            name = SaveEquationAsFile("\\begin{align*}", eq, "\\end{align*}");
-        else
-            name = SaveEquationAsFile(pre, eq, post);
-    } else
-
-        name = SaveEquationAsFile(pre, eq, post);
-
-    PutLatexFile(name, 0, 0, scale, pre);
 }
 
 static void PrepareRtfEquation(int code, int EQ_Needed)
@@ -506,6 +414,25 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
 
 }
 
+static char *CreateEquationLabel(void)
+{
+	char *number = malloc(30);
+	int n;
+	
+	n = getCounter("equation");
+	
+	if (g_document_type == FORMAT_REPORT ||
+	    g_document_type == FORMAT_BOOK )
+		snprintf(number, 29, "%d.%d", getCounter("chapter"), getCounter("equation"));
+	else
+		snprintf(number, 29, "%d", getCounter("equation"));
+		
+	return number;
+}
+
+	
+
+
 static void FinishRtfEquation(int code, int EQ_Needed)
 {
     if (g_fields_use_EQ && EQ_Needed && g_processing_fields == 1) {
@@ -583,14 +510,15 @@ static void FinishRtfEquation(int code, int EQ_Needed)
         case EQN_ALIGN:
             diagnostics(4, "FinishRtfEquation --- equation or eqnarray or align");
             if (g_show_equation_number && !g_suppress_equation_number) {
-                char number[20];
+                char *number;
 
                 incrementCounter("equation");
                 for (; g_equation_column < 3; g_equation_column++)
                     fprintRTF("\\tab ");
                 fprintRTF("\\tab{\\b0 (");
-                snprintf(number, 20, "%d", getCounter("equation"));
+                number = CreateEquationLabel();
                 InsertBookmark(g_equation_label, number);
+                free(number);
                 if (g_equation_label) {
                     free(g_equation_label);
                     g_equation_label = NULL;

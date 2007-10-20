@@ -1,6 +1,6 @@
 
 /*
- * util.c - handy routines
+ * utils.c - handy routines
  * 
  * Copyright (C) 1995-2002 The Free Software Foundation
  * 
@@ -24,10 +24,11 @@
  * Prahl
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "main.h"
-#include "util.h"
+#include "utils.h"
 #include "parser.h"
 
 /******************************************************************************
@@ -44,6 +45,16 @@ int odd(int n)
 int even(int n)
 {
     return (!(n & 1));
+}
+
+/******************************************************************************
+ purpose:  rounds to nearest integer. round() in math.h is not always present
+ *****************************************************************************/
+double my_rint(double nr)
+{
+  double f = floor(nr);
+  double c = ceil(nr);
+  return (((c-nr) >= (nr-f)) ? f :c);
 }
 
 /******************************************************************************
@@ -107,6 +118,30 @@ char *strdup_together(char *s, char *t)
     strcpy(both, s);
     strcat(both, t);
     return both;
+}
+
+/******************************************************************************
+ purpose:  returns a new string consisting of s+t+u
+******************************************************************************/
+char *strdup_together3(char *s, char *t, char *u)
+{
+    char *two, *three;
+	two = strdup_together(s,t);
+	three = strdup_together(two,u);
+	free(two);
+	return three;
+}
+
+/******************************************************************************
+ purpose:  returns a new string consisting of s+t+u+v
+******************************************************************************/
+char *strdup_together4(char *s, char *t, char *u, char *v)
+{
+    char *four, *three;
+	three = strdup_together3(s,t,u);
+	four = strdup_together(three,v);
+	free(three);
+	return four;
 }
 
 /******************************************************************************
@@ -292,12 +327,56 @@ char *ExtractLabelTag(char *text)
 }
 
 /******************************************************************************
+ purpose: provide functionality of getBraceParam() for strings
+ 
+ 		if s contains "aaa {stuff}cdef", then  
+ 			parameter = getStringBraceParam(&s)
+ 			
+ 		  gives
+ 			parameter = "stuff"
+ 			s="cdef"
+ ******************************************************************************/
+char *getStringBraceParam(char **s)
+
+{
+	char *p_start, *p, *parameter, last;
+	int braces = 1;
+		
+	/* find start of parameter */
+	if (*s == NULL) return NULL;
+	p_start = strchr(*s,'{');
+	if (p_start==NULL) return NULL;
+
+	/* scan to enclosing brace */
+	p_start++;
+	p=p_start;	
+	last = '\0';
+	while (*p != '\0' && braces > 0) {
+		if (*p == '{' && last != '\\')
+			braces++;
+		if (*p == '}' && last != '\\')
+			braces--;
+		last = *p;
+		p++;
+	}
+	
+	parameter = my_strndup(p_start, p-p_start-1);
+	*s = p;
+
+	diagnostics(6,"Extract parameter=<%s> after=<%s>", parameter, *s); 
+	
+	return parameter;
+	
+}
+
+
+/******************************************************************************
   purpose: remove 'tag{contents}' from text and return contents
            note that tag should typically be "\\caption"
  ******************************************************************************/
 char *ExtractAndRemoveTag(char *tag, char *text)
 {
-    char *s, *contents, *start=NULL, *end;
+    char *s, *contents, *start=NULL;
 
     if (text==NULL || *text=='\0') return NULL;
     
@@ -314,21 +393,13 @@ char *ExtractAndRemoveTag(char *tag, char *text)
             break;
     }
 
-    PushSource(NULL, s);
-    contents = getBraceParam();
-    PopSource();
-
-    if (!contents)
-        return NULL;
-
-    end = strstr(s, contents) + strlen(contents) + 1;   /* end just after '}' */
-
-    free(contents);
-    contents = my_strndup(start, (size_t) (end - start));
-
+	contents = getStringBraceParam(&s);
+	if (contents == NULL) return NULL;
+	
+	/* erase "tag{contents}" */
     do
-        *start++ = *end++;
-    while (*end);               /* erase "tag{contents}" */
+        *start++ = *s++;
+    while (*s);               
     *start = '\0';
 
     diagnostics(5, "final contents = <%s>", contents);

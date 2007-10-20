@@ -38,7 +38,7 @@ BABEL_TESTS=babel_german.rtf babel_russian.rtf babel_czech.rtf babel_french.rtf 
 	        babel_spanish.rtf babel_frenchb.rtf bib_simple.rtf
 	        
 EQN_TESTS=  eqns.rtf	eqns2.rtf eqns-koi8.rtf ttgfsr7.rtf spago1.rtf misc2.rtf\
-            frac.rtf	subsup.rtf	theorem.rtf
+            frac.rtf	subsup.rtf	theorem.rtf eqnnumber.rtf eqnnumber2.rtf
 
 CHAR_TESTS= accentchars.rtf oddchars.rtf unicode.rtf overstrike.rtf
 
@@ -207,6 +207,16 @@ linux.rtf: linux.tex
 	$(LATEX) linux $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) linux
 
+eqnnumber.rtf: eqnnumber.tex
+	$(LATEX) eqnnumber $(LATEX_LOG)
+	$(LATEX) eqnnumber $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) eqnnumber
+
+eqnnumber2.rtf: eqnnumber2.tex
+	$(LATEX) eqnnumber2 $(LATEX_LOG)
+	$(LATEX) eqnnumber2 $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) eqnnumber2
+
 check:
 	./bracecheck
 	
@@ -214,11 +224,13 @@ clean:
 	mv fig_testb.pdf fig_testb.tmp
 	mv fig_testc.pdf fig_testc.tmp
 	mv fig_testd.pdf fig_testd.tmp
+	mv fig_teste.pdf fig_teste.tmp
 	rm -f *.dvi *.rtf *.aux *.blg *.bbl *.log *.pdf *.toc *.lot *.idx *.ilg *.ind
 	rm -f l2r*tex frlicense.dat *.fff *.lof
 	mv fig_testb.tmp fig_testb.pdf
 	mv fig_testc.tmp fig_testc.pdf
 	mv fig_testd.tmp fig_testd.pdf
+	mv fig_teste.tmp fig_teste.pdf
 	rm -rf ../tmp
 
 .PHONY: clean all check

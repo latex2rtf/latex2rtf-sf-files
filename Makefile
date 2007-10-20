@@ -53,15 +53,15 @@ PKG_NAME:="$(PWD)/macosx/dmg/latex2rtf-$(VERSION)/latex2rtf.pkg"
 PKG_MAKER=/Developer/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
 DMG_DIR := "$(PWD)/macosx/dmg/latex2rtf-$(VERSION)"
 
-SRCS=commands.c chars.c direct.c encode.c fonts.c funct1.c tables.c ignore.c \
-	main.c stack.c cfg.c util.c parser.c lengths.c counters.c letterformat.c \
-	preamble.c equation.c convert.c xref.c definitions.c graphics.c \
-	mygetopt.c style.c
+SRCS=commands.c chars.c direct.c encodings.c fonts.c funct1.c tables.c ignore.c \
+	main.c stack.c cfg.c utils.c parser.c lengths.c counters.c letterformat.c \
+	preamble.c equations.c convert.c xrefs.c definitions.c graphics.c \
+	mygetopt.c styles.c preparse.c
 
-HDRS=commands.h chars.h direct.h encode.h fonts.h funct1.h tables.h ignore.h \
-    main.h stack.h cfg.h util.h parser.h lengths.h counters.h letterformat.h \
-    preamble.h equation.h convert.h xref.h definitions.h graphics.h encode_tables.h \
-    version.h mygetopt.h style.h
+HDRS=commands.h chars.h direct.h encodings.h fonts.h funct1.h tables.h ignore.h \
+    main.h stack.h cfg.h utils.h parser.h lengths.h counters.h letterformat.h \
+    preamble.h equations.h convert.h xrefs.h definitions.h graphics.h encoding_tables.h \
+    version.h mygetopt.h styles.h preparse.h
 
 CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg cfg/style.cfg \
     cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
@@ -82,49 +82,57 @@ README= README README.DOS README.Mac README.OS2 README.Solaris README.VMS README
         Copyright ChangeLog
 
 SCRIPTS= scripts/version scripts/latex2png scripts/latex2png_1 scripts/latex2png_2 \
-	scripts/latex2pn.bat scripts/README \
+	scripts/pdf2pnga scripts/README \
 	scripts/Makefile scripts/test1.tex scripts/test2.tex scripts/test3.tex \
 	scripts/test3a.tex scripts/test4.tex scripts/test1fig.eps
 
-TEST=   test/Makefile test/bracecheck test/accentchars.tex test/array.tex  \
-	test/eqns.tex test/fonts.tex test/fontsize.tex test/frac.tex \
-	test/list.tex test/logo.tex test/misc1.tex test/misc2.tex \
-	test/oddchars.tex test/tabular.tex test/percent.tex test/essential.tex test/hndout.sty \
-	test/misc3.tex test/misc4.tex test/fancy.tex test/align.tex \
-	test/box.tex test/ttgfsr7.tex \
-	test/defs.tex test/excalibur.tex test/qualisex.tex test/include.tex \
-	test/include1.tex test/include2.tex test/include3.tex test/ch.tex test/spago1.tex \
-	test/theorem.tex test/picture.tex test/eqns-koi8.tex test/tabbing.tex \
-	test/chem.tex test/linux.tex test/color.tex test/subsup.tex \
-	test/babel_german.tex  test/babel_russian.tex test/babel_french.tex \
-	test/babel_frenchb.tex test/babel_czech.tex test/babel_spanish.tex \
-	test/bib_apacite.tex    test/bib_apalike.tex test/bib_apalike2.tex \
-	test/bib_natbib1.tex    test/bib_natbib2.tex test/bib_natbib3.tex test/bib_apanat.tex \
-	test/bib_authordate.tex test/bib_simple.tex test/bib_simple.bib\
-	test/enc_applemac.tex test/enc_cp437.tex test/enc_cp865.tex test/enc_latin2.tex \
-	test/enc_latin5.tex test/enc_cp1250.tex test/enc_cp850.tex test/enc_decmulti.tex  \
-	test/enc_latin3.tex test/enc_latin9.tex test/enc_cp1252.tex test/enc_cp852.tex \
-	test/enc_latin1.tex test/enc_latin4.tex test/enc_next.tex  \
-	test/enc_cp1251.tex test/enc_cp855.tex  test/enc_cp866.tex  test/enc_koi8-r.tex \
-	test/enc_koi8-u.tex test/enc_maccyr.tex test/enc_macukr.tex \
-	test/fig_test.eps test/fig_testb.pdf test/fig_test.tex \
-	test/fig_test2.tex test/fig_testc.ps test/fig_testc.pdf test/fig_testd.ps \
-	test/fig_testd.pdf test/fig_test3.tex test/fig_size.tex \
-	test/head_book.tex test/head_report.tex test/head_article.tex \
-	test/endnote.tex   test/bib_harvard.tex test/report.tex \
-	test/bibentry_apalike.tex test/bibentry_apalike.bib \
-	test/bibentry_plain.tex   test/bibentry_plain.bib \
-	test/bib_apacite_dblsp.tex test/dblspace.tex test/geotest.tex\
-	test/eqns2.tex             test/ifclause.tex test/enc_utf8x.tex\
-	test/geometry.tex          test/unicode.tex  test/fonttest.tex\
-	test/german.tex            test/bib_harvard.bib test/bib_super.tex\
-	test/fig_endfloat.tex      test/fig_test4.tex   test/overstrike.tex
+TEST=  \
+	test/Makefile                test/enc_cp852.tex      test/fig_testd.pdf     \
+	test/accentchars.tex         test/enc_cp855.tex      test/fig_testd.ps      \
+	test/align.tex               test/enc_cp865.tex      test/fig_teste.pdf     \
+	test/array.tex               test/enc_cp866.tex      test/fig_testf.png     \
+	test/babel_czech.tex         test/enc_decmulti.tex   test/fig_tex.eps       \
+	test/babel_french.tex        test/enc_koi8-r.tex     test/fonts.tex         \
+	test/babel_frenchb.tex       test/enc_koi8-u.tex     test/fontsize.tex      \
+	test/babel_german.tex        test/enc_latin1.tex     test/fonttest.tex      \
+	test/babel_russian.tex       test/enc_latin2.tex     test/frac.tex          \
+	test/babel_spanish.tex       test/enc_latin3.tex     test/geometry.tex      \
+	test/bib_apacite.tex         test/enc_latin4.tex     test/geotest.tex       \
+	test/bib_apacite_dblsp.tex   test/enc_latin5.tex     test/german.tex        \
+	test/bib_apalike.tex         test/enc_latin9.tex     test/head_article.tex  \
+	test/bib_apalike2.tex        test/enc_maccyr.tex     test/head_book.tex     \
+	test/bib_apanat.tex          test/enc_macukr.tex     test/head_report.tex   \
+	test/bib_authordate.tex      test/enc_next.tex       test/hndout.sty        \
+	test/bib_harvard.bib         test/enc_utf8x.tex      test/ifclause.tex      \
+	test/bib_harvard.tex         test/endnote.tex        test/include.tex       \
+	test/bib_natbib1.tex         test/eqnnumber.tex      test/include1.tex      \
+	test/bib_natbib2.tex         test/eqnnumber2.tex     test/include2.tex      \
+	test/bib_natbib3.tex         test/eqns-koi8.tex      test/include3.tex      \
+	test/bib_simple.bib          test/eqns.tex           test/linux.tex         \
+	test/bib_simple.tex          test/eqns2.tex          test/list.tex          \
+	test/bib_super.tex           test/essential.tex      test/logo.tex          \
+	test/bibentry_apalike.bib    test/excalibur.tex      test/misc1.tex         \
+	test/bibentry_apalike.tex    test/fancy.tex          test/misc2.tex         \
+	test/bibentry_plain.bib      test/fig_endfloat.tex   test/misc3.tex         \
+	test/bibentry_plain.tex      test/fig_oval.eps       test/misc4.tex         \
+	test/box.tex                 test/fig_oval.pict      test/oddchars.tex      \
+	test/bracecheck              test/fig_oval.png       test/overstrike.tex    \
+	test/ch.tex                  test/fig_size.tex       test/percent.tex       \
+	test/chem.tex                test/fig_test.eps       test/picture.tex       \
+	test/color.tex               test/fig_test.tex       test/qualisex.tex      \
+	test/dblspace.tex            test/fig_test2.tex      test/report.tex        \
+	test/defs.tex                test/fig_test3.tex      test/spago1.tex        \
+	test/enc_applemac.tex        test/fig_test4.tex      test/subsup.tex        \
+	test/enc_cp1250.tex          test/fig_testa.eps      test/tabbing.tex       \
+	test/enc_cp1251.tex          test/fig_testb.pdf      test/tabular.tex       \
+	test/enc_cp1252.tex          test/fig_testb.ps       test/theorem.tex       \
+	test/enc_cp437.tex           test/fig_testc.pdf      test/ttgfsr7.tex       \
+	test/enc_cp850.tex           test/fig_testc.ps       test/unicode.tex
 	
-	
-OBJS=fonts.o direct.o encode.o commands.o stack.o funct1.o tables.o \
-	chars.o ignore.o cfg.o main.o util.o parser.o lengths.o counters.o \
-	preamble.o letterformat.o equation.o convert.o xref.o definitions.o graphics.o \
-	mygetopt.o style.o
+OBJS=fonts.o direct.o encodings.o commands.o stack.o funct1.o tables.o \
+	chars.o ignore.o cfg.o main.o utils.o parser.o lengths.o counters.o \
+	preamble.o letterformat.o equations.o convert.o xrefs.o definitions.o graphics.o \
+	mygetopt.o styles.o preparse.o
 
 all : checkdir uptodate latex2rtf
 
@@ -144,6 +152,7 @@ check test: latex2rtf
 	
 fullcheck: latex2rtf
 	cd scripts && $(MAKE)
+	cd test && $(MAKE) clean
 	cd test && $(MAKE) all
 	cd test && $(MAKE) check
 
@@ -261,49 +270,54 @@ pkg:
 .PHONY: all check checkdir clean depend dist doc install install_info realclean latex2rtf uptodate splint fullcheck
 
 # created using "make depend"
-commands.o: commands.c cfg.h main.h convert.h chars.h fonts.h \
-  preamble.h funct1.h tables.h equation.h letterformat.h commands.h \
-  parser.h xref.h ignore.h lengths.h definitions.h graphics.h
-chars.o: chars.c main.h commands.h fonts.h cfg.h ignore.h encode.h \
+commands.o: commands.c cfg.h main.h convert.h chars.h fonts.h preamble.h \
+  funct1.h tables.h equations.h letterformat.h commands.h parser.h \
+  xrefs.h ignore.h lengths.h definitions.h graphics.h
+chars.o: chars.c main.h commands.h fonts.h cfg.h ignore.h encodings.h \
   parser.h chars.h funct1.h convert.h
-direct.o: direct.c main.h direct.h fonts.h cfg.h util.h
-encode.o: encode.c main.h fonts.h funct1.h encode.h encode_tables.h \
-  chars.h
-fonts.o: fonts.c main.h convert.h fonts.h funct1.h commands.h \
-  cfg.h parser.h stack.h
-funct1.o: funct1.c main.h convert.h funct1.h commands.h stack.h \
-  fonts.h cfg.h ignore.h util.h encode.h parser.h counters.h \
-  lengths.h definitions.h preamble.h xref.h equation.h direct.h style.h
-tables.o: tables.c main.h convert.h fonts.h commands.h funct1.h \
-  tables.h stack.h cfg.h parser.h counters.h util.h lengths.h
+direct.o: direct.c main.h direct.h fonts.h cfg.h utils.h
+encodings.o: encodings.c main.h fonts.h funct1.h encodings.h \
+  encoding_tables.h chars.h
+fonts.o: fonts.c main.h convert.h fonts.h funct1.h commands.h cfg.h \
+  parser.h stack.h
+funct1.o: funct1.c main.h convert.h funct1.h commands.h stack.h fonts.h \
+  cfg.h ignore.h utils.h encodings.h parser.h counters.h lengths.h \
+  definitions.h preamble.h xrefs.h equations.h direct.h styles.h \
+  graphics.h
+tables.o: tables.c main.h convert.h fonts.h commands.h funct1.h tables.h \
+  stack.h cfg.h parser.h counters.h utils.h lengths.h preamble.h \
+  graphics.h
 ignore.o: ignore.c main.h direct.h fonts.h cfg.h ignore.h funct1.h \
   commands.h parser.h convert.h
 main.o: main.c main.h mygetopt.h convert.h commands.h chars.h fonts.h \
-  stack.h direct.h ignore.h version.h funct1.h cfg.h encode.h util.h \
-  parser.h lengths.h counters.h preamble.h xref.h
+  stack.h direct.h ignore.h version.h funct1.h cfg.h encodings.h utils.h \
+  parser.h lengths.h counters.h preamble.h xrefs.h preparse.h
 stack.o: stack.c main.h stack.h
-cfg.o: cfg.c main.h convert.h funct1.h cfg.h util.h
-util.o: util.c main.h util.h parser.h
-parser.o: parser.c main.h commands.h cfg.h stack.h util.h parser.h \
+cfg.o: cfg.c main.h convert.h funct1.h cfg.h utils.h
+utils.o: utils.c main.h utils.h parser.h
+parser.o: parser.c main.h commands.h cfg.h stack.h utils.h parser.h \
   fonts.h lengths.h definitions.h funct1.h
-lengths.o: lengths.c main.h util.h lengths.h parser.h
-counters.o: counters.c main.h util.h counters.h
+lengths.o: lengths.c main.h utils.h lengths.h parser.h
+counters.o: counters.c main.h utils.h counters.h
 letterformat.o: letterformat.c main.h parser.h letterformat.h cfg.h \
   commands.h funct1.h convert.h
-preamble.o: preamble.c main.h convert.h util.h preamble.h fonts.h \
-  cfg.h encode.h parser.h funct1.h lengths.h ignore.h commands.h \
-  counters.h xref.h direct.h style.h
-equation.o: equation.c main.h convert.h commands.h stack.h fonts.h \
-  cfg.h ignore.h parser.h equation.h counters.h funct1.h lengths.h util.h \
-  graphics.h xref.h
-convert.o: convert.c main.h convert.h commands.h chars.h funct1.h \
-  fonts.h stack.h tables.h equation.h direct.h ignore.h cfg.h \
-  encode.h util.h parser.h lengths.h counters.h preamble.h
-xref.o: xref.c main.h util.h convert.h funct1.h commands.h cfg.h xref.h \
-  parser.h preamble.h lengths.h fonts.h
+preamble.o: preamble.c main.h convert.h utils.h preamble.h fonts.h cfg.h \
+  encodings.h parser.h funct1.h lengths.h ignore.h commands.h counters.h \
+  xrefs.h direct.h styles.h
+equations.o: equations.c main.h convert.h commands.h stack.h fonts.h \
+  cfg.h ignore.h parser.h equations.h counters.h funct1.h lengths.h \
+  utils.h graphics.h xrefs.h chars.h preamble.h
+convert.o: convert.c main.h convert.h commands.h chars.h funct1.h fonts.h \
+  stack.h tables.h equations.h direct.h ignore.h cfg.h encodings.h \
+  utils.h parser.h lengths.h counters.h preamble.h
+xrefs.o: xrefs.c main.h utils.h convert.h funct1.h commands.h cfg.h \
+  xrefs.h parser.h preamble.h lengths.h fonts.h styles.h definitions.h \
+  equations.h
 definitions.o: definitions.c main.h convert.h definitions.h parser.h \
-  funct1.h util.h cfg.h counters.h
-graphics.o: graphics.c cfg.h main.h graphics.h parser.h util.h commands.h \
-  convert.h equation.h funct1.h
-mygetopt.o: mygetopt.c main.h
-style.o: style.c main.h direct.h fonts.h cfg.h util.h parser.h
+  funct1.h utils.h cfg.h counters.h
+graphics.o: graphics.c cfg.h main.h graphics.h parser.h utils.h \
+  commands.h convert.h funct1.h preamble.h counters.h
+mygetopt.o: mygetopt.c main.h mygetopt.h
+styles.o: styles.c main.h direct.h fonts.h cfg.h utils.h parser.h
+preparse.o: preparse.c cfg.h main.h utils.h definitions.h parser.h \
+  funct1.h

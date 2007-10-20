@@ -1,5 +1,5 @@
 
-/* encode.c - Translate high bit chars into RTF using codepage 1252
+/* encodings.c - Translate high bit chars into RTF using codepage 1252
 
 Copyright (C) 1995-2002 The Free Software Foundation
 
@@ -30,8 +30,8 @@ Authors:
 #include "main.h"
 #include "fonts.h"
 #include "funct1.h"
-#include "encode.h"
-#include "encode_tables.h"
+#include "encodings.h"
+#include "encoding_tables.h"
 #include "chars.h"
 
 static void put_breve_char(char c)

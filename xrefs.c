@@ -1,6 +1,6 @@
 
 /*
- * xref.c - commands for LaTeX cross references
+ * xrefs.c - commands for LaTeX cross references
  * 
  * Copyright (C) 2001-2002 The Free Software Foundation
  * 
@@ -27,19 +27,19 @@
 #include <string.h>
 #include <ctype.h>
 #include "main.h"
-#include "util.h"
+#include "utils.h"
 #include "convert.h"
 #include "funct1.h"
 #include "commands.h"
 #include "cfg.h"
-#include "xref.h"
+#include "xrefs.h"
 #include "parser.h"
 #include "preamble.h"
 #include "lengths.h"
 #include "fonts.h"
-#include "style.h"
+#include "styles.h"
 #include "definitions.h"
-#include "equation.h"
+#include "equations.h"
 
 char *g_figure_label = NULL;
 char *g_table_label = NULL;
@@ -328,7 +328,7 @@ void CmdTheEndNotes(int code)
     diagnostics(4, "Entering CmdTheEndNotes");
 
     CmdVspace(VSPACE_BIG_SKIP);
-    CmdStartParagraph(TITLE_PAR);
+    CmdStartParagraph("endnotes", TITLE_INDENT);
     fprintRTF("{\\sect ");
     InsertStyle("section");
     fprintRTF(" Notes");
@@ -442,7 +442,7 @@ void CmdThebibliography(int code)
 
         CmdEndParagraph(0);
         CmdVspace(VSPACE_MEDIUM_SKIP);
-        CmdStartParagraph(TITLE_PAR);
+        CmdStartParagraph("bibliography", TITLE_INDENT);
 
         fprintRTF("{\\plain\\b\\fs32 ");
         i = existsDefinition("refname");    /* see if refname has * been redefined */
@@ -481,7 +481,7 @@ void CmdBibitem(int code)
 
     g_processing_list_environment = TRUE;
     CmdEndParagraph(0);
-    CmdStartParagraph(FIRST_PAR);
+    CmdStartParagraph("bibitem", FIRST_INDENT);
 
     label = getBracketParam();
     key = getBraceParam();
@@ -2002,7 +2002,7 @@ void CmdContentsLine(int code)
 
     diagnostics(1, "Entering CmdContentsLine %s [%s]", type, text);
 
-    CmdStartParagraph(TITLE_PAR);
+    CmdStartParagraph("contents", TITLE_INDENT);
     fprintRTF("{");
     contents_type = strdup_together("contents_", type);
     InsertStyle(contents_type);
@@ -2026,7 +2026,7 @@ void CmdListOf(int code)
 	
     diagnostics(4, "Entering CmdListOf");
 
-	CmdStartParagraph(TITLE_PAR);
+	CmdStartParagraph("list", TITLE_INDENT);
 	fprintRTF("{");
 	InsertStyle("contents_no_style");
 	fprintRTF(" ");

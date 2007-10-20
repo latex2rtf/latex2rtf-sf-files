@@ -29,10 +29,10 @@ char	*getLeftRightParam(void);
 char	*getBracketParam(void);
 char	*getSimpleCommand(void);
 char	*getTexUntil(char * target, int raw);
+char    *getSpacedTexUntil(char *target, int raw);
 int 	getDimension(void);
 void	parseBrace(void);
 char	*getDelimitedText(char left, char right, bool raw);
-void	getSection(char **body, char **header, char **label);
 
 int 	CurrentLineNumber(void);
 void	PushTrackLineNumber(int flag);
@@ -40,3 +40,4 @@ void	PopTrackLineNumber(void);
 void	UpdateLineNumber(char *s);
 void	EndSource(void);
 int 	CurrentFileDescriptor(void);
+int 	getParserDepth(void);

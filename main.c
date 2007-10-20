@@ -23,7 +23,7 @@ Authors:
 	1995	  Fernando Dorner, Andreas Granzer, Freidrich Polzer, Gerhard Trisko
 	1995-1997 Ralf Schlatterbeck
 	1998-2000 Georg Lehner
-	2001-2002 Scott Prahl
+	2001-2007 Scott Prahl
 */
 
 #include <stdio.h>
@@ -44,13 +44,14 @@ Authors:
 #include "version.h"
 #include "funct1.h"
 #include "cfg.h"
-#include "encode.h"
-#include "util.h"
+#include "encodings.h"
+#include "utils.h"
 #include "parser.h"
 #include "lengths.h"
 #include "counters.h"
 #include "preamble.h"
-#include "xref.h"
+#include "xrefs.h"
+#include "preparse.h"
 
 FILE *fRtf = NULL;              /* file pointer to RTF file */
 char *g_tex_name = NULL;
@@ -106,8 +107,8 @@ int g_safety_braces = 0;
 bool g_processing_equation = FALSE;
 bool g_RTF_warnings = FALSE;
 char *g_config_path = NULL;
-char *g_script_path = NULL;
-char *g_tmp_path = NULL;
+char *g_script_dir = NULL;
+char *g_tmp_dir = NULL;
 char *g_preamble = NULL;
 char g_field_separator = ',';
 bool g_escape_parens = FALSE;
@@ -119,6 +120,9 @@ bool g_equation_display_bitmap = FALSE;
 bool g_equation_comment = FALSE;
 bool g_equation_raw_latex = FALSE;
 bool g_tableofcontents = FALSE;
+
+bool g_tabular_display_rtf = TRUE;
+bool g_tabular_display_bitmap = FALSE;
 
 double g_png_equation_scale = 1.22;
 double g_png_figure_scale = 1.35;
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
     InitializeLatexLengths();
 	InitializeBibliography();
 	
-    while ((c = my_getopt(argc, argv, "lhpuvFSWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:")) != EOF) {
+    while ((c = my_getopt(argc, argv, "lhpuvFSWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:t:")) != EOF) {
         switch (c) {
             case 'a':
                 g_aux_name = optarg;
@@ -230,15 +234,24 @@ int main(int argc, char **argv)
                     g_equation_display_rtf = TRUE;
                 break;
 
+            case 't':
+                sscanf(optarg, "%d", &x);
+                diagnostics(2, "Table option = %s x=%d", optarg, x);
+                g_tabular_display_rtf    = (x &  1) ? TRUE : FALSE;
+                g_tabular_display_bitmap = (x &  2) ? TRUE : FALSE;
+                diagnostics(2, "Table option g_tabular_display_rtf     = %d", g_equation_display_rtf);
+                diagnostics(2, "Table option g_tabular_display_bitmap  = %d", g_equation_inline_rtf);
+                break;
+
             case 'P':          /* -P path/to/cfg:path/to/script or -P path/to/cfg or -P :path/to/script */
                 p = strchr(optarg, ':');
                 if (p) {
                     *p = '\0';
-                    g_script_path = strdup(p + 1);
+                    g_script_dir = strdup(p + 1);
                 }
                 if (p != optarg)
                     g_config_path = strdup(optarg);
-                diagnostics(2, "cfg=%s, script=%s", g_config_path, g_script_path);
+                diagnostics(2, "cfg=%s, script=%s", g_config_path, g_script_dir);
                 break;
             case 's':
                 if (optarg && optarg[0] == 'e') {
@@ -258,7 +271,7 @@ int main(int argc, char **argv)
                 g_field_separator = ';';
                 break;
             case 'T':
-                g_tmp_path = strdup(optarg);
+                g_tmp_dir = strdup(optarg);
                 break;
             case 'W':
                 g_RTF_warnings = TRUE;
@@ -399,7 +412,7 @@ static void ConvertWholeDocument(void)
     ConvertString(t);
 
     g_processing_preamble = FALSE;
-    getSection(&body, &sec_head, &label);
+    preParse(&body, &sec_head, &label);
 
     diagnostics(2, "*******************\nbody=%s", (body) ? body : "<empty>");
     diagnostics(2, "*******************\nsec_head=%s", (sec_head) ? sec_head : "<none>");
@@ -409,8 +422,8 @@ static void ConvertWholeDocument(void)
     if (label)
         free(label);
 
-    while (sec_head) {
-        getSection(&body, &sec_head2, &g_section_label);
+    while (strcmp(sec_head,"\\end{document}")!=0) {
+        preParse(&body, &sec_head2, &g_section_label);
         label = ExtractLabelTag(sec_head);
         if (label) {
             if (g_section_label)
@@ -435,7 +448,7 @@ static void ConvertWholeDocument(void)
         if (PushSource(g_fff_name, NULL) == 0) {
         	CmdNewPage(NewPage);
         	CmdListOf(LIST_OF_FIGURES);
-			getSection(&body, &sec_head2, &g_section_label);
+			preParse(&body, &sec_head2, &g_section_label);
 			ConvertString(sec_head);
 			ConvertString(body);
 			if (g_section_label) free(g_section_label);
@@ -449,7 +462,7 @@ static void ConvertWholeDocument(void)
         if (PushSource(g_ttt_name, NULL) == 0) {
         	CmdNewPage(NewPage);
         	CmdListOf(LIST_OF_TABLES);
-			getSection(&body, &sec_head2, &g_section_label);
+			preParse(&body, &sec_head2, &g_section_label);
 			ConvertString(sec_head);
 			ConvertString(body);
 			if (g_section_label) free(g_section_label);
@@ -457,6 +470,10 @@ static void ConvertWholeDocument(void)
 			free(sec_head);
         }
      }
+     
+    if (strcmp(sec_head,"\\end{document}")==0) 
+    	ConvertString(sec_head);
+
 }
 
 static void print_version(void)
@@ -500,12 +517,16 @@ static void print_usage(void)
     fprintf(stdout, "       -M8          inline equations to bitmap\n");
     fprintf(stdout, "       -M12         inline and displayed equations to bitmaps\n");
     fprintf(stdout, "       -M16         insert Word comment field that the original equation text\n");
+    fprintf(stdout, "       -M32         insert the raw LaTeX equation delimited by <<: and :>>\n");
     fprintf(stdout, "  -o outputfile    file for RTF output\n");
     fprintf(stdout, "  -p               option to avoid bug in Word for some equations\n");
     fprintf(stdout, "  -P path          paths to *.cfg & latex2png\n");
     fprintf(stdout, "  -S               use ';' to separate args in RTF fields\n");
     fprintf(stdout, "  -se#             scale factor for bitmap equations\n");
     fprintf(stdout, "  -sf#             scale factor for bitmap figures\n");
+    fprintf(stdout, "  -t#              table handling\n");
+    fprintf(stdout, "       -t1          tabular and tabbing environments as RTF\n");
+    fprintf(stdout, "       -t2          tabular and tabbing environments as bitmaps\n");
     fprintf(stdout, "  -T /path/to/tmp  temporary directory\n");
     fprintf(stdout, "  -v               version information\n");
     fprintf(stdout, "  -V               version information\n");
@@ -516,6 +537,7 @@ static void print_usage(void)
     fprintf(stdout, "  latex2rtf <foo >foo.RTF             convert foo to foo.RTF\n");
     fprintf(stdout, "  latex2rtf -P ./cfg/:./scripts/ foo  use alternate cfg and latex2png files\n");
     fprintf(stdout, "  latex2rtf -M12 foo                  replace equations with bitmaps\n");
+    fprintf(stdout, "  latex2rtf -t3  foo                  tables as RTF *and* bitmaps\n");
     fprintf(stdout, "  latex2rtf -i russian foo            assume russian tex conventions\n");
     fprintf(stdout, "  latex2rtf -C raw foo                retain font encoding in rtf file\n");
     fprintf(stdout, "  latex2rtf -f0 foo                   create foo.rtf without fields\n");
@@ -689,13 +711,13 @@ purpose: reads the LaTeX preamble (to \begin{document} ) for the file
  ****************************************************************************/
 {
     FILE *hidden;
-    char t[] = "\\begin{document}";
+    char t[] = "\\begin|{|document|}";
 
     diagnostics(4, "Reading LaTeX Preamble");
     hidden = fRtf;
     fRtf = stderr;
 
-    g_preamble = getTexUntil(t, 1);
+    g_preamble = getSpacedTexUntil(t, 1);
     RemoveInterpretCommentString(g_preamble);
 
     diagnostics(4, "Entering ConvertString() from ConvertLatexPreamble <%s>", g_preamble);
@@ -843,8 +865,8 @@ purpose: return the directory to store temporary files
     char pathsep_str[2] = { PATHSEP, 0 };   /* for os2 or w32 "unix" compiler */
 
     /* first use any temporary directory specified as an option */
-    if (g_tmp_path)
-        t = strdup(g_tmp_path);
+    if (g_tmp_dir)
+        t = strdup(g_tmp_dir);
 
     /* next try the environment variable TMPDIR */
     else if ((u = getenv("TMPDIR")) != NULL)

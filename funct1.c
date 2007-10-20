@@ -37,17 +37,22 @@ Authors:
 #include "fonts.h"
 #include "cfg.h"
 #include "ignore.h"
-#include "util.h"
-#include "encode.h"
+#include "utils.h"
+#include "encodings.h"
 #include "parser.h"
 #include "counters.h"
 #include "lengths.h"
 #include "definitions.h"
 #include "preamble.h"
-#include "xref.h"
-#include "equation.h"
+#include "xrefs.h"
+#include "equations.h"
 #include "direct.h"
-#include "style.h"
+#include "styles.h"
+#include "graphics.h"
+
+#define ARABIC_NUMBERING 0
+#define ALPHA_NUMBERING  1
+#define ROMAN_NUMBERING  2
 
 extern bool twocolumn;          /* true if twocolumn-mode is enabled */
 int g_right_margin_indent;
@@ -63,15 +68,33 @@ static bool g_page_new = FALSE;
 static bool g_column_new = FALSE;
 static int g_vertical_space_to_add = 0;
 static int g_line_spacing = 240;
+static int g_chapter_numbering = ARABIC_NUMBERING;
+static bool g_appendix;
+
 bool g_processing_list_environment = FALSE;
 
-void CmdStartParagraph(int code)
+void CmdStartParagraph(const char *style, int indenting)
 
 /******************************************************************************
      purpose : RTF codes to create a new paragraph.  If the paragraph should
                not be indented then emit \fi0 otherwise use the current value
                of \parindent as the indentation of the first line.
                
+               style describes the type of paragraph ... 
+                  "body"
+                  "caption"
+                  "author"
+                  "bibitem"
+                  "section"
+                  etc.
+                  
+               indenting describes how this paragraph and (perhaps) the following
+               paragraph should be indented
+               
+                  TITLE_INDENT  (do not indent this paragraph or the next)
+                  FIRST_INDENT  (do not indent this paragraph but indent the next)
+                  ANY_INDENT    (indent as needed)
+
                Sometimes it is necessary to know what the next paragraph will
                be before it has been parsed.  For example, a section command
                should create a paragraph for the section title and then the
@@ -92,15 +115,15 @@ void CmdStartParagraph(int code)
                the next line.  Typically these flags are set just after a figure
                or equation or table.
                
-               Note that when the code is ANY_PAR, the status flag is not touched.
+               Note that when the indenting is ANY_INDENT, the status flag is not touched.
  ******************************************************************************/
 {
     static int status;
     int parindent;
 
-    if (code == TITLE_PAR)
+    if (indenting == TITLE_INDENT)
         status = 2;
-    if (code == FIRST_PAR)
+    if (indenting == FIRST_INDENT)
         status = 1;
 
     parindent = getLength("parindent");
@@ -143,7 +166,7 @@ void CmdStartParagraph(int code)
     if (status == 1 && !FrenchMode && !g_processing_list_environment)
         parindent = 0;
 
-    /* use indent flags for ANY_PAR */
+    /* use indent flags for ANY_INDENT */
     if (status <= 0 && (g_paragraph_no_indent || g_paragraph_inhibit_indent))
         parindent = 0;
 
@@ -449,11 +472,13 @@ void CmdSlashSlash(int code)
             fprintRTF("\\par\n\\tab ");
             return;
         }
-        for (; actCol < colCount; actCol++) {
+    	fprintRTF("\\row\n");
+/*        for (; actCol < colCount; actCol++) {
             fprintRTF("\\cell\\pard\\intbl");
         }
         actCol = 0;
         fprintRTF("\\row\n\\pard\\intbl\\q%c ", colFmt[actCol]);
+*/
         return;
     }
 
@@ -519,7 +544,7 @@ void CmdBeginEnd(int code)
             str = expandTheorem(i, option);
             CmdEndParagraph(0);
             CmdVspace(VSPACE_SMALL_SKIP);
-            CmdStartParagraph(FIRST_PAR);
+            CmdStartParagraph("theorem", FIRST_INDENT);
             fprintRTF("{\\b %s} {\\i ", str);
             PushBrace();
             if (option)
@@ -671,6 +696,39 @@ parameter: code includes the type of the environment
     }
 }
 
+static char *FormatNumber(int formatting, int n)
+{
+    char label[20];
+    switch (formatting) {
+    
+		case ALPHA_NUMBERING:
+			snprintf(label, 20, "%c", (char) (n + (int) 'A' - 1) );
+			break;
+	
+		case ARABIC_NUMBERING:
+			snprintf(label, 20, "%d", n);
+			break;
+			
+		case ROMAN_NUMBERING:
+			return roman_item(n, TRUE);
+    }
+    
+    return strdup(label);
+}
+
+static char *FormatSection(void) 
+{
+    if (g_appendix)
+    	return FormatNumber(ALPHA_NUMBERING, getCounter("section"));
+    else
+    	return FormatNumber(ARABIC_NUMBERING, getCounter("section"));
+}
+
+static char *FormatChapter(void) 
+{
+    return FormatNumber(g_chapter_numbering, getCounter("chapter"));
+}
+
 char *FormatUnitNumber(char *name)
 
 /******************************************************************************
@@ -687,54 +745,65 @@ char *FormatUnitNumber(char *name)
         free(s);
     }
 
-    else if (strcmp(name, "chapter") == 0) {
-        snprintf(label, 20, "%d", getCounter(name));
-    }
+    else if (strcmp(name, "chapter") == 0) 
+    	
+    	return FormatChapter();
 
     else if (strcmp(name, "section") == 0) {
         if (g_document_type == FORMAT_ARTICLE)
-            snprintf(label, 20, "%d", getCounter("section"));
+            snprintf(label, 20, "%s", FormatSection());
         else
-            snprintf(label, 20, "%d.%d", getCounter("chapter"), getCounter("section"));
+            snprintf(label, 20, "%s.%d", FormatChapter(), getCounter("section"));
     }
 
     else if (strcmp(name, "subsection") == 0) {
         if (g_document_type == FORMAT_ARTICLE)
-            snprintf(label, 20, "%d.%d", getCounter("section"), getCounter("subsection"));
+            snprintf(label, 20, "%s.%d", FormatSection(), getCounter("subsection"));
         else
-            snprintf(label, 20, "%d.%d.%d", getCounter("chapter"), getCounter("section"), getCounter("subsection"));
+            snprintf(label, 20, "%s.%d.%d", FormatChapter(), getCounter("section"), getCounter("subsection"));
     }
 
     else if (strcmp(name, "subsubsection") == 0) {
         if (g_document_type == FORMAT_ARTICLE)
-            snprintf(label, 20, "%d.%d.%d", getCounter("section"),
+            snprintf(label, 20, "%s.%d.%d", FormatSection(),
               getCounter("subsection"), getCounter("subsubsection"));
         else
-            snprintf(label, 20, "%d.%d.%d.%d", getCounter("chapter"),
-              getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
+            snprintf(label, 20, "%s.%d.%d.%d", FormatChapter(), 
+             getCounter("section"), getCounter("subsection"), getCounter("subsubsection"));
     }
 
     else if (strcmp(name, "paragraph") == 0) {
         if (g_document_type == FORMAT_ARTICLE)
-            snprintf(label, 20, "%d.%d.%d.%d", getCounter("section"),
+            snprintf(label, 20, "%s.%d.%d.%d", FormatSection(),
               getCounter("subsection"), getCounter("subsubsection"), getCounter("paragraph"));
         else
-            snprintf(label, 20, "%d.%d.%d.%d.%d", getCounter("chapter"),
+            snprintf(label, 20, "%s.%d.%d.%d.%d", FormatChapter(), 
               getCounter("section"), getCounter("subsection"), getCounter("subsubsection"), getCounter("paragraph"));
     }
 
     else if (strcmp(name, "subparagraph") == 0) {
         if (g_document_type == FORMAT_ARTICLE)
-            snprintf(label, 20, "%d.%d.%d.%d.%d", getCounter("section"),
+            snprintf(label, 20, "%s.%d.%d.%d.%d",FormatSection(),
               getCounter("subsection"), getCounter("subsubsection"),
               getCounter("paragraph"), getCounter("subparagraph"));
         else
-            snprintf(label, 20, "%d.%d.%d.%d.%d.%d", getCounter("chapter"),
+            snprintf(label, 20, "%s.%d.%d.%d.%d.%d", FormatChapter(),
               getCounter("section"), getCounter("subsection"),
               getCounter("subsubsection"), getCounter("paragraph"), getCounter("subparagraph"));
     }
 
     return strdup(label);
+}
+
+void CmdAppendix(int code)
+
+/******************************************************************************
+  purpose: handles \appendix
+ ******************************************************************************/
+{
+	g_chapter_numbering = ALPHA_NUMBERING;
+	g_appendix=0;
+	setCounter("chapter",0);
 }
 
 void CmdSection(int code)
@@ -764,7 +833,7 @@ parameter: code: type of section-recursion-level
         case SECT_PART:
         case SECT_PART_STAR:
             if (getCounter("part") > 0) CmdNewPage(NewPage);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("part", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("part");
             fprintRTF(" ");
@@ -785,7 +854,7 @@ parameter: code: type of section-recursion-level
         case SECT_CHAPTER_STAR:
             unit_label = NULL;
             if (getCounter("chapter") > 0) CmdNewPage(NewPage);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("chapter", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("chapter");
             fprintRTF(" ");
@@ -800,6 +869,7 @@ parameter: code: type of section-recursion-level
                 setCounter("subparagraph", 0);
         		setCounter("figure",0);
        			setCounter("table",0);
+       			setCounter("equation",0);
                 resetTheoremCounter("chapter");
                 unit_label = FormatUnitNumber("chapter");
                 fprintRTF(" ");
@@ -807,7 +877,7 @@ parameter: code: type of section-recursion-level
             }
             CmdEndParagraph(0);
             CmdVspace(VSPACE_BIG_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("chapter", TITLE_INDENT);
             ConvertString(heading);
             CmdEndParagraph(0);
             fprintRTF("\\par\\par}");
@@ -819,7 +889,7 @@ parameter: code: type of section-recursion-level
         case SECT_NORM:
         case SECT_NORM_STAR:
             CmdVspace(VSPACE_BIG_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("section", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("section");
             fprintRTF(" ");
@@ -844,7 +914,7 @@ parameter: code: type of section-recursion-level
         case SECT_SUB:
         case SECT_SUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("subsection", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("subsection");
             fprintRTF(" ");
@@ -868,7 +938,7 @@ parameter: code: type of section-recursion-level
         case SECT_SUBSUB:
         case SECT_SUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("subsubsection", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("subsubsection");
             fprintRTF(" ");
@@ -892,7 +962,7 @@ parameter: code: type of section-recursion-level
         case SECT_SUBSUBSUB:
         case SECT_SUBSUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("paragraph", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("paragraph");
             fprintRTF(" ");
@@ -914,7 +984,7 @@ parameter: code: type of section-recursion-level
         case SECT_SUBSUBSUBSUB:
         case SECT_SUBSUBSUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph(TITLE_PAR);
+            CmdStartParagraph("subparagraph", TITLE_INDENT);
             fprintRTF("{");
             InsertStyle("subparagraph");
             fprintRTF(" ");
@@ -970,7 +1040,7 @@ void CmdCaption(int code)
         CmdEndParagraph(0);
     vspace = getLength("abovecaptionskip");
     DirectVspace(vspace);
-    CmdStartParagraph(FIRST_PAR);
+    CmdStartParagraph("caption", FIRST_INDENT);
     fprintRTF("{");
 
     if (g_processing_figure) {
@@ -1169,11 +1239,13 @@ void CmdList(int code)
 
     vspace = getLength("topsep") + getLength("parskip");
 
-    if (GetTexMode() == MODE_VERTICAL)
-        vspace += getLength("partopsep");
-    else
-        CmdEndParagraph(0);
-
+	if (code != (INPARAENUM_MODE | ON) && code != (INPARAENUM_MODE | OFF) ) {
+		if (GetTexMode() == MODE_VERTICAL)
+			vspace += getLength("partopsep");
+		else
+			CmdEndParagraph(0);
+	}
+	
     switch (code) {
         case (ITEMIZE_MODE | ON):
             DirectVspace(vspace);
@@ -1199,6 +1271,18 @@ void CmdList(int code)
             setLength("parindent", -amount);
             g_left_margin_indent += amount;
             CmdIndent(INDENT_USUAL);
+            break;
+
+        case (INPARAENUM_MODE | ON):
+            PushEnvironment(INPARAENUM_MODE);
+            g_enumerate_depth++;
+            CmdItem(RESET_ITEM_COUNTER);
+            break;
+
+        case (INPARAENUM_MODE | OFF):
+            g_enumerate_depth--;
+            PopEnvironment();
+            g_processing_list_environment = FALSE;
             break;
 
         case (ENUMERATE_MODE | OFF):
@@ -1230,15 +1314,25 @@ void CmdItem(int code)
         return;
     }
 
-    diagnostics(4, "Entering CmdItem depth=%d item=%d", g_enumerate_depth, item_number[g_enumerate_depth]);
+    diagnostics(4, " CmdItem depth=%d #=%d (%s)", 
+       g_enumerate_depth, 
+       item_number[g_enumerate_depth],
+       (code==ENUMERATE_MODE)?"enumerate":
+       (code==ITEMIZE_MODE)?"itemize":
+       (code==DESCRIPTION_MODE)?"description":
+       (code==INPARAENUM_MODE)?"inparaenum":"not enum");
 
     g_processing_list_environment = TRUE;
-    CmdEndParagraph(0);
-    vspace = getLength("itemsep") + getLength("parsep");
-    DirectVspace(vspace);
 
-    CmdIndent(INDENT_USUAL);
-    CmdStartParagraph(FIRST_PAR);
+	/* suppress vertical space for inparaenum */
+	if (code != INPARAENUM_MODE) {
+    	CmdEndParagraph(0);
+    	vspace = getLength("itemsep") + getLength("parsep");
+    	DirectVspace(vspace);
+
+    	CmdIndent(INDENT_USUAL);
+    	CmdStartParagraph("item", FIRST_INDENT);
+    }
 
     itemlabel = getBracketParam();
     if (itemlabel) {            /* \item[label] */
@@ -1249,7 +1343,7 @@ void CmdItem(int code)
         ConvertString(itemlabel);
         diagnostics(5, "Exiting ConvertString from CmdItem");
         fprintRTF("}");
-        if (code != DESCRIPTION_MODE)
+        if (code != DESCRIPTION_MODE && code != INPARAENUM_MODE)
             fprintRTF("\\tab ");
     }
 
@@ -1263,27 +1357,32 @@ void CmdItem(int code)
             }
             break;
 
+        case INPARAENUM_MODE:
         case ENUMERATE_MODE:
-            if (itemlabel)
-                break;
-            switch (g_enumerate_depth) {
-                case 1:
-                    fprintRTF("%d.", item_number[g_enumerate_depth]);
-                    break;
+            if (itemlabel) 
+            	break;
+			switch (g_enumerate_depth) {
+				case 1:
+					fprintRTF("%d.", item_number[g_enumerate_depth]);
+					break;
 
-                case 2:
-                    fprintRTF("(%c)", 'a' + item_number[g_enumerate_depth] - 1);
-                    break;
+				case 2:
+					fprintRTF("(%c)", 'a' + item_number[g_enumerate_depth] - 1);
+					break;
 
-                case 3:
-                    fprintRTF("%s.", roman_item(item_number[g_enumerate_depth], FALSE));
-                    break;
+				case 3:
+					fprintRTF("%s.", roman_item(item_number[g_enumerate_depth], FALSE));
+					break;
 
-                case 4:
-                    fprintRTF("%c.", 'A' + item_number[g_enumerate_depth] - 1);
-                    break;
-            }
-            fprintRTF("\\tab ");
+				case 4:
+					fprintRTF("%c.", 'A' + item_number[g_enumerate_depth] - 1);
+					break;
+			}
+			if (code != INPARAENUM_MODE)
+				fprintRTF("\\tab ");
+			else
+				fprintRTF(" ");
+			
             item_number[g_enumerate_depth]++;
             break;
 
@@ -1296,7 +1395,9 @@ void CmdItem(int code)
         free(itemlabel);
     thechar = getNonBlank();
     ungetTexChar(thechar);
-    CmdIndent(INDENT_NONE);
+    
+    if (code != INPARAENUM_MODE)
+    	CmdIndent(INDENT_NONE);
 }
 
 void CmdResizeBox(int code)
@@ -1426,7 +1527,7 @@ void CmdVerbatim(int code)
             PushEnvironment(VERBATIM_MODE);
             CmdEndParagraph(0);
             CmdIndent(INDENT_NONE);
-            CmdStartParagraph(FIRST_PAR);
+            CmdStartParagraph("verbatim", FIRST_INDENT);
             num = TexFontNumber("Typewriter");
             fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
         }
@@ -1691,7 +1792,7 @@ void CmdFigure(int code)
         if (g_endfloat_figures) {
 			if (g_endfloat_markers) {
 				alignment = CENTERED;
-				CmdStartParagraph(0);
+				CmdStartParagraph("endfloat", ANY_INDENT);
 				incrementCounter("endfloatfigure");  /* two separate counters */
 				fprintRTF("[");                      /* one for figures and one for */
 				ConvertBabelName("FIGURENAME");      /* endfloat figures */
@@ -1705,15 +1806,17 @@ void CmdFigure(int code)
 
             caption = ExtractAndRemoveTag("\\caption", figure_contents);
             label = ExtractAndRemoveTag("\\label", figure_contents);
-            CmdStartParagraph(FIRST_PAR);
+
+            PrepareDisplayedBitmap("figure");
             WriteLatexAsBitmap("\\begin{figure}", figure_contents, "\\end{figure}");
+            FinishDisplayedBitmap();
             ConvertString(caption);
             if (label)
                 free(label);
             if (caption)
                 free(caption);
         } else {
-			CmdStartParagraph(0);
+			CmdStartParagraph("figure", ANY_INDENT);
             ConvertString(figure_contents);
         }
         free(figure_contents);
@@ -1902,7 +2005,7 @@ void CmdAbstract(int code)
         if (g_document_type == FORMAT_REPORT || titlepage)
             CmdNewPage(NewPage);
 
-        CmdStartParagraph(FIRST_PAR);
+        CmdStartParagraph("abstract", FIRST_INDENT);
         fprintRTF("\\qc{\\b ");
         ConvertBabelName("ABSTRACTNAME");
         fprintRTF("}");
@@ -1939,7 +2042,7 @@ CmdAcknowledgments(int code)
 	if (code == ON) {
 		
 		CmdVspace(VSPACE_BIG_SKIP);
-		CmdStartParagraph(0);
+		CmdStartParagraph("acknowledgments", ANY_INDENT);
 		fprintRTF("\n{\\b ");
 		fprintRTF("Acknowledgments"); /* should be in cfg file, but it is not */
 		fprintRTF("}\n");
@@ -2007,16 +2110,20 @@ void CmdColsep(int code)
         fprintRTF("{\\'a7}");
         return;
     }
-    actCol++;
+
+    diagnostics(0, "CmdColsep called");
+  /*  actCol++;*/
 
     if (GetTexMode() == MODE_DISPLAYMATH) { /* in an eqnarray or array environment */
         fprintRTF("\\tab ");
     } else {
         fprintRTF("\\cell\\pard\\intbl ");
+        /*
         if (colFmt == NULL)
             diagnostics(WARNING, "Fatal, Fatal! CmdColsep called whith colFmt == NULL.");
         else
             fprintRTF("\\q%c ", colFmt[actCol]);
+        */
     }
 }
 

@@ -29,20 +29,20 @@ Authors:
 #include <sys/stat.h>
 #include "main.h"
 #include "convert.h"
-#include "util.h"
+#include "utils.h"
 #include "preamble.h"
 #include "fonts.h"
 #include "cfg.h"
-#include "encode.h"
+#include "encodings.h"
 #include "parser.h"
 #include "funct1.h"
 #include "lengths.h"
 #include "ignore.h"
 #include "commands.h"
 #include "counters.h"
-#include "xref.h"
+#include "xrefs.h"
 #include "direct.h"
-#include "style.h"
+#include "styles.h"
 
 extern char *Version;  /*storage and definition in version.h */
 
@@ -464,6 +464,8 @@ static void setDocumentOptions(char *optionlist)
             diagnostics(WARNING, "Color support limited to eight basic colors");
         } else if (strcmp(option, "endnotes") == 0) {
             diagnostics(WARNING, "Limited endnote support");
+        } else if (strcmp(option, "paralist") == 0) {
+            diagnostics(WARNING, "Limited paralist support");
         } else if (!TryVariableIgnore(option)) {
             diagnostics(WARNING, "Unknown style option %s ignored", option);
         }
@@ -809,7 +811,7 @@ void CmdTitle(int code)
 
 void CmdTableOfContents(int code)
 {
-	CmdStartParagraph(TITLE_PAR);
+	CmdStartParagraph("contents", TITLE_INDENT);
 	fprintRTF("{");
 	InsertStyle("contents_no_style");
 	fprintRTF(" ");
@@ -829,7 +831,7 @@ void CmdTableOfContents(int code)
 void CmdAnd(int code)
 {
 	CmdEndParagraph(0);
-	CmdStartParagraph(TITLE_PAR);
+	CmdStartParagraph("author", TITLE_INDENT);
 }
 
 
