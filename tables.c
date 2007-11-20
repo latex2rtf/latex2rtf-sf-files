@@ -37,6 +37,7 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "lengths.h"
 #include "preamble.h"
 #include "graphics.h"
+#include "vertical.h"
 
 int g_tabbing_left_position = 0;
 int g_tabbing_current_position = 0;
@@ -95,9 +96,10 @@ static char *ConvertFormatString(char *s)
 {
     int iCol, width;
     char *simple, *t;
+    static int warned_once = FALSE;
 
     simple = strdup(s);         /* largest possible */
-    diagnostics(4, "Entering ConvertFormatString, input=<%s>", s);
+    diagnostics(5, "Entering ConvertFormatString, input=<%s>", s);
 
     iCol = 0;
     while (*s) {
@@ -121,10 +123,11 @@ static char *ConvertFormatString(char *s)
                 iCol++;
                 break;
             case '*':
-                diagnostics(WARNING, " '*{num}{cols}' not supported.\n");
+                diagnostics(WARNING, " '*{num}{cols}' not supported.");
                 break;
             case '@':
-                diagnostics(WARNING, " '@{text}' not supported.\n");
+                if (!warned_once) diagnostics(WARNING, " '@{text}' not supported.");
+                warned_once = TRUE;
                 break;
             default:
                 break;
@@ -132,7 +135,7 @@ static char *ConvertFormatString(char *s)
         s++;
     }
     simple[iCol] = '\0';
-    diagnostics(4, "Exiting ConvertFormatString, output=<%s>", simple);
+    diagnostics(5, "Exiting ConvertFormatString, output=<%s>", simple);
     return simple;
 }
 
@@ -155,7 +158,7 @@ static void TabularCountVert(char *s, int vert[])
 {
     int braces, i;
 
-    diagnostics(4, "Entering TabularCountVert, input=<%s>", s);
+    diagnostics(5, "Entering TabularCountVert, input=<%s>", s);
 
     i = 0;
     while (*s) {
@@ -186,7 +189,7 @@ static void TabularCountVert(char *s, int vert[])
         }
         s++;
     }
-    diagnostics(4, "Exiting TabularCountVert");
+    diagnostics(5, "Exiting TabularCountVert");
 }
 
 static TabularT TabularPreamble(char *text, char *width, char *pos, char *cols)
@@ -214,9 +217,9 @@ static TabularT TabularPreamble(char *text, char *width, char *pos, char *cols)
 
     TabularCountVert(cols, tabular.vert);
 
-    if (GetTexMode() != MODE_HORIZONTAL) {
+    if (getTexMode() != MODE_HORIZONTAL) {
         CmdIndent(INDENT_NONE);
-        CmdStartParagraph("tabular", FIRST_INDENT);
+        startParagraph("tabular", FIRST_PARAGRAPH);
     }
 
     fprintRTF("\\par\n");
@@ -262,7 +265,7 @@ static void TabularGetRow(char *table, char **row, char **next_row, int *height)
     strncpy(*row, table, row_chars);
     (*row)[row_chars] = '\0';
 
-    diagnostics(4, "row =<%s>", *row);
+    show_string(5, *row, "row");
     if (!slashslash)
         return;
 
@@ -299,7 +302,7 @@ static void TabularGetRow(char *table, char **row, char **next_row, int *height)
 
     *height = getStringDimension(dimension);
 
-    diagnostics(3, "height =<%s>=%d twpi", dimension, height);
+    diagnostics(5, "height =<%s>=%d twpi", dimension, height);
     free(dimension);
 
     /* skip blanks */
@@ -757,7 +760,7 @@ static void TabularMeasureRow(TabularT tabular, char *this_row, char *next_row, 
     if (this_row == NULL || strlen(this_row) == 0)
         return;
 
-    diagnostics(4, "TabularMeasureRow height=%d twpi, row <%s>", height, this_row);
+    diagnostics(5, "TabularMeasureRow height=%d twpi, row <%s>", height, this_row);
 
     cell_start = this_row;
     while (cell_start) {
@@ -871,8 +874,8 @@ void CmdTabular(int code)
 			char *p;
 			int num = TexFontNumber("Typewriter");
 	
-			diagnostics(1, "Nested tabular/tabbing environments not allowed");
-			diagnostics(2, "table_table_table_table_table\n%stable_table_table_table_table", table);
+			diagnostics(WARNING, "Nested tabular/tabbing environments not allowed");
+			diagnostics(5, "table_table_table_table_table\n%stable_table_table_table_table", table);
 			fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
 			p = begin;
 			while (*p)
@@ -886,9 +889,9 @@ void CmdTabular(int code)
 	
 		} else {
 	
-			diagnostics(3, "Entering CmdTabular() options [%s], format {%s}", (pos) ? pos : "", cols);
+			diagnostics(4, "Entering CmdTabular() options [%s], format {%s}", (pos) ? pos : "", cols);
 			tabular = TabularPreamble(table, width, pos, cols);
-			diagnostics(2, "table_table_table_table_table\n%stable_table_table_table_table", table);
+			diagnostics(5, "table_table_table_table_table\n%stable_table_table_table_table", table);
 	
 			row_start = table;
 			TabularGetRow(row_start, &this_row, &next_row_start, &this_height);
@@ -1033,7 +1036,7 @@ static char *TabbingNextCell(char *cell_start, char **cell_end)
 
     dup2 = strdup_noendblanks(dup);
     free(dup);
-    diagnostics(4,"next cell = [[%s]]", dup);
+    diagnostics(5,"next cell = [[%s]]", dup);
     return dup2;
 }
 
@@ -1066,7 +1069,7 @@ static void TabbingWriteRow(char *this_row, int n, int n_total, char *align)
     char *start, *end, *cell;
     int i;
 
-    diagnostics(4, "TabbingWriteRow n=%d <%s> [%s]", n, align, this_row);
+    diagnostics(5, "TabbingWriteRow n=%d <%s> [%s]", n, align, this_row);
 
     if (this_row == NULL || n == 0)
         return;
@@ -1083,7 +1086,7 @@ static void TabbingWriteRow(char *this_row, int n, int n_total, char *align)
         BeginCellRtf(align[i]);
         cell = TabbingNextCell(start, &end);
         if (cell) {
-            diagnostics(4, "cell=<%s>", cell);
+            diagnostics(5, "cell=<%s>", cell);
             ConvertString(cell);
             free(cell);
         }
@@ -1142,7 +1145,7 @@ static void TabbingGetRow(char *table, char **row, char **next_row)
     strncpy(arow, table, row_chars);
     arow[row_chars] = '\0';
 
-    diagnostics(4, "TabbingGetRow obtained=<%s> remaining[%s]", arow, *next_row);
+    diagnostics(5, "TabbingGetRow obtained=<%s> remaining[%s]", arow, *next_row);
 
     *row = strdup_noendblanks(arow);
     free(arow);
@@ -1238,7 +1241,7 @@ void CmdTabbing(int code)
 
     end = strdup("\\end{tabbing}");
     table = getTexUntil(end, FALSE);
-    diagnostics(2, "Entering CmdTabbing()");
+    diagnostics(4, "Entering CmdTabbing()");
 
 	if (g_tabular_display_bitmap) {		
 		PrepareDisplayedBitmap("tabbing");
@@ -1250,18 +1253,18 @@ void CmdTabbing(int code)
 		row_start = table;
 		TabbingGetRow(row_start, &this_row, &next_row_start);
 	
-		diagnostics(2, "tabbing_tabbing_tabbing\n%s\ntabbing_tabbing_tabbing", table);
+		diagnostics(5, "tabbing_tabbing_tabbing\n%s\ntabbing_tabbing_tabbing", table);
 	
-		if (GetTexMode() != MODE_HORIZONTAL) {
+		if (getTexMode() != MODE_HORIZONTAL) {
 			CmdIndent(INDENT_NONE);
-			CmdStartParagraph("tabbing", FIRST_INDENT);
+			startParagraph("tabbing", FIRST_PARAGRAPH);
 		}
 	
 		fprintRTF("\\par\n");
 	
 		n_total = 0;
 		while (this_row && strlen(this_row) >= 0) {
-			diagnostics(4, "row=<%s>", this_row);
+			show_string(5, this_row, "row");
 	
 			TabbingGetColumnAlignments(this_row, align, &n, &next_left);
 			if (n > n_total)
@@ -1306,8 +1309,8 @@ void CmdTable(int code)
         if (location) free(location);
 
         CmdEndParagraph(0);
-        oldalignment = alignment;
-        alignment = JUSTIFIED;
+        oldalignment = getAlignment();
+        setAlignment(JUSTIFIED);
 
         CmdVspace(VSPACE_BIG_SKIP);
         CmdIndent(INDENT_NONE);
@@ -1322,18 +1325,19 @@ void CmdTable(int code)
         g_table_label = ExtractLabelTag(table_contents);
         if (g_endfloat_tables) {
             if (g_endfloat_markers) {
-                alignment = CENTERED;
-                CmdStartParagraph("endfloat", ANY_INDENT);
+                setAlignment(CENTERED);
+                startParagraph("endfloat", GENERIC_PARAGRAPH);
                 incrementCounter("endfloattable");  /* two separate counters */
                 fprintRTF("[");                     /* one for tables and one for */
                 ConvertBabelName("TABLENAME");      /* endfloat tables */
                 fprintRTF(" ");
-                if (g_document_type != FORMAT_ARTICLE)
+                if (g_document_type != FORMAT_ARTICLE &&
+                    g_document_type != FORMAT_APA)
                     fprintRTF("%d.", getCounter("chapter"));
                 fprintRTF("%d about here]", getCounter("endfloattable"));
             }
         } else {
-            CmdStartParagraph("table", ANY_INDENT);
+            startParagraph("table", GENERIC_PARAGRAPH);
             ConvertString(table_contents);
         }
         free(table_contents);
@@ -1344,11 +1348,11 @@ void CmdTable(int code)
         	ConvertString("\\end{table*}");
     } else {
         g_processing_table = FALSE;
-        if (GetTexMode() != MODE_VERTICAL)
+        if (getTexMode() != MODE_VERTICAL)
             CmdEndParagraph(0);
         if (g_table_label)
             free(g_table_label);
-        alignment = oldalignment;
+        setAlignment(oldalignment);
         CmdEndParagraph(0);
         CmdVspace(VSPACE_BIG_SKIP);
     }

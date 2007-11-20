@@ -49,202 +49,22 @@ Authors:
 #include "direct.h"
 #include "styles.h"
 #include "graphics.h"
+#include "vertical.h"
 
 #define ARABIC_NUMBERING 0
 #define ALPHA_NUMBERING  1
 #define ROMAN_NUMBERING  2
 
 extern bool twocolumn;          /* true if twocolumn-mode is enabled */
-int g_right_margin_indent;
-int g_left_margin_indent;
 
 void CmdPagestyle( /* @unused@ */ int code);
 void CmdHeader(int code);
 char *roman_item(int n, bool upper);
 
-static bool g_paragraph_no_indent = FALSE;
-static bool g_paragraph_inhibit_indent = FALSE;
-static bool g_page_new = FALSE;
-static bool g_column_new = FALSE;
-static int g_vertical_space_to_add = 0;
-static int g_line_spacing = 240;
 static int g_chapter_numbering = ARABIC_NUMBERING;
 static bool g_appendix;
 
 bool g_processing_list_environment = FALSE;
-
-void CmdStartParagraph(const char *style, int indenting)
-
-/******************************************************************************
-     purpose : RTF codes to create a new paragraph.  If the paragraph should
-               not be indented then emit \fi0 otherwise use the current value
-               of \parindent as the indentation of the first line.
-               
-               style describes the type of paragraph ... 
-                  "body"
-                  "caption"
-                  "author"
-                  "bibitem"
-                  "section"
-                  etc.
-                  
-               indenting describes how this paragraph and (perhaps) the following
-               paragraph should be indented
-               
-                  TITLE_INDENT  (do not indent this paragraph or the next)
-                  FIRST_INDENT  (do not indent this paragraph but indent the next)
-                  ANY_INDENT    (indent as needed)
-
-               Sometimes it is necessary to know what the next paragraph will
-               be before it has been parsed.  For example, a section command
-               should create a paragraph for the section title and then the
-               next paragraph encountered should be handled like as a first 
-               paragraph.  So status is set to 2 and decremented to 1 when the
-               section title paragraph is started.
-               
-               If the status is 1, then it is the first paragraph in a section.
-               Usually the first paragraph is not indented.  However, when the
-               document is being typeset in french it should have normal indentation.
-               Another special case occurs when the paragraph being typeset is
-               in a list environment.  In this case, we need to indent according
-               to the current parindent to obtain the proper hanging indentation
-               
-               If the status is 0, then use the default is to indent according to
-               the current parindent.  However, if the g_paragraph_inhibit_indent
-               flag or the g_paragraph_no_indent flag is TRUE, then do not indent
-               the next line.  Typically these flags are set just after a figure
-               or equation or table.
-               
-               Note that when the indenting is ANY_INDENT, the status flag is not touched.
- ******************************************************************************/
-{
-    static int status;
-    int parindent;
-
-    if (indenting == TITLE_INDENT)
-        status = 2;
-    if (indenting == FIRST_INDENT)
-        status = 1;
-
-    parindent = getLength("parindent");
-
-    diagnostics(4, "CmdStartParagraph mode = %s", TexModeName[GetTexMode()]);
-    diagnostics(4, "Noindent is         %s", (g_paragraph_no_indent) ? "TRUE" : "FALSE");
-    diagnostics(4, "Inhibit is          %s", (g_paragraph_inhibit_indent) ? "TRUE" : "FALSE");
-    diagnostics(4, "indent is           %d", g_left_margin_indent);
-    diagnostics(4, "right indent is     %d", g_right_margin_indent);
-    diagnostics(4, "paragraph indent is %d", getLength("parindent"));
-
-    if (g_page_new) {
-        fprintRTF("\\page{} ");   /* causes new page */
-        g_page_new = FALSE;
-        g_column_new = FALSE;
-    }
-
-    if (g_column_new) {
-        fprintRTF("\\column "); /* causes new page */
-        g_column_new = FALSE;
-    }
-
-    fprintRTF("\\pard\\q%c\\sl%i\\slmult1 ", alignment, g_line_spacing);
-
-    if (g_vertical_space_to_add > 0)
-        fprintRTF("\\sb%d ", g_vertical_space_to_add);
-    g_vertical_space_to_add = 0;
-
-    if (g_left_margin_indent != 0)
-        fprintRTF("\\li%d", g_left_margin_indent);
-
-    if (g_right_margin_indent != 0)
-        fprintRTF("\\ri%d", g_right_margin_indent);
-
-    /* titles are never indented */
-    if (status == 2)
-        parindent = 0;
-
-    /* French indents the first paragraph */
-    if (status == 1 && !FrenchMode && !g_processing_list_environment)
-        parindent = 0;
-
-    /* use indent flags for ANY_INDENT */
-    if (status <= 0 && (g_paragraph_no_indent || g_paragraph_inhibit_indent))
-        parindent = 0;
-
-    fprintRTF("\\fi%d ", parindent);
-
-    SetTexMode(-MODE_HORIZONTAL);   /* negative value avoids calling CmdStartParagraph! */
-
-    if (!g_processing_list_environment) {
-        g_paragraph_no_indent = FALSE;
-        g_paragraph_inhibit_indent = FALSE;
-    }
-
-    status--;
-}
-
-void CmdEndParagraph(int code)
-
-/******************************************************************************
-     purpose : ends the current paragraph and return to MODE_VERTICAL.
- ******************************************************************************/
-{
-    int mode = GetTexMode();
-
-    diagnostics(5, "CmdEndParagraph mode = %d", GetTexMode());
-    if (mode != MODE_VERTICAL  && g_processing_fields == 0) {
-        fprintRTF("\\par\n");
-        SetTexMode(-MODE_VERTICAL); /* negative value avoids calling CmdEndParagraph! */
-    }
-
-    g_paragraph_inhibit_indent = FALSE;
-}
-
-static void DirectVspace(int vspace)
-{
-    g_vertical_space_to_add = vspace;
-}
-
-void CmdVspace(int code)
-
-/******************************************************************************
-     purpose : vspace, vspace*, and vskip
-     		   code ==  0 if vspace or vspace*
-     		   code == -1 if vskip
-     		   code ==  1 if \smallskip
-     		   code ==  2 if \medskip
-     		   code ==  3 if \bigskip
- ******************************************************************************/
-{
-    int vspace=0;
-    char c;
-
-    switch (code) {
-        case VSPACE_VSPACE:
-            vspace = getDimension();
-            break;
-
-        case VSPACE_VSKIP:
-            while ((c = getTexChar()) && c != '{') {
-            }
-            vspace = getDimension();
-            parseBrace();
-            break;
-
-        case VSPACE_SMALL_SKIP:
-            vspace = getLength("smallskipamount");
-            break;
-
-        case VSPACE_MEDIUM_SKIP:
-            vspace = getLength("medskipamount");
-            break;
-
-        case VSPACE_BIG_SKIP:
-            vspace = getLength("bigskipamount");
-            break;
-    }
-
-    DirectVspace(vspace);
-}
 
 void CmdNewDef(int code)
 
@@ -303,7 +123,7 @@ void CmdNewDef(int code)
 
     }
 
-    diagnostics(3, "CmdNewDef name=<%s> param=%d opt_param=<%s> def=<%s>", 
+    diagnostics(4, "CmdNewDef name=<%s> param=%d opt_param=<%s> def=<%s>", 
                    (name) ? name : "",
                    param, 
                    (opt_param) ? opt_param : "",
@@ -340,9 +160,9 @@ void CmdNewEnvironment(int code)
             diagnostics(ERROR, "non-numeric number of parameters in newcommand");
     }
 
-    diagnostics(3, "CmdNewEnvironment name=<%s> param=%d", name, param);
-    diagnostics(3, "CmdNewEnvironment begdef=<%s>", begdef);
-    diagnostics(3, "CmdNewEnvironment enddef=<%s>", enddef);
+    diagnostics(2, "CmdNewEnvironment name=<%s> param=%d", name, param);
+    diagnostics(2, "CmdNewEnvironment begdef=<%s>", begdef);
+    diagnostics(2, "CmdNewEnvironment enddef=<%s>", enddef);
 
     if (code == DEF_NEW)
         newEnvironment(name, opt_param, begdef, enddef, param);
@@ -373,9 +193,9 @@ void CmdNewTheorem(int code)
     UpdateLineNumber(caption);
     UpdateLineNumber(within);
 
-    diagnostics(3, "CmdNewTheorem name=<%s>", name);
-    diagnostics(3, "CmdNewTheorem caption=<%s>", caption);
-    diagnostics(3, "CmdNewTheorem like=<%s>", (numbered_like) ? numbered_like : "");
+    diagnostics(2, "CmdNewTheorem name=<%s>", name);
+    diagnostics(2, "CmdNewTheorem caption=<%s>", caption);
+    diagnostics(2, "CmdNewTheorem like=<%s>", (numbered_like) ? numbered_like : "");
     newTheorem(name, caption, numbered_like, within);
 
     free(name);
@@ -384,34 +204,6 @@ void CmdNewTheorem(int code)
         free(numbered_like);
     if (within)
         free(within);
-}
-
-void CmdIndent(int code)
-
-/******************************************************************************
- purpose : set flags so that CmdStartParagraph() does the right thing
-     
-     	   INDENT_INHIBIT allows the next paragraph to be indented if
-     	   a paragraph break occurs before CmdStartParagraph() is called
-     			     		
-           INDENT_NONE tells CmdStartParagraph() to not indent the next paragraph
-           
-           INDENT_USUAL has CmdStartParagraph() use the value of \parindent
- ******************************************************************************/
-{
-    diagnostics(5, "CmdIndent mode = %d", GetTexMode());
-    if (code == INDENT_NONE)
-        g_paragraph_no_indent = TRUE;
-
-    else if (code == INDENT_INHIBIT)
-        g_paragraph_inhibit_indent = TRUE;
-
-    else if (code == INDENT_USUAL) {
-        g_paragraph_no_indent = FALSE;
-        g_paragraph_inhibit_indent = FALSE;
-    }
-    diagnostics(5, "Noindent is %d", (int) g_paragraph_no_indent);
-    diagnostics(5, "Inhibit  is %d", (int) g_paragraph_inhibit_indent);
 }
 
 void CmdSlashSlash(int code)
@@ -468,7 +260,7 @@ void CmdSlashSlash(int code)
 
 /* this should only happen for an array environment */
     if (g_processing_tabular) { /* tabular or array environment */
-        if (GetTexMode() == MODE_MATH || GetTexMode() == MODE_DISPLAYMATH) {    /* array */
+        if (getTexMode() == MODE_MATH || getTexMode() == MODE_DISPLAYMATH) {    /* array */
             fprintRTF("\\par\n\\tab ");
             return;
         }
@@ -529,6 +321,7 @@ void CmdBeginEnd(int code)
 /* user defined environments */
     i = existsEnvironment(s);
     if (i > -1) {
+    	diagnostics(WARNING, "starting user-defined environment '%s'", s);
         str = expandEnvironment(i, code);
         ConvertString(str);
         free(str);
@@ -544,7 +337,7 @@ void CmdBeginEnd(int code)
             str = expandTheorem(i, option);
             CmdEndParagraph(0);
             CmdVspace(VSPACE_SMALL_SKIP);
-            CmdStartParagraph("theorem", FIRST_INDENT);
+            startParagraph("theorem", FIRST_PARAGRAPH);
             fprintRTF("{\\b %s} {\\i ", str);
             PushBrace();
             if (option)
@@ -573,99 +366,14 @@ void CmdBeginEnd(int code)
     free(s);
 }
 
-void CmdAlign(int code)
-
-/*****************************************************************************
-    purpose : sets the alignment for a paragraph
-  parameter : code: alignment centered, justified, left or right
-     globals: alignment: alignment of paragraphs
- ********************************************************************************/
-{
-    char *s;
-    static char old_alignment_before_center = JUSTIFIED;
-    static char old_alignment_before_right = JUSTIFIED;
-    static char old_alignment_before_left = JUSTIFIED;
-    static char old_alignment_before_centerline = JUSTIFIED;
-
-    if (code == PAR_VCENTER) {
-        s = getBraceParam();
-        free(s);
-        return;
-    }
-
-    CmdEndParagraph(0);
-    switch (code) {
-        case (PAR_CENTERLINE):
-            old_alignment_before_centerline = alignment;
-            alignment = CENTERED;
-            fprintRTF("{");
-            diagnostics(4, "Entering Convert from CmdAlign (centerline)");
-            Convert();
-            diagnostics(4, "Exiting Convert from CmdAlign (centerline)");
-            alignment = old_alignment_before_centerline;
-            CmdEndParagraph(0);
-            fprintRTF("}");
-            break;
-
-        case (PAR_RAGGEDRIGHT):
-            old_alignment_before_centerline = alignment;
-            alignment = LEFT;
-
-/*		fprintRTF("{"); */
-            diagnostics(4, "Entering Convert from CmdAlign (centerline)");
-            Convert();
-            diagnostics(4, "Exiting Convert from CmdAlign (centerline)");
-            alignment = old_alignment_before_centerline;
-            CmdEndParagraph(0);
-
-/*		fprintRTF("}");*/
-            break;
-
-        case (PAR_CENTER | ON):
-            CmdIndent(INDENT_NONE);
-            old_alignment_before_center = alignment;
-            alignment = CENTERED;
-            break;
-        case (PAR_CENTER | OFF):
-            alignment = old_alignment_before_center;
-            CmdEndParagraph(0);
-            CmdIndent(INDENT_INHIBIT);
-            break;
-
-        case (PAR_RIGHT | ON):
-            old_alignment_before_right = alignment;
-            alignment = RIGHT;
-            CmdIndent(INDENT_NONE);
-            break;
-        case (PAR_RIGHT | OFF):
-            alignment = old_alignment_before_right;
-            CmdIndent(INDENT_INHIBIT);
-            break;
-
-        case (PAR_LEFT | ON):
-            old_alignment_before_left = alignment;
-            alignment = LEFT;
-            CmdIndent(INDENT_NONE);
-            break;
-        case (PAR_LEFT | OFF):
-            alignment = old_alignment_before_left;
-            CmdIndent(INDENT_INHIBIT);
-            break;
-        case (PAR_CENTERING):
-            CmdIndent(INDENT_NONE);
-            old_alignment_before_center = alignment;
-            alignment = CENTERED;
-            break;
-    }
-}
-
 void CmdToday(int code)
 
 /******************************************************************************
     purpose: converts LaTeX \today into RTF \chdate
  ******************************************************************************/
 {
-    SetTexMode(MODE_HORIZONTAL);
+    if (getTexMode() == MODE_VERTICAL)
+    	changeTexMode(MODE_HORIZONTAL);
     fprintRTF("\\chdate ");
 }
 
@@ -737,6 +445,10 @@ char *FormatUnitNumber(char *name)
 {
     char label[20];
 
+    if (g_document_type == FORMAT_APA) { /* no numbers in apa at all! */
+    	return strdup("");
+    }
+    
     label[0] = '\0';
     if (strcmp(name, "part") == 0) {
         char *s = roman_item(getCounter(name), TRUE);
@@ -833,7 +545,7 @@ parameter: code: type of section-recursion-level
         case SECT_PART:
         case SECT_PART_STAR:
             if (getCounter("part") > 0) CmdNewPage(NewPage);
-            CmdStartParagraph("part", TITLE_INDENT);
+            startParagraph("part", SECTION_TITLE_PARAGRAPH);
             fprintRTF("{");
             InsertStyle("part");
             fprintRTF(" ");
@@ -854,7 +566,7 @@ parameter: code: type of section-recursion-level
         case SECT_CHAPTER_STAR:
             unit_label = NULL;
             if (getCounter("chapter") > 0) CmdNewPage(NewPage);
-            CmdStartParagraph("chapter", TITLE_INDENT);
+            startParagraph("chapter", SECTION_TITLE_PARAGRAPH);
             fprintRTF("{");
             InsertStyle("chapter");
             fprintRTF(" ");
@@ -863,10 +575,6 @@ parameter: code: type of section-recursion-level
             if (code == SECT_CHAPTER && getCounter("secnumdepth") >= -1) {
                 incrementCounter("chapter");
                 setCounter("section", 0);
-                setCounter("subsection", 0);
-                setCounter("subsubsection", 0);
-                setCounter("paragraph", 0);
-                setCounter("subparagraph", 0);
         		setCounter("figure",0);
        			setCounter("table",0);
        			setCounter("equation",0);
@@ -877,7 +585,7 @@ parameter: code: type of section-recursion-level
             }
             CmdEndParagraph(0);
             CmdVspace(VSPACE_BIG_SKIP);
-            CmdStartParagraph("chapter", TITLE_INDENT);
+            startParagraph("chapter", SECTION_TITLE_PARAGRAPH);
             ConvertString(heading);
             CmdEndParagraph(0);
             fprintRTF("\\par\\par}");
@@ -889,45 +597,57 @@ parameter: code: type of section-recursion-level
         case SECT_NORM:
         case SECT_NORM_STAR:
             CmdVspace(VSPACE_BIG_SKIP);
-            CmdStartParagraph("section", TITLE_INDENT);
-            fprintRTF("{");
-            InsertStyle("section");
-            fprintRTF(" ");
-            if (code == SECT_NORM && getCounter("secnumdepth") >= 0) {
-                incrementCounter("section");
-                setCounter("subsection", 0);
-                setCounter("subsubsection", 0);
-                setCounter("paragraph", 0);
-                setCounter("subparagraph", 0);
-                resetTheoremCounter("section");
-                unit_label = FormatUnitNumber("section");
-                InsertBookmark(g_section_label, unit_label);
-                fprintRTF("  ");
-                free(unit_label);
+            if (g_document_type == FORMAT_APA) {
+            	ConvertString("\\begin{center}\\bf");
+			} else {        	
+            	startParagraph("section", SECTION_TITLE_PARAGRAPH);
+            	fprintRTF("{");
+				InsertStyle("section");
+				fprintRTF(" ");
+            
+				if (code == SECT_NORM && getCounter("secnumdepth") >= 0) {
+					incrementCounter("section");
+					setCounter("subsection", 0);
+					resetTheoremCounter("section");
+					unit_label = FormatUnitNumber("section");
+					InsertBookmark(g_section_label, unit_label);
+					fprintRTF("  ");
+					free(unit_label);
+				}
             }
             ConvertString(heading);
-            CmdEndParagraph(0);
-            fprintRTF("}");
+            if (g_document_type == FORMAT_APA) {
+            	ConvertString("\\end{center}");
+            	CmdEndParagraph(0);
+            	startParagraph("apa_section", GENERIC_PARAGRAPH);
+            } else {
+            	CmdEndParagraph(0);
+	            fprintRTF("}");
+            }
             CmdVspace(VSPACE_SMALL_SKIP);
             break;
 
         case SECT_SUB:
         case SECT_SUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph("subsection", TITLE_INDENT);
-            fprintRTF("{");
-            InsertStyle("subsection");
-            fprintRTF(" ");
-            if (code == SECT_SUB && getCounter("secnumdepth") >= 1) {
-                incrementCounter("subsection");
-                setCounter("subsubsection", 0);
-                setCounter("paragraph", 0);
-                setCounter("subparagraph", 0);
-                resetTheoremCounter("subsection");
-                unit_label = FormatUnitNumber("subsection");
-                InsertBookmark(g_section_label, unit_label);
-                fprintRTF("  ");
-                free(unit_label);
+            if (g_document_type == FORMAT_APA) {
+            	ConvertString("\\noindent");
+				startParagraph("apa_subsection", FIRST_PARAGRAPH);
+				fprintRTF("{\\i ");
+			} else {        	
+				startParagraph("subsection", SECTION_TITLE_PARAGRAPH);
+				fprintRTF("{");
+				InsertStyle("subsection");
+				fprintRTF(" ");          
+				if (code == SECT_SUB && getCounter("secnumdepth") >= 1) {
+					incrementCounter("subsection");
+					setCounter("subsubsection", 0);
+					resetTheoremCounter("subsection");
+					unit_label = FormatUnitNumber("subsection");
+					InsertBookmark(g_section_label, unit_label);
+					fprintRTF("  ");
+					free(unit_label);
+				}
             }
             ConvertString(heading);
             CmdEndParagraph(0);
@@ -938,31 +658,41 @@ parameter: code: type of section-recursion-level
         case SECT_SUBSUB:
         case SECT_SUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph("subsubsection", TITLE_INDENT);
-            fprintRTF("{");
-            InsertStyle("subsubsection");
-            fprintRTF(" ");
-            if (code == SECT_SUBSUB && (getCounter("secnumdepth") > 2 ||
-                (g_document_type == FORMAT_ARTICLE && getCounter("secnumdepth") == 2))) {
-                incrementCounter("subsubsection");
-                setCounter("paragraph", 0);
-                setCounter("subparagraph", 0);
-                resetTheoremCounter("subsubsection");
-                unit_label = FormatUnitNumber("subsubsection");
-                InsertBookmark(g_section_label, unit_label);
-                fprintRTF("  ");
-                free(unit_label);
+            if (g_document_type == FORMAT_APA) {
+				startParagraph("apa_subsubsection", GENERIC_PARAGRAPH);
+				fprintRTF("{\\i ");
+			} else {        	
+				startParagraph("subsubsection", SECTION_TITLE_PARAGRAPH);
+				fprintRTF("{");
+				InsertStyle("subsubsection");
+				fprintRTF(" ");
+				
+				if (code == SECT_SUBSUB && (getCounter("secnumdepth") > 2 ||
+					(g_document_type == FORMAT_ARTICLE && getCounter("secnumdepth") == 2))) {
+					incrementCounter("subsubsection");
+					setCounter("paragraph", 0);
+					setCounter("subparagraph", 0);
+					resetTheoremCounter("subsubsection");
+					unit_label = FormatUnitNumber("subsubsection");
+					InsertBookmark(g_section_label, unit_label);
+					fprintRTF("  ");
+					free(unit_label);
+				}
             }
             ConvertString(heading);
-            CmdEndParagraph(0);
-            fprintRTF("}");
-            CmdVspace(VSPACE_SMALL_SKIP);
+            if (g_document_type == FORMAT_APA) {
+            	fprintRTF(".} ");
+            } else {
+            	CmdEndParagraph(0);
+            	fprintRTF("}");
+            	CmdVspace(VSPACE_SMALL_SKIP);
+            }
             break;
 
         case SECT_SUBSUBSUB:
         case SECT_SUBSUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph("paragraph", TITLE_INDENT);
+            startParagraph("paragraph", SECTION_TITLE_PARAGRAPH);
             fprintRTF("{");
             InsertStyle("paragraph");
             fprintRTF(" ");
@@ -984,7 +714,7 @@ parameter: code: type of section-recursion-level
         case SECT_SUBSUBSUBSUB:
         case SECT_SUBSUBSUBSUB_STAR:
             CmdVspace(VSPACE_MEDIUM_SKIP);
-            CmdStartParagraph("subparagraph", TITLE_INDENT);
+            startParagraph("subparagraph", SECTION_TITLE_PARAGRAPH);
             fprintRTF("{");
             InsertStyle("subparagraph");
             fprintRTF(" ");
@@ -1023,24 +753,26 @@ void CmdCaption(int code)
     char number[20];
     char c;
 
-    old_align = alignment;
-    alignment = CENTERED;
+    old_align = getAlignment();
+    setAlignment(CENTERED);
 
     lst_entry = getBracketParam();
     thecaption = getBraceParam();
-    diagnostics(4, "in CmdCaption [%s]", thecaption);
 
     if (lst_entry) {
-        diagnostics(4, "entering CmdCaption [%s]{%20s ...}", lst_entry,thecaption);
+        diagnostics(4, "entering \\caption[%s]{}", lst_entry);
+        show_string(4, thecaption, "caption");
         free(lst_entry);
-    } else
-        diagnostics(4, "entering CmdCaption {%20s ...}",thecaption);
-
-    if (GetTexMode() != MODE_VERTICAL)
+    } else {
+        diagnostics(4, "entering \\caption{}");
+        show_string(4, thecaption, "caption");
+	}
+	
+    if (getTexMode() != MODE_VERTICAL)
         CmdEndParagraph(0);
     vspace = getLength("abovecaptionskip");
-    DirectVspace(vspace);
-    CmdStartParagraph("caption", FIRST_INDENT);
+    setVspace(vspace);
+    startParagraph("caption", FIRST_PARAGRAPH);
     fprintRTF("{");
 
     if (g_processing_figure) {
@@ -1057,7 +789,8 @@ void CmdCaption(int code)
         c = 't';
     }
 
-    if (g_document_type != FORMAT_ARTICLE)
+    if (g_document_type != FORMAT_ARTICLE &&
+        g_document_type != FORMAT_APA)
         snprintf(number, 20, "%d.%d", getCounter("chapter"), n);
     else
         snprintf(number, 20, "%d", n);
@@ -1081,8 +814,8 @@ void CmdCaption(int code)
 
     CmdEndParagraph(0);
     vspace = getLength("belowcaptionskip") + getLength("textfloatsep");
-    DirectVspace(vspace);
-    alignment = old_align;
+    setVspace(vspace);
+    setAlignment(old_align);
     diagnostics(4, "exiting CmdCaption");
 }
 
@@ -1111,7 +844,7 @@ void CmdCounter(int code)
 
         } else if (sscanf(s2, "%d", &num) != 1) {
 
-            fprintf(stderr, "\nBad parameter in set/addcounter{%s}{%s}\n", s, s2);
+            diagnostics(WARNING, "\nBad parameter in set/addcounter{%s}{%s}", s, s2);
             free(s2);
             free(s);
             return;
@@ -1157,7 +890,7 @@ void CmdLength(int code)
             if (cThis == '{') {
                 num = getDimension();
 
-                diagnostics(3, "size is <%d> twips", num);
+                diagnostics(4, "size is <%d> twips", num);
                 cThis = getTexChar();
 
                 while (cThis && cThis != '}')
@@ -1205,19 +938,19 @@ void CmdQuote(int code)
             PushEnvironment(QUOTE_MODE);
             diagnostics(4, "Entering \\begin{quotation}");
             CmdVspace(VSPACE_SMALL_SKIP);
-            g_left_margin_indent += 512;
-            g_right_margin_indent += 512;
-            CmdIndent(INDENT_USUAL);
+            setLeftMarginIndent(getLeftMarginIndent()+512);
+            setRightMarginIndent(getRightMarginIndent()+512);
+			startParagraph("quote", INDENT_USUAL);			
         }
         else {
             PushEnvironment(QUOTATION_MODE);
             diagnostics(4, "Entering \\begin{quote}");
             CmdVspace(VSPACE_SMALL_SKIP);
-            g_left_margin_indent += 512;
-            g_right_margin_indent += 512;
+            setLeftMarginIndent(getLeftMarginIndent()+512);
+            setRightMarginIndent(getRightMarginIndent()+512);
             setLength("parindent", 0);
-            CmdIndent(INDENT_USUAL);
-        }
+			startParagraph("quote", INDENT_USUAL);			
+		}
 	}
 	else {
 		PopEnvironment();
@@ -1240,7 +973,7 @@ void CmdList(int code)
     vspace = getLength("topsep") + getLength("parskip");
 
 	if (code != (INPARAENUM_MODE | ON) && code != (INPARAENUM_MODE | OFF) ) {
-		if (GetTexMode() == MODE_VERTICAL)
+		if (getTexMode() == MODE_VERTICAL)
 			vspace += getLength("partopsep");
 		else
 			CmdEndParagraph(0);
@@ -1248,28 +981,28 @@ void CmdList(int code)
 	
     switch (code) {
         case (ITEMIZE_MODE | ON):
-            DirectVspace(vspace);
+            setVspace(vspace);
             PushEnvironment(ITEMIZE_MODE);
             setLength("parindent", -amount);
-            g_left_margin_indent += 2 * amount;
+            setLeftMarginIndent(getLeftMarginIndent() + 2 * amount);
             CmdIndent(INDENT_USUAL);
             break;
 
         case (ENUMERATE_MODE | ON):
-            DirectVspace(vspace);
+            setVspace(vspace);
             PushEnvironment(ENUMERATE_MODE);
             g_enumerate_depth++;
             CmdItem(RESET_ITEM_COUNTER);
             setLength("parindent", -amount);
-            g_left_margin_indent += 2 * amount;
+            setLeftMarginIndent(getLeftMarginIndent() + 2 * amount);
             CmdIndent(INDENT_USUAL);
             break;
 
         case (DESCRIPTION_MODE | ON):
-            DirectVspace(vspace);
+            setVspace(vspace);
             PushEnvironment(DESCRIPTION_MODE);
             setLength("parindent", -amount);
-            g_left_margin_indent += amount;
+            setLeftMarginIndent(getLeftMarginIndent() + 2 * amount);
             CmdIndent(INDENT_USUAL);
             break;
 
@@ -1292,7 +1025,7 @@ void CmdList(int code)
             PopEnvironment();
             CmdIndent(INDENT_USUAL);    /* need to reset INDENT_NONE from CmdItem */
             g_processing_list_environment = FALSE;
-            DirectVspace(vspace);
+            setVspace(vspace);
             break;
     }
 }
@@ -1328,10 +1061,10 @@ void CmdItem(int code)
 	if (code != INPARAENUM_MODE) {
     	CmdEndParagraph(0);
     	vspace = getLength("itemsep") + getLength("parsep");
-    	DirectVspace(vspace);
+    	setVspace(vspace);
 
     	CmdIndent(INDENT_USUAL);
-    	CmdStartParagraph("item", FIRST_INDENT);
+    	startParagraph("item", FIRST_PARAGRAPH);
     }
 
     itemlabel = getBracketParam();
@@ -1419,14 +1152,14 @@ void CmdBox(int code)
  ******************************************************************************/
 {
     char BoxName[5][10] = { "hbox", "vbox", "mbox", "fbox", "parbox" };
-    int mode = GetTexMode();
+    int mode = getTexMode();
 
-    diagnostics(2, "Entering CmdBox() [%s]", BoxName[code - 1]);
+    diagnostics(4, "Entering CmdBox() [%s]", BoxName[code - 1]);
     if (g_processing_fields)
         g_processing_fields++;  /* hack to stop fields within fields */
 
     if (code == BOX_HBOX || code == BOX_MBOX)
-        SetTexMode(MODE_RESTRICTED_HORIZONTAL);
+        changeTexMode(MODE_RESTRICTED_HORIZONTAL);
 
     if (code == BOX_PARBOX) {
         char *position, *width;
@@ -1450,44 +1183,26 @@ void CmdBox(int code)
         CmdIndent(INDENT_INHIBIT);
 
     } else {
-        SetTexMode(mode);
+        changeTexMode(mode);
     }
 
-    diagnostics(2, "Exited CmdBox() [%s]", BoxName[code - 1]);
+    diagnostics(4, "Exited CmdBox() [%s]", BoxName[code - 1]);
 }
 
 void CmdVerb(int code)
 
 /******************************************************************************
  purpose: converts the LaTeX-verb-environment to a similar Rtf-style
- 		  \url probably does not handle line feeds properly
  ******************************************************************************/
 {
-    char cThis, *text, *s;
+    char cThis;
     char markingchar='#';
     int num;
 	
-    SetTexMode(MODE_HORIZONTAL);
+    if (getTexMode() == MODE_VERTICAL)
+    	changeTexMode(MODE_HORIZONTAL);
     num = TexFontNumber("Typewriter");
     fprintRTF("{\\b0\\i0\\scaps0\\f%d ", num);
-
-    if (code == VERB_URL) {
-        cThis = getNonSpace();
-        if (cThis == '{') {     /* \url{http://} */
-            text = getDelimitedText('{', '}', TRUE);
-            s = text;
-            diagnostics(4, "CmdVerbatim \\url{%s}", text);
-            while (*s) {
-                putRtfCharEscaped(*s);
-                s++;
-            }
-            fprintRTF("}");
-            free(text);
-            return;
-        } else
-            markingchar = cThis;    /* \url|http://| */
-
-    }
 
     if (code == VERB_STAR || code == VERB_VERB) {
 
@@ -1527,7 +1242,7 @@ void CmdVerbatim(int code)
             PushEnvironment(VERBATIM_MODE);
             CmdEndParagraph(0);
             CmdIndent(INDENT_NONE);
-            CmdStartParagraph("verbatim", FIRST_INDENT);
+            startParagraph("verbatim", GENERIC_PARAGRAPH);
             num = TexFontNumber("Typewriter");
             fprintRTF("\\pard\\ql\\b0\\i0\\scaps0\\f%d ", num);
         }
@@ -1557,15 +1272,14 @@ void CmdVerbatim(int code)
 
         else if (true_code == VERBATIM_1 || true_code == VERBATIM_2) {
 
-            while (*vptr) {
-                diagnostics(5, "Verbatim character <%c>", *vptr);
-                putRtfCharEscaped(*vptr++);
-            }
+            show_string(5, verbatim_text, "verbatim");
+            putRtfStrEscaped(verbatim_text);
         }
 
         free(verbatim_text);
         ConvertString(endtag);
         free(endtag);
+        
 
     } else {
         diagnostics(4, "Exiting CmdVerbatim");
@@ -1573,6 +1287,8 @@ void CmdVerbatim(int code)
         if (true_code != VERBATIM_4) {
         	PopEnvironment();
             CmdEndParagraph(0);
+        	CmdVspace(VSPACE_SMALL_SKIP);
+        	skipWhiteSpace();
         }
             
         
@@ -1591,7 +1307,7 @@ void CmdVerse(int code)
         case ON:
             PushEnvironment(VERSE_MODE);
             CmdIndent(INDENT_USUAL);
-            g_left_margin_indent += 1134;
+            setLeftMarginIndent(getLeftMarginIndent() + 1134);
             setLength("parindent", 0);
             break;
         case OFF:
@@ -1695,24 +1411,33 @@ void GermanPrint(int code)
 }
 
 
-void CmdIgnoreLet( /* @unused@ */ int code)
+void CmdIgnoreLet(int code)
 
 /******************************************************************************
      purpose : ignore \let 
 	   Format: \let\XXXXX = \YYYYYY or \let\XXXXX\YYYYYY
  ******************************************************************************/
 {
+    char t[100];
     char cThis;
+    int i;
+    char *s;
 
-    while ((cThis = getTexChar()) && cThis != ' ' && cThis != '\\') {
-    }
-
-    if (cThis == ' ') {
-        skipSpaces();
-        while ((cThis = getTexChar()) && cThis != ' ') {
-        }
-        skipSpaces();
-    }
+	s = getSimpleCommand();
+	
+	cThis = getNonBlank();
+	if (cThis == '=') 
+		cThis = getNonBlank();
+	
+	t[0] = cThis;
+	for (i=1; i<100; i++) {
+		t[i] = getTexChar();
+		if (t[i]==' ' || t[i]=='\n') break;
+	}
+	t[i]='\0';
+	
+	newDefinition(s+1,NULL,t,0);
+	free(s);	
 }
 
 void CmdNewif( /* @unused@ */ int code)
@@ -1749,6 +1474,8 @@ void CmdSpace(float kk)
 {
     int size = CurrentFontSize() * kk;
 
+    if (getTexMode() == MODE_VERTICAL)
+    	changeTexMode(MODE_HORIZONTAL);
     fprintRTF("{\\fs%d  }", size);
 }
 
@@ -1777,9 +1504,10 @@ void CmdFigure(int code)
 	static char     oldalignment;
 	
     if (code & ON) {
+        setCounter("subfigure", 0);
 		CmdEndParagraph(0);
-		oldalignment = alignment;
-		alignment = JUSTIFIED;
+		oldalignment = getAlignment();
+		setAlignment(JUSTIFIED);
 
 		CmdVspace(VSPACE_BIG_SKIP);
         loc = getBracketParam();
@@ -1791,8 +1519,8 @@ void CmdFigure(int code)
         g_figure_label = ExtractLabelTag(figure_contents);
         if (g_endfloat_figures) {
 			if (g_endfloat_markers) {
-				alignment = CENTERED;
-				CmdStartParagraph("endfloat", ANY_INDENT);
+				setAlignment(CENTERED);
+				startParagraph("endfloat", GENERIC_PARAGRAPH);
 				incrementCounter("endfloatfigure");  /* two separate counters */
 				fprintRTF("[");                      /* one for figures and one for */
 				ConvertBabelName("FIGURENAME");      /* endfloat figures */
@@ -1816,7 +1544,7 @@ void CmdFigure(int code)
             if (caption)
                 free(caption);
         } else {
-			CmdStartParagraph("figure", ANY_INDENT);
+			startParagraph("figure", GENERIC_PARAGRAPH);
             ConvertString(figure_contents);
         }
         free(figure_contents);
@@ -1826,10 +1554,39 @@ void CmdFigure(int code)
             free(g_figure_label);
         g_processing_figure = FALSE;
         diagnostics(4, "exiting CmdFigure");
-		alignment = oldalignment;
+		setAlignment(oldalignment);
 		CmdEndParagraph(0);
 		CmdVspace(VSPACE_BIG_SKIP);
     }
+}
+
+void CmdSubFigure(int code)
+{
+	char *caption, *contents;
+	
+	diagnostics(4,"CmdSubFigure");
+	
+	caption = getBracketParam();
+	contents = getBraceParam();
+	
+    startParagraph("subfigure", FIRST_PARAGRAPH);
+    
+    /* insert the figure */
+	ConvertString(contents);
+    free(contents);
+    CmdEndParagraph(0);
+
+	/* now the caption */
+	if (caption) {
+    	int n;
+    	startParagraph("subfigure", FIRST_PARAGRAPH);
+        n = getCounter("subfigure");
+	    fprintRTF("(%c) ", (char) (n + (int) 'a'));
+		ConvertString(caption);
+    	CmdEndParagraph(0);
+		free(caption);
+	}		
+    incrementCounter("subfigure");
 }
 
 void FixTildes(char *s)
@@ -1940,24 +1697,6 @@ parameter: number of columns
     }                           /* switch */
 }
 
-void CmdNewPage(int code)
-
-/******************************************************************************
-  purpose: starts a new page
-parameter: code: newpage or newcolumn-option
- globals: twocolumn: true if twocolumn-mode is set
- ******************************************************************************/
-{
-    switch (code) {
-        case NewPage:
-            g_page_new = TRUE;
-            break;
-
-        case NewColumn:
-            g_column_new = TRUE;
-            break;
-    }
-}
 
 void Cmd_OptParam_Without_braces( /* @unused@ */ int code)
 
@@ -1999,20 +1738,20 @@ void CmdAbstract(int code)
 {
     static char oldalignment;
 	    	    
-    if (code == 2 || code == (1 | ON) ) {
+    if (code == 3 || code == 2 || code == (1 | ON) ) {
 	    CmdEndParagraph(0);
-        oldalignment = alignment;
+        oldalignment = getAlignment();
         if (g_document_type == FORMAT_REPORT || titlepage)
             CmdNewPage(NewPage);
 
-        CmdStartParagraph("abstract", FIRST_INDENT);
+        startParagraph("abstract", FIRST_PARAGRAPH);		
         fprintRTF("\\qc{\\b ");
         ConvertBabelName("ABSTRACTNAME");
         fprintRTF("}");
         CmdEndParagraph(0);
-        g_left_margin_indent += 1024;
-        g_right_margin_indent += 1024;
-        alignment = JUSTIFIED;
+        setLeftMarginIndent(getLeftMarginIndent() + 1024);
+        setRightMarginIndent(getRightMarginIndent() + 1024);
+        setAlignment(JUSTIFIED);
 
     } 
     
@@ -2022,12 +1761,12 @@ void CmdAbstract(int code)
     	free(s);
     }
     
-    if (code == 2 || code == (1 | OFF) ) {
+    if (code == 4 || code == 2 || code == (1 | OFF) ) {
         CmdIndent(INDENT_USUAL);
     	CmdEndParagraph(0);
-        g_left_margin_indent -= 1024;
-        g_right_margin_indent -= 1024;
-        alignment = oldalignment;
+        setLeftMarginIndent(getLeftMarginIndent() - 1024);
+        setRightMarginIndent(getRightMarginIndent() - 1024);
+        setAlignment(oldalignment);
         CmdVspace(VSPACE_MEDIUM_SKIP);  /* put \medskip after abstract */
     }
 }
@@ -2042,16 +1781,16 @@ CmdAcknowledgments(int code)
 	if (code == ON) {
 		
 		CmdVspace(VSPACE_BIG_SKIP);
-		CmdStartParagraph("acknowledgments", ANY_INDENT);
+		startParagraph("acknowledgments", GENERIC_PARAGRAPH);
 		fprintRTF("\n{\\b ");
 		fprintRTF("Acknowledgments"); /* should be in cfg file, but it is not */
 		fprintRTF("}\n");
 		CmdEndParagraph(0);
-		oldalignment = alignment;
-		alignment = JUSTIFIED;
+		oldalignment = getAlignment();
+		setAlignment(JUSTIFIED);
 
 	} else {
-		alignment = oldalignment;
+		setAlignment(oldalignment);
 		CmdVspace(VSPACE_BIG_SKIP);				/* put \medskip after acknowledgments */
 	}
 }
@@ -2068,11 +1807,11 @@ CmdTitlepage(int code)
     switch (code && 0) {
         case ON:
             fprintRTF("\n\\par\\pard \\page "); /* new page */
-            fprintRTF("\n\\par\\q%c ", alignment);
+            fprintRTF("\n\\par\\q%c ", getAlignment());
             break;
         case OFF:
             fprintRTF("\\pard ");
-            fprintRTF("\n\\par\\q%c \\page ", alignment);
+            fprintRTF("\n\\par\\q%c \\page ", getAlignment());
             break;
     }
 }
@@ -2114,7 +1853,7 @@ void CmdColsep(int code)
     diagnostics(0, "CmdColsep called");
   /*  actCol++;*/
 
-    if (GetTexMode() == MODE_DISPLAYMATH) { /* in an eqnarray or array environment */
+    if (getTexMode() == MODE_DISPLAYMATH) { /* in an eqnarray or array environment */
         fprintRTF("\\tab ");
     } else {
         fprintRTF("\\cell\\pard\\intbl ");
@@ -2188,10 +1927,21 @@ char *roman_item(int n, bool upper)
 
 void CmdNonBreakSpace(int code)
 {
-    char cThis = getNonSpace();
+	char cThis;
+/*    int size = CurrentFontSize() * ((float) code / 100.0);*/
 
+    cThis = getNonSpace();
     ungetTexChar(cThis);
-    fprintRTF("\\~");
+
+    if (getTexMode() == MODE_VERTICAL)
+		changeTexMode(MODE_HORIZONTAL);
+/*    fprintRTF("{\\fs%d\\~}", size);*/
+
+	if (code == 100) 
+    	fprintRTF("\\~ ");
+	else
+    	fprintRTF("{\\charscalex%d\\~}", code);
+    
 }
 
 
@@ -2343,10 +2093,3 @@ void CmdIflatextortf(int code)
 	free(entire_if);
 }
 
-/******************************************************************************
-  purpose: support for \doublespacing
- ******************************************************************************/
-void CmdDoubleSpacing(int code)
-{
-	g_line_spacing = 480;
-}

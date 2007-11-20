@@ -7,7 +7,7 @@
  */
 
 char	*CurrentFileName(void);
-int		PushSource(char * filename, char * string);
+int		PushSource(const char * filename, const char * string);
 int		StillSource(void);
 void	PopSource(void);
 
@@ -21,10 +21,12 @@ void	ungetTexChar(char c);
 
 void	skipToEOL(void);
 void	skipSpaces(void);
+void	skipWhiteSpace(void);
 
 void	CmdIgnoreParameter(int);
 void    CmdInclude(int code);
 char	*getBraceParam(void);
+char    *getBraceRawParam(void);
 char	*getLeftRightParam(void);
 char	*getBracketParam(void);
 char	*getSimpleCommand(void);

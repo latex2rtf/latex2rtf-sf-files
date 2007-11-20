@@ -4,29 +4,31 @@
 LATEX= latex
 BIBTEX= bibtex
 LATEX2RTF= ../latex2rtf
-OPTIONS  = -Z3 -P ../cfg/:../scripts/ -T ../tmp/
+OPTIONS  = -Z3 -P ../cfg/:../scripts/ -T tmp/
 
 LATEX_LOG = >latex.log
-LATEX_LOG = 
+#LATEX_LOG = 
 
-RTF=	align.rtf	array.rtf 		box.rtf 			ch.rtf	\
-		chem.rtf 	color.rtf 		dblspace.rtf		defs.rtf\
-		endnote.rtf	essential.rtf	excalibur.rtf 		fancy.rtf\
-		fonts.rtf	fontsize.rtf 	fonttest.rtf  		geometry.rtf\
-		geotest.rtf	german.rtf		head_article.rtf	head_book.rtf \
-		list.rtf 	ifclause.rtf	include.rtf			linux.rtf\
-		logo.rtf 	misc1.rtf 		misc3.rtf 			misc4.rtf\
-		percent.rtf	report.rtf		tabbing.rtf			tabular.rtf\
+RTF=	align.rtf	 array.rtf 		box.rtf 			ch.rtf	             \
+		chem.rtf 	 color.rtf 		dblspace.rtf		defs.rtf             \
+		endnote.rtf	 essential.rtf	excalibur.rtf 		fancy.rtf            \
+		fonts.rtf	 fontsize.rtf 	fonttest.rtf  		geometry.rtf         \
+		geotest.rtf  german.rtf		head_article.rtf	head_book.rtf        \
+		list.rtf 	 ifclause.rtf	include.rtf			linux.rtf            \
+		logo.rtf 	 misc1.rtf 		misc3.rtf 			misc4.rtf            \
+		percent.rtf	 report.rtf		tabbing.rtf			tabular.rtf          \
+		hyperref.rtf longstack.rtf
 
 BIB_TESTS=  bib_apacite.rtf        bib_harvard.rtf        bib_super.rtf      \
 			bib_apacite_dblsp.rtf  bib_natbib1.rtf        bib_apalike.rtf    \
 			bib_natbib2.rtf        bibentry_apalike.rtf   bib_apalike2.rtf   \
 			bib_natbib3.rtf        bib_apanat.rtf         bibentry_plain.rtf \
-			bib_authordate.rtf     bib_simple.rtf
+			bib_authordate.rtf     bib_simple.rtf         bib_apa.rtf        \
+			bib_apacite2.rtf
 	
 FIG_TESTS=  fig_endfloat.rtf  fig_test.rtf      fig_test3.rtf \
             fig_size.rtf      fig_test2.rtf     fig_test4.rtf \
-            picture.rtf
+            picture.rtf       fig_subfig.rtf
 
 ENC_TESTS= 	enc_applemac.rtf enc_cp437.rtf  enc_cp865.rtf    enc_latin2.rtf enc_latin5.rtf \
 			enc_cp1250.rtf   enc_cp850.rtf  enc_decmulti.rtf enc_latin3.rtf enc_latin9.rtf\
@@ -49,7 +51,7 @@ bib:
 	$(MAKE) bib_tests
 
 fig:
-	mkdir -p ../tmp
+	mkdir -p tmp
 	$(MAKE) fig_tests
 
 enc:
@@ -65,7 +67,7 @@ char:
 	$(MAKE) char_tests
 
 all:
-	mkdir -p ../tmp
+	mkdir -p tmp
 	$(MAKE) basic_tests
 	$(MAKE) bib_tests
 	$(MAKE) eqn_tests
@@ -104,10 +106,24 @@ bib_apalike.rtf: bib_apalike.tex
 	$(LATEX) bib_apalike $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_apalike
 
+bib_apa.rtf: bib_apa.tex
+	$(LATEX) bib_apa $(LATEX_LOG)
+	$(BIBTEX) bib_apa > bibtex.log
+	$(LATEX) bib_apa $(LATEX_LOG)
+	$(LATEX) bib_apa $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) bib_apa
+
 bib_apacite.rtf: bib_apacite.tex
 	$(LATEX) bib_apacite $(LATEX_LOG)
 	$(LATEX) bib_apacite $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_apacite
+
+bib_apacite2.rtf: bib_apacite2.tex
+	$(LATEX) bib_apacite2 $(LATEX_LOG)
+	$(BIBTEX) bib_apacite2 > bibtex.log
+	$(LATEX) bib_apacite2 $(LATEX_LOG)
+	$(LATEX) bib_apacite2 $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) bib_apacite2
 
 bib_apacite_dblsp.rtf: bib_apacite_dblsp.tex
 	$(LATEX) bib_apacite_dblsp $(LATEX_LOG)
@@ -166,6 +182,7 @@ bibentry_apalike.rtf: bibentry_apalike.tex bibentry_apalike.bib
 
 bib_super.rtf: bib_super.tex
 	$(LATEX) bib_super $(LATEX_LOG)
+	$(BIBTEX) bib_super > bibtex.log
 	$(LATEX) bib_super $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_super
 
@@ -217,6 +234,39 @@ eqnnumber2.rtf: eqnnumber2.tex
 	$(LATEX) eqnnumber2 $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) eqnnumber2
 
+fig_endfloat.rtf: fig_endfloat.tex
+	$(LATEX) fig_endfloat $(LATEX_LOG)
+	$(LATEX) fig_endfloat $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) fig_endfloat
+
+include.rtf: include.tex include1.tex include2.tex include3.tex
+	$(LATEX) include $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) include
+
+report.rtf: report.tex
+	$(LATEX) report $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) report
+
+excalibur.rtf: excalibur.tex
+	$(LATEX) excalibur $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) excalibur
+
+dblspace.rtf: dblspace.tex
+	$(LATEX) dblspace $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) dblspace
+
+eqns.rtf: eqns.tex
+	$(LATEX) eqns $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) eqns
+
+essential.rtf: essential.tex
+	$(LATEX) essential $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) essential
+
+hyperref.rtf: hyperref.tex
+	$(LATEX) hyperref $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) hyperref
+
 check:
 	./bracecheck
 	
@@ -231,6 +281,6 @@ clean:
 	mv fig_testc.tmp fig_testc.pdf
 	mv fig_testd.tmp fig_testd.pdf
 	mv fig_teste.tmp fig_teste.pdf
-	rm -rf ../tmp
+	rm -rf tmp
 
 .PHONY: clean all check

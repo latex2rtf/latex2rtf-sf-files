@@ -42,6 +42,7 @@ Authors:
 #include "funct1.h"
 #include "preamble.h"
 #include "counters.h"
+#include "vertical.h"
 
 /* number of points (72/inch) in a meter */
 #define POINTS_PER_METER 2834.65
@@ -146,6 +147,9 @@ typedef struct _GdiCommentMultiFormats {
 #define CONVERT_LATEX  3
 #define CONVERT_PDF    4
 
+static char *g_psset_info   = NULL;
+static char *g_psstyle_info = NULL;
+
 /******************************************************************************
      purpose : portable routine to delete filename
  ******************************************************************************/
@@ -234,13 +238,13 @@ static char *SysGraphicsConvert(int opt, int offset, char *in, char *out)
 #ifdef UNIX
 
 	if (strchr(in, (int) '\'')) {
-		diagnostics(WARNING, "single quote found in filename <%s>.  skipping conversion", in);
+		diagnostics(WARNING, "single quote found in filename '%s'.  skipping conversion", in);
 		free(out_tmp);
 		return NULL;
 	}
 	
 	if (out && strchr(out_tmp, (int) '\'')) {
-		diagnostics(WARNING, "single quote found in filename <%s>.  skipping conversion", out_tmp);
+		diagnostics(WARNING, "single quote found in filename '%s'.  skipping conversion", out_tmp);
 		free(out_tmp);
 		return NULL;
 	}
@@ -276,7 +280,7 @@ static char *SysGraphicsConvert(int opt, int offset, char *in, char *out)
 	
 	if (opt == CONVERT_PDF) {
 		#ifdef __APPLE__
-		char format_apple[] = "/usr/bin/sips -s format png -s dpiHeight %d -s dpiWidth %d --out '%s' '%s'";
+		char format_apple[] = "/usr/bin/sips -s format png -s dpiHeight %d -s dpiWidth %d --out '%s' '%s' > /dev/null";
 		snprintf(cmd, N, format_apple, dpi, dpi, out_tmp, in);
 		#else
 		char format_unix[] = "gs -q -dNOPAUSE -dSAFER -dBATCH -sDEVICE=pngalpha -r%d -sOutputFile='%s' '%s'";
@@ -313,7 +317,7 @@ static char *SysGraphicsConvert(int opt, int offset, char *in, char *out)
 	
 #endif
 
-    diagnostics(1, "sys command = [%s]", cmd);
+    diagnostics(3, "command `%s`", cmd);
     err = system(cmd);
 
     if (err != 0) {
@@ -406,7 +410,7 @@ static char *eps_to_pict(char *s)
     FILE *fp_pict_eps = NULL;
 	int offset = 0;
 	
-    diagnostics(2, "eps_to_pict filename = <%s>", s);
+    diagnostics(3, "eps_to_pict '%s'", s);
 
     /* Create filename for bitmap */
     pict = strdup_new_extension(s, ".eps", "a.pict");
@@ -529,7 +533,7 @@ static char *eps_to_png(char *name)
 {
     char *png, *out;
 	
-    diagnostics(2, " eps_to_png file = <%s>", name);
+    diagnostics(3, " eps_to_png '%s'", name);
 
     if (strstr(name, ".eps") != NULL)
     	png = strdup_new_extension(name, ".eps", ".png");
@@ -555,7 +559,7 @@ static char *pdf_to_png(char *pdf)
 {
     char *png, *out;
 
-    diagnostics(1, "converting %s to png file", pdf);
+    diagnostics(2, "converting '%s' to png file", pdf);
 
     if (strstr(pdf, ".pdf") != NULL)
     	png = strdup_new_extension(pdf, ".pdf", ".png");
@@ -582,7 +586,7 @@ static char *eps_to_emf(char *name)
     long width, height;
 
 	outfile = NULL;
-    diagnostics(2, "filename = <%s>", name);
+    diagnostics(3, "filename = '%s'", name);
 
     if (strstr(name, ".eps") != NULL)
     	outfile = strdup_new_extension(name, ".eps", ".wmf");
@@ -624,8 +628,8 @@ static char *eps_to_emf(char *name)
  ******************************************************************************/
 static void AdjustScaling(double h, double w, double target_h, double target_w, double s, int *sx, int *sy)
 {
-	diagnostics(4,"AdjustScaling h       =%f w       =%f s=%f", h, w, s);
-	diagnostics(4,"AdjustScaling target_h=%f target_w=%f", target_h, target_w);
+	diagnostics(5,"AdjustScaling h       =%f w       =%f s=%f", h, w, s);
+	diagnostics(5,"AdjustScaling target_h=%f target_w=%f", target_h, target_w);
 
 	if (target_h != 0 && h != 0) 
 		*sy = (int) my_rint(100.0 * target_h / h);
@@ -641,7 +645,7 @@ static void AdjustScaling(double h, double w, double target_h, double target_w, 
 	if (target_h == 0 && target_w != 0)
 		*sy = *sx;
 
-	diagnostics(4,"AdjustScaling xscale=%d yscale=%d", *sx, *sy);
+	diagnostics(5,"AdjustScaling xscale=%d yscale=%d", *sx, *sy);
 }
 
 /******************************************************************************
@@ -677,7 +681,7 @@ static void PutPictFile(char *s, double height0, double width0, double scale, do
         pict = strdup(s);
     else
         pict = strdup_together(g_home_dir, s);
-    diagnostics(2, "PutPictFile <%s>", pict);
+    diagnostics(2, "PutPictFile '%s'", pict);
 
     fp = fopen(pict, "rb");
     free(pict);
@@ -685,7 +689,7 @@ static void PutPictFile(char *s, double height0, double width0, double scale, do
         return;
 
     if (fseek(fp, 514L, SEEK_SET) || fread(buffer, 2, 4, fp) != 4) {
-        diagnostics(WARNING, "Cannot read graphics file <%s>", s);
+        diagnostics(WARNING, "Cannot read graphics file '%s'", s);
         fclose(fp);
         return;
     }
@@ -745,7 +749,7 @@ static unsigned char * getPngChunk(FILE *fp, char *s)
 	
 	head[4]='\0';
 	
-	diagnostics(4, "getPngChunk ... seeking <%s>",s);
+	diagnostics(6, "getPngChunk ... seeking '%s'",s);
 	data = NULL;
 	do {
 		int i;
@@ -761,7 +765,7 @@ static unsigned char * getPngChunk(FILE *fp, char *s)
 
 		if (strcmp(head,"IEND") == 0) return NULL;
 		
-		diagnostics(4,"found chunk <%s> size %ld bytes",head,size);
+		diagnostics(6,"found chunk '%s' size %ld bytes",head,size);
 		data = malloc(size);
 		if (data == NULL) return NULL;
 		
@@ -798,20 +802,20 @@ static void GetPngSize(char *s, unsigned long *w, unsigned long *h, unsigned lon
         return;
 
     if (fread(buffer, 1, 8, fp) < 8) {
-        diagnostics(WARNING, "Cannot read graphics file <%s>", s);
+        diagnostics(WARNING, "Cannot read graphics file '%s'", s);
         fclose(fp);
         return;
     }
 
     if (memcmp(buffer, reftag, 8) != 0) {
-        diagnostics(WARNING, "Graphics file <%s> is not a PNG file!", s);
+        diagnostics(WARNING, "Graphics file '%s' is not a PNG file!", s);
         fclose(fp);
         return;
     }
 
 	data = getPngChunk(fp,"IHDR");
 	if (data == NULL) {
-        diagnostics(WARNING, "Graphics file <%s>: could not locate IHDR chunk!", s);
+        diagnostics(WARNING, "Graphics file '%s': could not locate IHDR chunk!", s);
         return;
 	}
 
@@ -823,7 +827,7 @@ static void GetPngSize(char *s, unsigned long *w, unsigned long *h, unsigned lon
 	
 	data = getPngChunk(fp,"pHYs");
 	if (data == NULL) {
-        diagnostics(4, "Graphics file <%s>: could not locate pHYs chunk!", s);
+        diagnostics(4, "Graphics file '%s': could not locate pHYs chunk!", s);
         return;
 	}
 
@@ -837,9 +841,9 @@ static void GetPngSize(char *s, unsigned long *w, unsigned long *h, unsigned lon
 	/* dots per inch, not per meter! */
 	if (*xres < POINTS_PER_METER) {
 		*bad_res = 1;
-		diagnostics(4, "bogus resolution in png image! ");
-		diagnostics(4, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
-		diagnostics(4, "xres = %ld, yres = %ld, pixels/in", 
+		diagnostics(6, "bogus resolution in png image! ");
+		diagnostics(6, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
+		diagnostics(6, "xres = %ld, yres = %ld, pixels/in", 
 		(unsigned long)( (double)(*xres *72.0)/POINTS_PER_METER), 
 		(unsigned long)((double)(*yres * 72.0) /POINTS_PER_METER));
 		*xres *= POINTS_PER_METER/72.0;
@@ -848,8 +852,8 @@ static void GetPngSize(char *s, unsigned long *w, unsigned long *h, unsigned lon
 		*bad_res = 0;
 	
 	
-    diagnostics(4, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
-    diagnostics(4, "xres = %ld, yres = %ld, pixels/in", 
+    diagnostics(6, "xres = %ld, yres = %ld, pixels/meter", *xres, *yres);
+    diagnostics(6, "xres = %ld, yres = %ld, pixels/in", 
     (unsigned long)( (double)(*xres *72.0)/POINTS_PER_METER), 
     (unsigned long)((double)(*yres * 72.0) /POINTS_PER_METER));
     
@@ -890,7 +894,7 @@ void PutPngFile(char *s, double height_goal, double width_goal, double scale,
         png = strdup(s);
     else
         png = strdup_together(g_home_dir, s);
-    diagnostics(4, "PutPngFile <%s>", png);
+    diagnostics(2, "PutPngFile '%s'", png);
 
     GetPngSize(png, &width, &height, &xres, &yres,&bad_res);
     if (width == 0 || height == 0) return;
@@ -921,11 +925,11 @@ void PutPngFile(char *s, double height_goal, double width_goal, double scale,
     
 	AdjustScaling(height,width,height_goal,width_goal,scale,&sx,&sy);
 	
-	diagnostics(4, "scale      = %6.3f,            convert     = %6.3f", scale, convert_scale);
-    diagnostics(4, "width_goal = %6ld twips,      height_goal = %6ld twips", (int)width_goal, (int)height_goal);
-    diagnostics(4, "picw       = %6ld microns,    pich        = %6ld microns", w*10, h*10);
-    diagnostics(4, "picwgoal   = %6ld twips,      pichgoal    = %6ld twips", width, height);
-    diagnostics(4, "sx         = %6ld percent,    sy          = %6ld percent", sx, sy);
+	diagnostics(5, "scale      = %6.3f,            convert     = %6.3f", scale, convert_scale);
+    diagnostics(5, "width_goal = %6ld twips,      height_goal = %6ld twips", (int)width_goal, (int)height_goal);
+    diagnostics(5, "picw       = %6ld microns,    pich        = %6ld microns", w*10, h*10);
+    diagnostics(5, "picwgoal   = %6ld twips,      pichgoal    = %6ld twips", width, height);
+    diagnostics(5, "sx         = %6ld percent,    sy          = %6ld percent", sx, sy);
     
     /* Write the header for the png bitmap */
     fprintRTF("\n{");
@@ -957,6 +961,8 @@ static void PutJpegFile(char *s, double height0, double width0, double scale, do
     int sx, sy;
 
     jpg = strdup_together(g_home_dir, s);
+    diagnostics(2, "PutJpegFile '%s'", jpg);
+
     fp = fopen(jpg, "rb");
     free(jpg);
     if (fp == NULL)
@@ -964,7 +970,7 @@ static void PutJpegFile(char *s, double height0, double width0, double scale, do
 
     if ((c = fgetc(fp)) != 0xFF && (c = fgetc(fp)) != 0xD8) {
         fclose(fp);
-        diagnostics(WARNING, "<%s> is not really a JPEG file --- skipping");
+        diagnostics(WARNING, "'%s' is not really a JPEG file --- skipping");
         return;
     }
 
@@ -980,7 +986,7 @@ static void PutJpegFile(char *s, double height0, double width0, double scale, do
       m != 0xC9 && m != 0xCA && m != 0xCB && m != 0xCD && m != 0xCE && m != 0xCF);
 
     if (fseek(fp, 3, SEEK_CUR) || fread(buffer, 2, 2, fp) != 2) {
-        diagnostics(WARNING, "Cannot read graphics file <%s>", s);
+        diagnostics(WARNING, "Cannot read graphics file '%s'", s);
         fclose(fp);
         return;
     }
@@ -1032,7 +1038,7 @@ static void PutEmfFile(char *s, double height0, double width0, double scale, dou
         emf = strdup(s);
     else
         emf = strdup_together(g_home_dir, s);
-    diagnostics(2, "PutEmfFile <%s>", emf);
+    diagnostics(2, "PutEmfFile '%s'", emf);
     fp = fopen(emf, "rb");
     free(emf);
     if (fp == NULL)
@@ -1123,7 +1129,7 @@ static void PutWmfFile(char *s, double height0, double width0, double scale, dou
 
     /* open the proper file */
     wmf = strdup_together(g_home_dir, s);
-    diagnostics(2, "PutWmfFile <%s>", wmf);
+    diagnostics(2, "PutWmfFile '%s'", wmf);
     fp = fopen(wmf, "rb");
     free(wmf);
     if (fp == NULL)
@@ -1206,7 +1212,7 @@ static void PutPdfFile(char *s, double height0, double width0, double scale, dou
     char *png;
     double convert_scale = 72.0 / g_dots_per_inch;
     
-    diagnostics(4, "PutPdfFile filename = <%s>", s);
+    diagnostics(WARNING, "Rendering '%s' as PNG", s);
 
     png = pdf_to_png(s);
         	
@@ -1225,7 +1231,7 @@ static void PutEpsFile(char *s, double height0, double width0, double scale, dou
     char *png, *emf, *pict;
     double convert_scale = 72.0 / g_dots_per_inch;
 
-    diagnostics(4, "PutEpsFile filename = <%s>, scale=%f5.3", s,scale);
+    diagnostics(WARNING, "Rendering '%s' as PNG", s);
 
     if (1) {
         png = eps_to_png(s);
@@ -1263,7 +1269,7 @@ static void PutTiffFile(char *s, double height0, double width0, double scale, do
     char *tiff, *png, *out;
     double convert_scale = 0.0;
 
-    diagnostics(2, "filename = <%s>", s);
+    diagnostics(2, "PutTiffFile '%s'", s);
     png = strdup_new_extension(s, ".tiff", ".png");
     if (png == NULL) {
         png = strdup_new_extension(s, ".TIFF", ".png");
@@ -1292,7 +1298,7 @@ static void PutGifFile(char *s, double height0, double width0, double scale, dou
     char *gif, *png, *out;
 	double convert_scale = 0.0;
 	
-    diagnostics(2, "filename = <%s>", s);
+    diagnostics(2, "PutGifFile '%s'", s);
     png = strdup_new_extension(s, ".gif", ".png");
     if (png == NULL) {
         png = strdup_new_extension(s, ".GIF", ".png");
@@ -1361,7 +1367,7 @@ long GetBaseline(char *s, char *pre)
     pbm = strdup_together(s, ".pbm");
     baseline = 4;
 
-    diagnostics(4, "GetBaseline opening=<%s>", pbm);
+    diagnostics(4, "GetBaseline opening='%s'", pbm);
 
     fp = fopen(pbm, "rb");
     if (fp == NULL) {
@@ -1445,7 +1451,7 @@ void PutLatexFile(char *latex, double height0, double width0, double scale, char
 
         GetPngSize(png, &width, &height,&xres,&yres,&bad_res);
         baseline = GetBaseline(latex, pre);
-        diagnostics(2, "png=<%s> size height=%d baseline=%d width=%d",png, height, baseline, width);
+        diagnostics(4, "png='%s' size height=%d baseline=%d width=%d",png, height, baseline, width);
 
         if ((width > maxsize && height != 0) || (height > maxsize && width != 0)) {
             second_pass = TRUE;
@@ -1465,7 +1471,8 @@ void PutLatexFile(char *latex, double height0, double width0, double scale, char
     free(png);
 }
 
-static char *SaveEquationAsFile(char *pre, char *eq_with_spaces, char *post)
+static char *SaveEquationAsFile(const char *post_begin_document,
+                                const char *pre, const char *eq_with_spaces, const char *post)
 {
     FILE *f;
     char name[15];
@@ -1493,6 +1500,7 @@ static char *SaveEquationAsFile(char *pre, char *eq_with_spaces, char *post)
         fprintf(f, "%s", g_preamble);
         fprintf(f, "\\thispagestyle{empty}\n");
         fprintf(f, "\\begin{document}\n");
+        if (post_begin_document) fprintf(f, "%s\n", post_begin_document);
         fprintf(f, "\\setcounter{equation}{%d}\n", getCounter("equation"));
         if ((strcmp(pre, "$") == 0) || (strcmp(pre, "\\begin{math}") == 0) || (strcmp(pre, "\\(") == 0)) {
             fprintf(f, "%%INLINE_DOT_ON_BASELINE\n");
@@ -1522,7 +1530,7 @@ void PrepareDisplayedBitmap(char *the_type)
     CmdEndParagraph(0);
     CmdVspace(VSPACE_SMALL_SKIP);
     CmdIndent(INDENT_NONE);
-    CmdStartParagraph(the_type, FIRST_INDENT);
+    startParagraph(the_type, FIRST_PARAGRAPH);
 }
 
 void FinishDisplayedBitmap(void)
@@ -1535,47 +1543,88 @@ void FinishDisplayedBitmap(void)
     CmdIndent(INDENT_INHIBIT);
 }
 
+static char * abbreviate(const char *s, int len)
+{
+	char *t;
+	int i,n,half;
+	
+	if (s==NULL) return strdup("<NULL>");
+	
+	t = strdup(s);
+	n = strlen(t);
+	if (n > len) {	
+		half = (len-5)/2;
+		t[half+0] = ' ';
+		t[half+1] = '.';
+		t[half+2] = '.';
+		t[half+3] = '.';
+		t[half+4] = ' ';
+		for (i=0; i<half; i++)
+			t[half+5+i] = s[n-half+i];
+		t[len-1] = '\0';
+	}
+	
+	for (i=0; i<len; i++)
+		if (t[i] == '\n') t[i] = ' ';
+		
+	return t;
+	
+}
+
 void WriteLatexAsBitmap(char *pre, char *eq, char *post)
 
 /******************************************************************************
  purpose   : Convert LaTeX to Bitmap and write to RTF file
  ******************************************************************************/
 {
-    char *p, *name;
+    char *p, *name, *abbrev;
     double scale;
 
-    diagnostics(4, "Entering WriteEquationAsBitmap");
-
+	/* go to a bit a trouble to give the user some feedback */
+	name = strdup_together3(pre,eq,post);
+	abbrev = abbreviate(name, 50);
+    diagnostics(WARNING, "rendering PNG for '%s'", abbrev);
+	free(abbrev);
+	free(name);
+	
     if (eq == NULL)
         return;
 
     scale = g_png_equation_scale;
     if (strstr(pre, "music") || strstr(pre, "figure") 
                              || strstr(pre, "picture")
-                             || strstr(pre, "longtable") )
+                             || strstr(pre, "longtable")
+                             || strstr(pre, "psgraph")
+                             || strstr(pre, "pspicture"))
         scale = g_png_figure_scale;
 
 /* suppress bitmap equation numbers in eqnarrays with zero or one \label{}'s*/
     if (strcmp(pre, "\\begin{eqnarray}") == 0) {
+    
         p = strstr(eq, "\\label");
         if (p != NULL && strlen(p) > 6) /* found one ... is there a second? */
             p = strstr(p + 6, "\\label");
         if (p == NULL)
-            name = SaveEquationAsFile("\\begin{eqnarray*}", eq, "\\end{eqnarray*}");
+            name = SaveEquationAsFile(NULL, "\\begin{eqnarray*}", eq, "\\end{eqnarray*}");
         else
-            name = SaveEquationAsFile(pre, eq, post);
+            name = SaveEquationAsFile(NULL, pre, eq, post);
 
     } else if (strcmp(pre, "\\begin{align}") == 0) {
+    
         p = strstr(eq, "\\label");
         if (p != NULL && strlen(p) > 6) /* found one ... is there a second? */
             p = strstr(p + 6, "\\label");
         if (p == NULL)
-            name = SaveEquationAsFile("\\begin{align*}", eq, "\\end{align*}");
+            name = SaveEquationAsFile(NULL, "\\begin{align*}", eq, "\\end{align*}");
         else
-            name = SaveEquationAsFile(pre, eq, post);
+            name = SaveEquationAsFile(NULL, pre, eq, post);
+            
+    } else if (strstr(pre, "psgraph") != NULL || strstr(pre, "pspicture") != NULL ){
+    	char *s = strdup_together(g_psset_info, g_psstyle_info);
+        name = SaveEquationAsFile(s, pre, eq, post);
+        if (s) free(s);
     } else
-
-        name = SaveEquationAsFile(pre, eq, post);
+        name = SaveEquationAsFile(NULL, pre, eq, post);
 
     PutLatexFile(name, 0, 0, scale, pre);
 }
@@ -1608,7 +1657,7 @@ char *exists_with_extension(char *s, char *ext)
     FILE *fp;
 
     t = strdup_together(s, ext);
-    fp = fopen(t, "r");
+    fp = fopen(t, "rb");
     diagnostics(4, "trying to open %s, result = %0x", t, fp);
     if (fp) {
         fclose(fp);
@@ -1621,7 +1670,7 @@ char *exists_with_extension(char *s, char *ext)
     t = strdup_together(s, x);
     free(x);
 
-    fp = fopen(t, "r");
+    fp = fopen(t, "rb");
     diagnostics(4, "trying to open %s, result = %0x", t, fp);
     if (fp) {
         fclose(fp);
@@ -1737,7 +1786,7 @@ static void HandleGraphicsOptions(char *opt, char *opt2, double *h, double *w, d
 	*h=0;
 	*w=0;
 
-	diagnostics(2,"HandleGraphicsOptions <%s> <%s>",opt,opt2);
+	diagnostics(4,"HandleGraphicsOptions <%s> <%s>",opt,opt2);
 			
 /*  \includegraphics[llx,lly][urx,ury]{filename} */
 	if (opt && opt2) {
@@ -1836,9 +1885,9 @@ static void HandleGraphicsOptions(char *opt, char *opt2, double *h, double *w, d
 		if (value) free(value);	
 	}
 
-    diagnostics(3, "image scale  = %lf", *s);
-    diagnostics(3, "image height = %lf", *h);
-    diagnostics(3, "image width  = %lf", *w);
+    diagnostics(5, "image scale  = %lf", *s);
+    diagnostics(5, "image height = %lf", *h);
+    diagnostics(5, "image width  = %lf", *w);
 	
 	if (urx)
 		*w=urx-llx;
@@ -1856,7 +1905,7 @@ static void HandlePsfigOptions(char *opt, char **filename, double *h, double *w,
 	*w=0.0;
 	*filename = NULL;
 	
-	diagnostics(2,"HandlePsfigOptions <%s>",opt);
+	diagnostics(4,"HandlePsfigOptions <%s>",opt);
 		
 	while (opt) {
 		char *key, *value;
@@ -1948,7 +1997,7 @@ void CmdGraphics(int code)
     }
 
     if (filename) {
-		SetTexMode(MODE_HORIZONTAL);
+		changeTexMode(MODE_HORIZONTAL);
 	
 		fullname = strdup_absolute_path(filename);
 		fullpathname = append_graphic_extension(fullname);
@@ -1999,6 +2048,92 @@ void CmdGraphics(int code)
 }
 
 /******************************************************************************
+  purpose: handle \begin{pspicture} ... \end{pspicture}
+           by converting to png image and inserting
+ ******************************************************************************/
+void CmdPsPicture(int code)
+{
+    char *contents;
+    char post[] = "\\end{pspicture}";
+
+    if (!(code & ON)) {
+        diagnostics(4, "exiting CmdPsPicture");
+        return;
+    } else 
+        diagnostics(4, "entering CmdPsPicture");
+    
+
+	contents = getTexUntil(post, 0);
+
+	PrepareDisplayedBitmap("PS picture");
+	WriteLatexAsBitmap("\\begin{pspicture}", contents, post);
+	FinishDisplayedBitmap();
+
+	ConvertString(post);    /* to balance the \begin{picture} */
+	free(contents);
+    
+}
+
+/******************************************************************************
+  purpose: handle \begin{psgraph} ... \end{psgraph}
+           by converting to png image and inserting
+ ******************************************************************************/
+void CmdPsGraph(int code)
+{
+    char *contents;
+    char post[] = "\\end{psgraph}";
+
+    if (!(code & ON)) {
+        diagnostics(4, "exiting CmdPsGraph");
+        return;
+    } else 
+        diagnostics(4, "entering CmdPsGraph");
+
+	contents = getTexUntil(post, 0);
+
+	PrepareDisplayedBitmap("PS Graph");
+	WriteLatexAsBitmap("\\begin{psgraph}", contents, post);
+	FinishDisplayedBitmap();
+
+	ConvertString(post);    /* to balance the \begin{graph} */
+	free(contents);
+    
+}
+
+/******************************************************************************
+  purpose: handle \psset{info}
+           by converting saving to a local global
+ ******************************************************************************/
+void CmdPsset(int code)
+{
+    char *contents = getBraceParam();
+	if (g_psset_info) free(g_psset_info);
+	
+	g_psset_info = strdup_together3("\\psset{", contents, "}");
+	free(contents);
+}
+
+/******************************************************************************
+  purpose: handle \psnewstyle{info}{moreinfo}
+           by appending to g_psstyle_info
+ ******************************************************************************/
+void CmdNewPsStyle(int code)
+{
+	char *a, *b, *c;
+	
+    a = getBraceParam();
+    b = getBraceParam();
+    c = strdup_together4(g_psstyle_info,"\\newpsstyle{",a,"}{");
+	if (g_psstyle_info) free(g_psstyle_info);
+    g_psstyle_info = strdup_together3(c,b,"} ");
+	
+	free(a);
+	free(b);
+	free(c);
+}
+
+
+/******************************************************************************
   purpose: handle \begin{picture} ... \end{picture}
            by converting to png image and inserting
  ******************************************************************************/
@@ -2010,7 +2145,8 @@ void CmdPicture(int code)
     if (!(code & ON)) {
         diagnostics(4, "exiting CmdPicture");
         return;
-    }
+    } else 
+        diagnostics(4, "entering CmdPicture");
 
 	picture = getTexUntil(post, 0);
 
@@ -2034,7 +2170,8 @@ void CmdMusic(int code)
     if (!(code & ON)) {
         diagnostics(4, "exiting CmdMusic");
         return;
-    }
+    } else 
+        diagnostics(4, "entering CmdMusic");
 
     diagnostics(4, "entering CmdMusic");
     contents = getTexUntil(endmusic, TRUE);

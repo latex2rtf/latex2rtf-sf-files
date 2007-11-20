@@ -35,6 +35,8 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "chars.h"
 #include "funct1.h"
 #include "convert.h"
+#include "utils.h"
+#include "vertical.h"
 
 void TeXlogo();
 void LaTeXlogo();
@@ -147,6 +149,10 @@ static void putOverstrikeChar(const char *font, char *s,
 	
 		fprintRTF("\\'%x",overstrike);	
 		
+	} else if (strcmp(font,"twice")==0 ) {
+	
+		fprintRTF("%c%c",overstrike,overstrike);	
+
 	} else if (strcmp(font,"unicode")==0 ) {
 	
 		fprintRTF("\\u%u",overstrike);
@@ -281,7 +287,8 @@ void CmdUmlauteChar(int code)
 	}
 
 	if (!done) 
-		putOverstrikeChar("unicode", cParam, 776, 0.1);
+		putOverstrikeChar("twice", cParam, '.', 0.6);
+/*		putOverstrikeChar("unicode", cParam, 776, 0.1); */
 
     free(cParam);
 }
@@ -603,7 +610,7 @@ void CmdMacronChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("unicode", cParam, 175, 0.1);
+		putOverstrikeChar("MT Extra", cParam, 195, 0.0);
 
     free(cParam);
 }
@@ -1019,7 +1026,7 @@ void CmdBreveChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("MT Extra", cParam, 184, 0.1);
+		putOverstrikeChar("MT Extra", cParam, 252, 0.1);
 
     free(cParam);
 }
@@ -1179,7 +1186,8 @@ void CmdCaronChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("unicode", cParam, 780, 0.05);
+		putOverstrikeChar("MT Extra", cParam, 253, 0.1);
+		/* putOverstrikeChar("unicode", cParam, 780, 0.05); */
 
     free(cParam);
 }
@@ -1575,8 +1583,8 @@ void CmdLdots( /* @unused@ */ int code)
 {
     int num = RtfFontNumber("Symbol");
     
-    if (GetTexMode() != MODE_MATH && GetTexMode() != MODE_DISPLAYMATH)
-        SetTexMode(MODE_HORIZONTAL);
+    if (getTexMode() != MODE_MATH && getTexMode() != MODE_DISPLAYMATH)
+        changeTexMode(MODE_HORIZONTAL);
 
 
 /*    should this just be CmdSymbolChar(0x85);   ????????? */
@@ -1597,22 +1605,113 @@ void CmdEuro(int code)
 	free(s);
 }
 
+int identifyBase(char c)
+{
+	if (c == '\'')
+		return 8;
+	else if (c == '"')
+		return 16;
+	else if (c == '`')     /* next character is treated differently */
+		return -1;
+	else if (isdigit(c))
+		return 10;
+	else 
+		return 0;
+}
+
+static int isOctal(int c)
+{
+	if ((int) '0' <= (int) c && (int) c <= (int) '7') return TRUE;
+	return FALSE;
+}
+
+static int isHex(int c)
+{
+	if (isdigit(c)) return TRUE;
+	if ((int) 'A' <= (int) c && (int) c <= (int) 'F') return TRUE;
+	if ((int) 'a' <= (int) c && (int) c <= (int) 'f') return TRUE;
+	return FALSE;
+}
+
+/******************************************************************************
+ purpose: 
+ 		code = 0, handles \char'35 or \char"35 or \char35 or \char`b
+ 		code = 1, handles \symbol{\'22} or \symbol{\"22}
+ ******************************************************************************/
+void CmdSymbol(int code)
+{
+    char c, *s, *t;
+    int n, base;
+
+	if (code == 0) {
+	
+		char num[4];
+		int i;
+	
+		c = getNonSpace();
+		base = identifyBase(c);
+		
+		if (base == 0)
+			return;
+			
+		if (base == -1) {
+			c = getTexChar();   /* \char`b case */
+			CmdChar((int) c);
+			return;
+		}
+		
+		/* read sequence of digits */
+		for (i=0; i<4; i++) {
+			num[i] = getTexChar();
+		 	if (base == 10 && ! isdigit(num[i]) ) break;
+		 	if (base == 8  && ! isOctal(num[i]) ) break;
+		 	if (base == 16 && ! isHex  (num[i]) ) break;
+		 }
+		ungetTexChar(num[i]);
+		num[i] = '\0';
+		
+		n = (int) strtol(num,&s,base);
+		CmdChar(n);
+		
+	} else {
+
+		s = getBraceParam();
+		t = strdup_noendblanks(s);
+		free(s);
+		
+		base = identifyBase(*t);
+		
+		if (base == 0)
+			return;
+			
+		if (base == -1) {
+			CmdChar((int) *(t+1));   /* \char`b case */
+			return;
+		}
+
+		n = (int) strtol(t+1,&s,base);
+		CmdChar(n);
+		free(t);
+	}
+	
+}
+
+static int UsingTypewriter(void)
+{
+	if (CurrentFontFamily() ==TexFontNumber("Typewriter"))
+		return TRUE;
+	else
+		return FALSE;
+}
+
+/******************************************************************************
+ purpose: emits a character based on the TeX encoding
+          code is assumed to be in base 10
+ ******************************************************************************/
 void CmdChar(int code)
 {
-    char cThis;
-    int num;
 
-    cThis = getNonSpace();
-    if (cThis != '\'') {
-        ungetTexChar(cThis);
-        return;
-    }
-
-    num = 64 * ((int) getTexChar() - (int) '0');
-    num += 8 * ((int) getTexChar() - (int) '0');
-    num += ((int) getTexChar() - (int) '0');
-
-    switch (num) {
+    switch (code) {
         case 0:
         	CmdSymbolChar((int) 'G');			/* Gamma */
             break;
@@ -1658,23 +1757,38 @@ void CmdChar(int code)
             break;
 
         case 11:
-            fprintRTF("ff");
+        	if (UsingTypewriter())
+        		CmdSymbolChar(0xAD);    /* up arrow */
+        	else
+            	fprintRTF("ff");
             break;
 
         case 12:
-            fprintRTF("fi");
+        	if (UsingTypewriter())
+        		CmdSymbolChar(0xAF);    /* down arrow */
+        	else
+            	fprintRTF("fi");
             break;
 
         case 13:
-            fprintRTF("fl");
+        	if (UsingTypewriter())
+        		fprintRTF("'");
+        	else
+            	fprintRTF("fl");
             break;
 
         case 14:
-            fprintRTF("ffi");
+        	if (UsingTypewriter())
+        		fprintRTF("\\'a1 ");   /* inverted exclamation */
+        	else
+            	fprintRTF("ffl");
             break;
 
         case 15:
-            fprintRTF("ffl");
+        	if (UsingTypewriter())
+				fprintRTF("\\'bf ");    /* inverted / open question mark */
+			else
+	            fprintRTF("ffi");
             break;
 
         case 16:
@@ -1742,35 +1856,63 @@ void CmdChar(int code)
             break;
 
         case 32:
-            fprintRTF(" ");     /* space differs with font */
+        	if (UsingTypewriter())
+        		fprintRTF("_");     /* should be u shaped */
+        	else
+            	fprintRTF(" "); 
             break;
 
         case 60:
-            fprintRTF("<");     /* less than differs with font */
+        	if (UsingTypewriter())
+            	fprintRTF("<");   
+        	else
+        		fprintRTF("\\'a1 ");   /* inverted exclamation */
             break;
 
         case 62:
-            fprintRTF(">");     /* greater than differs with font */
+        	if (UsingTypewriter())
+            	fprintRTF(">");   
+        	else
+        		fprintRTF("\\'bf ");   /* inverted question */
+            break;
+
+        case 92:
+        	if (UsingTypewriter())
+        		fprintRTF("\\\\");   /* backslash */
+        	else
+            	fprintRTF("\\ldblquote ");   
+            break;
+
+        case 95:
+        	if (UsingTypewriter())
+        		fprintRTF("_");   /* underscore */
+        	else
+            	fprintRTF(".");   /* should be elevated dot */
             break;
 
         case 123:
-            fprintRTF("\\{");   /* open brace differs with font */
+        	if (UsingTypewriter())
+            	fprintRTF("\\{");   /* open brace differs with font */
+        	else
+            	fprintRTF(".");   /* should be elevated dot */
             break;
 
         case 124:
-            fprintRTF("\\\\");  /* backslash differs with font */
+        	if (UsingTypewriter())
+            	fprintRTF("|");   /* open brace differs with font */
+        	else
+				fprintRTF("\\emdash ");
             break;
 
         case 125:
-            fprintRTF("\\}");   /* close brace differs with font */
-            break;
-
-        case 127:
-            fprintRTF("\\'a8"); /* diaeresis differs with font */
+        	if (UsingTypewriter())
+            	fprintRTF("\\}");   /* close brace differs with font */
+        	else
+				fprintRTF("\\emdash ");
             break;
 
         default:
-            putRtfCharEscaped((char) num);
+            putRtfCharEscaped((char) code);
             break;
     }
 }
@@ -1818,7 +1960,7 @@ void CmdLogo(int code)
     int font_num, dnsize;
     float FloatFsize;
 
-    SetTexMode(MODE_HORIZONTAL);
+    changeTexMode(MODE_HORIZONTAL);
     fprintRTF("{\\plain ");
 
     switch (code) {

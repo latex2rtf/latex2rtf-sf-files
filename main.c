@@ -52,6 +52,7 @@ Authors:
 #include "preamble.h"
 #include "xrefs.h"
 #include "preparse.h"
+#include "vertical.h"
 
 FILE *fRtf = NULL;              /* file pointer to RTF file */
 char *g_tex_name = NULL;
@@ -64,9 +65,6 @@ char *g_fff_name = NULL;
 char *g_ttt_name = NULL;
 char *g_bbl_name = NULL;
 char *g_home_dir = NULL;
-
-/*** interpret comment lines that follow the '%' with this string ***/
-const char *InterpretCommentString = "latex2rtf:";
 
 char *progname;                 /* name of the executable file */
 bool GermanMode = FALSE;        /* support germanstyle */
@@ -166,7 +164,7 @@ int main(int argc, char **argv)
     InitializeLatexLengths();
 	InitializeBibliography();
 	
-    while ((c = my_getopt(argc, argv, "lhpuvFSWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:t:")) != EOF) {
+    while ((c = my_getopt(argc, argv, "lhpuvFSVWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:t:")) != EOF) {
         switch (c) {
             case 'a':
                 g_aux_name = optarg;
@@ -183,7 +181,6 @@ int main(int argc, char **argv)
                 break;
             case 'f':
                 sscanf(optarg, "%d", &x);
-                diagnostics(2, "Field option = %s x=%d", optarg, x);
                 g_fields_use_EQ = (x & 1) ? TRUE : FALSE;
                 g_fields_use_REF = (x & 2) ? TRUE : FALSE;
                 break;
@@ -208,26 +205,26 @@ int main(int argc, char **argv)
             case 'D':
                 sscanf(optarg, "%d", &g_dots_per_inch);
                 if (g_dots_per_inch < 25 || g_dots_per_inch > 600)
-                    fprintf(stderr, "Dots per inch must be between 25 and 600 dpi\n");
+                    diagnostics(WARNING, "Dots per inch must be between 25 and 600 dpi\n");
                 break;
             case 'F':
                 g_latex_figures = TRUE;
                 break;
             case 'M':
                 sscanf(optarg, "%d", &x);
-                diagnostics(2, "Math option = %s x=%d", optarg, x);
+                diagnostics(3, "Math option = %s x=%d", optarg, x);
                 g_equation_display_rtf   = (x &  1) ? TRUE : FALSE;
                 g_equation_inline_rtf    = (x &  2) ? TRUE : FALSE;
                 g_equation_display_bitmap= (x &  4) ? TRUE : FALSE;
                 g_equation_inline_bitmap = (x &  8) ? TRUE : FALSE;
                 g_equation_comment       = (x & 16) ? TRUE : FALSE;
                 g_equation_raw_latex     = (x & 32) ? TRUE : FALSE;
-                diagnostics(2, "Math option g_equation_display_rtf    = %d", g_equation_display_rtf);
-                diagnostics(2, "Math option g_equation_inline_rtf     = %d", g_equation_inline_rtf);
-                diagnostics(2, "Math option g_equation_display_bitmap = %d", g_equation_display_bitmap);
-                diagnostics(2, "Math option g_equation_inline_bitmap  = %d", g_equation_inline_bitmap);
-                diagnostics(2, "Math option g_equation_comment        = %d", g_equation_comment);
-                diagnostics(2, "Math option g_equation_raw_latex      = %d", g_equation_raw_latex);
+                diagnostics(3, "Math option g_equation_display_rtf    = %d", g_equation_display_rtf);
+                diagnostics(3, "Math option g_equation_inline_rtf     = %d", g_equation_inline_rtf);
+                diagnostics(3, "Math option g_equation_display_bitmap = %d", g_equation_display_bitmap);
+                diagnostics(3, "Math option g_equation_inline_bitmap  = %d", g_equation_inline_bitmap);
+                diagnostics(3, "Math option g_equation_comment        = %d", g_equation_comment);
+                diagnostics(3, "Math option g_equation_raw_latex      = %d", g_equation_raw_latex);
                 if (!g_equation_comment && !g_equation_inline_rtf && !g_equation_inline_bitmap && !g_equation_raw_latex)
                     g_equation_inline_rtf = TRUE;
                 if (!g_equation_comment && !g_equation_display_rtf && !g_equation_display_bitmap && !g_equation_raw_latex)
@@ -236,15 +233,15 @@ int main(int argc, char **argv)
 
             case 't':
                 sscanf(optarg, "%d", &x);
-                diagnostics(2, "Table option = %s x=%d", optarg, x);
+                diagnostics(3, "Table option = %s x=%d", optarg, x);
                 g_tabular_display_rtf    = (x &  1) ? TRUE : FALSE;
                 g_tabular_display_bitmap = (x &  2) ? TRUE : FALSE;
-                diagnostics(2, "Table option g_tabular_display_rtf     = %d", g_equation_display_rtf);
-                diagnostics(2, "Table option g_tabular_display_bitmap  = %d", g_equation_inline_rtf);
+                diagnostics(3, "Table option g_tabular_display_rtf     = %d", g_tabular_display_rtf);
+                diagnostics(3, "Table option g_tabular_display_bitmap  = %d", g_tabular_display_bitmap);
                 break;
 
             case 'P':          /* -P path/to/cfg:path/to/script or -P path/to/cfg or -P :path/to/script */
-                p = strchr(optarg, ':');
+                p = strchr(optarg, ENVSEP);
                 if (p) {
                     *p = '\0';
                     g_script_dir = strdup(p + 1);
@@ -253,26 +250,38 @@ int main(int argc, char **argv)
                     g_config_path = strdup(optarg);
                 diagnostics(2, "cfg=%s, script=%s", g_config_path, g_script_dir);
                 break;
+
             case 's':
                 if (optarg && optarg[0] == 'e') {
-                    if (sscanf(optarg, "e%lf", &xx) == 1 && xx > 0)
+                    if (sscanf(optarg, "e%lf", &xx) == 1 && xx > 0) {
                         g_png_equation_scale = xx;
-                    else
-                        diagnostics(WARNING, "Equation scale (-se #) is not positive, ignoring");
-                }
-                if (optarg && optarg[0] == 'f') {
-                    if (sscanf(optarg, "f%lf", &xx) == 1 && xx > 0)
+                    } else {
+                        diagnostics(WARNING, "Mistake in command line number for scaling equations");
+                        diagnostics(WARNING, "Either use no spaces: '-se1.22' or write as '-s e1.22'");
+                    }
+                    
+                } else if (optarg && optarg[0] == 'f') {
+                
+                    if (sscanf(optarg, "f%lf", &xx) == 1 && xx > 0) {
                         g_png_figure_scale = xx;
-                    else
-                        diagnostics(WARNING, "Figure scale (-sf #) is not positive, ignoring");
+                    } else {
+                        diagnostics(WARNING, "Mistake in command line number for scaling figures");
+                        diagnostics(WARNING, "Either use no spaces: '-sf1.35' or write as '-s f1.35'");
+                    }
+                } else {
+                    diagnostics(WARNING, "Unknown option '-s' use '-se#' or '-sf#'");
                 }
                 break;
+
             case 'S':
                 g_field_separator = ';';
                 break;
             case 'T':
                 g_tmp_dir = strdup(optarg);
                 break;
+            case 'V':
+                print_version();
+                return (0);
             case 'W':
                 g_RTF_warnings = TRUE;
                 break;
@@ -356,11 +365,11 @@ int main(int argc, char **argv)
         g_ttt_name = strdup_together(basename, ".ttt");
 
     if (basename) {
-        diagnostics(3, "latex filename is <%s>", g_tex_name);
-        diagnostics(3, "  rtf filename is <%s>", g_rtf_name);
-        diagnostics(3, "  aux filename is <%s>", g_aux_name);
-        diagnostics(3, "  bbl filename is <%s>", g_bbl_name);
-        diagnostics(3, "home directory is <%s>", (g_home_dir) ? g_home_dir : "");
+        diagnostics(2, "latex filename is <%s>", g_tex_name);
+        diagnostics(2, "  rtf filename is <%s>", g_rtf_name);
+        diagnostics(2, "  aux filename is <%s>", g_aux_name);
+        diagnostics(2, "  bbl filename is <%s>", g_bbl_name);
+        diagnostics(2, "home directory is <%s>", (g_home_dir) ? g_home_dir : "");
     }
 
     ReadCfg();
@@ -376,7 +385,9 @@ int main(int argc, char **argv)
         CloseRtf(&fRtf);
         printf("\n");
 
-/*		debug_malloc();*/
+/*		debug malloc() 
+  		printf("Done!");
+  		while (1) {} do nothing */
 
         return 0;
     } else {
@@ -406,7 +417,7 @@ static void ConvertWholeDocument(void)
 
     PushEnvironment(DOCUMENT_MODE);  /* because we use ConvertString in preamble.c */
     PushEnvironment(PREAMBLE_MODE);
-    SetTexMode(MODE_VERTICAL);
+    setTexMode(MODE_VERTICAL);
     ConvertLatexPreamble();
     WriteRtfHeader();
     ConvertString(t);
@@ -414,9 +425,11 @@ static void ConvertWholeDocument(void)
     g_processing_preamble = FALSE;
     preParse(&body, &sec_head, &label);
 
-    diagnostics(2, "*******************\nbody=%s", (body) ? body : "<empty>");
-    diagnostics(2, "*******************\nsec_head=%s", (sec_head) ? sec_head : "<none>");
-    diagnostics(2, "*******************\nlabel=%s", (g_section_label) ? g_section_label : "<none>");
+    diagnostics(2, "\\begin{document}");
+	diagnostics(5,"label for this section is'%s'", label);
+	diagnostics(5, "next section '%s'", sec_head);
+	show_string(2, body, "body ");
+	
     ConvertString(body);
     free(body);
     if (label)
@@ -430,12 +443,12 @@ static void ConvertWholeDocument(void)
                 free(g_section_label);
             g_section_label = label;
         }
-        diagnostics(2, "\n========this section head==========\n%s", (sec_head) ? sec_head : "<none>");
-        diagnostics(2, "\n============ label ================\nlabel=%s",
-          (g_section_label) ? g_section_label : "<none>");
-        diagnostics(2,
-          "\n==============body=================\n%s\n=========end	body=================", (body) ? body : "<empty>");
-        diagnostics(2, "\n========next section head==========\n%s", (sec_head2) ? sec_head2 : "<none>");
+        
+		diagnostics(2, "processing '%s'", sec_head);	
+		diagnostics(5, "label is   '%s'", g_section_label);
+		diagnostics(5, "next  is   '%s'", sec_head2);	
+		show_string(2, body, "body ");
+
         ConvertString(sec_head);
         ConvertString(body);
         free(body);
@@ -448,12 +461,7 @@ static void ConvertWholeDocument(void)
         if (PushSource(g_fff_name, NULL) == 0) {
         	CmdNewPage(NewPage);
         	CmdListOf(LIST_OF_FIGURES);
-			preParse(&body, &sec_head2, &g_section_label);
-			ConvertString(sec_head);
-			ConvertString(body);
-			if (g_section_label) free(g_section_label);
-			free(body);
-			free(sec_head);
+        	Convert();
         }
      }
     
@@ -462,18 +470,14 @@ static void ConvertWholeDocument(void)
         if (PushSource(g_ttt_name, NULL) == 0) {
         	CmdNewPage(NewPage);
         	CmdListOf(LIST_OF_TABLES);
-			preParse(&body, &sec_head2, &g_section_label);
-			ConvertString(sec_head);
-			ConvertString(body);
-			if (g_section_label) free(g_section_label);
-			free(body);
-			free(sec_head);
+        	Convert();
         }
      }
      
-    if (strcmp(sec_head,"\\end{document}")==0) 
+    if (strcmp(sec_head,"\\end{document}")==0) {
+        diagnostics(2, "\\end{document}");
     	ConvertString(sec_head);
-
+	}
 }
 
 static void print_version(void)
@@ -559,6 +563,8 @@ void diagnostics(int level, char *format, ...)
 purpose: Writes the message to stderr depending on debugging level
  ****************************************************************************/
 {
+    static int first = TRUE;
+    
     char buffer[512], *buff_ptr;
     va_list apf;
     int i, iEnvCount;
@@ -571,7 +577,9 @@ purpose: Writes the message to stderr depending on debugging level
 
         iEnvCount = CurrentEnvironmentCount();
 
-        fprintf(stderr, "\n%s:%d ",CurrentFileName(),CurrentLineNumber());
+        if (!first) fprintf(stderr,"\n");
+        
+        fprintf(stderr, "%s:%-3d ",CurrentFileName(),CurrentLineNumber());
         switch (level) {
             case 0:
                 fprintf(stderr, "Error! ");
@@ -606,6 +614,7 @@ purpose: Writes the message to stderr depending on debugging level
                 break;
         }
         vfprintf(stderr, format, apf);
+    	first = FALSE;
     }
     va_end(apf);
 
@@ -685,46 +694,33 @@ static void InitializeLatexLengths(void)
     setLength("marginparsep", 10 * 20);
 }
 
-static void RemoveInterpretCommentString(char *s)
-
-/****************************************************************************
-purpose: removes %InterpretCommentString from preamble (usually "%latex2rtf:")
- ****************************************************************************/
-{
-    char *p, *t;
-    int n = strlen(InterpretCommentString);
-
-    t = s;
-    while ((p = strstr(t, InterpretCommentString))) {
-        t = p - 1;
-        if (*t == '%')
-            strcpy(t, t + n + 1);
-        else
-            t += n + 1;
-    }
-}
-
 static void ConvertLatexPreamble(void)
 
 /****************************************************************************
 purpose: reads the LaTeX preamble (to \begin{document} ) for the file
  ****************************************************************************/
 {
-    FILE *hidden;
     char t[] = "\\begin|{|document|}";
+    FILE *rtf_file;
 
-    diagnostics(4, "Reading LaTeX Preamble");
-    hidden = fRtf;
-    fRtf = stderr;
-
+	/* Here we switch the file pointers ... it is important that nothing
+	   get printed to fRtf until the entire preamble has been processed.  
+	   This is really hard to track down, so the processed RTF get sent
+	   directly to stderr instead.
+	*/
+	rtf_file = fRtf;
+	fRtf = stderr;
+	
     g_preamble = getSpacedTexUntil(t, 1);
-    RemoveInterpretCommentString(g_preamble);
 
-    diagnostics(4, "Entering ConvertString() from ConvertLatexPreamble <%s>", g_preamble);
+    diagnostics(2, "Read LaTeX Preamble");
+    diagnostics(5, "Entering ConvertString() from ConvertLatexPreamble");
+
+	show_string(5, g_preamble, "preamble");	
+
     ConvertString(g_preamble);
-    diagnostics(4, "Exiting ConvertString() from ConvertLatexPreamble");
-
-    fRtf = hidden;
+    diagnostics(5, "Exiting ConvertString() from ConvertLatexPreamble");
+    fRtf = rtf_file;
 }
 
 
@@ -749,12 +745,12 @@ params: filename - name of outputfile, possibly NULL for already open file
         else
             name = strdup(filename);
 
-        diagnostics(3, "Opening RTF file <%s>", name);
         *f = fopen(name, "w");
 
         if (*f == NULL)
             diagnostics(ERROR, "Error opening RTF file <%s>\n", name);
 
+        diagnostics(2, "Opened RTF file <%s>", name);
         free(name);
     }
 }
@@ -791,6 +787,7 @@ globals: g_tex_name;
     }
     *f = NULL;
     diagnostics(4, "Closed RTF file");
+    fprintf(stderr,"\n");
 }
 
 void putRtfCharEscaped(char cThis)
@@ -800,6 +797,8 @@ purpose: output a single escaped character to the RTF file
          this is primarily useful for the verbatim-like enviroments
  ****************************************************************************/
 {
+	if (getTexMode() == MODE_VERTICAL)
+		changeTexMode(MODE_HORIZONTAL);
 	if (cThis == '\\')
         fprintRTF("%s","\\\\");
     else if (cThis == '{')
@@ -811,6 +810,18 @@ purpose: output a single escaped character to the RTF file
     else
         fprintRTF("%c",cThis);
 }
+
+/****************************************************************************
+purpose: output a string with escaped characters to the RTF file
+         this is primarily useful for the verbatim-like enviroments
+ ****************************************************************************/
+void putRtfStrEscaped(const char * string)
+{
+	char *s = (char *) string;
+	if (string == NULL) return;
+    while (*s) putRtfCharEscaped(*s++);
+}
+
 
 void fprintRTF(char *format, ...)
 
@@ -833,7 +844,7 @@ purpose: output a formatted string to the RTF file.  It is assumed that the
 
     while (*text) {
 
-		WriteEightBitChar(text[0]);
+		WriteEightBitChar(text[0], fRtf);
 	
 		if (*text == '{' && last != '\\')
 			PushFontSettings();
@@ -903,7 +914,7 @@ purpose: duplicate string --- exists to ease porting
         diagnostics(ERROR, "Cannot allocate memory to duplicate string");
     strcpy(s, str);
 
-/*	diagnostics(3,"ptr %x",(unsigned long)s);*/
+/*	diagnostics(5,"ptr %x",(unsigned long)s);*/
     return s;
 }
 
@@ -916,8 +927,6 @@ purpose: opens "g_home_dir/path"  and
     char *name;
     FILE *p;
 
-    diagnostics(3, "Opening <%s>, mode=[%s]", path, mode);
-
     if (path == NULL || mode == NULL)
         return (NULL);
 
@@ -926,14 +935,16 @@ purpose: opens "g_home_dir/path"  and
     else
         name = strdup_together(g_home_dir, path);
 
-    diagnostics(3, "Opening <%s>", name);
     p = fopen(name, mode);
 
-    if (p == NULL && strstr(path, ".tex"))
-        p = (FILE *) open_cfg(path, FALSE);
-
     if (p == NULL) {
-        diagnostics(WARNING, "Cannot open <%s>", name);
+    	if (strstr(path, ".tex") != NULL)
+        	p = (FILE *) open_cfg(path, FALSE);
+	} else
+    	diagnostics(2, "Opened '%s'", name);
+	
+    if (p == NULL) {
+        diagnostics(WARNING, "Cannot open '%s'", name);
         fflush(NULL);
     }
 
@@ -945,7 +956,7 @@ void debug_malloc(void)
 {
     char c;
 
-    diagnostics(1, "Malloc Debugging --- press return to continue");
+    diagnostics(WARNING, "Malloc Debugging --- press return to continue");
     fflush(NULL);
     fscanf(stdin, "%c", &c);
 }

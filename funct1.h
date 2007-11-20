@@ -38,14 +38,6 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define BOX_FBOX       4
 #define BOX_PARBOX     5
 
-#define FIRST_INDENT      1
-#define ANY_INDENT        2
-#define TITLE_INDENT      3
-
-#define INDENT_NONE    1
-#define INDENT_INHIBIT 2
-#define INDENT_USUAL   3
-
 #define VERBATIM_1   1
 #define VERBATIM_2   2
 #define VERBATIM_3   3
@@ -55,20 +47,6 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #define VERB_STAR    2
 #define VERB_URL     3
 
-#define VSPACE_VSPACE     -1
-#define VSPACE_VSKIP       0
-#define VSPACE_SMALL_SKIP  1
-#define VSPACE_MEDIUM_SKIP 2
-#define VSPACE_BIG_SKIP    3
-
-void CmdBeginEnd(int code);
-void CmdEndParagraph(int code);
-void CmdIndent(int code);
-void CmdVspace(int code);
-void CmdSlashSlash(int code);
-void CmdDoubleSpacing(int code);
-void CmdStartParagraph(const char *style, int indenting);
-
 #define DEF_NEW    1
 #define DEF_RENEW  2
 #define DEF_DEF    3
@@ -76,7 +54,6 @@ void CmdStartParagraph(const char *style, int indenting);
 void CmdNewDef(int code);
 void CmdNewEnvironment(int code);
 
-void CmdAlign(int code);
 void CmdToday(int code);
 void CmdIgnore(int code);
 void Environment(int code);
@@ -169,6 +146,7 @@ extern bool  g_processing_list_environment;
 
 void CmdIgnoreEnviron(int code);
 void CmdFigure(int code);
+void CmdSubFigure(int code);
 void Cmd_OptParam_Without_braces(int code);
 void CmdColumn(int code);
 void CmdNewPage(int code);

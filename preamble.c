@@ -43,6 +43,7 @@ Authors:
 #include "xrefs.h"
 #include "direct.h"
 #include "styles.h"
+#include "vertical.h"
 
 extern char *Version;  /*storage and definition in version.h */
 
@@ -61,6 +62,9 @@ static char *g_preambleTitle = NULL;
 static char *g_preambleAuthor = NULL;
 static char *g_preambleDate = NULL;
 static char *g_preambleEncoding = NULL;
+static char *g_preambleAffiliation = NULL;
+static char *g_preambleAbstract = NULL;
+static char *g_preambleAck = NULL;
 
 static char *g_preambleCFOOT = NULL;
 static char *g_preambleLFOOT = NULL;
@@ -180,15 +184,15 @@ void setPackageInputenc(char *option)
         strcpy(g_charset_encoding_name, "raw");
         
     } else if (strcmp(option, "utf8") == 0) {
-        diagnostics(WARNING, "\n Input Encoding utf8 - experimental support");
+        diagnostics(WARNING, "Input Encoding utf8 - experimental support");
         strcpy(g_charset_encoding_name, "utf8");
 
     } else if (strcmp(option, "utf8x") == 0) {
-        diagnostics(WARNING, "\n Input Encoding utf8x - experimental support");
+        diagnostics(WARNING, "Input Encoding utf8x - experimental support");
         strcpy(g_charset_encoding_name, "utf8");
 
     } else
-        diagnostics(WARNING, "\n Input Encoding <%s> not supported", option);
+        diagnostics(WARNING, "Input Encoding <%s> not supported", option);
 }
 
 static void setPackageFont(char *font)
@@ -221,7 +225,7 @@ static void setPackageFont(char *font)
 
 /*    InitializeDocumentFont(fnumber, -1, -1, -1); */
     if (fnumber == -1)
-        diagnostics(1, "Font Package <%s> not supported.", font);
+        diagnostics(WARNING, "Font Package <%s> not supported.", font);
 }
 
 static void setThree(char *s, int ten, int eleven, int twelve)
@@ -400,27 +404,33 @@ static void setDocumentOptions(char *optionlist)
 {
     char *option;
 
+	if (optionlist == NULL) return;
+	
     option = strtok(optionlist, ",");
 
     while (option) {
 
 /*		while (*option == ' ') option++;  skip leading blanks */
-        diagnostics(3, " (setDocumentOptions) option <%s>", option);
+        diagnostics(2, " (setDocumentOptions) option <%s>", option);
         if (strcmp(option, "10pt") == 0 || strcmp(option, "11pt") == 0 || strcmp(option, "12pt") == 0)
             setPointSize(option);
-        else if (strcmp(option, "a4") == 0 ||
-          strcmp(option, "a4paper") == 0 ||
-          strcmp(option, "a4wide") == 0 ||
-          strcmp(option, "b5paper") == 0 ||
-          strcmp(option, "a5paper") == 0 ||
-          strcmp(option, "letterpaper") == 0 || strcmp(option, "landscape") == 0 || strcmp(option, "legalpaper") == 0)
+        else if (strcmp(option, "a4"         ) == 0 ||
+                 strcmp(option, "a4paper"    ) == 0 ||
+                 strcmp(option, "a4wide"     ) == 0 ||
+                 strcmp(option, "b5paper"    ) == 0 ||
+                 strcmp(option, "a5paper"    ) == 0 ||
+                 strcmp(option, "letterpaper") == 0 || 
+                 strcmp(option, "landscape"  ) == 0 || 
+                 strcmp(option, "legalpaper" ) == 0)
             setPaperSize(option);
-        else if (strcmp(option, "german") == 0 ||
-          strcmp(option, "ngerman") == 0 ||
-          strcmp(option, "spanish") == 0 ||
-          strcmp(option, "english") == 0 ||
-          strcmp(option, "russian") == 0 ||
-          strcmp(option, "czech") == 0 || strcmp(option, "frenchb") == 0 || strcmp(option, "french") == 0)
+        else if (strcmp(option, "german" ) == 0 ||
+                 strcmp(option, "ngerman") == 0 ||
+                 strcmp(option, "spanish") == 0 ||
+                 strcmp(option, "english") == 0 ||
+                 strcmp(option, "russian") == 0 ||
+                 strcmp(option, "czech"  ) == 0 || 
+                 strcmp(option, "frenchb") == 0 || 
+                 strcmp(option, "french") == 0)
             setPackageBabel(option);
         else if (strcmp(option, "twoside") == 0)
             g_preambleTwoside = TRUE;
@@ -456,18 +466,39 @@ static void setDocumentOptions(char *optionlist)
         } else if (strcmp(option, "apacite") == 0 || strcmp(option, "apacitex") == 0) {
             PushEnvironment(APACITE_MODE);
             g_document_bibstyle = BIBSTYLE_APACITE;
-        } else if (strcmp(option, "fancyhdr") == 0) {
-            diagnostics(WARNING, "Only partial support for %s", option);
-        } else if (strcmp(option, "textcomp") == 0 || strcmp(option, "fontenc") == 0) {
+        } else if (strcmp(option, "hyperref") == 0) {
+        	PushEnvironment(HYPERREF_MODE);
+        } else if (strcmp(option, "amsmath") == 0) {
+		 	g_amsmath_package = TRUE;
+            diagnostics(WARNING, "Incomplete support for package/option '%s' ", option);
+        } else if (strcmp(option, "endnotes"    ) == 0 ||
+                   strcmp(option, "pstricks-add") == 0 ||
+                   strcmp(option, "fancyhdr"    ) == 0 ||
+                   strcmp(option, "html"        ) == 0 ||
+                   strcmp(option, "epsf"        ) == 0 ||
+                   strcmp(option, "psfig"       ) == 0 ||
+                   strcmp(option, "verbatim"    ) == 0 ||
+                   strcmp(option, "paralist"    ) == 0 ) {
+            diagnostics(WARNING, "Incomplete support for package/option '%s' ", option);
+
+        } else if (strcmp(option, "textcomp"    ) == 0 || 
+                   strcmp(option, "fontenc"     ) == 0 ||
+                   strcmp(option, "eurosym"     ) == 0 ||
+                   strcmp(option, "ucs"         ) == 0 ||
+                   strcmp(option, "alltt"       ) == 0 ||
+                   strcmp(option, "url"         ) == 0 ||
+                   strcmp(option, "nameref"     ) == 0 ||
+                   strcmp(option, "amssymb"     ) == 0) {
             /* do nothing ... but don't complain */
         } else if (strcmp(option, "color") == 0) {
             diagnostics(WARNING, "Color support limited to eight basic colors");
-        } else if (strcmp(option, "endnotes") == 0) {
-            diagnostics(WARNING, "Limited endnote support");
-        } else if (strcmp(option, "paralist") == 0) {
-            diagnostics(WARNING, "Limited paralist support");
-        } else if (!TryVariableIgnore(option)) {
-            diagnostics(WARNING, "Unknown style option %s ignored", option);
+        } else if (strcmp(option, "man") == 0 ||
+                   strcmp(option, "jou") == 0) {
+            diagnostics(WARNING, "ignoring [%s], assuming [doc]", option);
+        } else if (strcmp(option, "doc") == 0) {
+            diagnostics(WARNING, "Some support for apa class");
+        } else {
+            diagnostics(WARNING, "Package/option '%s' unknown.", option);
         }
         option = strtok(NULL, ",");
     }
@@ -508,8 +539,13 @@ void CmdDocumentStyle(int code)
     else if (strcmp(format, "slides") == 0)
         g_document_type = FORMAT_SLIDES;
 
-    else
-        fprintf(stderr, "\nDocument format <%s> unknown, using article format", format);
+    else if (strcmp(format, "apa") == 0) {
+        g_document_type = FORMAT_APA;
+        g_document_bibstyle = BIBSTYLE_APACITE;
+        PushEnvironment(APACITE_MODE);
+        diagnostics(WARNING, "Meager support for \\documentclass{apa}");
+    } else
+        diagnostics(WARNING, "Document format <%s> unknown, using article format", format);
 
     if (options_with_spaces) {
         options = strdup_noblanks(options_with_spaces);
@@ -525,8 +561,10 @@ void CmdDocumentStyle(int code)
 ******************************************************************************/
 static void CmdUseOnepackage(char* package, char *options)
 {
+     diagnostics(4, "CmdUseOnepackage \\usepackage[%s]{%s}", options, package);
+
     if (strcmp(package, "inputenc") == 0 && options)
-	setPackageInputenc(options);
+		setPackageInputenc(options);
     
     else if (strcmp(package, "graphics") == 0)
         g_graphics_package = GRAPHICS_GRAPHICS;
@@ -544,10 +582,12 @@ static void CmdUseOnepackage(char* package, char *options)
 		if (options)
 			setPackageBabel(options);
 
-    } else if (strcmp(package, "german") == 0 ||
-	    strcmp(package, "ngerman") == 0 ||
-	    strcmp(package, "czech") == 0 || strcmp(package, "frenchb") == 0 || strcmp(package, "french") == 0)
-		setPackageBabel(package);
+    } else if ( strcmp(package, "german")  == 0 ||
+	    		strcmp(package, "ngerman") == 0 ||
+	    		strcmp(package, "czech")   == 0 || 
+	    		strcmp(package, "frenchb") == 0 || 
+	    		strcmp(package, "french") == 0)
+		    setPackageBabel(package);
 
     else if (strcmp(package, "palatino") == 0 ||
 	     strcmp(package, "times") == 0 ||
@@ -566,30 +606,33 @@ static void CmdUseOnepackage(char* package, char *options)
 		set_sorted_citations();
 		set_compressed_citations();
 
+    } else if (strcmp(package, "subfigure") == 0) {
+		diagnostics(WARNING, "partial support for subfigure package");
+
     } else if (strcmp(package, "natbib") == 0) {
-	if (options && strstr(options, "longnamesfirst"))
-	    set_longnamesfirst();
-	if (options && strstr(options, "super"))
-	    set_bibpunct_style_super();
-	if (options && strstr(options, "comma"))
-	    set_bibpunct_style_separator(",");
-	if (options && strstr(options, "colon"))
-	    set_bibpunct_style_separator(":");
-	if (options && strstr(options, "round"))
-	    set_bibpunct_style_paren("(",")");
-	if (options && strstr(options, "square"))
-	    set_bibpunct_style_paren("[","]");
-	if (options && strstr(options, "curly"))
-	    set_bibpunct_style_paren("{","}");
-	if (options && strstr(options, "angle"))
-	    set_bibpunct_style_paren("<",">");
-	if (options && strstr(options, "sort"))
-	    set_sorted_citations();
-	if (options && strstr(options, "compress"))
-	    set_compressed_citations();
-      
-	PushEnvironment(NATBIB_MODE);
-	g_document_bibstyle = BIBSTYLE_NATBIB;
+		if (options && strstr(options, "longnamesfirst"))
+			set_longnamesfirst();
+		if (options && strstr(options, "super"))
+			set_bibpunct_style_super();
+		if (options && strstr(options, "comma"))
+			set_bibpunct_style_separator(",");
+		if (options && strstr(options, "colon"))
+			set_bibpunct_style_separator(":");
+		if (options && strstr(options, "round"))
+			set_bibpunct_style_paren("(",")");
+		if (options && strstr(options, "square"))
+			set_bibpunct_style_paren("[","]");
+		if (options && strstr(options, "curly"))
+			set_bibpunct_style_paren("{","}");
+		if (options && strstr(options, "angle"))
+			set_bibpunct_style_paren("<",">");
+		if (options && strstr(options, "sort"))
+			set_sorted_citations();
+		if (options && strstr(options, "compress"))
+			set_compressed_citations();
+		  
+		PushEnvironment(NATBIB_MODE);
+		g_document_bibstyle = BIBSTYLE_NATBIB;
 	
     } else if (strcmp(package, "geometry") == 0) {
 
@@ -610,7 +653,7 @@ static void CmdUseOnepackage(char* package, char *options)
 	    }
 	
     } else
-	setDocumentOptions(package);
+		setDocumentOptions(package);
 	  
 }
 
@@ -622,7 +665,7 @@ void CmdGeometry(int code)
     char *options;
     options = getBraceParam();
     if (options) {
-    	diagnostics(WARNING, "geometry command, argument %s\n", options);
+    	diagnostics(2, "geometry command, argument %s\n", options);
     	ParseOptGeometry(options);
     	free(options);
     }
@@ -641,7 +684,7 @@ void ParseOptGeometry(char *options)
 		next = keyvalue_pair(options,&key,&value1);
 				
 		if (value1 == NULL) {
-			diagnostics(WARNING, "geometry package, single option=[%s]\n", key);
+			diagnostics(2, "geometry package, single option=[%s]", key);
 			ExecGeomOptions (key, NULL, NULL);
 		}
 		else if (*value1 == '{') {
@@ -651,19 +694,19 @@ void ParseOptGeometry(char *options)
 			PopSource();
 			value1 = strtok(value1, comma);
 			value2 = strtok(NULL, comma);
-			diagnostics(WARNING, "option=%s with values %s and %s\n", key, value1, value2);
+			diagnostics(2, "option=%s with values %s and %s", key, value1, value2);
 			ExecGeomOptions (key, value1, value2);
 			free(value1);
 		}
 		else if (strchr(value1, ':')) {
 			value1 = strtok(value1, colon);
 			value2 = strtok(NULL, colon);
-			diagnostics(WARNING, "option=%s with ratio '%s:%s'\n", key, value1, value2);
+			diagnostics(2, "option=%s with ratio '%s:%s'", key, value1, value2);
 			ExecGeomOptions (key, value1, value2);
 			free(value1);
 		}
 		else {
-			diagnostics(WARNING, "geometry package, option=[%s], value=%s\n", key, value1);
+			diagnostics(2, "geometry package, option=[%s], value=%s", key, value1);
 			value2=value1;
 			ExecGeomOptions (key, value1, value2);
 			free(value1);
@@ -692,20 +735,20 @@ void ExecGeomOptions (char *key, char *value1, char *value2)
 	} else { /* each value is part of a single ratio */
 	    dist1 = dist3 = atoi(value1);
 	    dist2 = dist4 = atoi(value2);
-	    diagnostics(WARNING, "one ratio parameter, %d:%d\n", dist1, dist2);
+	    diagnostics(3, "one ratio parameter, %d:%d", dist1, dist2);
 	}
     } else if (strstr(key, "centering") == NULL) {
 		dist1=getStringDimension(value1);
 		dist2=getStringDimension(value2);
-		diagnostics(WARNING, "twips paramters, %d and %d\n", dist1, dist2);
+		diagnostics(3, "twips paramters, %d and %d", dist1, dist2);
     }
 
     if (strcmp(key, "vmargin") == 0) {
-		diagnostics(WARNING, "vmargin distance(top)=%d, distance (bottom)=%d twips\n", dist1, dist2);
+		diagnostics(3, "vmargin distance(top)=%d, distance (bottom)=%d twips", dist1, dist2);
 		g_geomMargt = dist1;
 		g_geomMargb = dist2;
     } else if (strcmp(key, "hmargin") == 0) {
-		diagnostics(WARNING, "hmargin distance(left)=%d, distance (right)=%d twips\n", dist1, dist2);
+		diagnostics(3, "hmargin distance(left)=%d, distance (right)=%d twips", dist1, dist2);
 		g_geomMargl = dist1;
 		g_geomMargr = dist2;
     } else if (strcmp(key, "margin") == 0) {
@@ -723,9 +766,9 @@ void ExecGeomOptions (char *key, char *value1, char *value2)
 		ratio_sum = dist1 + dist2;
 		margin_sum = g_geomMargl + g_geomMargr;
 		g_geomMargl = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
-		diagnostics(WARNING, "g_geomMargl %d\n", g_geomMargl);
+		diagnostics(3, "g_geomMargl %d", g_geomMargl);
 		g_geomMargr = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
-		diagnostics(WARNING, "g_geomMargr %d\n", g_geomMargr);
+		diagnostics(3, "g_geomMargr %d", g_geomMargr);
     } else if (strcmp(key, "vmarginratio") == 0) {
 		ratio_sum = dist1 + dist2;
 		margin_sum = g_geomMargt + g_geomMargb;
@@ -803,6 +846,21 @@ void CmdTitle(int code)
             UpdateLineNumber(g_preambleDate);
             break;
 
+        case TITLE_AFFILIATION:
+            g_preambleAffiliation = getBraceParam();
+            UpdateLineNumber(g_preambleAffiliation);
+            break;
+
+        case TITLE_ABSTRACT:
+            g_preambleAbstract = getBraceParam();
+            UpdateLineNumber(g_preambleAbstract);
+            break;
+
+        case TITLE_ACKNOWLEDGE:
+            g_preambleAck = getBraceParam();
+            UpdateLineNumber(g_preambleAck);
+            break;
+
         case TITLE_TITLEPAGE:
             g_preambleTitlepage = TRUE;
             break;
@@ -811,7 +869,7 @@ void CmdTitle(int code)
 
 void CmdTableOfContents(int code)
 {
-	CmdStartParagraph("contents", TITLE_INDENT);
+	startParagraph("contents", SECTION_TITLE_PARAGRAPH);
 	fprintRTF("{");
 	InsertStyle("contents_no_style");
 	fprintRTF(" ");
@@ -831,7 +889,7 @@ void CmdTableOfContents(int code)
 void CmdAnd(int code)
 {
 	CmdEndParagraph(0);
-	CmdStartParagraph("author", TITLE_INDENT);
+	startParagraph("author", GENERIC_PARAGRAPH);
 }
 
 
@@ -849,7 +907,7 @@ void CmdMakeTitle(int code)
     snprintf(author_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
     snprintf(date_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 
-    alignment = CENTERED;
+    setAlignment(CENTERED);
     fprintRTF("\n\\par\\pard\\qc {%s ", title_begin);
     if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0)
         ConvertString(g_preambleTitle);
@@ -861,17 +919,39 @@ void CmdMakeTitle(int code)
     fprintRTF("}");
 
     fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
+    if (g_preambleAffiliation != NULL && strcmp(g_preambleAffiliation, "") != 0)
+        ConvertString(g_preambleAffiliation);
+    fprintRTF("}");
+
+    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
     if (g_preambleDate != NULL && strcmp(g_preambleDate, "") != 0)
         ConvertString(g_preambleDate);
     fprintRTF("}");
 
+    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
+    if (g_preambleAck != NULL && strcmp(g_preambleAck, "") != 0)
+        ConvertString(g_preambleAck);
+    fprintRTF("}");
+
     CmdEndParagraph(0);
-    alignment = JUSTIFIED;
+    setAlignment(JUSTIFIED);
+
+    if (g_preambleAbstract != NULL && strcmp(g_preambleAbstract, "") != 0) {
+    	char *s = strdup_together3("{",g_preambleAbstract,"}");
+    	CmdAbstract(3);
+    	ConvertString("\\noindent");
+    	ConvertString(s);
+    	CmdAbstract(4);
+    	free(s);
+    }
 
     if (g_preambleTitlepage)
         fprintRTF("\\page ");
 
-    PopTrackLineNumber();
+    if (g_document_type == FORMAT_APA)
+    	startParagraph("body",FIRST_PARAGRAPH);
+
+	PopTrackLineNumber();
 }
 
 void CmdPreambleBeginEnd(int code)
@@ -952,7 +1032,7 @@ Needs to be terminated for:
 		      provided by markboth, markright
 		      pagenumbering in header */
     } else {
-        diagnostics(WARNING, "Unknown \\pagestyle{%s} ignored", style);
+        diagnostics(WARNING, "\\pagestyle{%s} unknown", style);
     }
 }
 
@@ -1105,7 +1185,7 @@ static void WriteStyleHeader(void)
     style = CfgStartIterate(STYLE_A);
     while ((style = CfgNext(STYLE_A, style)) != NULL) {
         rtf = (*style)->RtfCommand;
-        diagnostics(4, "style <%s>=<%s>", (*style)->TexCommand, rtf);
+        diagnostics(5, "style <%s>=<%s>", (*style)->TexCommand, rtf);
         fprintRTF("{");
         InsertBasicStyle(rtf, TRUE);
         fprintRTF(";}\n");
@@ -1163,8 +1243,8 @@ static void WritePageSize(void)
       diagnostics(4, "Writepagesize bottom margin =%d pt", n / 20);
     } else {
       /* Insert geometry dimensions here */
-      diagnostics(WARNING, "Using geometry package");
-      diagnostics(WARNING, "[l,r,t,b] = [%d,%d,%d,%d]",g_geomMargl,g_geomMargr,
+      diagnostics(2, "Using geometry package");
+      diagnostics(2, "[l,r,t,b] = [%d,%d,%d,%d]",g_geomMargl,g_geomMargr,
                                                        g_geomMargt,g_geomMargb);
       fprintRTF("\\margl%d", g_geomMargl);
       fprintRTF("\\margr%d", g_geomMargr);

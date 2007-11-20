@@ -55,12 +55,10 @@ typedef int		bool;
 
 void			diagnostics(int level, char *format,...);
 
-extern /* @dependent@ */ FILE *fRtf;	/* file pointer to RTF file */
 extern			char *g_aux_name;
 extern			char *g_toc_name;
 extern			char *g_lof_name;
 extern			char *g_lot_name;
-extern			char *g_fff_name;
 extern			char *g_bbl_name;
 extern			char *g_home_dir;
 extern			char *progname;			/* name of the executable file */
@@ -74,9 +72,6 @@ extern int		headings;
 
 extern int		g_verbosity_level;
 extern int		RecursionLevel;
-extern int		g_left_margin_indent;
-extern int		g_right_margin_indent;
-extern char		alignment;
 
 /* table  & tabbing variables */
 extern long		pos_begin_kill;
@@ -114,6 +109,7 @@ extern bool		g_bbl_file_missing;
 extern char		g_charset_encoding_name[20];
 extern int		g_fcharset_number;
 extern int      g_graphics_package;
+extern int      g_amsmath_package;
 
 extern char		*g_figure_label;
 extern char		*g_table_label;
@@ -146,6 +142,7 @@ extern bool		g_tableofcontents;
 
 void fprintRTF(char *format, ...);
 void putRtfCharEscaped(char cThis);
+void putRtfStrEscaped(const char * string);
 char *getTmpPath(void);
 char *my_strdup(const char *str);
 FILE *my_fopen(char *path, char *mode);

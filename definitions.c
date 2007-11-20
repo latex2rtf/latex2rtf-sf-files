@@ -84,12 +84,12 @@ static int strequal(char *a, char *b)
 /* static void printDefinitions(void)
 {
 int i=0;
-	fprintf(stderr, "\n");
+	diagnostics(WARNING, "\n");
 	while(i < iDefinitionCount ) {
-		fprintf(stderr, "[%d] name     =<%s>\n",i, Definitions[i].name);
-		fprintf(stderr, "    opt_param=<%s>\n", Definitions[i].opt_param);
-		fprintf(stderr, "    def      =<%s>\n", Definitions[i].def);
-		fprintf(stderr, "    params   =<%d>\n", Definitions[i].params);
+		diagnostics(WARNING, "[%d] name     =<%s>\n",i, Definitions[i].name);
+		diagnostics(WARNING, "    opt_param=<%s>\n", Definitions[i].opt_param);
+		diagnostics(WARNING, "    def      =<%s>\n", Definitions[i].def);
+		diagnostics(WARNING, "    params   =<%d>\n", Definitions[i].params);
 		i++;
 	}
 }
@@ -97,12 +97,12 @@ int i=0;
 static void printTheorems(void)
 {
 int i=0;
-	fprintf(stderr, "\n");
+	diagnostics(WARNING, "\n");
 	for (i=0; i< iNewTheoremCount; i++) {
-		fprintf(stderr, "[%d] name   =<%s>\n",i, NewTheorems[i].name);
-		fprintf(stderr, "    caption    =<%s>\n", NewTheorems[i].caption);
-		fprintf(stderr, "    like =<%s>\n", NewTheorems[i].numbered_like);
-		fprintf(stderr, "    within    =<%s>\n", NewTheorems[i].within);
+		diagnostics(WARNING, "[%d] name   =<%s>\n",i, NewTheorems[i].name);
+		diagnostics(WARNING, "    caption    =<%s>\n", NewTheorems[i].caption);
+		diagnostics(WARNING, "    like =<%s>\n", NewTheorems[i].numbered_like);
+		diagnostics(WARNING, "    within    =<%s>\n", NewTheorems[i].within);
 	}
 }
 */
@@ -130,9 +130,9 @@ static char *expandmacro(char *macro, char *opt_param, int params)
     }
 
     for (; i < params; i++) {
-        args[i] = getBraceParam();
+        args[i] = getBraceRawParam();
         buff_size += strlen(args[i]);
-        diagnostics(3, "argument #%d <%s>", i + 1, args[i]);
+        diagnostics(5, "argument #%d <%s>", i + 1, args[i]);
     }
 
     dmacro = strdup(macro);
@@ -233,7 +233,7 @@ int maybeDefinition(char *s, size_t n)
     for (i = 0; i < iDefinitionCount; i++) {
     	/*
     	char *ss = my_strndup(s,strlen(Definitions[i].name));
-        diagnostics(1, "def seeking=<%s>, i=%d, current=<%s>", ss, i, Definitions[i].name);
+        diagnostics(WARNING, "def seeking=<%s>, i=%d, current=<%s>", ss, i, Definitions[i].name);
         free(ss);
         */
         if (strncmp(s, Definitions[i].name, n) == 0)
@@ -255,13 +255,13 @@ int existsDefinition(char *s)
     for (i = 0; i < iDefinitionCount; i++) {
     /*
 		char *tt = my_strndup(s,strlen(Definitions[i].name));
-		diagnostics(1, "def text has=<%s>, i=%d, trying=<%s>", tt, i, Definitions[i].name);
+		diagnostics(WARNING, "def text has=<%s>, i=%d, trying=<%s>", tt, i, Definitions[i].name);
 		free(tt);
 	*/
         if (strcmp(s, Definitions[i].name) == 0) {
     /*
 			char *ss = my_strndup(s,strlen(Definitions[i].name));
-			diagnostics(1, "def text has=<%s>, i=%d, matched=<%s>", ss, i, Definitions[i].name);
+			diagnostics(WARNING, "def text has=<%s>, i=%d, matched=<%s>", ss, i, Definitions[i].name);
 			free(ss);
 	*/
             break;
@@ -282,7 +282,7 @@ void newDefinition(char *name, char *opt_param, char *def, int params)
               define \hd, name = "hd"
 **************************************************************************/
 {
-    diagnostics(2, "Adding macro <%s>=<%s>", name, def);
+    diagnostics(2, "Adding macro '%s' = [%s]", name, def);
 
     if (strcmp(name, "LaTeX") == 0)
         return;
@@ -327,7 +327,7 @@ void newDefinition(char *name, char *opt_param, char *def, int params)
     }
 
     iDefinitionCount++;
-    diagnostics(2, "Successfully added macro #%d", iDefinitionCount);
+    diagnostics(3, "Successfully added macro #%d", iDefinitionCount);
 }
 
 void renewDefinition(char *name, char *opt_param, char *def, int params)
@@ -338,12 +338,12 @@ void renewDefinition(char *name, char *opt_param, char *def, int params)
 {
     int i;
 
-    diagnostics(3, "renewDefinition seeking <%s>\n", name);
+    diagnostics(3, "renewDefinition seeking '%s'\n", name);
     i = existsDefinition(name);
 
     if (i < 0) {
         newDefinition(name, opt_param, def, params);
-        diagnostics(WARNING, "No existing definition for \\%s", name);
+        diagnostics(2, "No existing definition for \\%s", name);
 
     } else {
         free(Definitions[i].def);
@@ -398,7 +398,7 @@ int existsEnvironment(char *s)
 
     n = strlen(s);
     while (i < iNewEnvironmentCount && !strequal(s, NewEnvironments[i].name)) {
-        diagnostics(4, "e seeking=<%s>, i=%d, current=<%s>", s, i, NewEnvironments[i].name);
+        diagnostics(6, "existsEnv seeking=<%s>, i=%d, current=<%s>", s, i, NewEnvironments[i].name);
         i++;
     }
 
@@ -426,14 +426,14 @@ int maybeEnvironment(char *s, size_t n)
     
 		if (0) {
 		char *ss = my_strndup(s,n);
-		diagnostics(1, "trying env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].endname);
+		diagnostics(2, "trying env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].endname);
 		free(ss);
 		}
 		
         if (strncmp(s, NewEnvironments[i].begname, n) == 0) {
 			if (0) {
 			char *ss = my_strndup(s,n);
-			diagnostics(1, "possible env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].begname);
+			diagnostics(2, "possible env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].begname);
 			free(ss);
 			}
             return TRUE;
@@ -443,7 +443,7 @@ int maybeEnvironment(char *s, size_t n)
         if (strncmp(s, NewEnvironments[i].endname, n) == 0) {
 			if (0) {
 			char *ss = my_strndup(s,n);
-			diagnostics(1, "possible env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].endname);
+			diagnostics(2, "possible env seeking=<%s>, i=%d, current=<%s>", ss, i, NewEnvironments[i].endname);
 			free(ss);
 			}
             return TRUE;
@@ -452,7 +452,7 @@ int maybeEnvironment(char *s, size_t n)
 
 	if (0) {
 	char *ss = my_strndup(s,n);
-	diagnostics(1, "failed all env seeking=<%s>", ss);
+	diagnostics(2, "failed all env seeking=<%s>", ss);
 	free(ss);
 	}
     return FALSE;
@@ -510,7 +510,7 @@ void renewEnvironment(char *name, char *opt_param, char *begdef, char *enddef, i
 
     if (i < 0) {
         newEnvironment(name, opt_param, begdef, enddef, params);
-        diagnostics(WARNING, "No existing \\newevironment{%s}", name);
+        diagnostics(2, "No existing \\newevironment{%s}", name);
 
     } else {
         free(NewEnvironments[i].begdef);
@@ -542,20 +542,27 @@ char *expandEnvironment(int thedef, int code)
      purpose: retrieves and expands a \newenvironment 
 **************************************************************************/
 {
+    char *s, *t;
+    
     if (thedef < 0 || thedef >= iNewEnvironmentCount)
         return NULL;
 
     if (code == CMD_BEGIN) {
 
         diagnostics(3, "\\begin{%s} <%s>", NewEnvironments[thedef].name, NewEnvironments[thedef].begdef);
-        return expandmacro(NewEnvironments[thedef].begdef,
+        s= expandmacro(NewEnvironments[thedef].begdef,
           NewEnvironments[thedef].opt_param, NewEnvironments[thedef].params);
+        t = strdup_together("{",s);
 
     } else {
 
         diagnostics(3, "\\end{%s} <%s>", NewEnvironments[thedef].name, NewEnvironments[thedef].enddef);
-        return expandmacro(NewEnvironments[thedef].enddef, NULL, 0);
+        s = expandmacro(NewEnvironments[thedef].enddef, NULL, 0);
+        t = strdup_together(s,"}");
     }
+
+    free(s);
+    return t;
 }
 
 void newTheorem(char *name, char *caption, char *numbered_like, char *within)

@@ -10,4 +10,8 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post);
 void PutLatexFile(char *s, double height0, double width0, double scale, char *pre);
 void CmdGraphics(int code);
 void CmdPicture(int code);
+void CmdPsPicture(int code);
+void CmdPsGraph(int code);
 void CmdMusic(int code);
+void CmdPsset(int code);
+void CmdNewPsStyle(int code);

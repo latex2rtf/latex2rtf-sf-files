@@ -14,6 +14,13 @@
 #define LABEL_HTMLREF       9
 #define LABEL_EQREF			10
 #define LABEL_VREF          11
+#define LABEL_HREF          12
+#define LABEL_URL           13
+#define LABEL_NO_LINK_URL   14
+#define LABEL_BASE_URL      15
+#define LABEL_URLSTYLE      16
+#define LABEL_NAMEREF       17
+#define LABEL_URL_HYPER     18
 
 #define BIBSTYLE_STANDARD   1
 #define BIBSTYLE_APALIKE    2
@@ -36,6 +43,32 @@
 #define CITE_SHORT_AUTHOR  12
 #define CITE_YEAR          13
 #define CITE_YEAR_NP       14
+
+#define CITE_APA_CITE_YEAR     201
+#define CITE_APA_CITE_METASTAR 202
+#define CITE_APA_CITE_A_TITLE  203
+#define CITE_APA_CITE_B_TITLE  204
+#define CITE_APA_CITE_INSERT   205
+#define CITE_APA_YMD           206
+#define CITE_APA_REF_A_TITLE   207
+#define CITE_APA_REF_B_TITLE   208
+#define CITE_APA_JVNP          209
+#define CITE_APA_REF_YEAR      210
+#define CITE_APA_ADD_PUB       211
+#define CITE_PRINT_CARDINAL    212
+#define CITE_PRINT_BACK_REFS   213
+#define CITE_APA_ADD_PUB_EQ_AUTHOR 214
+#define CITE_APA_REF_A_E_TITLE 215
+#define CITE_APA_MONTH         216
+#define CITE_APA_B_VOL_ED_TR   217
+#define CITE_APA_ADD_INST      218
+#define CITE_APA_HOW           219
+#define CITE_APA_ORIG_YEAR_NOTE   220
+#define CITE_APA_REF_NOTE      221
+#define CITE_APA_REF_B_E_TITLE 223
+#define CITE_APA_ORIG_JOUR     224
+#define CITE_APA_B_VOL_ED_TR_PGS 225
+#define CITE_APA_UNSKIP        226
 
 #define CITE_T             16
 #define CITE_T_STAR        17

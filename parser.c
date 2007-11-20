@@ -148,7 +148,7 @@ char *CurrentFileName(void)
 	The following two routines allow parsing of multiple files and strings
 */
 
-int PushSource(char *filename, char *string)
+int PushSource(const char *filename, const char *string)
 
 /***************************************************************************
  purpose:     change the source used by getRawTexChar() to either file or string
@@ -163,15 +163,15 @@ int PushSource(char *filename, char *string)
     int line = 1;
 
     if (0) {
-        diagnostics(1, "Before PushSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
+        diagnostics(WARNING, "Before PushSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
           g_parser_line, g_parser_depth, g_parser_include_level);
         for (i = 0; i <= g_parser_depth; i++) {
             if (g_parser_stack[i].file)
-                diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
                 strncpy_printable(s, g_parser_stack[i].string, 25);
-                diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
     }
@@ -191,7 +191,7 @@ int PushSource(char *filename, char *string)
 
         /* if not then try to open a file */
     } else if (filename) {
-        p = my_fopen(filename, "rb");
+        p = my_fopen((char *)filename, "rb");
         if (p == NULL)
             return 1;
         g_parser_include_level++;
@@ -218,22 +218,22 @@ int PushSource(char *filename, char *string)
     g_parser_string = g_parser_stack[g_parser_depth].string;
 
     if (g_parser_file) {
-        diagnostics(5, "Opening Source File %s", g_parser_stack[g_parser_depth].file_name);
+        diagnostics(3, "Opening Source File %s", g_parser_stack[g_parser_depth].file_name);
     } else {
-        strncpy(s, g_parser_string, 25);
-        diagnostics(5, "Opening Source string <%s>", s);
+        diagnostics(4, "Opening Source string");
+        show_string(5, g_parser_string, "opening");
     }
 
     if (0) {
-        diagnostics(1, "After PushSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
+        diagnostics(WARNING, "After PushSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
           g_parser_line, g_parser_depth, g_parser_include_level);
         for (i = 0; i <= g_parser_depth; i++) {
             if (g_parser_stack[i].file)
-                diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
                 strncpy_printable(s, g_parser_stack[i].string, 25);
-                diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
     }
@@ -275,21 +275,21 @@ void PopSource(void)
         diagnostics(ERROR, "More PopSource() calls than PushSource() ");
 
     if (0) {
-        diagnostics(1, "Before PopSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
+        diagnostics(WARNING, "Before PopSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
           g_parser_line, g_parser_depth, g_parser_include_level);
         for (i = 0; i <= g_parser_depth; i++) {
             if (g_parser_stack[i].file)
-                diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
                 strncpy_printable(s, g_parser_stack[i].string, 25);
-                diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
     }
 
     if (g_parser_file) {
-        diagnostics(5, "Closing Source File %s", g_parser_stack[g_parser_depth].file_name);
+        diagnostics(3, "Closing Source File '%s'", g_parser_stack[g_parser_depth].file_name);
         fclose(g_parser_file);
         free(g_parser_stack[g_parser_depth].file_name);
         g_parser_stack[g_parser_depth].file_name = NULL;
@@ -304,7 +304,7 @@ void PopSource(void)
             s[49] = '\0';
         }
 
-        diagnostics(5, "Closing Source string <%s>", s);
+        show_string(5, s, "closing");
         free(g_parser_stack[g_parser_depth].string_start);
         g_parser_stack[g_parser_depth].string_start = NULL;
     }
@@ -321,22 +321,22 @@ void PopSource(void)
     }
 
     if (g_parser_file)
-        diagnostics(5, "Resuming Source File %s", g_parser_stack[g_parser_depth].file_name);
+        diagnostics(4, "Resuming Source File '%s'", g_parser_stack[g_parser_depth].file_name);
     else {
-        strncpy(s, g_parser_string, 25);
-        diagnostics(5, "Resuming Source string <%s>", s);
+        diagnostics(5, "Resuming Source string");
+        show_string(5,g_parser_string,"resuming");
     }
 
     if (0) {
-        diagnostics(1, "After PopSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
+        diagnostics(WARNING, "After PopSource** line=%d, g_parser_depth=%d, g_parser_include_level=%d",
           g_parser_line, g_parser_depth, g_parser_include_level);
         for (i = 0; i <= g_parser_depth; i++) {
             if (g_parser_stack[i].file)
-                diagnostics(1, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d file   =%s, line=%d", i, g_parser_stack[i].file_name, g_parser_stack[i].file_line);
 
             else {
                 strncpy_printable(s, g_parser_stack[i].string, 25);
-                diagnostics(1, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
+                diagnostics(WARNING, "i=%d string =%s, line=%d", i, s, g_parser_stack[i].file_line);
             }
         }
     }
@@ -350,7 +350,8 @@ void CmdInclude(int code)
           code == 1 for \input
  ******************************************************************************/
 {
-    char name[50], cNext;
+    int cNext;
+    char name[100];
     int i;
     char *basename=NULL;
     char *texname=NULL;
@@ -362,14 +363,21 @@ void CmdInclude(int code)
         basename = getBraceParam();
 
     } else {                    /* \input gnu */
-        name[0] = cNext;
-        for (i = 1; i < 50; i++) {
-            name[i] = getTexChar();
-            if (isspace((int) name[i])) {
-                name[i] = '\0';
-                break;
-            }
+        i = 0;
+        while (cNext != '\0' && !isspace(cNext)) {
+        	if (i<99) name[i] = (char) cNext;
+        	i++;
+        	cNext = getTexChar();
         }
+        
+        if (i<99) 
+        	name[i] = '\0';
+		else {
+        	name[99] = '\0';
+        	diagnostics(WARNING, "\\input filename '%s' more than 100 chars, skipping",name);
+        	return;
+        }
+ 
         basename = strdup(name);
     }
 
@@ -390,11 +398,15 @@ void CmdInclude(int code)
         texname = strdup_together(basename, ".tex");
 
     if (texname && PushSource(texname, NULL) == 0)            /* Try the .tex name first*/
-        diagnostics(WARNING, "Including file <%s>", texname);
+        diagnostics(WARNING, "Including file <%s> (.tex appended)", texname);
       
     else if (basename && PushSource(basename, NULL) == 0)     /* Try the basename second*/
         diagnostics(WARNING, "Including file <%s>", basename);
 
+	/* \include{file} always starts a new page */
+	if (code == 0)
+		PushSource(NULL, "\\pagebreak ");
+		
     if (basename) free(basename);
     if (texname)  free(texname);
 }
@@ -422,7 +434,7 @@ char getRawTexChar(void)
 
     if (g_parser_file) {
         thechar = getc(g_parser_file);
-        if (thechar == EOF)
+        while (thechar == EOF) {
             if (!feof(g_parser_file))
                 diagnostics(ERROR, "Unknown file I/O error reading latex file\n");
             else if (g_parser_include_level > 1) {
@@ -430,7 +442,8 @@ char getRawTexChar(void)
                 thechar = getRawTexChar();  /* get next char from parent file */
             } else
                 thechar = '\0';
-        else if (thechar == CR) {   /* convert CR, CRLF, or LF to \n */
+        }
+        if (thechar == CR) {   /* convert CR, CRLF, or LF to \n */
             thechar = getc(g_parser_file);
             if (thechar != LF && !feof(g_parser_file))
                 ungetc(thechar, g_parser_file);
@@ -517,7 +530,7 @@ purpose: rewind the filepointer in the LaTeX-file by one
     g_parser_lastChar = g_parser_penultimateChar;
     g_parser_penultimateChar = '\0';    /* no longer know what that it was */
     g_parser_backslashes = 0;
-    diagnostics(5, "after ungetTexChar=<%c> backslashes=%d line=%ld", c, g_parser_backslashes, g_parser_line);
+    diagnostics(6, "after ungetTexChar=<%c> backslashes=%d line=%ld", c, g_parser_backslashes, g_parser_line);
 }
 
 char getTexChar()
@@ -597,7 +610,6 @@ char getNonSpace(void)
 }
 
 void skipSpaces(void)
-
 /***************************************************************************
  Description: skip to the next non-space character from the input stream
 ****************************************************************************/
@@ -608,6 +620,16 @@ void skipSpaces(void)
     }
     ungetTexChar(c);
 }
+
+void	skipWhiteSpace(void)
+/***************************************************************************
+ Description: skip over spaces and linefeeds
+****************************************************************************/
+{
+    char c=getNonBlank();
+    ungetTexChar(c);
+}
+
 
 int getSameChar(char c)
 
@@ -711,7 +733,7 @@ void CmdIgnoreParameter(int code)
     int regParmCount = code % 10;
     char cThis;
 
-    diagnostics(4, "CmdIgnoreParameter [%d] {%d}", optParmCount, regParmCount);
+    diagnostics(5, "CmdIgnoreParameter [%d] {%d}", optParmCount, regParmCount);
 
     while (regParmCount) {
         cThis = getNonBlank();
@@ -754,7 +776,8 @@ char *getSimpleCommand(void)
 
 /**************************************************************************
      purpose: returns a simple command e.g., \alpha\beta will return "\beta"
-                                                   ^
+                                                  ^
+                                              \! will return \!
  **************************************************************************/
 {
     char buffer[128];
@@ -765,7 +788,9 @@ char *getSimpleCommand(void)
     if (buffer[0] != '\\')
         return NULL;
 
-    for (size = 1; size < 127; size++) {
+	buffer[1] = getTexChar();
+
+    for (size = 2; size < 127; size++) {
         buffer[size] = getRawTexChar(); /* \t \r '%' all end command */
 
         if (!isalpha((int) buffer[size])) {
@@ -802,19 +827,19 @@ char *getBracketParam(void)
 
     if (c == '[') {
         text = getDelimitedText('[', ']', FALSE);
-        diagnostics(5, "getBracketParam [%s]", text);
+        diagnostics(6, "getBracketParam [%s]", text);
 
     } else {
         ungetTexChar(c);
         text = NULL;
-        diagnostics(5, "getBracketParam []");
+        diagnostics(6, "getBracketParam []");
     }
 
     PopTrackLineNumber();
     return text;
 }
 
-char *getBraceParam(void)
+static char *getBraceParam0(int raw_flag)
 
 /**************************************************************************
      purpose: allocates and returns the next parameter in the LaTeX file
@@ -843,7 +868,7 @@ char *getBraceParam(void)
         text = getSimpleCommand();
 
     } else if (s[0] == '{')
-        text = getDelimitedText('{', '}', FALSE);
+        text = getDelimitedText('{', '}', raw_flag);
 
     else {
         s[1] = '\0';
@@ -851,8 +876,18 @@ char *getBraceParam(void)
     }
 
     PopTrackLineNumber();
-    diagnostics(5, "Leaving getBraceParam {%s}", text);
+    diagnostics(6, "Leaving getBraceParam {%s}", text);
     return text;
+}
+
+char *getBraceParam(void)
+{
+	return getBraceParam0(FALSE);
+}
+
+char *getBraceRawParam(void)
+{
+	return getBraceParam0(TRUE);
 }
 
 char *getLeftRightParam(void)
@@ -961,10 +996,10 @@ char *getTexUntil(char *target, int raw)
 
     PopTrackLineNumber();
 
-    diagnostics(3, "buffer size =[%d], actual=[%d]", strlen(buffer), i - len);
+    diagnostics(6, "buffer size =[%d], actual=[%d]", strlen(buffer), i - len);
 
     s = strdup(buffer);
-    diagnostics(3, "strdup result = %s", s);
+    diagnostics(6, "getTexUntil result = %s", s);
     return s;
 }
 
@@ -987,7 +1022,7 @@ char *getSpacedTexUntil(char *target, int raw)
 	
     PushTrackLineNumber(FALSE);
 
-    diagnostics(2, "getSpaceTexUntil target = <%s> raw_search = %d ", target, raw);
+    diagnostics(5, "getSpaceTexUntil target = <%s> raw_search = %d ", target, raw);
 
 	matched = FALSE;	
 	buffer_pos = 0;
@@ -1037,9 +1072,9 @@ char *getSpacedTexUntil(char *target, int raw)
         
         if (0) {
 		if (buffer[buffer_pos] != '\n')
-			diagnostics(1, "this char = <%c>, %d, %d, max=%d", buffer[buffer_pos], buffer_pos, target_pos, max_buffer_pos);
+			diagnostics(WARNING, "this char = <%c>, %d, %d, max=%d", buffer[buffer_pos], buffer_pos, target_pos, max_buffer_pos);
 		else
-			diagnostics(1, "this char = <\\n>, %d, %d, max=%d", buffer[buffer_pos], buffer_pos, target_pos, max_buffer_pos);
+			diagnostics(WARNING, "this char = <\\n>, %d, %d, max=%d", buffer[buffer_pos], buffer_pos, target_pos, max_buffer_pos);
 		}
 		
         buffer_pos++;
@@ -1057,7 +1092,7 @@ char *getSpacedTexUntil(char *target, int raw)
     PopTrackLineNumber();
 
     s = strdup(buffer);
-    diagnostics(5, "getSpacedTexUntil result = %s", s);
+    diagnostics(6, "getSpacedTexUntil result = %s", s);
     return s;
 }
 

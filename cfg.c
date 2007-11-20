@@ -74,7 +74,7 @@ static int cfg_compare(ConfigEntryT ** el1, ConfigEntryT ** el2)
     return strcmp((*el1)->TexCommand, (*el2)->TexCommand);
 }
 
-static FILE *try_path(const char *path, const char *file)
+static FILE *try_path(const char *path, const char *cfg_file)
 
 /****************************************************************************
  * purpose:  append path to .cfg file name and open
@@ -83,30 +83,25 @@ static FILE *try_path(const char *path, const char *file)
  ****************************************************************************/
 {
     char *both;
-    FILE *fp = NULL;
-    size_t lastchar;
-
-    if (path == NULL || file == NULL)
+    FILE *fp;
+	char separator[2];
+	
+	separator[0] = PATHSEP;
+	separator[1] = '\0';
+	
+    if (path == NULL || cfg_file == NULL)
         return NULL;
 
-    diagnostics(4, "trying path=<%s> file=<%s>", path, file);
-
-    lastchar = strlen(path);
-
-    both = malloc(strlen(path) + strlen(file) + 2);
-    if (both == NULL)
-        diagnostics(ERROR, "Could not allocate memory for both strings.");
-
-    strcpy(both, path);
 
     /* fix path ending if needed */
-    if (both[lastchar] != PATHSEP) {
-        both[lastchar] = PATHSEP;
-        both[lastchar + 1] = '\0';
-    }
+    if (path[strlen(path)] != PATHSEP) 
+    	both = strdup_together3(path,separator,cfg_file);
+    else
+    	both = strdup_together(path,cfg_file);
 
-    strcat(both, file);
-    fp = fopen(both, "r");
+    diagnostics(2, "trying to open '%s'", both);
+
+    fp = fopen(both, "rb");
     free(both);
     return fp;
 }
@@ -117,11 +112,9 @@ void *open_cfg(const char *name, int quit_on_error)
 purpose: open config by trying multiple paths
  ****************************************************************************/
 {
-    char *env_path, *p, *p1;
+    char *env_path, *p, *p1, *pf;
     char *lib_path;
     FILE *fp;
-
-    diagnostics(3, "Open file in cfg directories <%s>", name);
 
 /* try path specified on the line */
     fp = try_path(g_config_path, name);
@@ -147,6 +140,26 @@ purpose: open config by trying multiple paths
             p = (p1) ? p1 + 1 : NULL;
         }
         free(env_path);
+    }
+
+/* try the environment variable ProgramFiles */
+    p = getenv("PROGRAMFILES");
+    if (p) {
+        pf = strdup_together(p, "/latex2rtf/cfg");
+        p = pf;
+        while (p) {
+            p1 = strchr(p, ENVSEP);
+            if (p1)
+                *p1 = '\0';
+
+            fp = try_path(p, name);
+            if (fp) {
+                free(pf);
+                return fp;
+            }
+
+            p = (p1) ? p1 + 1 : NULL;
+        }
     }
 
 /* last resort.  try CFGDIR */
@@ -178,6 +191,7 @@ purpose: open config by trying multiple paths
         diagnostics(WARNING, "   (3) recompile latex2rtf with CFGDIR defined properly");
         diagnostics(WARNING, "Current RTFPATH: %s", getenv("RTFPATH"));
         diagnostics(WARNING, "Current  CFGDIR: %s", CFGDIR);
+        diagnostics(WARNING, "Also not found in : %s", pf);
         diagnostics(ERROR, " Giving up.  Please don't hate me.");
     }
     return NULL;
@@ -300,6 +314,8 @@ static ConfigEntryT **search_rtf(const char *theTexCommand, int WhichCfg)
     compare_item.TexCommand = theTexCommand;
     compare_item.RtfCommand = "";
     compare_ptr = &compare_item;
+    
+    if (theTexCommand == NULL) return NULL;
 
     assert(WhichCfg >= 0 && (size_t) WhichCfg < CONFIG_SIZE);
     assert(configinfo[WhichCfg].config_info != NULL);
@@ -385,8 +401,7 @@ void ReadLanguage(char *lang)
     if (langfn == NULL)
         diagnostics(ERROR, "Could not allocate memory for language filename.");
 
-    strcpy(langfn, lang);
-    strcat(langfn, ".cfg");
+	langfn = strdup_together(lang, ".cfg");
 
     fp = (FILE *) open_cfg(langfn, TRUE);
     free(langfn);

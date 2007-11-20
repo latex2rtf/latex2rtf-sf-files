@@ -44,9 +44,10 @@ Authors:
 #include "lengths.h"
 #include "definitions.h"
 #include "graphics.h"
+#include "vertical.h"
 
 typedef struct commandtag {
-    char *cpCommand;            /* LaTeX command name without \ */
+    char *cmd_name;            /* LaTeX command name without \ */
     void (*func) (int);         /* function to convert LaTeX to RTF */
     int param;                  /* used in various ways */
 } CommandArray;
@@ -62,7 +63,7 @@ static CommandArray commands[] = {
     {"begin", CmdBeginEnd, CMD_BEGIN},
     {"end", CmdBeginEnd, CMD_END},
     {"today", CmdToday, 0},
-    {"footnote", CmdFootNote, FOOTNOTE},
+	{"footnote", CmdFootNote, FOOTNOTE},
 	{"endnote", CmdFootNote, FOOTNOTE | FOOTNOTE_ENDNOTE},
 
 	{"rmfamily", CmdFontFamily, F_FAMILY_ROMAN  },
@@ -164,6 +165,7 @@ static CommandArray commands[] = {
     {"tilde", CmdTildeChar, 0},
     {"bar", CmdMacronChar, 0},
     {"vec", CmdVecChar, 0},
+    {"overrightarrow", CmdVecChar, 0},
     {"dot", CmdDotChar, 0},
     {"ddot", CmdUmlauteChar, 0},
     {"\"", CmdUmlauteChar, 0},
@@ -199,10 +201,7 @@ static CommandArray commands[] = {
     {"dots", CmdLdots, 0},
     {"dotfill", CmdLdots, 1},
     {"textellipsis", CmdLdots, 2},
-    {"title", CmdTitle, TITLE_TITLE},
-    {"author", CmdTitle, TITLE_AUTHOR},
-    {"and", CmdAnd, 0},
-    {"date", CmdTitle, TITLE_DATE},
+
     {"maketitle", CmdMakeTitle, 0},
     {"par", CmdEndParagraph, 0},
     {"noindent", CmdIndent, INDENT_NONE},
@@ -226,7 +225,6 @@ static CommandArray commands[] = {
     {"input", CmdIgnoreParameter, No_Opt_One_NormParam},    /* should not happen */
     {"verb", CmdVerb, VERB_VERB},
     {"verb*", CmdVerb, VERB_STAR},
-    {"url", CmdVerb, VERB_URL},
     {"onecolumn", CmdColumn, One_Column},
     {"twocolumn", CmdColumn, Two_Column},
     {"includegraphics", CmdGraphics, FIGURE_INCLUDEGRAPHICS},
@@ -246,17 +244,18 @@ static CommandArray commands[] = {
     {"vref", CmdLabel, LABEL_VREF},
     {"eqref", CmdLabel, LABEL_EQREF},
     {"pageref", CmdLabel, LABEL_PAGEREF},
+    {"nameref", CmdLabel, LABEL_NAMEREF},
     {"cite", CmdCite, CITE_CITE},
 	{"onlinecite", CmdCite, CITE_CITE},
 	{"citeonline", CmdCite, CITE_CITE},
     {"nobibliography", CmdIgnoreParameter, No_Opt_One_NormParam},  
     {"bibliography", CmdBibliography, 0},
-    {"bibliographystyle", CmdBibliographyStyle, 0},
     {"bibitem", CmdBibitem, 0},
     {"bibentry", CmdBibEntry, 0},
     {"newblock", CmdNewblock, 0},
     {"newsavebox", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"usebox", CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"subfigure", CmdSubFigure, 0},
 
 /*	{"fbox", CmdIgnoreParameter, No_Opt_One_NormParam}, */
     {"quad", CmdQuad, 1},
@@ -265,12 +264,12 @@ static CommandArray commands[] = {
     {"textsubscript", CmdSubscript, 1},
     {"hspace", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"hspace*", CmdIgnoreParameter, No_Opt_One_NormParam},
-    {"vspace", CmdVspace, 0},
-    {"vspace*", CmdVspace, 0},
-    {"vskip", CmdVspace, -1},
-    {"smallskip", CmdVspace, 1},
-    {"medskip", CmdVspace, 2},
-    {"bigskip", CmdVspace, 3},
+    {"vspace", CmdVspace, VSPACE_VSPACE},
+    {"vspace*", CmdVspace, VSPACE_VSPACE},
+    {"vskip", CmdVspace, VSPACE_VSKIP},
+    {"smallskip", CmdVspace, VSPACE_SMALL_SKIP},
+    {"medskip", CmdVspace, VSPACE_MEDIUM_SKIP},
+    {"bigskip", CmdVspace, VSPACE_BIG_SKIP},
     {"addvspace", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"addcontentsline", CmdIgnoreParameter, No_Opt_Three_NormParam},
     {"addcontents", CmdIgnoreParameter, No_Opt_Two_NormParam},
@@ -306,6 +305,9 @@ static CommandArray commands[] = {
     {"settowidth", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"nopagebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
     {"samepage", CmdIgnore, 0},
+    {"expandafter", CmdIgnore, 0},
+    {"long", CmdIgnore, 0},
+    {"nobreak", CmdIgnore, 0},
     {"linebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
     {"nolinebreak", CmdIgnoreParameter, One_Opt_No_NormParam},
     {"typein", CmdIgnoreParameter, One_Opt_One_NormParam},
@@ -343,6 +345,8 @@ static CommandArray commands[] = {
     {"longleftrightarrows", CmdArrows, LONG_LEFTRIGHT},
     {"longleftarrow", CmdArrows, LONG_LEFT},
     {"longrightarrow", CmdArrows, LONG_RIGHT},
+    {"psset", CmdPsset, 0},
+    {"newpsstyle", CmdNewPsStyle, 0},
 
     {"mho",               CmdMTExtraChar, MTEXTRA_MHO},
     {"ddots",             CmdMTExtraChar, MTEXTRA_DDOTS},
@@ -380,10 +384,16 @@ static CommandArray commands[] = {
 
     {"nonumber", CmdNonumber, EQN_NO_NUMBER},
     {"notag", CmdNonumber, EQN_NO_NUMBER},
-    {"char", CmdChar, 0},
+    {"char", CmdSymbol, 0},
+    {"symbol", CmdSymbol, 1},
+
+    {"url",               CmdHtml, LABEL_URL},
+    {"urlstyle",          CmdHtml, LABEL_URLSTYLE},
     {"htmladdnormallink", CmdHtml, LABEL_HTMLADDNORMALREF},
-    {"htmlref", CmdHtml, LABEL_HTMLREF},
-    {"nobreakspace", CmdNonBreakSpace, 0},
+    {"htmlref",           CmdHtml, LABEL_HTMLREF},
+	
+    {"nobreakspace", CmdNonBreakSpace, 100},
+    {"thinspace", CmdNonBreakSpace, 50},
     {"abstract", CmdAbstract, 2},
     {"endinput", CmdEndInput, 0},
     {"textcolor", CmdTextColor, 0},
@@ -551,7 +561,7 @@ static CommandArray commands[] = {
 	{"xi", CmdSymbolChar, (int) 'x'},
 	{"Xi", CmdSymbolChar, (int) 'X'},
 	{"zeta", CmdSymbolChar, (int) 'z'},
-
+	{"efloatseparator", CmdIgnoreParameter,0},
     {"", NULL, 0}
 };
 
@@ -601,7 +611,6 @@ static CommandArray PreambleCommands[] = {
     {"listoffiles", CmdIgnoreParameter, 0},
     {"nofiles", CmdIgnoreParameter, 0},
     {"makelabels", CmdIgnoreParameter, 0},
-    {"verbositylevel", CmdVerbosityLevel, 0},
     {"hoffset", CmdSetTexLength, SL_HOFFSET},
     {"voffset", CmdSetTexLength, SL_VOFFSET},
     {"parindent", CmdSetTexLength, SL_PARINDENT},
@@ -618,9 +627,7 @@ static CommandArray PreambleCommands[] = {
     {"endnotetext", CmdFootNote, FOOTNOTE_TEXT | FOOTNOTE_ENDNOTE},
     {"include", CmdInclude, 0},
     {"input", CmdInclude, 1},
-    {"htmladdnormallink", CmdHtml, LABEL_HTMLADDNORMALREF},
-    {"htmlref", CmdHtml, LABEL_HTMLREF},
-    {"nobreakspace", CmdNonBreakSpace, 0},
+    {"nobreakspace", CmdNonBreakSpace, 100},
     {"signature", CmdSignature, 0},
     {"hline", CmdHline, 0},
     {"cline", CmdHline, 1},
@@ -632,12 +639,24 @@ static CommandArray PreambleCommands[] = {
     {"degreecelsius", CmdDegreeCelsius},
     {"resizebox", CmdResizeBox, 0},
     {"resizebox*", CmdResizeBox, 1},    
+    {"geometry",CmdGeometry,0},
+	{"doublespacing", CmdDoubleSpacing, 0},
+    {"verbositylevel", CmdVerbosityLevel, 0},
     {"iflatextortf",CmdIflatextortf,0},
     {"latextortftrue",CmdIgnore,1}, 
     {"latextortffalse",CmdIgnore,0}, 
     {"newif",CmdNewif,0},
-    {"geometry",CmdGeometry,0},
-	{"doublespacing", CmdDoubleSpacing, 0},
+    {"title", CmdTitle, TITLE_TITLE},
+    {"author", CmdTitle, TITLE_AUTHOR},
+    {"and", CmdAnd, 0},
+    {"date", CmdTitle, TITLE_DATE},
+    {"affiliation", CmdTitle, TITLE_AFFILIATION},
+    {"abstract", CmdTitle, TITLE_ABSTRACT},
+	{"acknowledgements", CmdTitle, TITLE_ACKNOWLEDGE},
+    {"bibliographystyle", CmdBibliographyStyle, 0},
+    {"extrasfrench", CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"AtEndDocument", CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"docnumber", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"", NULL, 0}
 };                              /* end of list */
 
@@ -825,6 +844,8 @@ static CommandArray params[] = {
     {"minipage", CmdMinipage, 0},
     {"music", CmdMusic, 0},
     {"small", CmdTolerateEnviron, 0},
+    {"pspicture", CmdPsPicture, 0},
+    {"psgraph", CmdPsGraph, 0},
 
     {"quote", CmdQuote, QUOTE_MODE},
     {"quotation", CmdQuote, QUOTATION_MODE},
@@ -910,6 +931,19 @@ static CommandArray hyperlatexCommands[] = {
 };                              /* end of list */
 
 /********************************************************************
+purpose: commands for hyperref package 
+********************************************************************/
+static CommandArray hyperrefCommands[] = {
+    {"url",               CmdHtml, LABEL_URL_HYPER},
+    {"href",              CmdHtml, LABEL_HREF},
+	{"hypersetup",        CmdIgnoreParameter, No_Opt_One_NormParam},
+	{"nolinkurl",         CmdHtml, LABEL_NO_LINK_URL},
+	{"hyperbaseurl",      CmdHtml, LABEL_BASE_URL},
+	{"hyperref",          CmdHtml, LABEL_HYPERREF},
+    {"", NULL, 0}
+};                              /* end of list */
+
+/********************************************************************
 purpose: commands for apacite package 
 ********************************************************************/
 static CommandArray apaciteCommands[] = {
@@ -926,7 +960,7 @@ static CommandArray apaciteCommands[] = {
     {"BCBL", CmdApaCite, 10},   /* Comma Default is "," */
     {"BOthers", CmdApaCite, 11},    /* Used for ``others'' Default is "et~al." */
     {"BIP", CmdApaCite, 12},    /* ``In press'', Default is "in press" */
-    {"BAnd", CmdApaCite, 13},   /* Used as ``and'' Default is "and" */
+    {"BAnd", CmdApaCite, 13},   /* Used as ``and'' Default is "&" */
     {"BED", CmdApaCite, 14},    /* Editor Default is "Ed." */
     {"BEDS", CmdApaCite, 15},   /* Editors Default is "Eds." */
     {"BTRANS", CmdApaCite, 16}, /* Translator. Default is "Trans." */
@@ -951,8 +985,39 @@ static CommandArray apaciteCommands[] = {
     {"BCntIP", CmdApaCite, 34}, /* convert number to letter */
     {"BBA", CmdApaCite, 35},    /* "&" in paren, "and" otherwise */
     {"AX", CmdApaCite, 36},     /* index name */
-    {"Bem", CmdEmphasize, F_EMPHASIZE_2},
+    {"BPBI", CmdApaCite,37},    /* Period between initials */
+	{"BIn", CmdApaCite, 38},
+    
+    {"APACyear", CmdApaCite, CITE_APA_CITE_YEAR},
+    {"APACmetastar", CmdApaCite, CITE_APA_CITE_METASTAR},
+	{"APACciteatitle", CmdApaCite, CITE_APA_CITE_A_TITLE},
+	{"APACcitebtitle", CmdApaCite, CITE_APA_CITE_B_TITLE},
+	{"APACinsertmetastar", CmdApaCite, CITE_APA_CITE_INSERT},
+	{"APACrefYearMonthDay", CmdApaCite, CITE_APA_YMD},
+	{"APACrefatitle", CmdApaCite, CITE_APA_REF_A_TITLE},
+	{"APACrefbtitle", CmdApaCite, CITE_APA_REF_B_TITLE},
+	{"APACjournalVolNumPages", CmdApaCite, CITE_APA_JVNP},
+	{"APACrefYear", CmdApaCite, CITE_APA_REF_YEAR},
+	{"APACaddressPublisher", CmdApaCite, CITE_APA_ADD_PUB},
+	{"PrintBackRefs", CmdApaCite, CITE_PRINT_BACK_REFS}, 
+	{"PrintCardinal", CmdApaCite, CITE_PRINT_CARDINAL},
+	{"APACaddressPublisherEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
+	{"APACrefaetitle", CmdApaCite, CITE_APA_REF_A_E_TITLE},
+	{"APACrefbetitle", CmdApaCite, CITE_APA_REF_B_E_TITLE},
+	{"APACmonth", CmdApaCite, CITE_APA_MONTH},
+	{"APACbVolEdTR", CmdApaCite, CITE_APA_B_VOL_ED_TR},
+	{"APACaddressInstitution", CmdApaCite, CITE_APA_ADD_INST},
+	{"APAChowpublished", CmdApaCite, CITE_APA_HOW},
+	{"APACorigyearnote", CmdApaCite, CITE_APA_ORIG_YEAR_NOTE},
+	{"APACrefnote", CmdApaCite, CITE_APA_REF_NOTE},
+	{"APACbVolEdTRpgs", CmdApaCite, CITE_APA_B_VOL_ED_TR_PGS},
+	{"APACorigjournalnote", CmdApaCite, CITE_APA_ORIG_JOUR},
+	{"APACaddressInstitutionEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
+	{"unskip", CmdApaCite, CITE_APA_UNSKIP},
+	
+	{"Bem", CmdEmphasize, F_EMPHASIZE_2},
     {"BCAY", CmdBCAY, 0},
+    {"citeauthoryear", CmdBCAY, 0},
     {"fullcite", CmdCite, CITE_FULL},
     {"shortcite", CmdCite, CITE_SHORT},
     {"citeNP", CmdCite, CITE_CITE_NP},
@@ -966,6 +1031,10 @@ static CommandArray apaciteCommands[] = {
     {"shortciteauthor", CmdCite, CITE_SHORT_AUTHOR},
     {"citeyear", CmdCite, CITE_YEAR},
     {"citeyearNP", CmdCite, CITE_YEAR_NP},
+    {"shorttitle", CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"rightheader", CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"leftheader", CmdIgnoreParameter, No_Opt_One_NormParam},
+
     {"", NULL, 0}
 };
 
@@ -1089,7 +1158,7 @@ globals: command-functions have side effects or recursive calls
     user_def_index = existsDefinition(cCommand);
     if (user_def_index > -1) {
         macro_string = expandDefinition(user_def_index);
-        diagnostics(3, "CallCommandFunc <%s> expanded to <%s>", cCommand, macro_string);
+        diagnostics(5, "CallCommandFunc <%s> expanded to <%s>", cCommand, macro_string);
         ConvertString(macro_string);
         free(macro_string);
         return TRUE;
@@ -1100,20 +1169,20 @@ globals: command-functions have side effects or recursive calls
     
     	/* test every command in the current enviroment */
         iCommand = 0;
-        while (strcmp(Environments[iEnv][iCommand].cpCommand, "") != 0) {
+        while (strcmp(Environments[iEnv][iCommand].cmd_name, "") != 0) {
 
           /*  if (iCommand<10)
-            	diagnostics(3,"CallCommandFunc (%d,%3d) Trying %s",iEnv,iCommand,Environments[iEnv][iCommand].cpCommand);
+            	diagnostics(8,"CallCommandFunc (%d,%3d) Trying %s",iEnv,iCommand,Environments[iEnv][iCommand].cmd_name);
 		*/
 		
-            if (strcmp(Environments[iEnv][iCommand].cpCommand, cCommand) == 0) {
+            if (strcmp(Environments[iEnv][iCommand].cmd_name, cCommand) == 0) {
                 if (Environments[iEnv][iCommand].func == NULL)
                     return FALSE;
                 if (*Environments[iEnv][iCommand].func == CmdIgnoreParameter) {
-                    diagnostics(2, "Command \\%s ignored", cCommand);
+                    diagnostics(2, "Unknown command '\\%s'", cCommand);
                 }
 
-                diagnostics(5, "CallCommandFunc Found %s iEnvCommand=%d number=%d", Environments[iEnv][iCommand].cpCommand, iEnv, iCommand);
+                diagnostics(5, "CallCommandFunc Found '%s' iEnvCommand=%d number=%d", Environments[iEnv][iCommand].cmd_name, iEnv, iCommand);
                 (*Environments[iEnv][iCommand].func) ((Environments[iEnv][iCommand].param));
                 return TRUE;    /* Command Function found */
             }
@@ -1137,8 +1206,8 @@ globals: command-functions have side effects or recursive calls
     int i = 0;
     char unknown_environment[100];
 
-    while (strcmp(params[i].cpCommand, "") != 0) {
-        if (strcmp(params[i].cpCommand, cCommand) == 0) {
+    while (strcmp(params[i].cmd_name, "") != 0) {
+        if (strcmp(params[i].cmd_name, cCommand) == 0) {
             assert(params[i].func != NULL);
             (*params[i].func) ((params[i].param) | AddParam);
             return;             /* command function found */
@@ -1150,7 +1219,7 @@ globals: command-functions have side effects or recursive calls
     if (AddParam == ON) {
         snprintf(unknown_environment, 100, "\\%s%s%s", "end{", cCommand, "}");
         Ignore_Environment(cCommand);
-        diagnostics(WARNING, "Environment <%s> ignored.  Not defined in commands.c", cCommand);
+        diagnostics(WARNING, "Unknown environment \\begin{%s} ... \end{%s}", cCommand, cCommand);
     }
 }
 
@@ -1193,7 +1262,7 @@ static char *EnvironmentName(CommandArray *code)
 	if (code == FigureCommands)
 		return strdup("figure");
 	if (code == ignoreCommands)
-		return strdup("ignored environment");
+		return strdup("unknown environment");
 	if (code == hyperlatexCommands)
 		return strdup("hyperlatex");
 	if (code == apaciteCommands)
@@ -1240,7 +1309,7 @@ static void WriteEnvironmentStack(void)
         
     for (i=0; i<iEnvCount; i++) {
     	s=EnvironmentName(Environments[i]);
-    	diagnostics(1, "Environments[%2d]=\"%12s\"", i, s);
+    	diagnostics(WARNING, "Environments[%2d]=\"%12s\"", i, s);
     	free(s);
     }
 }
@@ -1259,9 +1328,9 @@ globals: changes Environment - array of active environments
     char *diag;
 	
     g_par_indent_array[iEnvCount] = getLength("parindent");
-    g_left_indent_array[iEnvCount] = g_left_margin_indent;
-    g_right_indent_array[iEnvCount] = g_right_margin_indent;
-    g_align_array[iEnvCount] = alignment;
+    g_left_indent_array[iEnvCount] = getLeftMarginIndent();
+    g_right_indent_array[iEnvCount] = getRightMarginIndent();
+    g_align_array[iEnvCount] = getAlignment();
 
     PushFontSettings();
 
@@ -1335,6 +1404,9 @@ globals: changes Environment - array of active environments
         case GENERIC_MODE:
             Environments[iEnvCount] = genericCommands;
             break;
+        case HYPERREF_MODE:
+            Environments[iEnvCount] = hyperrefCommands;
+            break;
         case IGNORE_MODE:
             Environments[iEnvCount] = ignoreCommands;
             break;
@@ -1345,7 +1417,7 @@ globals: changes Environment - array of active environments
      
     iEnvCount++;
     diag = EnvironmentNameByNumber(iEnvCount-1);
-    diagnostics(2, "Entered environment! Last Environment[%d]=%s", iEnvCount-1, diag);
+    diagnostics(4, "\\begin{%s} [%d]", diag, iEnvCount-1);
 	free(diag);
 
   /*  WriteEnvironmentStack();*/
@@ -1368,12 +1440,13 @@ void PopEnvironment()
     Environments[iEnvCount] = NULL;
     
     setLength("parindent", g_par_indent_array[iEnvCount]);
-    g_left_margin_indent = g_left_indent_array[iEnvCount];
-    g_right_margin_indent = g_right_indent_array[iEnvCount];
-    alignment = g_align_array[iEnvCount];
+    setLeftMarginIndent(g_left_indent_array[iEnvCount]);
+    setRightMarginIndent(g_right_indent_array[iEnvCount]);
+    setAlignment(g_align_array[iEnvCount]);
     PopFontSettings();
+
+    diagnostics(3, "\\end{%s} [%d]", this_env, iEnvCount-1);
    
-    diagnostics(2, "Exited %s environment! Last Environment[%d]=\"%s\" ", this_env, iEnvCount-1, last_env);
 	free(this_env);
 	free(last_env);
 	
