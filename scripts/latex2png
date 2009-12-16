@@ -1,8 +1,7 @@
-#!/bin/sh 
-# Part of latex2rtf by Scott Prahl (Nov 2002)
+#!/bin/bash
+# Part of latex2rtf by Scott Prahl (Nov 2009)
 #
 # This version uses latex and dvips
-#              with ps2ps (part of Ghostscript)
 #              with convert (Part of ImageMagick)
 #
 # This script file will convert a latex file into a PNG image.
@@ -24,10 +23,9 @@
 DVIPS="dvips -q -l 1 -E -R"
 LATEX="latex --interaction batchmode"
 CONVERT="convert"
-EPS2EPS="eps2eps"
 GREP="grep"
 TEXINPSEP=":"
-VERSION="1.4"
+VERSION="1.7"
 
 help()
 {
@@ -63,8 +61,8 @@ echo "latex2png $VERSION"
 exit 0
 }
 
-opt_d=144       # default to 144 dpi
-opt_o=4		# default for 144 dpi
+opt_d=300       # default to 300 dpi
+opt_o=5		    # default for 300 dpi
 opt_k=0         # default to killing intermediate files
 home_dir="."    # default to current directory
 ext="tex"       # default to latex input
@@ -83,20 +81,18 @@ case $1 in
     -H) home_dir=$2;       shift 2;;
     -v) version;           shift 1;;
     --) break;;
-    -*) echo "error: no such option $1"; exit 1;;
+    -*) echo "latex2png: error: no such option $1"; exit 1;;
     *)  break;;
 esac
 done
 
 # is there an input file?
 if [ -z "$1" ] ; then
-    echo "error: no input file specified"
+    echo "latex2png: error: no input file specified"
     exit 1
 fi
 
 # is it an eps file?
-# WH (2007-10-29) fixed following line
-# if [ `echo $1 | ${GREP} -c eps$` -eq 1 ] ; then
 if [ `echo $1 | ${GREP} -c eps` -eq 1 ] ; then
    ext="eps"
 fi
@@ -113,7 +109,7 @@ cd $dir
     
 # does the input file exist?
 if [ ! -f "$name.$ext" ] ; then
- echo "error: input file $name.$ext does not exist in directory $dir"
+ echo "latex2png: error: input file $name.$ext does not exist in directory $dir"
  exit 1
 fi
 
@@ -124,63 +120,57 @@ if [ $ext = "tex" ] ; then
     $LATEX $name > /dev/null
     
     if [ ! -e "$name.dvi" ] ; then
-        echo "error: latex failed to translate $name.tex to $name.dvi"
+        echo "latex2png: error: latex failed to translate $name.tex to $name.dvi"
         exit 1
     fi
     
-    $DVIPS -o $name.tmp.eps $name.dvi
+    $DVIPS -o $name.eps $name.dvi
     
-    if [ ! -e "$name.tmp.eps" ] ; then
-        echo "error: dvips failed to translate $name.dvi to $name.tmp.eps"
-        exit 1
-    fi
-    
-    #helps convert work with eps figures
-    $EPS2EPS $name.tmp.eps $name.eps
     if [ ! -e "$name.eps" ] ; then
-        echo "error: eps2eps (Ghostscript) failed to translate $name.tmp.eps from $name.eps"
+        echo "latex2png: error: dvips failed to translate $name.dvi to $name.eps"
         exit 1
     fi
+    
 fi
 
-$CONVERT -crop 0x0 $out -units PixelsPerInch -density ${opt_d}x${opt_d} $name.eps $name.png
+$CONVERT $out -units PixelsPerInch -density ${opt_d}x${opt_d} -trim +repage $name.eps $name.png
 
 if [ ! -e "$name.png" ] ; then
-    echo "error: convert (ImageMagick) failed to translate $name.eps from $name.png"
+    echo "latex2png: error: convert (ImageMagick) failed to translate $name.eps to $name.png"
     exit 1
 fi
 
 # -i is for images of equations that include an extra dot on the baseline
 #    this dot must be cropped out, and its height must be determined.
-#    The height is determined from $name.gray --- the first column of the image
-#    The dot is then cropped out in $name.tmp.png and finally extra white space
-#    in $name.tmp.png is removed to create the final image $name.png
+#    The height is determined from $name.pbm --- the first column of the image
+#    The dot is cropped out of $name-tmp.png and any extra white space
+#    is removed to create the final image $name.png
 # 
 if [ $inline -eq 1 ] ; then
-    rm -f $name.ppm
 
-# sjs added the pipe through pnmcrop to get rid of some 
-# left-over white space at the left of the image which meant 
-# it didn't find the dot, so the 2nd
-# pnmcrop further down just cropped to the dot! Feb 2006
+	mv $name.png $name-tmp.png
+	
+	# remove fewer pixels from the left side on small images
+	width=`identify -format "%[fx:w-2]" $name-tmp.png`
+	if [ ${width} -gt ${opt_o} ] ; then
+		width=${opt_o}
+	fi
+	
+	# strip the initial dot and white space on the left
+	# we must keep the white space on the bottom so we add border on the east
+	# so that the bottom does not get trimmed away
+	$CONVERT $name-tmp.png -chop ${width}x0 -gravity East -background black -splice 1x0 -trim +repage $name.png
 
-    pngtopnm $name.png | pnmcrop -white -left > $name.ppm
-
-#    pngtopnm $name.png > $name.ppm
-
-# wh restored next line because $name.pbm is read by latex2rtf
-    pnmcut -width 1 $name.ppm | ppmtopgm | pgmtopbm > $name.pbm
-
-#   offset=`expr ${opt_d} / 72 + 2`
-    pnmcut -left $opt_o $name.ppm | pnmcrop -left | pnmtopng > $name.png 2> /dev/null
+	# extract first column of png and stick it in a bitmap
+	$CONVERT $name-tmp.png -crop 1x0 +repage $name.pbm
 
     if [ $opt_k -eq 0 ] ; then
-        rm -f $name.ppm
+        rm -f $name-tmp.ppm
     fi
 fi
 
 if [ $opt_k -eq 0 ] ; then
-    rm -f $name.dvi $name.aux $name.log $name.tmp.eps
+    rm -f $name.dvi $name.aux $name.log $name-tmp.png
     if [ $ext = "tex" ] ; then
         rm -f $name.eps
     fi

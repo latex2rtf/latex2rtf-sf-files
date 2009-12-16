@@ -100,53 +100,68 @@ typedef struct RtfFontInfoType {
 static RtfFontInfoType RtfFontInfo[MAX_FONT_INFO_DEPTH];
 static int FontInfoDepth = 0;
 
-int RtfFontNumber(char *Fname)
-
 /****************************************************************************
  *   purpose: returns the RTF font number from an RTF font name
      example: RtfFontNumber("Times")
  ****************************************************************************/
+int RtfFontNumber(const char *Fname)
 {
-    int num = 0;
+    ConfigEntryT **config_handle;
     char *font_type, *font_name;
-    ConfigEntryT **config_handle = CfgStartIterate(FONT_A);
+    int font_id;
 
-    diagnostics(6, "seeking=%s", Fname);
+    diagnostics(4, "seeking=%s", Fname);
+
+    config_handle = CfgStartIterate();
+
     while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
         font_type = (char *) (*config_handle)->TexCommand;
         font_name = (char *) (*config_handle)->RtfCommand;
-        diagnostics(6, "name='%s' type='%s' num=%d", font_name, font_type, num);
+        font_id   = (int   ) (*config_handle)->original_id;
+        
+        diagnostics(6, "RTF font %d has name='%s' of type='%s'", font_id, font_name, font_type);
 
-        if (strcmp(font_name, Fname) == 0) {
+        if (strcmp(font_name, Fname) == 0) {  /* right name, now make sure charset is correct*/
 			int charset = 0;
 	
-			if (strncmp(font_name, "Symbol", 6) == 0)
-				return num;      /* Symbol is same in all charsets! */
-	
+			if (strncmp(font_name, "Symbol",   6) == 0 || strncmp(font_name, "MT Extra", 8) == 0)
+				return font_id;      /* Symbol and MT Extra is same in all charsets! */
+
 			if (strncmp(font_type, "Cyrillic", 8) == 0)
 				charset = 204;
 	
 			if (strncmp(font_type, "Latin2", 6) == 0)
 				charset = 238;
 
-			if (g_fcharset_number == charset) return num;
+			if (g_fcharset_number == charset) return font_id;
         }
-        num++;
     }
     return TexFontNumber("Roman");  /* default font */
 }
 
-int TexFontNumber(char *Fname)
+int TexFontNumber(const char *Fname)
 
 /****************************************************************************
   purpose: returns the RTF font number for a particular LaTeX font
   example: TexFontNumber("Roman")
  ****************************************************************************/
 {
-    int index;
-    index= SearchRtfIndex(Fname, FONT_A);
-	diagnostics(5, "seeking <%s> which has value %d", Fname, index);
-	return index;
+	ConfigEntryT **p;
+	int number=0;
+	
+    if (strcmp(Fname,"CurrentFontSize")==0)
+    	return CurrentFontSize();
+
+    if (strcmp(Fname,"DefaultFontSize")==0)
+    	return DefaultFontSize();
+    			
+    p = SearchCfgEntry(Fname, FONT_A);
+    
+    if (p) number = (**p).original_id;
+    	
+    diagnostics(5,"TexFontNumber for '%s' is %d", Fname, number);
+    
+    return number;
 }
 
 void CmdFontFamily(int code)
@@ -549,7 +564,7 @@ void CmdTextNormal(int code)
       RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
 }
 
-static bool strstart(char *text, char *str)
+static int strstart(const unsigned char *text, const char *str)
 
 /* returns true if text begins with str */
 {
@@ -564,11 +579,11 @@ static bool strstart(char *text, char *str)
         return TRUE;
 }
 
-static bool strstartnum(char *text, char *str, int *num)
+static int strstartnum(const unsigned char *text, const char *str, int *num)
 
 /* returns true if text begins with str and followed by an integer*/
 {
-    char *numptr;
+    const unsigned char *numptr;
 
     *num = 0;
 
@@ -651,18 +666,13 @@ int CurrentCyrillicFontFamily(void)
            if the current font is cyrillic font then -1 is returned
  ******************************************************************************/
 {
-    int num, i;
-    char *font_type;
+    int num;
+    const char *font_type;
     ConfigEntryT **font_handle;
 
     num = CurrentFontFamily();
-
-/* obtain name and type of current active font */
-    font_handle = CfgStartIterate(FONT_A);
-    for (i = 0; i <= num - 3; i++)
-        font_handle = CfgNext(FONT_A, font_handle);
-
-    font_type = (char *) (*font_handle)->TexCommand;
+	font_handle = SearchCfgEntryByID(num, FONT_A);
+    font_type = (**font_handle).TexCommand;
     diagnostics(6, "CurrentCyrillicFontFamily current active font type =<%s>", font_type);
 
     if (strncmp(font_type, "Cyrillic", 8) == 0)
@@ -687,18 +697,13 @@ int CurrentLatin1FontFamily(void)
            if the current font is Latin1 font then -1 is returned
  ******************************************************************************/
 {
-    int num, i;
-    char *font_type;
+    int num;
+    const char *font_type;
     ConfigEntryT **font_handle;
 
     num = CurrentFontFamily();
-
-/* obtain name and type of current active font */
-    font_handle = CfgStartIterate(FONT_A);
-    for (i = 0; i <= num - 3; i++)
-        font_handle = CfgNext(FONT_A, font_handle);
-
-    font_type = (char *) (*font_handle)->TexCommand;
+	font_handle = SearchCfgEntryByID(num, FONT_A);
+    font_type = (**font_handle).TexCommand;
     diagnostics(6, "CurrentLatin1FontFamily current active font type =<%s>", font_type);
 
     if (strcmp(font_type, "Roman") == 0)
@@ -723,18 +728,15 @@ int CurrentLatin2FontFamily(void)
            if the current font is Latin2 font then -1 is returned
  ******************************************************************************/
 {
-    int num, i;
-    char *font_type;
+    int num;
+    const char *font_type;
     ConfigEntryT **font_handle;
 
     num = CurrentFontFamily();
 
 /* obtain name and type of current active font */
-    font_handle = CfgStartIterate(FONT_A);
-    for (i = 0; i <= num - 3; i++)
-        font_handle = CfgNext(FONT_A, font_handle);
-
-    font_type = (char *) (*font_handle)->TexCommand;
+	font_handle = SearchCfgEntryByID(num, FONT_A);
+    font_type = (**font_handle).TexCommand;
     diagnostics(6, "CurrentLatin2FontFamily current active font type =<%s>", font_type);
 
     if (strncmp(font_type, "Latin2", 8) == 0)
@@ -810,7 +812,7 @@ void PopFontSettings(void)
       RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
 }
 
-void MonitorFontChanges(char *text)
+void MonitorFontChanges(const unsigned char *text)
 {
     int n;
 

@@ -1,6 +1,7 @@
 This is latex2rtf.info, produced by makeinfo version 4.8 from
 latex2rtf.texi.
 
+INFO-DIR-SECTION Document Preparation
          
 
 
@@ -219,19 +220,31 @@ File: latex2rtf.info,  Node: Obtaining LaTeX2RTF,  Next: UNIX,  Prev: General,  
 ========================
 
  LaTeX2RTF  is available for many Unix Platforms, for the Macintosh,
-and for MS-DOS, including all versions of MS Windows.  The latest
-version of LaTeX2RTF  is available at  SourceForge
-(http://sourceforge.net/projects/latex2rtf/) and -- with some delay --
-on CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
- The MS-DOS version (1.8aa and up) will also run under all MS Windows
-versions (including Windows Vista). It requires an i386 processor or
-better.    The Win32 distribution (starting from LaTeX2RTF  1.9.15)
-is the MS-DOS version  plus Win32 GUI program (l2rshell).
- Starting from LaTeX2RTF  1.9.19, the Win32 distribution differs from
-the MS-DOS distribution in being compiled with Cygwin and thus having
-less restrictions.  There are a few people working on LaTeX2RTF ,
-and some more make  contributions, coordinated by Wilfried Hennings
-(texconvfaq "at" gmx.de). See the SourceForge
+and for MS-DOS,  including all versions of MS Windows.  The
+latest version of LaTeX2RTF  is available at  SourceForge
+(http://sourceforge.net/projects/latex2rtf/)  and -- with some delay
+-- on CTAN sites:  e.g., `http://www.dante.de' or
+`http://www.ctan.org'.  The DOS package (1.8aa and up) will also
+run under all MS Windows versions.  It requires an i386 processor or
+better.
+ It should only be used on older Microsoft systems (before Win95)
+because it has known issues when converting more than 26 equations to
+bitmaps.
+ For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
+package.  The win-NO-GUI package (starting from LaTeX2RTF  1.9.19)
+is identical  to the DOS package except that it is compiled with
+Cygwin (up to 1.9.19)  or MinGW (1.9.20 and up), and only runs under
+Win32  (Win9x, ME, NT, 2000, XP, 2003, Vista).  The win package
+(starting from LaTeX2RTF  1.9.15) is the DOS package (up to LaTeX2RTF
+1.9.17) or the win-NO-GUI package (LaTeX2RTF  1.9.18 and up) plus
+Win32 GUI program (l2rshell).
+ Up to version 1.9.19 it does not run under 64bit systems.  From
+version 1.9.20 it also runs under 64bit systems.  The win64 package
+(LaTeX2RTF  1.9.19) is the win package but with 32bit versions of the
+shell utilities so that it also runs on 64bit systems.  There are
+a few people working on LaTeX2RTF , and some more make 
+contributions, coordinated by Wilfried Hennings (texconvfaq "at"
+gmx.de). See the SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  project pages for the
 latest news. 
 
@@ -296,10 +309,11 @@ File: latex2rtf.info,  Node: DOS or Windows,  Next: Win32 systems,  Prev: UNIX, 
 2.4 DOS
 =======
 
- The UNIX and Mac distributions do not contain an executable for DOS
- or Windows. You may compile it yourself (with djgpp or MinGW) or
-get the DOS distribution as file `latex2rtf-x.x.x_dos.zip' (where
-x.x.x is the version number)  from SourceForge
+ The UNIX and Mac packages do not contain an executable for DOS  or
+Windows. You may compile it yourself (with djgpp or MinGW) or get the
+DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
+version number) or the Windows package as file
+`latex2rtf-x.x.x_win.zip' from SourceForge
 (http://sourceforge.net/projects/latex2rtf/)
   The DOS distribution contains a precompiled executable  which
 should run under plain DOS and also in the command prompt  (or
@@ -307,16 +321,13 @@ should run under plain DOS and also in the command prompt  (or
  *Limitations of the DOS version:* The DOS version has a bug which
 causes conversion of equations  to bitmaps to fail for the remaining
 equations after successfully  converting the first 26 of them. 
-So *if you run a Win32 system*, i.e. WinNT, Win2000, WinXP, 
-WinVista) *it is highly recommended to use the Windows version*.
-The Win32 version starting from 1.9.14a also has a Win32 GUI interface
- (LaTeX2RTF  Shell) and is wrapped in an automatic installer,  see
-*Note Win32 systems::.  But starting from 1.9.17, the installer and
-GUI interface do not support Windows 9x and ME.   To install the
-DOS version of LaTeX2RTF , extract all files from the zip archive, 
-preserving the folder structure (winzip: check "use folder names"),
-preferably to `C:\l2r', because then it will find its cfg files  by
-default.
+So *if you run a Win32 system* (i.e. Win 9x, ME, NT, 2000, XP,  2003,
+Vista) *it is highly recommended to use the Windows package*.  To
+install the DOS or Windows package of LaTeX2RTF , extract all files 
+from the zip archive, preserving the folder structure  (winzip: check
+"use folder names"), preferably to `C:\l2r', or under Windows, to
+your "Program Files"  folder (which ever it is named in your system)
+because then it will find its cfg files by default.
  If you extracted them to another folder (e.g. `C:\my files\l2r'),
 either edit the file `L2RPREP.BAT'  and change the folder `C:\l2r' to
 where you put them, or specify the  path to the cfg folder in the
@@ -335,29 +346,25 @@ File: latex2rtf.info,  Node: Win32 systems,  Next: Macintosh,  Prev: DOS or Wind
 =================
 
  To install LaTeX2RTF  on a Win32 system (WinNT, Win2000, WinXP, 
-WinVista), download and execute the `latex2rtf-x.x.x_win.exe'  (where
-x.x.x is the version number) and follow the instructions.  Note:
-The installer and GUI shell do not support Win9x and WinMe since
-LaTeX2RTF  v.1.9.17.  If you have one of these systems, you should
-use an older Win32 version  or the current DOS version (without GUI)
-of LaTeX2RTF .  As the DOS version of `latex2rt.exe' has a bug which
-causes conversion  of equations to bitmaps to fail for more than 26
-equations, you should get and install LaTeX2RTF  v.1.9.19, delete
-`latex2rt.exe'  and rename `latex2rt_win.exe' to `latex2rt.exe'. 
-To start the program double-click the LaTeX2RTF  icon,  or drag and
-drop a `.tex' file onto the icon.  If your LaTeX  document refers
-to external graphic files, e.g. eps,  or you want to use the option
-to convert equations to bitmaps, you must have LaTeX, ImageMagick and
-Ghostscript installed. These programs are  freely available for
-download at `http://www.miktex.org/',  `http://www.imagemagick.org'
-and `http://www.ghostscript.com'  If MikTeX, ImageMagick and
-Ghostscript are installed, the paths to their  executables are
-detected automatically. If for any reason this doesn't  happen, these
-paths can be specified manually in the "Environment"  tab of the
-LaTeX2RTF  GUI shell window.  If you need to start LaTeX2RTF  not
-from its own shell but from another  Windows application, you need to
-add the folder containing  the latex2png script and the helper
-programs to the search path.
+WinVista), download the win-gui package, execute the
+`latex2rtf-x.x.x_win.exe'  (where x.x.x is the version number) and
+follow the instructions.  Note: The installer and GUI shell do not
+support Win9x and WinMe since LaTeX2RTF  v.1.9.17.  If you have one
+of these systems, you should use the  win package (1.9.19 and up) of
+LaTeX2RTF .   To start the program double-click the LaTeX2RTF
+icon,  or drag and drop a `.tex' file onto the icon.  If your
+LaTeX  document refers to external graphic files, e.g. eps,  or you
+want to use the option to convert equations to bitmaps, you must have
+LaTeX, ImageMagick and Ghostscript installed. These programs are 
+freely available for download at `http://www.miktex.org/', 
+`http://www.imagemagick.org' and `http://www.ghostscript.com'  If
+MikTeX, ImageMagick and Ghostscript are installed, the paths to their 
+executables are detected automatically. If for any reason this doesn't
+ happen, these paths can be specified manually in the "Environment" 
+tab of the LaTeX2RTF  GUI shell window.  If you need to start
+LaTeX2RTF  not from its own shell but from another  Windows
+application, you need to add the folder containing  the latex2png
+script and the helper programs to the search path.
  Some applications (e.g. Lyx) allow to temporarily add the path by
 specifying it in the options.
  If this is not possible, you can add the latex2rtf folder to
@@ -3951,10 +3958,10 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * align:                                 Environments.       (line   13)
 * align*:                                Environments.       (line   16)
 * alltt:                                 Environments.       (line   19)
-* Alph:                                  Uncategorized.      (line   25)
 * alph:                                  Uncategorized.      (line   28)
-* alpha:                                 Uncategorized.      (line   31)
+* Alph:                                  Uncategorized.      (line   25)
 * Alpha:                                 Uncategorized.      (line   34)
+* alpha:                                 Uncategorized.      (line   31)
 * amalg:                                 Uncategorized.      (line   37)
 * AmSLaTeX:                              Logos.              (line    7)
 * AmSTeX:                                Logos.              (line    9)
@@ -3970,8 +3977,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * b:                                     Special Characters. (line   11)
 * BAnd:                                  Apacite Commands.   (line    9)
 * bar:                                   Special Characters. (line   13)
-* baselineskip <1>:                      Uncategorized.      (line   61)
-* baselineskip:                          Preamble Commands.  (line   14)
+* baselineskip <1>:                      Preamble Commands.  (line   14)
+* baselineskip:                          Uncategorized.      (line   61)
 * BBA:                                   Apacite Commands.   (line   11)
 * BBAA:                                  Apacite Commands.   (line   13)
 * BBAB:                                  Apacite Commands.   (line   15)
@@ -4282,8 +4289,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * htmlref <1>:                           Preamble Commands.  (line   95)
 * htmlref:                               Uncategorized.      (line  308)
 * huge:                                  Font Commands.      (line   25)
-* Huge:                                  Font Commands.      (line   23)
 * HUGE:                                  Font Commands.      (line   21)
+* Huge:                                  Font Commands.      (line   23)
 * hyphenation:                           Preamble Commands.  (line   98)
 * i:                                     Special Characters. (line   33)
 * ieme:                                  French Commands.    (line   17)
@@ -4652,8 +4659,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * textiota:                              Uncategorized.      (line  848)
 * textit:                                Font Commands.      (line   95)
 * textkappa:                             Uncategorized.      (line  851)
-* textLambda:                            Uncategorized.      (line  854)
 * textlambda:                            Uncategorized.      (line  857)
+* textLambda:                            Uncategorized.      (line  854)
 * textmd:                                Font Commands.      (line   97)
 * textmu:                                Uncategorized.      (line  860)
 * textnormal:                            Font Commands.      (line   99)
@@ -4665,8 +4672,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * textphi:                               Uncategorized.      (line  878)
 * textPi:                                Uncategorized.      (line  881)
 * textpi:                                Uncategorized.      (line  884)
-* textPsi:                               Uncategorized.      (line  887)
 * textpsi:                               Uncategorized.      (line  890)
+* textPsi:                               Uncategorized.      (line  887)
 * textrm:                                Font Commands.      (line  101)
 * textsc:                                Font Commands.      (line  103)
 * textsf:                                Font Commands.      (line  105)
@@ -4745,8 +4752,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * vee:                                   Uncategorized.      (line 1022)
 * verb:                                  Uncategorized.      (line 1025)
 * verb*:                                 Uncategorized.      (line 1028)
-* verbatim:                              Environments.       (line  199)
 * Verbatim:                              Environments.       (line  202)
+* verbatim:                              Environments.       (line  199)
 * verbositylevel:                        Preamble Commands.  (line  239)
 * verse:                                 Environments.       (line  205)
 * voffset:                               Preamble Commands.  (line  242)
@@ -4826,74 +4833,74 @@ File: latex2rtf.info,  Node: Concept Index,  Prev: Function Index,  Up: Top
 
 
 Tag Table:
-Node: Top97
-Node: Introduction3808
-Node: Installation6766
-Node: General7187
-Node: Obtaining LaTeX2RTF7537
-Node: UNIX8704
-Node: DOS or Windows11527
-Node: Win32 systems13587
-Node: Macintosh17738
-Node: Problems Compiling18679
-Node: Problems with make check19401
-Node: Using LaTeX2RTF19936
-Node: General Assumptions20189
-Node: LaTeX2RTF Options22042
-Node: Debugging32703
-Node: Features33365
-Node: LaTeX2e34006
-Node: Unicode Support34335
-Node: Input Encoding34944
-Node: Language Support35734
-Node: Cross References37276
-Node: Page Formatting40008
-Node: Equations40540
-Node: Math and Special Symbols43354
-Node: Tables46077
-Node: Graphics46694
-Node: Pagestyles47124
-Node: Hyperlatex47736
-Node: Configuration48820
-Node: Input Processing49208
-Node: Conditional Parsing50610
-Node: Output Formatting52655
-Node: Direct Conversion53377
-Node: Ignore Command54691
-Node: Font Configuration56437
-Node: Language Configuration57767
-Node: Error Messages and Logging58395
-Node: History60538
-Node: LaTeX2RTF under Development62439
-Node: Unimplemented Features62831
-Node: Missing options63643
-Node: Known Bugs64247
-Node: Reporting Bugs65124
-Node: Todo List66806
-Node: LaTeX Commands67632
-Node: General Commands68687
-Node: Basic Commands69217
-Node: Font Commands69506
-Node: Logos70178
-Node: Special Characters70444
-Node: Sectioning Commands70759
-Node: Uncategorized71106
-Node: Preamble Commands77487
-Node: Letter Commands79610
-Node: Language Commands79930
-Node: German Commands80254
-Node: Czech Commands80542
-Node: French Commands80719
-Node: Russian Commands81142
-Node: Citation Commands81731
-Node: Apacite Commands82088
-Node: AuthorDate Commands82673
-Node: Harvard Commands82884
-Node: HyperLatex Commands83209
-Node: Natbib Commands83434
-Node: Other Commands83778
-Node: Environments83985
-Node: Function Index85301
-Node: Concept Index145538
+Node: Top135
+Node: Introduction3846
+Node: Installation6804
+Node: General7225
+Node: Obtaining LaTeX2RTF7575
+Node: UNIX9356
+Node: DOS or Windows12179
+Node: Win32 systems14135
+Node: Macintosh18015
+Node: Problems Compiling18956
+Node: Problems with make check19678
+Node: Using LaTeX2RTF20213
+Node: General Assumptions20466
+Node: LaTeX2RTF Options22319
+Node: Debugging32980
+Node: Features33642
+Node: LaTeX2e34283
+Node: Unicode Support34612
+Node: Input Encoding35221
+Node: Language Support36011
+Node: Cross References37553
+Node: Page Formatting40285
+Node: Equations40817
+Node: Math and Special Symbols43631
+Node: Tables46354
+Node: Graphics46971
+Node: Pagestyles47401
+Node: Hyperlatex48013
+Node: Configuration49097
+Node: Input Processing49485
+Node: Conditional Parsing50887
+Node: Output Formatting52932
+Node: Direct Conversion53654
+Node: Ignore Command54968
+Node: Font Configuration56714
+Node: Language Configuration58044
+Node: Error Messages and Logging58672
+Node: History60815
+Node: LaTeX2RTF under Development62716
+Node: Unimplemented Features63108
+Node: Missing options63920
+Node: Known Bugs64524
+Node: Reporting Bugs65401
+Node: Todo List67083
+Node: LaTeX Commands67909
+Node: General Commands68964
+Node: Basic Commands69494
+Node: Font Commands69783
+Node: Logos70455
+Node: Special Characters70721
+Node: Sectioning Commands71036
+Node: Uncategorized71383
+Node: Preamble Commands77764
+Node: Letter Commands79887
+Node: Language Commands80207
+Node: German Commands80531
+Node: Czech Commands80819
+Node: French Commands80996
+Node: Russian Commands81419
+Node: Citation Commands82008
+Node: Apacite Commands82365
+Node: AuthorDate Commands82950
+Node: Harvard Commands83161
+Node: HyperLatex Commands83486
+Node: Natbib Commands83711
+Node: Other Commands84055
+Node: Environments84262
+Node: Function Index85578
+Node: Concept Index145815
 
 End Tag Table

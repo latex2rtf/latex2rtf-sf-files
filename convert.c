@@ -42,10 +42,11 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "counters.h"
 #include "preamble.h"
 #include "vertical.h"
-
-static void TranslateCommand(); /* converts commands */
+#include "fields.h"
 
 static int ret = 0;
+
+static void TranslateCommand(void);
 
 void ConvertString(const char *string)
 
@@ -117,7 +118,7 @@ void ConvertAllttString(char *s)
     diagnostics(4, "Exiting Convert() from StringAllttConvert()");
 }
 
-void Convert()
+void Convert(void)
 
 /****************************************************************************
 purpose: converts inputfile and writes result to outputfile
@@ -128,7 +129,7 @@ purpose: converts inputfile and writes result to outputfile
     char cNext;
     int count, pending_new_paragraph;
 
-    diagnostics(5, "Entering Convert ret = %d", ret);
+    diagnostics(6, "Entering Convert ret = %d", ret);
     RecursionLevel++;
     PushLevels();
 
@@ -151,6 +152,8 @@ purpose: converts inputfile and writes result to outputfile
         	/* Get the number of bytes in the sequence        */
         	/* Must use an unsigned character for comparisons */
         	byte = cThis;
+        	len = 0;
+        	value = 0;
         	if (byte >= 0xF0) { 
         		len = 3; 
         		value = byte & ~0xF0; 
@@ -234,7 +237,7 @@ purpose: converts inputfile and writes result to outputfile
                 break;
 
             case '\n':
-                tabcounter = 0;
+                g_tab_counter = 0;
 
                 if (getTexMode() == MODE_MATH || getTexMode() == MODE_DISPLAYMATH) {
 
@@ -270,28 +273,34 @@ purpose: converts inputfile and writes result to outputfile
                 break;
 
             case '&':
-                if (g_processing_arrays) {
-                    fprintRTF("%c", g_field_separator);
-                    break;
-                }
+            
+            	/* just write '&' if we are not in math mode */
+                if (getTexMode() != MODE_MATH && getTexMode() != MODE_DISPLAYMATH) {    
+                	if (g_processing_tabular) 
+                		diagnostics(0,"should not happen! tabular should handle this!");
 
-                if (getTexMode() == MODE_MATH || getTexMode() == MODE_DISPLAYMATH) {    /* in eqnarray */
-                    if (g_processing_fields) fprintRTF("}}}{\\fldrslt }}");
-					fprintRTF("\\tab ");
-                    if (g_processing_fields) fprintRTF("{{\\field{\\*\\fldinst{ EQ ");
-                    g_equation_column++;
-                    break;
-                }
-
-                if (g_processing_tabular) { /* in tabular */
-                	diagnostics(0,"this should not happen tabular should handle this!");
-                	/*
-                    actCol++;
-                    fprintRTF("\\cell\\pard\\intbl\\q%c ", colFmt[actCol]);
-                    */
-                    break;
-                }
-                fprintRTF("&");
+ 	               	fprintRTF("&");
+ 	                break;
+ 	            }
+ 	            
+				/* are we are in the middle of \begin{array} ... \end{array} */
+				if (g_processing_arrays) {
+					fprintRTF("%c", g_field_separator);
+					break;
+				}
+				
+				/* must be in 'eqnarray' or 'align' environment */
+				if (EQ_field_active()) {
+					diagnostics(4,"ending/restarting field before alignment '&'");
+					endCurrentField();
+					fprintRTF("\\tab\n");
+                	startField(FIELD_EQ);
+                } else {
+					diagnostics(4,"tabbing to match '&'");
+					fprintRTF("\\tab\n");
+				}
+	           	g_equation_column++;
+               
                 break;
 
             case '~':
@@ -372,17 +381,7 @@ purpose: converts inputfile and writes result to outputfile
                 if (getTexMode() == MODE_HORIZONTAL) {
                     cNext = getTexChar();
                     if (cNext == '<') {
-                        if (FrenchMode) {   /* not quite right */
-                            skipSpaces();
-                            cNext = getTexChar();
-                            if (cNext == '~')
-                                skipSpaces();
-                            else
-                                ungetTexChar(cNext);
-                            fprintRTF("\\'ab\\~");
-
-                        } else
-                            fprintRTF("\\'ab");
+                        fprintRTF("\\'ab");
                     } else {
                         ungetTexChar(cNext);
                         fprintRTF("<");
@@ -474,21 +473,21 @@ purpose: converts inputfile and writes result to outputfile
                 break;
 
             case '(':
-                if (g_processing_fields && g_escape_parens)
+                if (processing_fields() && g_escape_parens)
                     fprintRTF("\\\\(");
                 else
                     fprintRTF("(");
                 break;
 
             case ')':
-                if (g_processing_fields && g_escape_parens)
+                if (processing_fields() && g_escape_parens)
                     fprintRTF("\\\\)");
                 else
                     fprintRTF(")");
                 break;
 
             case ';':
-                if (g_field_separator == ';' && g_processing_fields)
+                if (g_field_separator == ';' && processing_fields())
                     fprintRTF("\\\\;");
                 else if (FrenchMode)
                     fprintRTF("\\~;");
@@ -497,7 +496,8 @@ purpose: converts inputfile and writes result to outputfile
                 break;
 
             case ',':
-                if (g_field_separator == ',' && g_processing_fields) {
+            
+                if (g_field_separator == ',' && processing_fields()) {
                 	if (g_processing_arrays) {
                 	/* this is crazy, fields fail if \, is present in EQ array! */
                 	/* substitute semi-colon because it is least worst option   */
@@ -537,14 +537,14 @@ purpose: converts inputfile and writes result to outputfile
                 break;
         }
 
-        tabcounter++;
+        g_tab_counter++;
         cLast = cThis;
     }
     RecursionLevel--;
     diagnostics(5, "Exiting Convert via exhaustion ret = %d", ret);
 }
 
-void TranslateCommand()
+static void TranslateCommand(void)
 
 /****************************************************************************
 purpose: The function is called on a backslash in input file and
@@ -553,7 +553,7 @@ returns: success or not
  ****************************************************************************/
 {
     char cCommand[MAXCOMMANDLEN];
-    int i, mode;
+    int i, mode, height;
     int cThis,cNext;
 
     cThis = getTexChar();
@@ -607,7 +607,18 @@ returns: success or not
             return;
 
         case '\\':             /* \\[1mm] or \\*[1mm] possible */
-            CmdSlashSlash(0);
+            diagnostics(5,"here we are in TranslateCommand with '\\\\'");
+            height = getSlashSlashParam();
+			if (g_processing_arrays)			/* \begin{array} ... \end{array} */
+            	CmdArraySlashSlash(height);     /* may be contained in eqnarray environment */
+            else if (g_processing_eqnarray)
+            	CmdEqnArraySlashSlash(height);
+            else  if (g_processing_tabbing)
+            	diagnostics(1,"should not be processing \\\\ in tabbing here");
+            else if (g_processing_tabular)
+            	diagnostics(1,"should not be processing \\\\ in tabular here");
+            else
+            	CmdSlashSlash(height);
             return;
 
         case 0x0D:  /*handle any CRLF that might have snuck in*/
@@ -663,7 +674,7 @@ returns: success or not
                 CmdTabjump();
                 PushBrace();
             } else
-                CmdSpace(0.50); /* medium space */
+                CmdSpace((float)0.50); /* medium space */
             return;
 
         case '`':
@@ -711,7 +722,7 @@ returns: success or not
             cThis = getTexChar();
             if (cThis=='^') {
             	/* usually \^^M ... just replace with a blank */
-            	cThis = getTexChar();
+            	getTexChar();
             	fprintRTF(" ");
             } else {
             	ungetTexChar(cThis);
@@ -758,7 +769,7 @@ returns: success or not
         case ';':
             if (mode == MODE_VERTICAL)
                 changeTexMode(MODE_HORIZONTAL);
-            CmdSpace(0.75);     /* \; produces a thick space */
+            CmdSpace((float)0.75);     /* \; produces a thick space */
             return;
         case '@':
             CmdIgnore(0);       /* \@ produces an "end of sentence" space */
@@ -774,7 +785,7 @@ returns: success or not
     /* Commands consist of letters and can have an optional * at the end */
     for (i = 0; i < MAXCOMMANDLEN-1; i++) {
         if (!isalpha((int) cThis) && (cThis != '*')) {
-            bool found_nl = FALSE;
+            int found_nl = FALSE;
 
             if (cThis == '%') { /* put the % back and get the next char */
                 ungetTexChar('%');
@@ -826,6 +837,9 @@ returns: success or not
         return;
 
     if (TryVariableIgnore(cCommand))
+        return;
+
+    if (TryConditionSet(cCommand))
         return;
 
     diagnostics(WARNING, "Unknown command '\\%s'", cCommand);

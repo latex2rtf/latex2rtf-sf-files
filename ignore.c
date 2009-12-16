@@ -43,7 +43,7 @@ Authors:
 static void IgnoreVar(void);
 static void IgnoreCmd(void);
 
-bool TryVariableIgnore(const char *command)
+int TryVariableIgnore(const char *command)
 
 /****************************************************************************
 purpose : ignores variable-formats shown in file "ignore.cfg"
@@ -68,7 +68,7 @@ returns : TRUE if variable was ignored correctly, otherwise FALSE
 	diagnostics(4, "trying to ignore '%s'", command);
 	
     TexCommand = strdup_together("\\", command);
-    RtfCommand = SearchRtfCmd(TexCommand, IGNORE_A);
+    RtfCommand = SearchCfgRtf(TexCommand, IGNORE_A);
     free(TexCommand);
     
     if (RtfCommand == NULL) return FALSE;
@@ -157,7 +157,7 @@ parameter: searchstring : includes the string to search for
     font = TexFontNumber("Typewriter");
     CmdEndParagraph(0);
     CmdIndent(INDENT_NONE);
-    startParagraph("body", GENERIC_PARAGRAPH);
+    startParagraph("Normal", GENERIC_PARAGRAPH);
     fprintRTF("\\qc [Sorry. Ignored ");
     fprintRTF("{\\plain\\f%d\\\\begin\\{%s\\} ... \\\\end\\{%s\\}}]", font, cCommand, cCommand);
     CmdEndParagraph(0);

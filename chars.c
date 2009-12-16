@@ -37,14 +37,12 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "convert.h"
 #include "utils.h"
 #include "vertical.h"
-
-void TeXlogo();
-void LaTeXlogo();
+#include "fields.h"
 
 /*****************************************************************************
  purpose: half-height or full-height character
  ******************************************************************************/
-int isShort(char c) 
+static int isShort(char c) 
 {
 
     switch (c) {
@@ -76,7 +74,7 @@ int isShort(char c)
 /*****************************************************************************
  purpose: guess if string is half-height or full-height 
  ******************************************************************************/
-int isShortStr(char *s)
+static int isShortStr(char *s)
 {
 	if (s == NULL) return 0;
 	
@@ -90,7 +88,7 @@ int isShortStr(char *s)
  *******************************************************************************/
 void CmdMTExtraChar(int code)
 {
-    if (g_processing_fields == 0) {
+    if (processing_fields() == 0) {
     	int num = RtfFontNumber("MT Extra");
     	fprintRTF("{\\f%d\\'%.2X}",num,code);
 
@@ -109,7 +107,7 @@ void CmdMTExtraChar(int code)
 void CmdSymbolChar(int code)
 {
     int num = RtfFontNumber("Symbol");
-    if (g_processing_fields == 0) {
+    if (processing_fields() == 0) {
     	fprintRTF("{\\f%d\\'%.2X}",num,code);
 
     } else {
@@ -133,11 +131,15 @@ void CmdSymbolChar(int code)
 static void putOverstrikeChar(const char *font, char *s, 
                               unsigned int overstrike, double raise)
 {
-	if (g_processing_fields==0) fprintRTF("{\\field{\\*\\fldinst EQ ");
+	if (processing_fields()==0) fprintRTF("{\\field{\\*\\fldinst EQ ");
 		
 	fprintRTF("\\\\O(");
-    ConvertString(s);
-	fprintRTF("%c {", g_field_separator);
+    if (s) {
+    	ConvertString(s);
+		fprintRTF("%c {", g_field_separator);
+	} else {
+		fprintRTF("  {", g_field_separator);
+	}
 	
 	if (raise != 0) {
 	    /* raise 0.2 more for tall characters, do nothing if negative */
@@ -171,8 +173,16 @@ static void putOverstrikeChar(const char *font, char *s,
 	
 	fprintRTF("})");
 
-	if (g_processing_fields==0) fprintRTF("}{\\fldrslt }}");
+	if (processing_fields()==0) fprintRTF("}{\\fldrslt }}");
 }
+
+/* output STIX Encoding */
+void CmdSTIXChar(int code)
+{
+    int num = RtfFontNumber("STIXGeneral");
+    fprintRTF("{\\f%d\\u%d%c}",num, code,'?');
+}
+
 
 /*****************************************************************************
  purpose: emit a unicode character.  values above 2^15 are negative
@@ -187,6 +197,17 @@ static void putUnicodeChar(unsigned char b1, unsigned char b2, char default_char
 }
 
 
+/******************************************************************************
+ * purpose : inserts a Unicode character
+ *******************************************************************************/
+void CmdUnicodeChar(int code)
+{
+	unsigned char a,b;
+	a = code >> 8;
+	b = code - a *256;
+    putUnicodeChar(a,b,'?');
+}
+
 void CmdUmlauteChar(int code)
 
 /*****************************************************************************
@@ -200,7 +221,7 @@ void CmdUmlauteChar(int code)
         return;
 
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				fprintRTF("\\'c4");
@@ -306,7 +327,7 @@ void CmdGraveChar(int code)
         return;
 
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				fprintRTF("\\'c0");
@@ -384,7 +405,7 @@ void CmdAcuteChar(int code)
         return;
 
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				fprintRTF("\\'c1");
@@ -516,7 +537,7 @@ void CmdDoubleAcuteChar(int code)
         return;
 
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'O':
 				putUnicodeChar(0x01,0x50,'O');
@@ -556,7 +577,7 @@ void CmdMacronChar(int code)
         return;
 
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				putUnicodeChar(0x01,0x00,'A');
@@ -610,7 +631,7 @@ void CmdMacronChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("MT Extra", cParam, 195, 0.0);
+		putOverstrikeChar("unicode", cParam, 772, 0.1);
 
     free(cParam);
 }
@@ -628,10 +649,10 @@ void CmdHatChar(int code)
         return;
 
     diagnostics(4,"CmdHatChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 					fprintRTF("\\'c2");
@@ -747,9 +768,9 @@ void CmdRingChar(int code)
         return;
 
     diagnostics(4,"CmdRingChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				fprintRTF("\\'c5");
@@ -801,10 +822,10 @@ void CmdTildeChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdTildeChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These fail in equation fields */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				fprintRTF("\\'c3");
@@ -851,7 +872,7 @@ void CmdTildeChar(int code)
 	}
 
 	if (!done) 
-		putOverstrikeChar("MT Extra", cParam, 37, 0.1);
+		putOverstrikeChar("simple", cParam, '~', 0.4);
 		
 	free(cParam);
 }
@@ -868,10 +889,10 @@ void CmdCedillaChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdCedillaChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These fail in equation fields */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'C':
 				fprintRTF("\\'c7");
@@ -969,10 +990,10 @@ void CmdBreveChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdBreveChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These fail in equation fields */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 				putUnicodeChar(0x01,0x02,'A');
@@ -1026,7 +1047,7 @@ void CmdBreveChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("MT Extra", cParam, 252, 0.1);
+		putOverstrikeChar("unicode", cParam, 728, 0.1);
 
     free(cParam);
 }
@@ -1045,10 +1066,10 @@ void CmdCaronChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdHacekChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These fail in equation fields */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'C':
 				putUnicodeChar(0x01,0x0C,'C');
@@ -1186,7 +1207,7 @@ void CmdCaronChar(int code)
 	}
 	
 	if (!done) 
-		putOverstrikeChar("MT Extra", cParam, 253, 0.1);
+		putOverstrikeChar("unicode", cParam, 711, 0.1);
 		/* putOverstrikeChar("unicode", cParam, 780, 0.05); */
 
     free(cParam);
@@ -1205,10 +1226,10 @@ void CmdDotChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdDotChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'A':
 					fprintRTF("\\u550A");
@@ -1283,10 +1304,10 @@ void CmdUnderdotChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdUnderdotChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'B':
 					putUnicodeChar(0x1E,0x04,'B');
@@ -1353,11 +1374,11 @@ void CmdUnderdotChar(int code)
 					done = 1;
 					break;
 			case 'S':
-					putUnicodeChar(0x1E,0x61,'S');
+					putUnicodeChar(0x1E,0x62,'S');
 					done = 1;
 					break;
 			case 's':
-					putUnicodeChar(0x1E,0x62,'s');
+					putUnicodeChar(0x1E,0x63,'s');
 					done = 1;
 					break;
 			case 'V':
@@ -1417,11 +1438,11 @@ void CmdUnderdotChar(int code)
 					done = 1;
 					break;
 			case 'U':
-					putUnicodeChar(0x1E,0xE5,'U');
+					putUnicodeChar(0x1E,0xE4,'U');
 					done = 1;
 					break;
 			case 'u':
-					putUnicodeChar(0x1E,0xE6,'u');
+					putUnicodeChar(0x1E,0xE5,'u');
 					done = 1;
 					break;
 		}
@@ -1450,7 +1471,7 @@ void CmdVecChar(int code)
     if (cParam == NULL) return;
 	
     diagnostics(4,"CmdVecChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	putOverstrikeChar("MT Extra", cParam, 114, 0.70);
 
@@ -1469,10 +1490,10 @@ void CmdUnderbarChar(int code)
     if (cParam == NULL) return;
 
     diagnostics(4,"CmdUnderbarChar letter='%s' in eq field=%d",cParam,
-                g_processing_fields);
+                processing_fields());
     
 	/* These encodings will fail in equation field translation */
-    if (g_processing_fields==0) {
+    if (processing_fields()==0) {
 		switch (cParam[0]) {
 			case 'B':
 					putUnicodeChar(0x1E,0x06,'B');
@@ -1588,7 +1609,7 @@ void CmdLdots( /* @unused@ */ int code)
 
 
 /*    should this just be CmdSymbolChar(0x85);   ????????? */
-    if (!g_processing_fields) 
+    if (!processing_fields()) 
     	fprintRTF("\\u8230\\'85",num);
     else
    		fprintRTF("{\\f%d\\u-3908\\'85}",num);
@@ -1605,7 +1626,7 @@ void CmdEuro(int code)
 	free(s);
 }
 
-int identifyBase(char c)
+static int identifyBase(char c)
 {
 	if (c == '\'')
 		return 8;
@@ -1710,7 +1731,8 @@ static int UsingTypewriter(void)
  ******************************************************************************/
 void CmdChar(int code)
 {
-
+	char c;
+	
     switch (code) {
         case 0:
         	CmdSymbolChar((int) 'G');			/* Gamma */
@@ -1915,23 +1937,24 @@ void CmdChar(int code)
             putRtfCharEscaped((char) code);
             break;
     }
+
+    c = getNonBlank();
+    ungetTexChar(c);    
 }
 
-void TeXlogo()
+static void TeXlogo()
 
 /******************************************************************************
  purpose : prints the Tex logo in the RTF-File (D Taupin)
  ******************************************************************************/
 {
-    float DnSize;
     int dnsize;
 
-    DnSize = 0.3 * CurrentFontSize();
-    dnsize = (int) (DnSize + 0.45);
+    dnsize = (int) (0.3 * CurrentFontSize() + 0.45);
     fprintRTF("T{\\dn%d E}X", dnsize);
 }
 
-void LaTeXlogo()
+static void LaTeXlogo()
 
 /******************************************************************************
  purpose : prints the LaTeX logo in the RTF-File (D Taupin)
@@ -1941,9 +1964,9 @@ void LaTeXlogo()
     int upsize, Asize;
 
     if (CurrentFontSize() > 14)
-        FloatFsize = 0.8 * CurrentFontSize();
+        FloatFsize = (float) (0.8 * CurrentFontSize());
     else
-        FloatFsize = 0.9 * CurrentFontSize();
+        FloatFsize = (float) (0.9 * CurrentFontSize());
     Asize = (int) (FloatFsize + 0.45);
 
     upsize = (int) (0.25 * CurrentFontSize() + 0.45);
@@ -1958,7 +1981,6 @@ void CmdLogo(int code)
  ******************************************************************************/
 {
     int font_num, dnsize;
-    float FloatFsize;
 
     changeTexMode(MODE_HORIZONTAL);
     fprintRTF("{\\plain ");
@@ -1984,11 +2006,6 @@ void CmdLogo(int code)
 
         case CMD_LATEXE:
             LaTeXlogo();
-            if (CurrentFontSize() > 14) {
-                FloatFsize = 0.75 * CurrentFontSize();
-            } else {
-                FloatFsize = (float) CurrentFontSize();
-            };
             dnsize = (int) (0.3 * CurrentFontSize() + 0.45);
             font_num = RtfFontNumber("Symbol");
             fprintRTF("2{\\dn%d\\f%d e}", dnsize, font_num);
@@ -2120,7 +2137,7 @@ void CmdFrenchAbbrev(int code)
     FloatFsize = (float) CurrentFontSize();
 
     if (FloatFsize > 14)
-        FloatFsize *= 0.75;
+        FloatFsize = (float) (FloatFsize * 0.75);
 
     up = (int) (0.3 * FloatFsize + 0.45);
     size = (int) (FloatFsize + 0.45);

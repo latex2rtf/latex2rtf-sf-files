@@ -47,11 +47,11 @@ Authors:
 
 extern char *Version;  /*storage and definition in version.h */
 
-static bool g_preambleTwoside = FALSE;
-static bool g_preambleTwocolumn = FALSE;
-static bool g_preambleTitlepage = FALSE;
-static bool g_preambleLandscape = FALSE;
-static bool g_preambleGeometry = FALSE;
+static int g_preambleTwoside = FALSE;
+static int g_preambleTwocolumn = FALSE;
+static int g_preambleTitlepage = FALSE;
+static int g_preambleLandscape = FALSE;
+static int g_preambleGeometry = FALSE;
 
 static int g_geomMargl = 0;
 static int g_geomMargr = 0;
@@ -110,7 +110,7 @@ void setPackageBabel(char *option)
         PushEnvironment(CZECH_MODE);
         ReadLanguage("czech");
         g_fcharset_number = 238;    /* East European in RTF Specification */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
     }
 
 }
@@ -120,7 +120,7 @@ void setPackageInputenc(char *option)
     g_preambleEncoding = strdup_noblanks(option);
 
     if (strcmp(option, "ansinew") == 0)
-        strcpy(g_charset_encoding_name, "cp1252");
+        my_strlcpy(g_charset_encoding_name, "cp1252", 20);
 
     else if (strcmp(option, "applemac") == 0 ||
       strcmp(option, "decmulti") == 0 ||
@@ -156,40 +156,40 @@ void setPackageInputenc(char *option)
       strcmp(option, "koi8-r") == 0 || 
       strcmp(option, "koi8-u") == 0) {
 
-        strcpy(g_charset_encoding_name, option);
+        my_strlcpy(g_charset_encoding_name, option, 20);
         g_fcharset_number = 0;  /* ANSI in RTF Specification */
 
     } else if (strcmp(option, "raw") == 0) {
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
         g_fcharset_number = 255;    /* OEM in RTF Specification */
 
     } else if (strcmp(option, "raw437") == 0) {
         g_fcharset_number = 254;    /* IBM PC in RTF Specification */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
 
     } else if (strcmp(option, "raw852") == 0) {
         g_fcharset_number = 255;    /* Microsoft bug ... */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
 
     } else if (strcmp(option, "raw1250") == 0) {
         g_fcharset_number = 238;    /* East European in RTF Specification */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
 
     } else if (strcmp(option, "raw1251") == 0) {
         g_fcharset_number = 204;    /* Cyrillic in RTF Specification */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
 
     } else if (strcmp(option, "raw1253") == 0) {
         g_fcharset_number = 161;    /* Greek in RTF Specification */
-        strcpy(g_charset_encoding_name, "raw");
+        my_strlcpy(g_charset_encoding_name, "raw", 20);
         
     } else if (strcmp(option, "utf8") == 0) {
         diagnostics(WARNING, "Input Encoding utf8 - experimental support");
-        strcpy(g_charset_encoding_name, "utf8");
+        my_strlcpy(g_charset_encoding_name, "utf8", 20);
 
     } else if (strcmp(option, "utf8x") == 0) {
         diagnostics(WARNING, "Input Encoding utf8x - experimental support");
-        strcpy(g_charset_encoding_name, "utf8");
+        my_strlcpy(g_charset_encoding_name, "utf8", 20);
 
     } else
         diagnostics(WARNING, "Input Encoding <%s> not supported", option);
@@ -264,6 +264,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 17 * 20);
         setLength("headsep", 25 * 20);
         setThree("textwidth", 345, 360, 390);
+        setThree("columnwidth", 345, 360, 390);
+        setThree("linewidth", 345, 360, 390);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -282,6 +284,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 0 * 20);
         setLength("headsep", 25 * 20);
         setThree("textwidth", 361, 376, 412);
+        setThree("columnwidth", 361, 376, 412);
+        setThree("linewidth", 361, 376, 412);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -300,6 +304,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 0 * 20);
         setLength("headsep", 25 * 20);
         setThree("textwidth", 425, 443, 461);
+        setThree("linewidth", 425, 443, 461);
+        setThree("columnwidth", 425, 443, 461);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -318,6 +324,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 18 * 20);
         setLength("headsep", 25 * 20);
         setThree("textwidth", 345, 360, 390);
+        setThree("linewidth", 345, 360, 390);
+        setThree("columnwidth", 345, 360, 390);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -336,6 +344,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 18 * 20);
         setLength("headsep", 25 * 20);
         setThree("textwidth", 345, 360, 390);
+        setThree("columnwidth", 345, 360, 390);
+        setThree("linewidth", 345, 360, 390);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -354,6 +364,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 18 * 20);
         setLength("headsep", 25 * 20);
         setLength("textwidth", 276 * 20);
+        setLength("columnwidth", 276 * 20);
+        setLength("linewidth", 276 * 20);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
 
@@ -372,6 +384,8 @@ static void setPaperSize(char *option)
         setLength("topmargin", 19 * 20);
         setLength("headsep", 25 * 20);
         setLength("textwidth", 350 * 20);
+        setLength("columnwidth", 350 * 20);
+        setLength("linewidth", 350 * 20);
         setLength("marginparsep", 10 * 20);
         setLength("columnsep", 10 * 20);
     }
@@ -639,14 +653,14 @@ static void CmdUseOnepackage(char* package, char *options)
 	/* Set default values for geometry package */        
         g_preambleGeometry = TRUE;
         if(g_preambleTwoside==FALSE) {
-			g_geomMargr = (getLength("pagewidth") * 0.15);
+			g_geomMargr = (int) (getLength("pagewidth") * 0.15);
 			g_geomMargl = g_geomMargr;
 		} else {
-			g_geomMargr = (getLength("pagewidth") * 0.3 * 0.4);
-			g_geomMargl = (getLength("pagewidth") * 0.3 * 0.6);
+			g_geomMargr = (int) (getLength("pagewidth") * 0.3 * 0.4);
+			g_geomMargl = (int) (getLength("pagewidth") * 0.3 * 0.6);
 		}
-        g_geomMargt = (getLength("pageheight") * 0.3 * 0.4);
-        g_geomMargb = (getLength("pageheight") * 0.3 * 0.6);
+        g_geomMargt = (int) (getLength("pageheight") * 0.3 * 0.4);
+        g_geomMargb = (int) (getLength("pageheight") * 0.3 * 0.6);
 	
         if (options) {
 	    	ParseOptGeometry(options);
@@ -723,24 +737,26 @@ void ParseOptGeometry(char *options)
 
 void ExecGeomOptions (char *key, char *value1, char *value2)
 {
-    int dist1, dist2, dist3, dist4, ratio_sum, margin_sum;
+    int ratio_sum, margin_sum;
     char *value1b = NULL, *value2b = NULL;
-
+	int dist1 = 0;
+	int dist2 = 0;
+	
     if (strstr(key, "ratio")) {
-	if (strchr(value1, ':')) { /* each value is a ratio */
-	    value1 = strtok(value1, ": ");
-	    value1b = strtok(NULL, ": ");
-	    value2 = strtok(value2, ": ");
-	    value2b = strtok(NULL, ": ");
-	} else { /* each value is part of a single ratio */
-	    dist1 = dist3 = atoi(value1);
-	    dist2 = dist4 = atoi(value2);
-	    diagnostics(3, "one ratio parameter, %d:%d", dist1, dist2);
-	}
+		if (strchr(value1, ':')) { /* each value is a ratio */
+			value1 = strtok(value1, ": ");
+			value1b = strtok(NULL, ": ");
+			value2 = strtok(value2, ": ");
+			value2b = strtok(NULL, ": ");
+		} else { /* each value is part of a single ratio */
+			dist1 = atoi(value1);
+			dist2 = atoi(value2);
+			diagnostics(3, "one ratio parameter, %d:%d", dist1, dist2);
+		}
     } else if (strstr(key, "centering") == NULL) {
 		dist1=getStringDimension(value1);
 		dist2=getStringDimension(value2);
-		diagnostics(3, "twips paramters, %d and %d", dist1, dist2);
+		diagnostics(3, "twips parameters, %d and %d", dist1, dist2);
     }
 
     if (strcmp(key, "vmargin") == 0) {
@@ -870,17 +886,16 @@ void CmdTitle(int code)
 void CmdTableOfContents(int code)
 {
 	startParagraph("contents", SECTION_TITLE_PARAGRAPH);
-	fprintRTF("{");
-	InsertStyle("contents_no_style");
 	fprintRTF(" ");
 	ConvertBabelName("CONTENTSNAME");
 	CmdEndParagraph(0);
-	fprintRTF("}");
-	CmdVspace(VSPACE_SMALL_SKIP);
 	
 	g_tableofcontents = TRUE;
+	startParagraph("Normal", GENERIC_PARAGRAPH);
+	CmdVspace(VSPACE_SMALL_SKIP);
 	fprintRTF("{\\field{\\*\\fldinst TOC \\\\o \"1-3\" }{\\fldrslt }}\n");  
 	CmdNewPage(NewPage);
+	CmdEndParagraph(0);
 }
 
 /******************************************************************************
@@ -888,7 +903,6 @@ void CmdTableOfContents(int code)
  ******************************************************************************/
 void CmdAnd(int code)
 {
-	CmdEndParagraph(0);
 	startParagraph("author", GENERIC_PARAGRAPH);
 }
 
@@ -902,46 +916,50 @@ void CmdMakeTitle(int code)
     char author_begin[10];
     char date_begin[10];
 
+	diagnostics(4,"CmdMakeTitle with  title ='%s'",g_preambleTitle);
+	diagnostics(4,"CmdMakeTitle with author ='%s'",g_preambleAuthor);
     PushTrackLineNumber(FALSE);
     snprintf(title_begin, 10, "%s%2d", "\\fs", (30 * CurrentFontSize()) / 20);
     snprintf(author_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
     snprintf(date_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
 
     setAlignment(CENTERED);
-    fprintRTF("\n\\par\\pard\\qc {%s ", title_begin);
-    if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0)
+    
+    if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0) {
+    	startParagraph("title", GENERIC_PARAGRAPH);
         ConvertString(g_preambleTitle);
-    fprintRTF("}");
-
-    fprintRTF("\n\\par\\pard\\qc {%s ", author_begin);
-    if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0)
+	}
+	
+    if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0) {
+    	startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAuthor);
-    fprintRTF("}");
+	}
 
-    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
-    if (g_preambleAffiliation != NULL && strcmp(g_preambleAffiliation, "") != 0)
+    if (g_preambleAffiliation != NULL && strcmp(g_preambleAffiliation, "") != 0) {
+    	startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAffiliation);
-    fprintRTF("}");
+	}
 
-    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
-    if (g_preambleDate != NULL && strcmp(g_preambleDate, "") != 0)
+    startParagraph("author", GENERIC_PARAGRAPH);
+    if (g_preambleDate == NULL || strcmp(g_preambleDate, "") == 0) 
+    	fprintRTF("\\chdate ");
+    else
         ConvertString(g_preambleDate);
-    fprintRTF("}");
 
-    fprintRTF("\n\\par\\pard\\qc {%s ", date_begin);
-    if (g_preambleAck != NULL && strcmp(g_preambleAck, "") != 0)
+    if (g_preambleAck != NULL && strcmp(g_preambleAck, "") != 0) {
+    	startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAck);
-    fprintRTF("}");
+	}
 
     CmdEndParagraph(0);
     setAlignment(JUSTIFIED);
 
     if (g_preambleAbstract != NULL && strcmp(g_preambleAbstract, "") != 0) {
     	char *s = strdup_together3("{",g_preambleAbstract,"}");
-    	CmdAbstract(3);
+    	CmdAbstract(ABSTRACT_PRELUDE_BEGIN);
     	ConvertString("\\noindent");
     	ConvertString(s);
-    	CmdAbstract(4);
+    	CmdAbstract(ABSTRACT_PRELUDE_END);
     	free(s);
     }
 
@@ -949,7 +967,7 @@ void CmdMakeTitle(int code)
         fprintRTF("\\page ");
 
     if (g_document_type == FORMAT_APA)
-    	startParagraph("body",FIRST_PARAGRAPH);
+    	startParagraph("Normal",FIRST_PARAGRAPH);
 
 	PopTrackLineNumber();
 }
@@ -1125,22 +1143,20 @@ static void WriteFontHeader(void)
  \fcharset238:  E. European (codepage 852, 1250)
  ****************************************************************************/
 {
-    int i;
+    int num=0;
     ConfigEntryT **config_handle;
     char *font_type, *font_name;
     int charset;
 
     fprintRTF("{\\fonttbl");
 
-    config_handle = CfgStartIterate(FONT_A);
-    i = 0;
-    while ((config_handle = CfgNext(FONT_A, config_handle)) != NULL) {
-
+    config_handle = CfgStartIterate();
+    while ((config_handle = CfgNextByInsertion(FONT_A, config_handle)) != NULL) {
         font_type = (char *) (*config_handle)->TexCommand;
         font_name = (char *) (*config_handle)->RtfCommand;
         charset = g_fcharset_number;
 
-        if (strncmp(font_name, "Symbol", 6) == 0)
+		if (strncmp(font_name, "Symbol",   6) == 0 || strncmp(font_name, "MT Extra", 8) == 0)
             charset = 2;
 
         if (strncmp(font_type, "Cyrillic", 8) == 0)
@@ -1149,9 +1165,9 @@ static void WriteFontHeader(void)
         if (strncmp(font_type, "Latin2", 6) == 0)
             charset = 238;
 
-        fprintRTF("{\\f%d\\fnil\\fcharset%d %s;}\n", i, charset, font_name);
+        fprintRTF("{\\f%d\\fnil\\fcharset%d %s;}\n", num, charset, font_name);
 
-        i++;
+        num++;
     }
 
     fprintRTF("}\n");
@@ -1180,10 +1196,10 @@ static void WriteStyleHeader(void)
     ConfigEntryT **style;
     const char *rtf;
 
-    fprintRTF("{\\stylesheet\n{\\s0\\fs%d\\snext0 Normal;}\n", CurrentFontSize());
+    fprintRTF("{\\stylesheet\n");
 
-    style = CfgStartIterate(STYLE_A);
-    while ((style = CfgNext(STYLE_A, style)) != NULL) {
+    style = CfgStartIterate();
+    while ((style = CfgNextByInsertion(STYLE_A, style)) != NULL) {
         rtf = (*style)->RtfCommand;
         diagnostics(5, "style <%s>=<%s>", (*style)->TexCommand, rtf);
         fprintRTF("{");
@@ -1257,7 +1273,6 @@ static void WritePageSize(void)
 }
 
 static void WriteHeadFoot(void)
-
 /****************************************************************************
   \headerl        The header is on left pages only.
   \headerr        The header is on right pages only.
@@ -1267,25 +1282,23 @@ static void WriteHeadFoot(void)
   \footerf        The footer is on the first page only.
 ****************************************************************************/
 {
-
-/*	fprintRTF("\\ftnbj\\sectd\\linex0\\endnhere\\qj\n"); */
-
     int family = DefaultFontFamily();
 	int size   = DefaultFontSize(); 
     int textwidth = getLength("textwidth");
 
     if (g_preambleLFOOT || g_preambleCFOOT || g_preambleRFOOT) {
         fprintRTF("{\\footer\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth / 2, textwidth);
+    	setTexMode(MODE_HORIZONTAL); 
 
         if (g_preambleLFOOT)
             ConvertString(g_preambleLFOOT);
 
-        fprintRTF("\\tab ");
+        fprintRTF("\\tab\n");
         if (g_preambleCFOOT)
             ConvertString(g_preambleCFOOT);
 
         if (g_preambleRFOOT) {
-            fprintRTF("\\tab ");
+            fprintRTF("\\tab\n");
             ConvertString(g_preambleRFOOT);
         }
 
@@ -1296,21 +1309,23 @@ static void WriteHeadFoot(void)
 
     if (g_preambleLHEAD || g_preambleCHEAD || g_preambleRHEAD) {
         fprintRTF("{\\header\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth / 2, textwidth);
+    	setTexMode(MODE_HORIZONTAL); 
 
         if (g_preambleLHEAD)
             ConvertString(g_preambleLHEAD);
 
-        fprintRTF("\\tab ");
+        fprintRTF("\\tab\n");
         if (g_preambleCHEAD)
             ConvertString(g_preambleCHEAD);
 
         if (g_preambleRHEAD) {
-            fprintRTF("\\tab ");
+            fprintRTF("\\tab\n");
             ConvertString(g_preambleRHEAD);
         }
 
         fprintRTF("\\par}\n");
     }
+    setTexMode(MODE_VERTICAL);
 }
 
 void CmdHeadFoot(int code)
@@ -1379,7 +1394,127 @@ static void WriteColorTable(void)
     fprintRTF("\\red128\\green128\\blue0;\n");  /* dark yellow */
     fprintRTF("\\red128\\green128\\blue128;\n");    /* dark gray */
     fprintRTF("\\red192\\green192\\blue192;\n");    /* light gray */
-    fprintRTF("}\n");
+	fprintRTF("\\red239\\green219\\blue197;\n");	/* Almond */	
+	fprintRTF("\\red205\\green149\\blue117;\n");	/* Antique Brass */	
+	fprintRTF("\\red253\\green217\\blue181;\n");	/* Apricot */	
+	fprintRTF("\\red120\\green219\\blue226;\n");	/* Aquamarine */	
+	fprintRTF("\\red135\\green169\\blue107;\n");	/* Asparagus */	
+	fprintRTF("\\red255\\green164\\blue116;\n");	/* Atomic Tangerine */	
+	fprintRTF("\\red250\\green231\\blue181;\n");	/* Banana Mania */	
+	fprintRTF("\\red159\\green129\\blue112;\n");	/* Beaver */	
+	fprintRTF("\\red253\\green124\\blue110;\n");	/* Bittersweet */	
+	fprintRTF("\\red35\\green35\\blue35;\n");	/* Black */	
+	fprintRTF("\\red31\\green117\\blue254;\n");	/* Blue */	
+	fprintRTF("\\red173\\green173\\blue214;\n");	/* Blue Bell */	
+	fprintRTF("\\red25\\green158\\blue189;\n");	/* Blue Green */	
+	fprintRTF("\\red115\\green102\\blue189;\n");	/* Blue Violet */	
+	fprintRTF("\\red222\\green93\\blue131;\n");	/* Blush */	
+	fprintRTF("\\red203\\green65\\blue84;\n");	/* Brick Red */	
+	fprintRTF("\\red180\\green103\\blue77;\n");	/* Brown */	
+	fprintRTF("\\red255\\green127\\blue73;\n");	/* Burnt Orange */	
+	fprintRTF("\\red234\\green126\\blue93;\n");	/* Burnt Sienna */	
+	fprintRTF("\\red176\\green183\\blue198;\n");	/* Cadet Blue */	
+	fprintRTF("\\red255\\green255\\blue153;\n");	/* Canary */	
+	fprintRTF("\\red28\\green211\\blue162;\n");	/* Caribbean Green */	
+	fprintRTF("\\red255\\green170\\blue204;\n");	/* Carnation Pink */	
+	fprintRTF("\\red221\\green68\\blue146;\n");	/* Cerise */	
+	fprintRTF("\\red29\\green172\\blue214;\n");	/* Cerulean */	
+	fprintRTF("\\red188\\green93\\blue88;\n");	/* Chestnut */	
+	fprintRTF("\\red221\\green148\\blue117;\n");	/* Copper */	
+	fprintRTF("\\red154\\green206\\blue235;\n");	/* Cornflower */	
+	fprintRTF("\\red255\\green188\\blue217;\n");	/* Cotton Candy */	
+	fprintRTF("\\red253\\green219\\blue109;\n");	/* Dandelion */	
+	fprintRTF("\\red43\\green108\\blue196;\n");	/* Denim */	
+	fprintRTF("\\red239\\green205\\blue184;\n");	/* Desert Sand */	
+	fprintRTF("\\red110\\green81\\blue96;\n");	/* Eggplant */	
+	fprintRTF("\\red29\\green249\\blue20;\n");	/* Electric Lime */	
+	fprintRTF("\\red113\\green188\\blue120;\n");	/* Fern */	
+	fprintRTF("\\red109\\green174\\blue129;\n");	/* Forest Green */	
+	fprintRTF("\\red195\\green100\\blue197;\n");	/* Fuchsia */	
+	fprintRTF("\\red204\\green102\\blue102;\n");	/* Fuzzy Wuzzy Brown */	
+	fprintRTF("\\red231\\green198\\blue151;\n");	/* Gold */	
+	fprintRTF("\\red252\\green217\\blue117;\n");	/* Goldenrod */	
+	fprintRTF("\\red168\\green228\\blue160;\n");	/* Granny Smith Apple */	
+	fprintRTF("\\red149\\green145\\blue140;\n");	/* Gray */	
+	fprintRTF("\\red28\\green172\\blue120;\n");	/* Green */	
+	fprintRTF("\\red240\\green232\\blue145;\n");	/* Green Yellow */	
+	fprintRTF("\\red255\\green29\\blue206;\n");	/* Hot Magenta */	
+	fprintRTF("\\red178\\green236\\blue93;\n");	/* Inch Worm */	
+	fprintRTF("\\red93\\green118\\blue203;\n");	/* Indigo */	
+	fprintRTF("\\red202\\green55\\blue103;\n");	/* Jazzberry Jam */	
+	fprintRTF("\\red59\\green176\\blue143;\n");	/* Jungle Green */	
+	fprintRTF("\\red253\\green252\\blue116;\n");	/* Laser Lemon */	
+	fprintRTF("\\red252\\green180\\blue213;\n");	/* Lavender */	
+	fprintRTF("\\red255\\green189\\blue136;\n");	/* Macaroni and Cheese */	
+	fprintRTF("\\red246\\green100\\blue175;\n");	/* Magenta */	
+	fprintRTF("\\red205\\green74\\blue74;\n");	/* Mahogany */	
+	fprintRTF("\\red151\\green154\\blue170;\n");	/* Manatee */	
+	fprintRTF("\\red255\\green130\\blue67;\n");	/* Mango Tango */	
+	fprintRTF("\\red200\\green56\\blue90;\n");	/* Maroon */	
+	fprintRTF("\\red239\\green152\\blue170;\n");	/* Mauvelous */	
+	fprintRTF("\\red253\\green188\\blue180;\n");	/* Melon */	
+	fprintRTF("\\red26\\green72\\blue118;\n");	/* Midnight Blue */	
+	fprintRTF("\\red48\\green186\\blue143;\n");	/* Mountain Meadow */	
+	fprintRTF("\\red25\\green116\\blue210;\n");	/* Navy Blue */	
+	fprintRTF("\\red255\\green163\\blue67;\n");	/* Neon Carrot */	
+	fprintRTF("\\red186\\green184\\blue108;\n");	/* Olive Green */	
+	fprintRTF("\\red255\\green117\\blue56;\n");	/* Orange */	
+	fprintRTF("\\red230\\green168\\blue215;\n");	/* Orchid */	
+	fprintRTF("\\red65\\green74\\blue76;\n");	/* Outer Space */	
+	fprintRTF("\\red255\\green110\\blue74;\n");	/* Outrageous Orange */	
+	fprintRTF("\\red28\\green169\\blue201;\n");	/* Pacific Blue */	
+	fprintRTF("\\red255\\green207\\blue171;\n");	/* Peach */	
+	fprintRTF("\\red197\\green208\\blue230;\n");	/* Periwinkle */	
+	fprintRTF("\\red253\\green215\\blue228;\n");	/* Piggy Pink */	
+	fprintRTF("\\red21\\green128\\blue120;\n");	/* Pine Green */	
+	fprintRTF("\\red252\\green116\\blue253;\n");	/* Pink Flamingo */	
+	fprintRTF("\\red247\\green128\\blue161;\n");	/* Pink Sherbet */	
+	fprintRTF("\\red142\\green69\\blue133;\n");	/* Plum */	
+	fprintRTF("\\red116\\green66\\blue200;\n");	/* Purple Heart */	
+	fprintRTF("\\red157\\green129\\blue186;\n");	/* Purple Mountains’ Majesty */	
+	fprintRTF("\\red255\\green29\\blue206;\n");	/* Purple Pizzazz */	
+	fprintRTF("\\red255\\green73\\blue108;\n");	/* Radical Red */	
+	fprintRTF("\\red214\\green138\\blue89;\n");	/* Raw Sienna */	
+	fprintRTF("\\red255\\green72\\blue208;\n");	/* Razzle Dazzle Rose */	
+	fprintRTF("\\red227\\green37\\blue107;\n");	/* Razzmatazz */	
+	fprintRTF("\\red238\\green32\\blue77;\n");	/* Red */	
+	fprintRTF("\\red255\\green83\\blue73;\n");	/* Red Orange */	
+	fprintRTF("\\red192\\green68\\blue143;\n");	/* Red Violet */	
+	fprintRTF("\\red31\\green206\\blue203;\n");	/* Robin Egg Blue */	
+	fprintRTF("\\red120\\green81\\blue169;\n");	/* Royal Purple */	
+	fprintRTF("\\red255\\green155\\blue170;\n");	/* Salmon */	
+	fprintRTF("\\red252\\green40\\blue71;\n");	/* Scarlet */	
+	fprintRTF("\\red118\\green255\\blue122;\n");	/* Screamin Green */	
+	fprintRTF("\\red159\\green226\\blue191;\n");	/* Sea Green */	
+	fprintRTF("\\red165\\green105\\blue79;\n");	/* Sepia */	
+	fprintRTF("\\red138\\green121\\blue93;\n");	/* Shadow */	
+	fprintRTF("\\red69\\green206\\blue162;\n");	/* Shamrock */	
+	fprintRTF("\\red251\\green126\\blue253;\n");	/* Shocking Pink */	
+	fprintRTF("\\red205\\green197\\blue194;\n");	/* Silver */	
+	fprintRTF("\\red128\\green218\\blue235;\n");	/* Sky Blue */	
+	fprintRTF("\\red236\\green234\\blue190;\n");	/* Spring Green */	
+	fprintRTF("\\red255\\green207\\blue72;\n");	/* Sunglow */	
+	fprintRTF("\\red253\\green94\\blue83;\n");	/* Sunset Orange */	
+	fprintRTF("\\red250\\green167\\blue108;\n");	/* Tan */	
+	fprintRTF("\\red252\\green137\\blue172;\n");	/* Tickle Me Pink */	
+	fprintRTF("\\red219\\green215\\blue210;\n");	/* Timberwolf */	
+	fprintRTF("\\red23\\green128\\blue109;\n");	/* Tropical Rain Forest */	
+	fprintRTF("\\red222\\green170\\blue136;\n");	/* Tumbleweed */	
+	fprintRTF("\\red119\\green221\\blue231;\n");	/* Turquoise Blue */	
+	fprintRTF("\\red253\\green252\\blue116;\n");	/* Unmellow Yellow */	
+	fprintRTF("\\red146\\green110\\blue174;\n");	/* Violet (Purple) */	
+	fprintRTF("\\red247\\green83\\blue148;\n");	/* Violet Red */	
+	fprintRTF("\\red255\\green160\\blue137;\n");	/* Vivid Tangerine */	
+	fprintRTF("\\red143\\green80\\blue157;\n");	/* Vivid Violet */	
+	fprintRTF("\\red237\\green237\\blue237;\n");	/* White */	
+	fprintRTF("\\red162\\green173\\blue208;\n");	/* Wild Blue Yonder */	
+	fprintRTF("\\red255\\green67\\blue164;\n");	/* Wild Strawberry */	
+	fprintRTF("\\red252\\green108\\blue133;\n");	/* Wild Watermelon */	
+	fprintRTF("\\red205\\green164\\blue222;\n");	/* Wisteria */	
+	fprintRTF("\\red252\\green232\\blue131;\n");	/* Yellow */	
+	fprintRTF("\\red197\\green227\\blue132;\n");	/* Yellow Green */	
+	fprintRTF("\\red255\\green182\\blue83;\n");	/* Yellow Orange */	    
+	fprintRTF("}\n");
 }
 
 static void WriteInfo(void)

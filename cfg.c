@@ -47,8 +47,8 @@ Authors:
 typedef struct ConfigInfoT {
     char *filename;
     ConfigEntryT **config_info;
-    size_t config_info_size;
-    bool remove_leading_backslash;
+    int config_info_size;
+    int remove_leading_backslash;
 } ConfigInfoT;
 
 static ConfigInfoT configinfo[] = {
@@ -59,7 +59,7 @@ static ConfigInfoT configinfo[] = {
     {"english.cfg", NULL, 0, FALSE},
 };
 
-#define CONFIG_SIZE (sizeof(configinfo) / sizeof(ConfigInfoT))
+#define CONFIG_SIZE 5
 #define BUFFER_INCREMENT 1024
 
 char *ReadUptoMatch(FILE * infile, const char *scanchars);
@@ -71,7 +71,8 @@ static int cfg_compare(ConfigEntryT ** el1, ConfigEntryT ** el2)
  * params:   el1, el2: Config Entries to be compared
  ****************************************************************************/
 {
-    return strcmp((*el1)->TexCommand, (*el2)->TexCommand);
+/*diagnostics(1, "'%s'<=>'%s'", (**el1).TexCommand, (**el2).TexCommand);*/
+    return strcmp((**el1).TexCommand, (**el2).TexCommand);
 }
 
 static FILE *try_path(const char *path, const char *cfg_file)
@@ -112,7 +113,7 @@ void *open_cfg(const char *name, int quit_on_error)
 purpose: open config by trying multiple paths
  ****************************************************************************/
 {
-    char *env_path, *p, *p1, *pf;
+    char *env_path, *p, *p1;
     char *lib_path;
     FILE *fp;
 
@@ -145,7 +146,7 @@ purpose: open config by trying multiple paths
 /* try the environment variable ProgramFiles */
     p = getenv("PROGRAMFILES");
     if (p) {
-        pf = strdup_together(p, "/latex2rtf/cfg");
+        char *pf = strdup_together(p, "/latex2rtf/cfg");
         p = pf;
         while (p) {
             p1 = strchr(p, ENVSEP);
@@ -191,23 +192,22 @@ purpose: open config by trying multiple paths
         diagnostics(WARNING, "   (3) recompile latex2rtf with CFGDIR defined properly");
         diagnostics(WARNING, "Current RTFPATH: %s", getenv("RTFPATH"));
         diagnostics(WARNING, "Current  CFGDIR: %s", CFGDIR);
-        diagnostics(WARNING, "Also not found in : %s", pf);
         diagnostics(ERROR, " Giving up.  Please don't hate me.");
     }
     return NULL;
 }
 
-static size_t read_cfg(FILE * cfgfile, ConfigEntryT *** pointer_array, bool do_remove_backslash)
+static int read_cfg(FILE * cfgfile, ConfigEntryT *** pointer_array, int do_remove_backslash)
 
 /****************************************************************************
  * purpose: Read config file and provide sorted lookup table
  ****************************************************************************/
 {
-    size_t bufindex = 0, bufsize = 0;
+    int bufindex = 0, bufsize = 0;
     char *line, *cmdend;
 
     if (*pointer_array == NULL) {
-        *pointer_array = malloc(BUFFER_INCREMENT * sizeof(char *));
+        *pointer_array = (struct ConfigEntryT **) malloc(BUFFER_INCREMENT * sizeof(char *));
         bufsize = BUFFER_INCREMENT;
         if (*pointer_array == NULL)
             diagnostics(ERROR, "Cannot allocate memory for pointer list");
@@ -232,8 +232,10 @@ static size_t read_cfg(FILE * cfgfile, ConfigEntryT *** pointer_array, bool do_r
 
         /* Find period that terminates command */
         cmdend = strrchr(line, '.');
-        if (cmdend == NULL)
+        if (cmdend == NULL){
             diagnostics(ERROR, "Bad config file, missing final period\nBad line is \"%s\"", line);
+			exit(1);
+		}
 
         /* Replace period with NULL */
         *cmdend = '\0';
@@ -249,7 +251,7 @@ static size_t read_cfg(FILE * cfgfile, ConfigEntryT *** pointer_array, bool do_r
         /* resize buffer if needed */
         if (bufindex >= bufsize) {
             bufsize += BUFFER_INCREMENT;
-            *pointer_array = realloc(*pointer_array, bufsize * sizeof(char *));
+            *pointer_array = (struct ConfigEntryT **) realloc(*pointer_array, bufsize * sizeof(char *));
             if (*pointer_array == NULL)
                 diagnostics(ERROR, "Cannot allocate memory for pointer list");
         }
@@ -257,24 +259,27 @@ static size_t read_cfg(FILE * cfgfile, ConfigEntryT *** pointer_array, bool do_r
         /* find start of definition */
         line = strdup(line);
         cmdend = strchr(line, ',');
-        if (cmdend == NULL)
+        if (cmdend == NULL) {
             diagnostics(ERROR, "Bad config file, missing ',' between elements\nBad line is\"%s\"", line);
+			exit(1);
+		}
 
         /* terminate command */
         *cmdend = '\0';
 
-        (*pointer_array)[bufindex] = malloc(sizeof(ConfigEntryT));
+        (*pointer_array)[bufindex] = (struct ConfigEntryT *) malloc(sizeof(ConfigEntryT));
 
         if ((*pointer_array)[bufindex] == NULL)
             diagnostics(ERROR, "Cannot allocate memory for config entry");
 
         (*pointer_array)[bufindex]->TexCommand = line;
         (*pointer_array)[bufindex]->RtfCommand = cmdend + 1;
+        (*pointer_array)[bufindex]->original_id = bufindex;
         bufindex++;
+        diagnostics(6,"%3d Tex='%s' RTF='%s'", bufindex, line, cmdend+1);
     }
 
-    qsort(*pointer_array, bufindex, sizeof(**pointer_array)
-      , (fptr) cfg_compare);
+    qsort(*pointer_array, bufindex, sizeof(**pointer_array), (fptr) cfg_compare);
 
     return bufindex;
 }
@@ -286,22 +291,24 @@ void ReadCfg(void)
  * globals: Direct-, Font- IgnoreArray[Size/Root]
  ****************************************************************************/
 {
-    size_t i;
+    int i;
     FILE *fp;
     char *fname;
 
     for (i = 0; i < CONFIG_SIZE; i++) {
         fname = configinfo[i].filename;
         fp = (FILE *) open_cfg(fname, TRUE);
-        diagnostics(4, "reading config file %s", fname);
 
         configinfo[i].config_info_size = read_cfg(fp, &(configinfo[i].config_info)
           , configinfo[i].remove_leading_backslash);
         (void) fclose(fp);
+        
+         diagnostics(2, "read %d entries for file %s", configinfo[i].config_info_size, fname);
+       
     }
 }
 
-static ConfigEntryT **search_rtf(const char *theTexCommand, int WhichCfg)
+ConfigEntryT **SearchCfgEntry(const char *theTexCommand, int WhichCfg)
 
 /****************************************************************************
  * purpose:  search theTexCommand in specified config data and return
@@ -309,56 +316,71 @@ static ConfigEntryT **search_rtf(const char *theTexCommand, int WhichCfg)
  ****************************************************************************/
 {
     ConfigEntryT compare_item;
-    ConfigEntryT *compare_ptr;
-
+    ConfigEntryT *compare_ptr, **p, **base;
+	int size;
+	
     compare_item.TexCommand = theTexCommand;
     compare_item.RtfCommand = "";
+    compare_item.original_id= 0;
     compare_ptr = &compare_item;
+    
+    size = configinfo[WhichCfg].config_info_size;
+    base = configinfo[WhichCfg].config_info;
     
     if (theTexCommand == NULL) return NULL;
 
-    assert(WhichCfg >= 0 && (size_t) WhichCfg < CONFIG_SIZE);
+    assert(WhichCfg >= 0 &&  WhichCfg < CONFIG_SIZE);
     assert(configinfo[WhichCfg].config_info != NULL);
 
-    return (ConfigEntryT **) bsearch
-      (&compare_ptr, configinfo[WhichCfg].config_info, configinfo[WhichCfg].config_info_size, sizeof(compare_ptr)
-      , (fptr) cfg_compare);
+    diagnostics(5, "seeking '%s' in %d of size %d  ", theTexCommand, WhichCfg, size);
+    p = (ConfigEntryT **) bsearch(&compare_ptr, base, size, sizeof(compare_ptr), (fptr) cfg_compare);
+    
+    if (p)
+    	diagnostics(5, "seeking '%s'  found '%s'", theTexCommand, (**p).TexCommand);
+    return p;
 }
 
-int SearchRtfIndex(const char *theTexCommand, int WhichCfg)
+ConfigEntryT **SearchCfgEntryByID(const int id, int WhichCfg)
+
+/****************************************************************************
+ * purpose:  Get the entry with the given id
+ ****************************************************************************/
+{
+	int i, max;
+	ConfigEntryT ** entry;
+			
+	max = configinfo[WhichCfg].config_info_size;
+	if (id > (int) max) return NULL;
+
+	/* now iterate through all the entries looking for the right one */
+	entry = (ConfigEntryT **) configinfo[WhichCfg].config_info;
+	for (i=0; i<max; i++) {
+		if ( id == (**entry).original_id ) return entry;
+		entry++;
+	}
+	
+	/* not found, should not be reached */
+	return NULL;
+}
+
+char *SearchCfgRtf(const char *theTexCommand, int WhichCfg)
 
 /****************************************************************************
  * purpose:  search theTexCommand in a specified config data and return
- *           index
+ *           pointer to the corresponding RTF string
  ****************************************************************************/
 {
-    ConfigEntryT **help = search_rtf(theTexCommand, WhichCfg);
+    ConfigEntryT **p;
 
-    if (help == NULL) {
-        return 0;
-    }
-    /* LEG210698*** subtraction of two ConfigEntryT pointers */
-    return help - configinfo[WhichCfg].config_info;
-}
+    p = SearchCfgEntry(theTexCommand, WhichCfg);
 
-char *SearchRtfCmd(const char *theTexCommand, int WhichCfg)
-
-/****************************************************************************
- * purpose:  search theTexCommand in a specified config data and return
- *           pointer to the data
- ****************************************************************************/
-{
-    ConfigEntryT **help;
-
-    help = search_rtf(theTexCommand, WhichCfg);
-
-    if (help == NULL)
+    if (p == NULL)
         return NULL;
     else
-        return (char *) (*help)->RtfCommand;
+        return (char *) (**p).RtfCommand;
 }
 
-ConfigEntryT **CfgStartIterate(int WhichCfg)
+ConfigEntryT **CfgStartIterate(void)
 
 /****************************************************************************
  * purpose:  Start iterating of configuration data
@@ -373,14 +395,30 @@ ConfigEntryT **CfgNext(int WhichCfg, ConfigEntryT ** last)
  * purpose:  Get the next entry from specified configuration data
  ****************************************************************************/
 {
-    if (last == NULL) {
+    if (last == NULL) 
         return (ConfigEntryT **) configinfo[WhichCfg].config_info;
-    }
+    
     last++;
-    if (last > (ConfigEntryT **) configinfo[WhichCfg].config_info + configinfo[WhichCfg].config_info_size - 1) {
+    if (last > (ConfigEntryT **) configinfo[WhichCfg].config_info + configinfo[WhichCfg].config_info_size - 1) 
         return NULL;
-    }
+    
     return last;
+}
+
+ConfigEntryT **CfgNextByInsertion(int WhichCfg, ConfigEntryT ** last)
+
+/****************************************************************************
+ * purpose:  Get the next entry from specified configuration data
+ ****************************************************************************/
+{
+	int next_id;
+	
+	if (last == NULL)
+		next_id = 0;
+	else
+		next_id = (**last).original_id + 1;
+		
+	return SearchCfgEntryByID(next_id, WhichCfg);
 }
 
 /****************************************************************************
@@ -396,10 +434,6 @@ void ReadLanguage(char *lang)
 {
     FILE *fp;
     char *langfn;
-
-    langfn = malloc(strlen(lang) + strlen(".cfg") + 1);
-    if (langfn == NULL)
-        diagnostics(ERROR, "Could not allocate memory for language filename.");
 
 	langfn = strdup_together(lang, ".cfg");
 
@@ -420,7 +454,7 @@ void ReadLanguage(char *lang)
  ****************************************************************************/
 void ConvertBabelName(char *name)
 {
-    char *s = SearchRtfCmd(name, LANGUAGE_A);
+    char *s = SearchCfgRtf(name, LANGUAGE_A);
 
     if (s != NULL)
         ConvertString(s);
@@ -429,13 +463,13 @@ void ConvertBabelName(char *name)
 char *GetBabelName(char *name)
 {
     char *s = NULL;  
-    s = SearchRtfCmd(name, LANGUAGE_A);
+    s = SearchCfgRtf(name, LANGUAGE_A);
     return s;
 }
 
 
 static char *buffer = NULL;
-static size_t bufsize = 0;
+static int bufsize = 0;
 
 #define CR (char) 0x0d
 #define LF (char) 0x0a
@@ -446,16 +480,18 @@ static size_t bufsize = 0;
  */
 char *ReadUptoMatch(FILE * infile, const char *scanchars)
 {
-    size_t bufindex = 0;
+    int bufindex = 0;
     int c;
 
     if (feof(infile) != 0)
         return NULL;
 
     if (buffer == NULL) {
-        buffer = malloc(BUFFER_INCREMENT * sizeof(char));
-        if (buffer == NULL)
+        buffer = (char *) malloc(BUFFER_INCREMENT * sizeof(char));
+        if (buffer == NULL) {
             diagnostics(ERROR, "Cannot allocate memory for input buffer");
+			exit(1);
+		}
         bufsize = BUFFER_INCREMENT;
     }
 
@@ -473,9 +509,11 @@ char *ReadUptoMatch(FILE * infile, const char *scanchars)
         buffer[bufindex++] = (char) c;
         if (bufindex >= bufsize) {
             bufsize += BUFFER_INCREMENT;
-            buffer = realloc(buffer, bufsize);
-            if (buffer == NULL)
+            buffer = (char *) realloc(buffer, bufsize);
+            if (buffer == NULL) {
                 diagnostics(ERROR, "Cannot allocate memory for input buffer");
+				exit(1);
+			}
         }
     }
     buffer[bufindex] = '\0';

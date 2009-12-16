@@ -87,19 +87,31 @@ as well.
 ========================
 
  LaTeX2RTF  is available for many Unix Platforms, for the Macintosh,
-and for MS-DOS, including all versions of MS Windows.  The latest
-version of LaTeX2RTF  is available at  SourceForge
-(http://sourceforge.net/projects/latex2rtf/) and -- with some delay --
-on CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
- The MS-DOS version (1.8aa and up) will also run under all MS Windows
-versions (including Windows Vista). It requires an i386 processor or
-better.    The Win32 distribution (starting from LaTeX2RTF  1.9.15)
-is the MS-DOS version  plus Win32 GUI program (l2rshell).
- Starting from LaTeX2RTF  1.9.19, the Win32 distribution differs from
-the MS-DOS distribution in being compiled with Cygwin and thus having
-less restrictions.  There are a few people working on LaTeX2RTF ,
-and some more make  contributions, coordinated by Wilfried Hennings
-(texconvfaq "at" gmx.de). See the SourceForge
+and for MS-DOS,  including all versions of MS Windows.  The
+latest version of LaTeX2RTF  is available at  SourceForge
+(http://sourceforge.net/projects/latex2rtf/)  and -- with some delay
+-- on CTAN sites:  e.g., `http://www.dante.de' or
+`http://www.ctan.org'.  The DOS package (1.8aa and up) will also
+run under all MS Windows versions.  It requires an i386 processor or
+better.
+ It should only be used on older Microsoft systems (before Win95)
+because it has known issues when converting more than 26 equations to
+bitmaps.
+ For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
+package.  The win-NO-GUI package (starting from LaTeX2RTF  1.9.19)
+is identical  to the DOS package except that it is compiled with
+Cygwin (up to 1.9.19)  or MinGW (1.9.20 and up), and only runs under
+Win32  (Win9x, ME, NT, 2000, XP, 2003, Vista).  The win package
+(starting from LaTeX2RTF  1.9.15) is the DOS package (up to LaTeX2RTF
+1.9.17) or the win-NO-GUI package (LaTeX2RTF  1.9.18 and up) plus
+Win32 GUI program (l2rshell).
+ Up to version 1.9.19 it does not run under 64bit systems.  From
+version 1.9.20 it also runs under 64bit systems.  The win64 package
+(LaTeX2RTF  1.9.19) is the win package but with 32bit versions of the
+shell utilities so that it also runs on 64bit systems.  There are
+a few people working on LaTeX2RTF , and some more make 
+contributions, coordinated by Wilfried Hennings (texconvfaq "at"
+gmx.de). See the SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  project pages for the
 latest news. 
 
@@ -158,10 +170,11 @@ for the new location of the `cfg' directory.
 2.4 DOS
 =======
 
- The UNIX and Mac distributions do not contain an executable for DOS
- or Windows. You may compile it yourself (with djgpp or MinGW) or
-get the DOS distribution as file `latex2rtf-x.x.x_dos.zip' (where
-x.x.x is the version number)  from SourceForge
+ The UNIX and Mac packages do not contain an executable for DOS  or
+Windows. You may compile it yourself (with djgpp or MinGW) or get the
+DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
+version number) or the Windows package as file
+`latex2rtf-x.x.x_win.zip' from SourceForge
 (http://sourceforge.net/projects/latex2rtf/)
   The DOS distribution contains a precompiled executable  which
 should run under plain DOS and also in the command prompt  (or
@@ -169,16 +182,13 @@ should run under plain DOS and also in the command prompt  (or
  *Limitations of the DOS version:* The DOS version has a bug which
 causes conversion of equations  to bitmaps to fail for the remaining
 equations after successfully  converting the first 26 of them. 
-So *if you run a Win32 system*, i.e. WinNT, Win2000, WinXP, 
-WinVista) *it is highly recommended to use the Windows version*.
-The Win32 version starting from 1.9.14a also has a Win32 GUI interface
- (LaTeX2RTF  Shell) and is wrapped in an automatic installer,  see
-*Note Win32 systems::.  But starting from 1.9.17, the installer and
-GUI interface do not support Windows 9x and ME.   To install the
-DOS version of LaTeX2RTF , extract all files from the zip archive, 
-preserving the folder structure (winzip: check "use folder names"),
-preferably to `C:\l2r', because then it will find its cfg files  by
-default.
+So *if you run a Win32 system* (i.e. Win 9x, ME, NT, 2000, XP,  2003,
+Vista) *it is highly recommended to use the Windows package*.  To
+install the DOS or Windows package of LaTeX2RTF , extract all files 
+from the zip archive, preserving the folder structure  (winzip: check
+"use folder names"), preferably to `C:\l2r', or under Windows, to
+your "Program Files"  folder (which ever it is named in your system)
+because then it will find its cfg files by default.
  If you extracted them to another folder (e.g. `C:\my files\l2r'),
 either edit the file `L2RPREP.BAT'  and change the folder `C:\l2r' to
 where you put them, or specify the  path to the cfg folder in the
@@ -194,29 +204,25 @@ and ImageMagick are not available for plain DOS.
 =================
 
  To install LaTeX2RTF  on a Win32 system (WinNT, Win2000, WinXP, 
-WinVista), download and execute the `latex2rtf-x.x.x_win.exe'  (where
-x.x.x is the version number) and follow the instructions.  Note:
-The installer and GUI shell do not support Win9x and WinMe since
-LaTeX2RTF  v.1.9.17.  If you have one of these systems, you should
-use an older Win32 version  or the current DOS version (without GUI)
-of LaTeX2RTF .  As the DOS version of `latex2rt.exe' has a bug which
-causes conversion  of equations to bitmaps to fail for more than 26
-equations, you should get and install LaTeX2RTF  v.1.9.19, delete
-`latex2rt.exe'  and rename `latex2rt_win.exe' to `latex2rt.exe'. 
-To start the program double-click the LaTeX2RTF  icon,  or drag and
-drop a `.tex' file onto the icon.  If your LaTeX  document refers
-to external graphic files, e.g. eps,  or you want to use the option
-to convert equations to bitmaps, you must have LaTeX, ImageMagick and
-Ghostscript installed. These programs are  freely available for
-download at `http://www.miktex.org/',  `http://www.imagemagick.org'
-and `http://www.ghostscript.com'  If MikTeX, ImageMagick and
-Ghostscript are installed, the paths to their  executables are
-detected automatically. If for any reason this doesn't  happen, these
-paths can be specified manually in the "Environment"  tab of the
-LaTeX2RTF  GUI shell window.  If you need to start LaTeX2RTF  not
-from its own shell but from another  Windows application, you need to
-add the folder containing  the latex2png script and the helper
-programs to the search path.
+WinVista), download the win-gui package, execute the
+`latex2rtf-x.x.x_win.exe'  (where x.x.x is the version number) and
+follow the instructions.  Note: The installer and GUI shell do not
+support Win9x and WinMe since LaTeX2RTF  v.1.9.17.  If you have one
+of these systems, you should use the  win package (1.9.19 and up) of
+LaTeX2RTF .   To start the program double-click the LaTeX2RTF
+icon,  or drag and drop a `.tex' file onto the icon.  If your
+LaTeX  document refers to external graphic files, e.g. eps,  or you
+want to use the option to convert equations to bitmaps, you must have
+LaTeX, ImageMagick and Ghostscript installed. These programs are 
+freely available for download at `http://www.miktex.org/', 
+`http://www.imagemagick.org' and `http://www.ghostscript.com'  If
+MikTeX, ImageMagick and Ghostscript are installed, the paths to their 
+executables are detected automatically. If for any reason this doesn't
+ happen, these paths can be specified manually in the "Environment" 
+tab of the LaTeX2RTF  GUI shell window.  If you need to start
+LaTeX2RTF  not from its own shell but from another  Windows
+application, you need to add the folder containing  the latex2png
+script and the helper programs to the search path.
  Some applications (e.g. Lyx) allow to temporarily add the path by
 specifying it in the options.
  If this is not possible, you can add the latex2rtf folder to

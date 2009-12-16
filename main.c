@@ -1,4 +1,3 @@
-
 /* main.c - LaTeX to RTF conversion program
 
 Copyright (C) 1995-2007 The Free Software Foundation
@@ -25,6 +24,11 @@ Authors:
 	1998-2000 Georg Lehner
 	2001-2007 Scott Prahl
 */
+#if defined(NOSTDERR)
+#define ERROUT stdout
+#else
+#define ERROUT stderr
+#endif 
 
 #include <stdio.h>
 #include <ctype.h>
@@ -53,6 +57,7 @@ Authors:
 #include "xrefs.h"
 #include "preparse.h"
 #include "vertical.h"
+#include "fields.h"
 
 FILE *fRtf = NULL;              /* file pointer to RTF file */
 char *g_tex_name = NULL;
@@ -67,75 +72,75 @@ char *g_bbl_name = NULL;
 char *g_home_dir = NULL;
 
 char *progname;                 /* name of the executable file */
-bool GermanMode = FALSE;        /* support germanstyle */
-bool FrenchMode = FALSE;        /* support frenchstyle */
-bool RussianMode = FALSE;       /* support russianstyle */
-bool CzechMode = FALSE;         /* support czech */
+int SpanishMode = FALSE;       /* support spanishstyle */
+int GermanMode = FALSE;        /* support germanstyle */
+int FrenchMode = FALSE;        /* support frenchstyle */
+int RussianMode = FALSE;       /* support russianstyle */
+int CzechMode = FALSE;         /* support czech */
 
 char g_charset_encoding_name[20] = "cp1252";
 int g_fcharset_number = 0;
 
-bool twoside = FALSE;
+int twoside = FALSE;
 int g_verbosity_level = WARNING;
-bool g_little_endian = FALSE;   /* set properly in main() */
-int g_dots_per_inch = 300;
+int g_little_endian = FALSE;   /* set properly in main() */
+uint16_t g_dots_per_inch = 300;
 
-bool pagenumbering = TRUE;      /* by default use plain style */
+int pagenumbering = TRUE;      /* by default use plain style */
 int headings = FALSE;
 
-bool g_processing_preamble = TRUE;  /* flag set until \begin{document} */
-bool g_processing_figure = FALSE;   /* flag, set for figures and not tables */
-bool g_processing_eqnarray = FALSE; /* flag set when in an eqnarry */
+int g_processing_preamble = TRUE;  /* flag set until \begin{document} */
+int g_processing_figure = FALSE;   /* flag, set for figures and not tables */
+int g_processing_eqnarray = FALSE; /* flag set when in an eqnarry */
 int g_processing_arrays = 0;
-int g_processing_fields = 0;
 
-bool g_show_equation_number = FALSE;
+int g_show_equation_number = FALSE;
 int g_enumerate_depth = 0;
-bool g_suppress_equation_number = FALSE;
-bool g_aux_file_missing = FALSE;    /* assume that it exists */
-bool g_bbl_file_missing = FALSE;    /* assume that it exists */
+int g_suppress_equation_number = FALSE;
+int g_aux_file_missing = FALSE;    /* assume that it exists */
+int g_bbl_file_missing = FALSE;    /* assume that it exists */
 
-bool g_document_type = FORMAT_ARTICLE;
+int g_document_type = FORMAT_ARTICLE;
 int g_document_bibstyle = BIBSTYLE_STANDARD;
 
-bool g_fields_use_EQ = TRUE;
-bool g_fields_use_REF = TRUE;
-
 int g_safety_braces = 0;
-bool g_processing_equation = FALSE;
-bool g_RTF_warnings = FALSE;
+int g_processing_equation = FALSE;
+int g_RTF_warnings = FALSE;
 char *g_config_path = NULL;
 char *g_script_dir = NULL;
 char *g_tmp_dir = NULL;
 char *g_preamble = NULL;
-char g_field_separator = ',';
-bool g_escape_parens = FALSE;
+int g_escape_parens = FALSE;
 
-bool g_equation_display_rtf = TRUE;
-bool g_equation_inline_rtf = TRUE;
-bool g_equation_inline_bitmap = FALSE;
-bool g_equation_display_bitmap = FALSE;
-bool g_equation_comment = FALSE;
-bool g_equation_raw_latex = FALSE;
-bool g_tableofcontents = FALSE;
+int g_equation_display_rtf = TRUE;
+int g_equation_inline_rtf = TRUE;
+int g_equation_inline_bitmap = FALSE;
+int g_equation_display_bitmap = FALSE;
+int g_equation_comment = FALSE;
+int g_equation_raw_latex = FALSE;
+int g_tableofcontents = FALSE;
 
-bool g_tabular_display_rtf = TRUE;
-bool g_tabular_display_bitmap = FALSE;
+int g_tabular_display_rtf = TRUE;
+int g_tabular_display_bitmap = FALSE;
+int g_tab_counter = 0;
+int g_processing_table = FALSE;
+int g_processing_tabbing = FALSE;
+int g_processing_tabular = FALSE;
 
-double g_png_equation_scale = 1.22;
-double g_png_figure_scale = 1.35;
-bool g_latex_figures = FALSE;
-bool g_endfloat_figures = FALSE;
-bool g_endfloat_tables = FALSE;
-bool g_endfloat_markers = TRUE;
+double g_png_equation_scale = 1.00;
+double g_png_figure_scale = 1.00;
+int g_latex_figures = FALSE;
+int g_endfloat_figures = FALSE;
+int g_endfloat_tables = FALSE;
+int g_endfloat_markers = TRUE;
 int  g_graphics_package = GRAPHICS_NONE;
 
 int indent = 0;
 char alignment = JUSTIFIED;     /* default for justified: */
 
 int RecursionLevel = 0;
-bool twocolumn = FALSE;
-bool titlepage = FALSE;
+int twocolumn = FALSE;
+int titlepage = FALSE;
 
 static void OpenRtfFile(char *filename, FILE ** f);
 static void CloseRtf(FILE ** f);
@@ -181,8 +186,8 @@ int main(int argc, char **argv)
                 break;
             case 'f':
                 sscanf(optarg, "%d", &x);
-                g_fields_use_EQ = (x & 1) ? TRUE : FALSE;
-                g_fields_use_REF = (x & 2) ? TRUE : FALSE;
+                set_fields_use_EQ(x & 1);
+                set_fields_use_REF(x & 2);
                 break;
             case 'i':
                 setPackageBabel(optarg);
@@ -203,7 +208,8 @@ int main(int argc, char **argv)
                 setPackageInputenc(optarg);
                 break;
             case 'D':
-                sscanf(optarg, "%d", &g_dots_per_inch);
+                sscanf(optarg, "%d", &x);
+				g_dots_per_inch = (uint16_t) x;
                 if (g_dots_per_inch < 25 || g_dots_per_inch > 600)
                     diagnostics(WARNING, "Dots per inch must be between 25 and 600 dpi\n");
                 break;
@@ -339,8 +345,12 @@ int main(int argc, char **argv)
             g_tex_name = strdup_together(basename, ".tex");
         }
 
-        if (g_rtf_name == NULL)
-            g_rtf_name = strdup_together(basename, ".rtf");
+        if (g_rtf_name == NULL) {
+            if (g_home_dir)
+				g_rtf_name = strdup_together3(g_home_dir,basename,".rtf");
+			else
+            	g_rtf_name = strdup_together(basename, ".rtf");
+        }
     }
 
     if (g_aux_name == NULL && basename != NULL)
@@ -385,9 +395,7 @@ int main(int argc, char **argv)
         CloseRtf(&fRtf);
         printf("\n");
 
-/*		debug malloc() 
-  		printf("Done!");
-  		while (1) {} do nothing */
+	if (0) debug_malloc();
 
         return 0;
     } else {
@@ -499,8 +507,8 @@ static void print_usage(void)
     fprintf(stdout, "Usage:  %s [options] input[.tex]\n\n", progname);
     fprintf(stdout, "Options:\n");
     fprintf(stdout, "  -a auxfile       use LaTeX auxfile rather than input.aux\n");
-    fprintf(stdout, "  -b bblfile       use BibTex bblfile rather than input.bbl)\n");
-    fprintf(stdout, "  -C codepage      latex encoding charset (latin1, cp850, raw, etc.)\n");
+    fprintf(stdout, "  -b bblfile       use BibTex bblfile rather than input.bbl\n");
+    fprintf(stdout, "  -C codepage      charset used by the latex document (latin1, cp850, raw, etc.)\n");
     fprintf(stdout, "  -d level         debugging output (level is 0-6)\n");
     fprintf(stdout, "  -f#              field handling\n");
     fprintf(stdout, "       -f0          do not use fields\n");
@@ -531,7 +539,7 @@ static void print_usage(void)
     fprintf(stdout, "  -t#              table handling\n");
     fprintf(stdout, "       -t1          tabular and tabbing environments as RTF\n");
     fprintf(stdout, "       -t2          tabular and tabbing environments as bitmaps\n");
-    fprintf(stdout, "  -T /path/to/tmp  temporary directory\n");
+    fprintf(stdout, "  -T /path/to/tmp  temporary directory (not used in DOS/Win version)\n");
     fprintf(stdout, "  -v               version information\n");
     fprintf(stdout, "  -V               version information\n");
     fprintf(stdout, "  -W               include warnings in RTF\n");
@@ -567,7 +575,7 @@ purpose: Writes the message to stderr depending on debugging level
     
     char buffer[512], *buff_ptr;
     va_list apf;
-    int i, iEnvCount;
+    int i;
 
     buff_ptr = buffer;
 
@@ -575,14 +583,14 @@ purpose: Writes the message to stderr depending on debugging level
 
     if (level <= g_verbosity_level) {
 
-        iEnvCount = CurrentEnvironmentCount();
+        CurrentEnvironmentCount();
 
-        if (!first) fprintf(stderr,"\n");
+        if (!first) fprintf(ERROUT,"\n");
         
-        fprintf(stderr, "%s:%-3d ",CurrentFileName(),CurrentLineNumber());
+        fprintf(ERROUT, "%s:%-3d ",CurrentFileName(),CurrentLineNumber());
         switch (level) {
             case 0:
-                fprintf(stderr, "Error! ");
+                fprintf(ERROUT, "Error! ");
                 break;
             case 1:
                 if (g_RTF_warnings) {
@@ -597,30 +605,30 @@ purpose: Writes the message to stderr depending on debugging level
                 break;
             case 5:
             case 6:
-                fprintf(stderr, " rec=%d ", RecursionLevel);
+                fprintf(ERROUT, " rec=%d ", RecursionLevel);
                 /*fall through */
             case 2:
             case 3:
             case 4:
                 for (i = 0; i < BraceLevel; i++)
-                    fprintf(stderr, "{");
+                    fprintf(ERROUT, "{");
                 for (i = 8; i > BraceLevel; i--)
-                    fprintf(stderr, " ");
+                    fprintf(ERROUT, " ");
 
                 for (i = 0; i < RecursionLevel; i++)
-                    fprintf(stderr, "  ");
+                    fprintf(ERROUT, "  ");
                 break;
             default:
                 break;
         }
-        vfprintf(stderr, format, apf);
+        vfprintf(ERROUT, format, apf);
     	first = FALSE;
     }
     va_end(apf);
 
     if (level == 0) {
-        fprintf(stderr, "\n");
-        fflush(stderr);
+        fprintf(ERROUT, "\n");
+        fflush(ERROUT);
         if (fRtf) 
             fflush(fRtf);
             
@@ -644,6 +652,8 @@ static void InitializeLatexLengths(void)
     setLength("topmargin", 18 * 20);
     setLength("headsep", 25 * 20);
     setLength("textwidth", 345 * 20);
+    setLength("columnwidth", 345 * 20);
+    setLength("linewidth", 345 * 20);
     setLength("columnsep", 10 * 20);
     setLength("evensidemargin", 11 * 20);
 
@@ -653,6 +663,7 @@ static void InitializeLatexLengths(void)
     setLength("parskip", 0 * 20);
 
     setCounter("page", 0);
+    setCounter("part", 0);
     setCounter("chapter", 0);
     setCounter("section", 0);
     setCounter("subsection", 0);
@@ -709,7 +720,7 @@ purpose: reads the LaTeX preamble (to \begin{document} ) for the file
 	   directly to stderr instead.
 	*/
 	rtf_file = fRtf;
-	fRtf = stderr;
+	fRtf = ERROUT;
 	
     g_preamble = getSpacedTexUntil(t, 1);
 
@@ -732,26 +743,18 @@ params: filename - name of outputfile, possibly NULL for already open file
 	f - pointer to filepointer to store file ID
  ****************************************************************************/
 {
-    char *name;
-
     if (filename == NULL) {
         diagnostics(4, "Writing RTF to stdout");
         *f = stdout;
 
     } else {
 
-        if (g_home_dir)
-            name = strdup_together(g_home_dir, filename);
-        else
-            name = strdup(filename);
-
-        *f = fopen(name, "w");
+        *f = fopen(filename, "w");
 
         if (*f == NULL)
-            diagnostics(ERROR, "Error opening RTF file <%s>\n", name);
+            diagnostics(ERROR, "Error opening RTF file <%s>\n", filename);
 
-        diagnostics(2, "Opened RTF file <%s>", name);
-        free(name);
+        diagnostics(2, "Opened RTF file <%s>", filename);
     }
 }
 
@@ -787,7 +790,7 @@ globals: g_tex_name;
     }
     *f = NULL;
     diagnostics(4, "Closed RTF file");
-    fprintf(stderr,"\n");
+    fprintf(ERROUT,"\n");
 }
 
 void putRtfCharEscaped(char cThis)
@@ -832,7 +835,7 @@ purpose: output a formatted string to the RTF file.  It is assumed that the
  ****************************************************************************/
 {
     char buffer[1024];
-    char *text;
+    unsigned char *text;
     char last='\0';
     
     va_list apf;
@@ -840,7 +843,7 @@ purpose: output a formatted string to the RTF file.  It is assumed that the
     va_start(apf, format);
     vsnprintf(buffer, 1024, format, apf);
     va_end(apf);
-    text = buffer;
+    text = (unsigned char *) buffer;
 
     while (*text) {
 
@@ -872,23 +875,30 @@ purpose: return the directory to store temporary files
 
 #else
 
-    char *t, *u;
+    size_t n;
+	char *t = NULL;
+	char *u = NULL;
     char pathsep_str[2] = { PATHSEP, 0 };   /* for os2 or w32 "unix" compiler */
-
-    /* first use any temporary directory specified as an option */
-    if (g_tmp_dir)
+	
+   /* first use any temporary directory specified as an option */
+    if (g_tmp_dir) {
         t = strdup(g_tmp_dir);
 
     /* next try the environment variable TMPDIR */
-    else if ((u = getenv("TMPDIR")) != NULL)
-        t = strdup(u);
-
+    } else {
+		u = getenv("TMPDIR");
+		if (u != NULL)
+			t = strdup(u);
+	}
     /* finally just return "/tmp/" */
-    else
+    if (t==NULL)
         t = strdup("/tmp/");
 
     /* append a final '/' if missing */
-    if (*(t + strlen(t) - 1) != PATHSEP) {
+	
+	n=strlen(t)-1;
+	
+    if (n > 1 && *(t + n) != PATHSEP) {
         u = strdup_together(t, pathsep_str);
         free(t);
         return u;
@@ -907,14 +917,12 @@ purpose: duplicate string --- exists to ease porting
     char *s = NULL;
     unsigned long strsize;
 
-    strsize = strlen(str);
-    s = (char *) malloc(strsize + 1);
+    strsize = strlen(str) + 1;
+    s = (char *) malloc(strsize);
     *s = '\0';
     if (s == NULL)
         diagnostics(ERROR, "Cannot allocate memory to duplicate string");
-    strcpy(s, str);
-
-/*	diagnostics(5,"ptr %x",(unsigned long)s);*/
+    my_strlcpy(s, str, strsize);
     return s;
 }
 

@@ -26,7 +26,7 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "utils.h"
 #include "counters.h"
 
-#define MAX_COUNTERS 50
+#define MAX_COUNTERS 500
 
 struct {
     char *name;
@@ -118,9 +118,22 @@ int getCounter(char *s)
     i = existsCounter(s);
 
     if (i < 0) {
-        diagnostics(WARNING, "No counter of type <%s>", s);
+        diagnostics(2, "No counter of type <%s>", s);
         return 0;
     }
 
     return Counters[i].number;
+}
+
+void zeroKeyCounters(char *key)
+
+/**************************************************************************
+     purpose: zeros all the acronym counters
+**************************************************************************/
+{    
+    int i;
+    for (i=0; i < iCounterCount; i++) {
+        if (strstr(Counters[i].name,key)!=Counters[i].name)
+        	Counters[i].number = 0;
+    }
 }

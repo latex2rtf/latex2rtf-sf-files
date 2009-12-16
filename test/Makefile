@@ -11,24 +11,24 @@ LATEX_LOG = >latex.log
 
 RTF=	align.rtf	 array.rtf 		box.rtf 			ch.rtf	             \
 		chem.rtf 	 color.rtf 		dblspace.rtf		defs.rtf             \
-		endnote.rtf	 essential.rtf	excalibur.rtf 		fancy.rtf            \
+		endnote.rtf	 essential.rtf	fancy.rtf            \
 		fonts.rtf	 fontsize.rtf 	fonttest.rtf  		geometry.rtf         \
 		geotest.rtf  german.rtf		head_article.rtf	head_book.rtf        \
 		list.rtf 	 ifclause.rtf	include.rtf			linux.rtf            \
 		logo.rtf 	 misc1.rtf 		misc3.rtf 			misc4.rtf            \
-		percent.rtf	 report.rtf		tabbing.rtf			tabular.rtf          \
-		hyperref.rtf longstack.rtf
+		percent.rtf	 report.rtf		hyperref.rtf        longstack.rtf	     \
+		head_report.rtf
 
 BIB_TESTS=  bib_apacite.rtf        bib_harvard.rtf        bib_super.rtf      \
 			bib_apacite_dblsp.rtf  bib_natbib1.rtf        bib_apalike.rtf    \
 			bib_natbib2.rtf        bibentry_apalike.rtf   bib_apalike2.rtf   \
 			bib_natbib3.rtf        bib_apanat.rtf         bibentry_plain.rtf \
 			bib_authordate.rtf     bib_simple.rtf         bib_apa.rtf        \
-			bib_apacite2.rtf
+			bib_apacite2.rtf       bib_apacite3.rtf       bib_natbib4.rtf  
 	
 FIG_TESTS=  fig_endfloat.rtf  fig_test.rtf      fig_test3.rtf \
             fig_size.rtf      fig_test2.rtf     fig_test4.rtf \
-            picture.rtf       fig_subfig.rtf
+            picture.rtf       fig_subfig.rtf    fig_png.rtf
 
 ENC_TESTS= 	enc_applemac.rtf enc_cp437.rtf  enc_cp865.rtf    enc_latin2.rtf enc_latin5.rtf \
 			enc_cp1250.rtf   enc_cp850.rtf  enc_decmulti.rtf enc_latin3.rtf enc_latin9.rtf\
@@ -42,7 +42,11 @@ BABEL_TESTS=babel_german.rtf babel_russian.rtf babel_czech.rtf babel_french.rtf 
 EQN_TESTS=  eqns.rtf	eqns2.rtf eqns-koi8.rtf ttgfsr7.rtf spago1.rtf misc2.rtf\
             frac.rtf	subsup.rtf	theorem.rtf eqnnumber.rtf eqnnumber2.rtf
 
-CHAR_TESTS= accentchars.rtf oddchars.rtf unicode.rtf overstrike.rtf
+CHAR_TESTS= accentchars.rtf oddchars.rtf overstrike.rtf ucsymbols.rtf greek.rtf cyrillic.rtf
+
+TABLE_TESTS= tabbing.rtf tabular.rtf table_array1.rtf table_array2.rtf
+
+EXTRA_TESTS= excalibur.rtf
 
 basic:
 	$(MAKE) basic_tests
@@ -66,6 +70,13 @@ babel:
 char:
 	$(MAKE) char_tests
 
+table:
+	mkdir -p tmp
+	$(MAKE) table_tests
+
+extra:
+	$(MAKE) extra_tests
+	
 all:
 	mkdir -p tmp
 	$(MAKE) basic_tests
@@ -74,6 +85,8 @@ all:
 	$(MAKE) fig_tests
 	$(MAKE) enc_tests
 	$(MAKE) char_tests
+	$(MAKE) table_tests
+	$(MAKE) extra_tests
 
 basic_tests: $(RTF)
 
@@ -88,6 +101,10 @@ babel_tests: $(BABEL_TESTS)
 eqn_tests: $(EQN_TESTS)
 
 char_tests: $(CHAR_TESTS)
+
+table_tests: $(TABLE_TESTS)
+
+extra_tests: $(EXTRA_TESTS)
 
 #these tests require that some non-standard latex style be installed
 
@@ -118,12 +135,19 @@ bib_apacite.rtf: bib_apacite.tex
 	$(LATEX) bib_apacite $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_apacite
 
-bib_apacite2.rtf: bib_apacite2.tex
+bib_apacite2.rtf: bib_apacite2.tex bib_apacite2.bib
 	$(LATEX) bib_apacite2 $(LATEX_LOG)
 	$(BIBTEX) bib_apacite2 > bibtex.log
 	$(LATEX) bib_apacite2 $(LATEX_LOG)
 	$(LATEX) bib_apacite2 $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_apacite2
+
+bib_apacite3.rtf: bib_apacite3.tex bib_apacite3.bib
+	$(LATEX) bib_apacite3 $(LATEX_LOG)
+	$(BIBTEX) bib_apacite3 > bibtex.log
+	$(LATEX) bib_apacite3 $(LATEX_LOG)
+	$(LATEX) bib_apacite3 $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) bib_apacite3
 
 bib_apacite_dblsp.rtf: bib_apacite_dblsp.tex
 	$(LATEX) bib_apacite_dblsp $(LATEX_LOG)
@@ -149,6 +173,11 @@ bib_natbib3.rtf: bib_natbib3.tex
 	$(LATEX) bib_natbib3 $(LATEX_LOG)
 	$(LATEX) bib_natbib3 $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_natbib3
+
+bib_natbib4.rtf: bib_natbib4.tex
+	$(LATEX) bib_natbib4 $(LATEX_LOG)
+	$(LATEX) bib_natbib4 $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) bib_natbib4
 
 bib_apanat.rtf: bib_apanat.tex
 	$(LATEX) bib_apanat $(LATEX_LOG)
@@ -191,6 +220,11 @@ misc2.rtf: misc2.tex
 	$(LATEX) misc2 $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) misc2
 
+misc4.rtf: misc4.tex
+	$(LATEX) misc4 $(LATEX_LOG)
+	$(LATEX) misc4 $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) misc4
+
 german.rtf: german.tex
 	$(LATEX) german $(LATEX_LOG)
 	$(LATEX) german $(LATEX_LOG)
@@ -218,6 +252,9 @@ fig_test2.rtf: fig_test2.tex fig_testb.pdf fig_testc.pdf
 
 fig_test3.rtf: fig_test3.tex fig_testd.ps fig_testd.pdf
 	$(LATEX2RTF) $(OPTIONS) fig_test3
+
+fig_png.rtf: fig_png.tex fig_10x15.png
+	$(LATEX2RTF) $(OPTIONS) fig_png
 
 linux.rtf: linux.tex
 	$(LATEX) linux $(LATEX_LOG)
@@ -267,6 +304,15 @@ hyperref.rtf: hyperref.tex
 	$(LATEX) hyperref $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) hyperref
 
+tabular.rtf: tabular.tex
+	$(LATEX2RTF) $(OPTIONS) -t3 tabular
+
+tabbing.rtf: tabbing.tex
+	$(LATEX2RTF) $(OPTIONS) -t3 tabbing
+
+table_array1.rtf: table_array1.tex
+	$(LATEX2RTF) $(OPTIONS) -t3 table_array1
+	
 check:
 	./bracecheck
 	

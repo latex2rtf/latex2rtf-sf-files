@@ -1,14 +1,14 @@
-# $Id: Makefile,v 1.113 2005/01/30 02:14:14 prahl Exp $
-
-CC=gcc
+CC?=gcc
+TAR?=gnutar
+RM?=rm
 MKDIR=mkdir -p
-TAR=gnutar
-RM=rm
+PKGMANDIR?=man
 
-CFLAGS:=-DUNIX
-#CFLAGS:=-DMSDOS         #Windows/DOS
-#CFLAGS:=-DMAC_CLASSIC   #MacOS 8/9
-#CFLAGS:=-DOS2           #OS/2
+CFLAGS:=$(CFLAGS) -DUNIX
+#CFLAGS:=$(CFLAGS) -DUNIX -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m64  -mtune=generic
+#CFLAGS:=$(CFLAGS) -DMSDOS -DNOSTDERR #Windows/DOS
+#CFLAGS:=$(CFLAGS) -DMAC_CLASSIC   #MacOS 8/9
+#CFLAGS:=$(CFLAGS) -DOS2           #OS/2
 
 #Uncomment for some windows machines (not needed for djgpp)
 #EXE_SUFFIX=.exe
@@ -16,21 +16,18 @@ CFLAGS:=-DUNIX
 #Uncomment next line for windows machines
 #PREFIX_DRIVE=c:
 
-#Uncomment next line when using gcc compiler, target linux
-LINK_FLAGS = -lm
-
 #Uncomment next line when using rsx compiler, target win32
 #CFLAGS:=$(CFLAGS) -Zwin32  
 
 #Base directory - adapt as needed
-PREFIX=$(PREFIX_DRIVE)/usr/local
+PREFIX?=$(PREFIX_DRIVE)/usr/local
 
 #Name of executable binary --- beware of 8.3 restriction under DOS
 BINARY_NAME=latex2rtf$(EXE_SUFFIX)
 
 # Location of binary, man, info, and support files - adapt as needed
 BIN_INSTALL=$(PREFIX)/bin
-MAN_INSTALL=$(PREFIX)/man/man1
+MAN_INSTALL=$(PREFIX)/$(PKGMANDIR)/man1
 INFO_INSTALL=$(PREFIX)/info
 SUPPORT_INSTALL=$(PREFIX)/share/latex2rtf
 CFG_INSTALL=$(PREFIX)/share/latex2rtf/cfg
@@ -39,29 +36,19 @@ CFG_INSTALL=$(PREFIX)/share/latex2rtf/cfg
 
 CFLAGS:=$(CFLAGS) -g -Wall -fsigned-char
 
-LIBS=
-#LIBS=-lMallocDebug -force_flat_namespace
+LIBS= -lm
 
-VERSION:="`scripts/version`"
-
-# Locations for MacOS X packaging
-PWD := $(shell pwd)
-PKG_DIR := "$(PWD)/macosx/pkgdir"
-PKG_CONTENTS="$(PKG_DIR)/Package_contents"
-PKG_RESOURCES="$(PKG_DIR)/Install_resources"
-PKG_NAME:="$(PWD)/macosx/dmg/latex2rtf-$(VERSION)/latex2rtf.pkg"
-PKG_MAKER=/Developer/Applications/PackageMaker.app/Contents/MacOS/PackageMaker
-DMG_DIR := "$(PWD)/macosx/dmg/latex2rtf-$(VERSION)"
+L2R_VERSION:="latex2rtf-`grep 'Version' version.h | sed 's/[^"]*"\([^" ]*\).*/\1/'`"
 
 SRCS=commands.c chars.c direct.c encodings.c fonts.c funct1.c tables.c ignore.c \
 	main.c stack.c cfg.c utils.c parser.c lengths.c counters.c letterformat.c \
 	preamble.c equations.c convert.c xrefs.c definitions.c graphics.c \
-	mygetopt.c styles.c preparse.c vertical.c
+	mygetopt.c styles.c preparse.c vertical.c fields.c
 
 HDRS=commands.h chars.h direct.h encodings.h fonts.h funct1.h tables.h ignore.h \
     main.h stack.h cfg.h utils.h parser.h lengths.h counters.h letterformat.h \
     preamble.h equations.h convert.h xrefs.h definitions.h graphics.h encoding_tables.h \
-    version.h mygetopt.h styles.h preparse.h vertical.h
+    version.h mygetopt.h styles.h preparse.h vertical.h fields.h
 
 CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg cfg/style.cfg \
     cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
@@ -81,7 +68,7 @@ DOCS= doc/latex2rtf.1   doc/latex2png.1    doc/latex2rtf.texi doc/latex2rtf.pdf 
 README= README README.DOS README.Mac README.OS2 README.Solaris README.VMS README.OSX \
         Copyright ChangeLog
 
-SCRIPTS= scripts/version scripts/latex2png scripts/latex2png_1 scripts/latex2png_2 \
+SCRIPTS= scripts/latex2png scripts/latex2png_1 scripts/latex2png_2 \
 	scripts/pdf2pnga scripts/README \
 	scripts/Makefile scripts/test1.tex scripts/test2.tex scripts/test3.tex \
 	scripts/test3a.tex scripts/test4.tex scripts/test1fig.eps
@@ -127,21 +114,24 @@ TEST=  \
 	test/enc_cp1251.tex          test/fig_testb.pdf      test/tabular.tex       \
 	test/enc_cp1252.tex          test/fig_testb.ps       test/theorem.tex       \
 	test/enc_cp437.tex           test/fig_testc.pdf      test/ttgfsr7.tex       \
-	test/enc_cp850.tex           test/fig_testc.ps       test/unicode.tex       \
+	test/enc_cp850.tex           test/fig_testc.ps       test/ucsymbols.tex       \
 	test/bib_apa.tex             test/bib_apa.bib        test/bib_apacite2.tex  \
 	test/bib_apacite2.bib        test/fig_subfig.tex     test/include4.tex      \
 	test/include5.tex            test/hyperref.tex       test/bib_super.bib     \
-	test/longstack.tex
+	test/longstack.tex           test/table_array1.tex   test/table_array2.tex  \
+	test/bib_apacite3.tex        test/bib_apacite3.bib   test/color2.tex        \
+	test/fig_png.tex             test/fig_10x15.png      test/psfig.sty \
+	test/cyrillic.tex            test/greek.tex
 	
 OBJS=fonts.o direct.o encodings.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o utils.o parser.o lengths.o counters.o \
 	preamble.o letterformat.o equations.o convert.o xrefs.o definitions.o graphics.o \
-	mygetopt.o styles.o preparse.o vertical.o
+	mygetopt.o styles.o preparse.o vertical.o fields.o
 
 all : checkdir latex2rtf
 
 latex2rtf: $(OBJS) $(HDRS)
-	$(CC) $(CFLAGS) $(LINK_FLAGS) $(OBJS)	$(LIBS) -o $(BINARY_NAME)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS)	$(LIBS) -o $(BINARY_NAME)
 
 cfg.o: Makefile cfg.c
 	$(CC) $(CFLAGS) -DCFGDIR=\"$(CFG_INSTALL)\" -c cfg.c -o cfg.o
@@ -150,8 +140,8 @@ main.o: Makefile main.c
 	$(CC) $(CFLAGS) -DCFGDIR=\"$(CFG_INSTALL)\" -c main.c -o main.o
 
 check test: latex2rtf
-	cd scripts && $(MAKE)
-	cd test && $(MAKE) 
+	cd test && $(MAKE) clean
+	cd test && $(MAKE)
 	cd test && $(MAKE) check
 	
 fullcheck: latex2rtf
@@ -172,23 +162,22 @@ depend: $(SRCS)
 
 dist: checkdir releasedate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makefile vms_make.com $(SCRIPTS) $(DOCS) $(TEST)
 	$(MAKE) releasedate
-	$(MKDIR) latex2rtf-$(VERSION)
-	$(MKDIR) latex2rtf-$(VERSION)/cfg
-	$(MKDIR) latex2rtf-$(VERSION)/doc
-	$(MKDIR) latex2rtf-$(VERSION)/test
-	$(MKDIR) latex2rtf-$(VERSION)/scripts
-	ln $(SRCS)         latex2rtf-$(VERSION)
-	ln $(HDRS)         latex2rtf-$(VERSION)
-	ln $(README)       latex2rtf-$(VERSION)
-	ln Makefile        latex2rtf-$(VERSION)
-	ln vms_make.com    latex2rtf-$(VERSION)
-	ln $(CFGS)         latex2rtf-$(VERSION)/cfg
-	ln $(DOCS)         latex2rtf-$(VERSION)/doc
-	ln $(SCRIPTS)      latex2rtf-$(VERSION)/scripts
-	ln $(TEST)         latex2rtf-$(VERSION)/test
-	$(TAR) cvf - latex2rtf-$(VERSION) | \
-	    gzip > latex2rtf-$(VERSION).tar.gz
-	$(RM) -rf latex2rtf-$(VERSION)
+	$(MKDIR) $(L2R_VERSION)
+	$(MKDIR) $(L2R_VERSION)/cfg
+	$(MKDIR) $(L2R_VERSION)/doc
+	$(MKDIR) $(L2R_VERSION)/test
+	$(MKDIR) $(L2R_VERSION)/scripts
+	ln $(SRCS)         $(L2R_VERSION)
+	ln $(HDRS)         $(L2R_VERSION)
+	ln $(README)       $(L2R_VERSION)
+	ln Makefile        $(L2R_VERSION)
+	ln vms_make.com    $(L2R_VERSION)
+	ln $(CFGS)         $(L2R_VERSION)/cfg
+	ln $(DOCS)         $(L2R_VERSION)/doc
+	ln $(SCRIPTS)      $(L2R_VERSION)/scripts
+	ln $(TEST)         $(L2R_VERSION)/test
+	$(TAR) cvfz $(L2R_VERSION).tar.gz $(L2R_VERSION)
+	rm -rf $(L2R_VERSION)
 
 uptodate:
 	perl -pi.bak -e '$$date=scalar localtime; s/\(.*/($$date)";/' version.h
@@ -235,42 +224,12 @@ install-info: doc/latex2rtf.info
 	install-info --info-dir=$(INFO_INSTALL) doc/latex2rtf.info
 
 realclean: checkdir clean
-	$(RM) -f makefile.depend latex2rtf-$(VERSION).tar.gz
+	$(RM) -f makefile.depend $(L2R_VERSION).tar.gz
 	cd doc && $(MAKE) clean
 	cd test && $(MAKE) clean
 
 splint: 
 	splint -weak $(SRCS) $(HDRS)
-
-pkg:
-	$(MKDIR) $(PKG_CONTENTS)/$(BIN_INSTALL)
-	$(MKDIR) $(PKG_CONTENTS)/$(MAN_INSTALL)
-	$(MKDIR) $(PKG_CONTENTS)/$(CFG_INSTALL)
-	$(MKDIR) $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
-	$(MKDIR) $(PKG_RESOURCES)
-	$(MKDIR) $(DMG_DIR)
-
-	cp $(BINARY_NAME)     $(PKG_CONTENTS)/$(BIN_INSTALL)
-	cp scripts/latex2png  $(PKG_CONTENTS)/$(BIN_INSTALL)
-	cp doc/latex2rtf.1    $(PKG_CONTENTS)/$(MAN_INSTALL)
-	cp doc/latex2png.1    $(PKG_CONTENTS)/$(MAN_INSTALL)
-	cp $(CFGS)            $(PKG_CONTENTS)/$(CFG_INSTALL)
-	cp doc/latex2rtf.html $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
-	cp doc/latex2rtf.pdf  $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
-	cp doc/latex2rtf.txt  $(PKG_CONTENTS)/$(SUPPORT_INSTALL)
-
-	cp macosx/License.rtf $(PKG_RESOURCES)
-	cp macosx/ReadMe.html $(PKG_RESOURCES)
-	cp macosx/Welcome.html $(PKG_RESOURCES)
-	
-	-$(PKG_MAKER) -build -p $(PKG_NAME) -r $(PKG_RESOURCES) -f $(PKG_CONTENTS)
-	mkdmg $(DMG_DIR)
-	
-	$(RM) -rf $(PKG_DIR)
-	
-	mkdmg 
-	
-	
 	
 .PHONY: all check checkdir clean depend dist doc install install_info realclean latex2rtf uptodate releasedate splint fullcheck
 
@@ -279,7 +238,7 @@ commands.o: commands.c cfg.h main.h convert.h chars.h fonts.h preamble.h \
   funct1.h tables.h equations.h letterformat.h commands.h parser.h \
   xrefs.h ignore.h lengths.h definitions.h graphics.h vertical.h
 chars.o: chars.c main.h commands.h fonts.h cfg.h ignore.h encodings.h \
-  parser.h chars.h funct1.h convert.h utils.h vertical.h
+  parser.h chars.h funct1.h convert.h utils.h vertical.h fields.h
 direct.o: direct.c main.h direct.h fonts.h cfg.h utils.h
 encodings.o: encodings.c main.h fonts.h funct1.h encodings.h \
   encoding_tables.h chars.h
@@ -296,7 +255,8 @@ ignore.o: ignore.c main.h direct.h fonts.h cfg.h ignore.h funct1.h \
   commands.h parser.h convert.h utils.h vertical.h
 main.o: main.c main.h mygetopt.h convert.h commands.h chars.h fonts.h \
   stack.h direct.h ignore.h version.h funct1.h cfg.h encodings.h utils.h \
-  parser.h lengths.h counters.h preamble.h xrefs.h preparse.h vertical.h
+  parser.h lengths.h counters.h preamble.h xrefs.h preparse.h vertical.h \
+  fields.h
 stack.o: stack.c main.h stack.h
 cfg.o: cfg.c main.h convert.h funct1.h cfg.h utils.h
 utils.o: utils.c main.h utils.h parser.h
@@ -305,26 +265,29 @@ parser.o: parser.c main.h commands.h cfg.h stack.h utils.h parser.h \
 lengths.o: lengths.c main.h utils.h lengths.h parser.h
 counters.o: counters.c main.h utils.h counters.h
 letterformat.o: letterformat.c main.h parser.h letterformat.h cfg.h \
-  commands.h funct1.h convert.h
+  commands.h funct1.h convert.h vertical.h
 preamble.o: preamble.c main.h convert.h utils.h preamble.h fonts.h cfg.h \
   encodings.h parser.h funct1.h lengths.h ignore.h commands.h counters.h \
   xrefs.h direct.h styles.h vertical.h
 equations.o: equations.c main.h convert.h commands.h stack.h fonts.h \
   cfg.h ignore.h parser.h equations.h counters.h funct1.h lengths.h \
-  utils.h graphics.h xrefs.h chars.h preamble.h vertical.h
+  utils.h graphics.h xrefs.h chars.h preamble.h vertical.h fields.h
 convert.o: convert.c main.h convert.h commands.h chars.h funct1.h fonts.h \
   stack.h tables.h equations.h direct.h ignore.h cfg.h encodings.h \
-  utils.h parser.h lengths.h counters.h preamble.h vertical.h
+  utils.h parser.h lengths.h counters.h preamble.h vertical.h fields.h
 xrefs.o: xrefs.c main.h utils.h convert.h funct1.h commands.h cfg.h \
   xrefs.h parser.h preamble.h lengths.h fonts.h styles.h definitions.h \
-  equations.h vertical.h
+  equations.h vertical.h fields.h counters.h
 definitions.o: definitions.c main.h convert.h definitions.h parser.h \
   funct1.h utils.h cfg.h counters.h
-graphics.o: graphics.c cfg.h main.h graphics.h parser.h utils.h \
+graphics.o: graphics.c main.h cfg.h graphics.h parser.h utils.h \
   commands.h convert.h funct1.h preamble.h counters.h vertical.h
 mygetopt.o: mygetopt.c main.h mygetopt.h
-styles.o: styles.c main.h direct.h fonts.h cfg.h utils.h parser.h
-preparse.o: preparse.c cfg.h main.h utils.h definitions.h parser.h \
-  funct1.h
+styles.o: styles.c main.h direct.h fonts.h cfg.h utils.h parser.h \
+  styles.h vertical.h
+preparse.o: preparse.c preparse.h cfg.h main.h utils.h definitions.h \
+  parser.h funct1.h
 vertical.o: vertical.c main.h funct1.h cfg.h utils.h parser.h lengths.h \
-  vertical.h
+  vertical.h convert.h commands.h styles.h fonts.h stack.h xrefs.h \
+  counters.h fields.h
+fields.o: fields.c main.h fields.h

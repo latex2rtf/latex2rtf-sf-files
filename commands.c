@@ -64,7 +64,7 @@ static CommandArray commands[] = {
     {"end", CmdBeginEnd, CMD_END},
     {"today", CmdToday, 0},
 	{"footnote", CmdFootNote, FOOTNOTE},
-	{"endnote", CmdFootNote, FOOTNOTE | FOOTNOTE_ENDNOTE},
+	{"endnote", CmdFootNote, ENDNOTE},
 
 	{"rmfamily", CmdFontFamily, F_FAMILY_ROMAN  },
     {"rm", CmdFontFamily, F_FAMILY_ROMAN_1},
@@ -339,12 +339,19 @@ static CommandArray commands[] = {
     {"stackrel", CmdStackrel, 0},
     {"matrix", CmdMatrix, 0},
     {"overline",CmdOverLine,0},
-    {"leftrightarrows", CmdArrows, LEFT_RIGHT},
-    {"leftleftarrows", CmdArrows, LEFT_LEFT},
-    {"rightrightarrows", CmdArrows, RIGHT_RIGHT},
-    {"longleftrightarrows", CmdArrows, LONG_LEFTRIGHT},
+    {"rightleftarrows",  CmdUnicodeChar, 8644},
+    {"leftrightarrows",  CmdUnicodeChar, 8646},
+    {"leftleftarrows",   CmdUnicodeChar, 8647},
+    {"rightrightarrows", CmdUnicodeChar, 8649},
+/*  {"longleftarrow", CmdUnicodeChar, 10229}, */
     {"longleftarrow", CmdArrows, LONG_LEFT},
+/*  {"longrightarrow", CmdUnicodeChar, 10230}, */
     {"longrightarrow", CmdArrows, LONG_RIGHT},
+/*  {"longleftrightarrow", CmdUnicodeChar, 10231}, */
+    {"longleftrightarrow", CmdArrows, LONG_LEFTRIGHT},
+    {"Longleftarrow", CmdUnicodeChar, 10232},
+    {"Longrightarrow", CmdUnicodeChar, 10233},
+    {"Longleftrightarrow", CmdUnicodeChar, 10234},
     {"psset", CmdPsset, 0},
     {"newpsstyle", CmdNewPsStyle, 0},
 
@@ -371,8 +378,8 @@ static CommandArray commands[] = {
     {"coprod",            CmdMTExtraChar, MTEXTRA_COPROD},
  
     {"simeq",             CmdMTExtraChar, MTEXTRA_SIMEQ},
-    {"ll",                CmdMTExtraChar, MTEXTRA_LL},
-    {"gg",                CmdMTExtraChar, MTEXTRA_GG},
+    {"ll",                CmdUnicodeChar, 8810},
+    {"gg",                CmdUnicodeChar, 8811},
     {"doteq",             CmdMTExtraChar, MTEXTRA_DOTEQ},
     {"because",           CmdMTExtraChar, MTEXTRA_BECAUSE},
     {"measuredangle",     CmdMTExtraChar, MTEXTRA_MEASUREDANGLE},
@@ -394,9 +401,10 @@ static CommandArray commands[] = {
 	
     {"nobreakspace", CmdNonBreakSpace, 100},
     {"thinspace", CmdNonBreakSpace, 50},
-    {"abstract", CmdAbstract, 2},
+    {"abstract", CmdAbstract, ABSTRACT_SIMPLE},
     {"endinput", CmdEndInput, 0},
-    {"textcolor", CmdTextColor, 0},
+    {"color", CmdTextColor, 0},
+    {"textcolor", CmdTextColor, 1},
     {"tableofcontents", CmdTableOfContents, 0},
     {"listoffigures", CmdListOf, LIST_OF_FIGURES},
     {"listoftables", CmdListOf, LIST_OF_TABLES},
@@ -407,6 +415,32 @@ static CommandArray commands[] = {
     {"pagenumbering", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
+    
+	{"acrodef",    CmdAcronymDef,   0},
+	{"acresetall", CmdAcronymReset, 0},
+	{"AC"     ,    CmdAC,           0},
+	{"ac"     ,    CmdAcronymAc,    ACRONYM_AC},
+	{"acl"    ,    CmdAcronymAc,    ACRONYM_ACL},
+	{"acs"    ,    CmdAcronymAc,    ACRONYM_ACS},
+	{"acf"    ,    CmdAcronymAc,    ACRONYM_ACF},
+	{"acfi"   ,    CmdAcronymAc,    ACRONYM_ACF}, 
+	{"acp"    ,    CmdAcronymAc,    ACRONYM_ACP},
+	{"aclp"   ,    CmdAcronymAc,    ACRONYM_ACLP},
+	{"acsp"   ,    CmdAcronymAc,    ACRONYM_ACSP},
+	{"acfp"   ,    CmdAcronymAc,    ACRONYM_ACFP},
+	{"acsu"   ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_USED},
+	{"aclu"   ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_USED},
+	{"ac*"    ,    CmdAcronymAc,    ACRONYM_AC   | ACRONYM_STAR},
+	{"acs*"   ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_STAR},
+	{"acl*"   ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_STAR},
+	{"acf*"   ,    CmdAcronymAc,    ACRONYM_ACF  | ACRONYM_STAR},
+	{"acp*"   ,    CmdAcronymAc,    ACRONYM_ACP  | ACRONYM_STAR},
+	{"acsp*"  ,    CmdAcronymAc,    ACRONYM_ACSP | ACRONYM_STAR},
+	{"aclp*"  ,    CmdAcronymAc,    ACRONYM_ACLP | ACRONYM_STAR},
+	{"acfp*"  ,    CmdAcronymAc,    ACRONYM_ACFP | ACRONYM_STAR},
+	{"acfi*"  ,    CmdAcronymAc,    ACRONYM_AC   | ACRONYM_STAR},
+	{"acsu*"  ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_STAR | ACRONYM_USED},
+	{"aclu*"  ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_STAR | ACRONYM_USED},
     
 	{"aleph", CmdSymbolChar, 0xc0},
 	{"alpha", CmdSymbolChar, (int) 'a'},
@@ -451,6 +485,7 @@ static CommandArray commands[] = {
 	{"int", CmdSymbolChar, 0xf2},
 	{"iota", CmdSymbolChar, (int) 'i'},
 	{"kappa", CmdSymbolChar, (int) 'k'},
+/*	{"lambda", CmdSTIXChar, 0xE1A0}, */
 	{"lambda", CmdSymbolChar, (int) 'l'},
 	{"Lambda", CmdSymbolChar, (int) 'L'},
 	{"land", CmdSymbolChar, 0xd9},
@@ -505,9 +540,10 @@ static CommandArray commands[] = {
 	{"supseteq", CmdSymbolChar, 0xca},
 	{"surd", CmdSymbolChar, 0xd6},
 	{"tau", CmdSymbolChar, (int) 't'},
-	{"textalpha", CmdSymbolChar, (int) 'a'},
-	{"textbeta", CmdSymbolChar, (int) 'b'},
 	{"textbullet", CmdSymbolChar, 0xb7},
+	{"textperiodcentered", CmdSymbolChar, 0xd7},
+/*	{"textalpha", CmdSymbolChar, (int) 'a'},
+	{"textbeta", CmdSymbolChar, (int) 'b'},
 	{"textchi", CmdSymbolChar, (int) 'c'},
 	{"textDelta", CmdSymbolChar, (int) 'D'},
 	{"textdelta", CmdSymbolChar, (int) 'd'},
@@ -523,7 +559,6 @@ static CommandArray commands[] = {
 	{"textnu", CmdSymbolChar, (int) 'n'},
 	{"textOmega", CmdSymbolChar, (int) 'W'},
 	{"textomega", CmdSymbolChar, (int) 'w'},
-	{"textperiodcentered", CmdSymbolChar, 0xd7},
 	{"textPhi", CmdSymbolChar, (int) 'F'},
 	{"textphi", CmdSymbolChar, (int) 'f'},
 	{"textPi", CmdSymbolChar, (int) 'P'},
@@ -538,7 +573,7 @@ static CommandArray commands[] = {
 	{"texttheta", CmdSymbolChar, (int) 'q'},
 	{"textXi", CmdSymbolChar, (int) 'X'},
 	{"textxi", CmdSymbolChar, (int) 'x'},
-	{"textzeta", CmdSymbolChar, (int) 'z'},
+	{"textzeta", CmdSymbolChar, (int) 'z'},*/
 	{"therefore", CmdSymbolChar, 0x5c},
 	{"Theta", CmdSymbolChar, (int) 'Q'},
 	{"theta", CmdSymbolChar, (int) 'q'},
@@ -621,10 +656,11 @@ static CommandArray PreambleCommands[] = {
     {"headheight", CmdSetTexLength, SL_HEADHEIGHT},
     {"headsep", CmdSetTexLength, SL_HEADSEP},
     {"textwidth", CmdSetTexLength, SL_TEXTWIDTH},
+    {"linewidth", CmdSetTexLength, SL_LINEWIDTH},
     {"oddsidemargin", CmdSetTexLength, SL_ODDSIDEMARGIN},
     {"evensidemargin", CmdSetTexLength, SL_EVENSIDEMARGIN},
     {"footnotetext", CmdFootNote, FOOTNOTE_TEXT},
-    {"endnotetext", CmdFootNote, FOOTNOTE_TEXT | FOOTNOTE_ENDNOTE},
+    {"endnotetext", CmdFootNote, ENDNOTE_TEXT},
     {"include", CmdInclude, 0},
     {"input", CmdInclude, 1},
     {"nobreakspace", CmdNonBreakSpace, 100},
@@ -635,8 +671,8 @@ static CommandArray PreambleCommands[] = {
     {"theendnotes", CmdTheEndNotes, 0},
     {"euro", CmdEuro, 0},
     {"EUR", CmdEuro, 1},
-    {"celsius", CmdDegreeCelsius},
-    {"degreecelsius", CmdDegreeCelsius},
+    {"celsius", CmdDegreeCelsius, 0},
+    {"degreecelsius", CmdDegreeCelsius, 0},
     {"resizebox", CmdResizeBox, 0},
     {"resizebox*", CmdResizeBox, 1},    
     {"geometry",CmdGeometry,0},
@@ -646,6 +682,8 @@ static CommandArray PreambleCommands[] = {
     {"latextortftrue",CmdIgnore,1}, 
     {"latextortffalse",CmdIgnore,0}, 
     {"newif",CmdNewif,0},
+    {"else",CmdElse,0},
+    {"fi",CmdFi,0},
     {"title", CmdTitle, TITLE_TITLE},
     {"author", CmdTitle, TITLE_AUTHOR},
     {"and", CmdAnd, 0},
@@ -667,6 +705,7 @@ static CommandArray ItemizeCommands[] = {
 
 static CommandArray DescriptionCommands[] = {
     {"item", CmdItem, DESCRIPTION_MODE},
+    {"acro", CmdAcronymItem, 0},
     {"", NULL, 0}
 };
 
@@ -839,6 +878,7 @@ static CommandArray params[] = {
     {"document", Environment, DOCUMENT_MODE},
     {"tabbing", CmdTabbing, TABBING},
     {"figure", CmdFigure, FIGURE},
+    {"wrapfigure", CmdFigure, WRAP_FIGURE},
     {"figure*", CmdFigure, FIGURE_1},
     {"picture", CmdPicture, 0},
     {"minipage", CmdMinipage, 0},
@@ -854,6 +894,7 @@ static CommandArray params[] = {
     {"itemize", CmdList, ITEMIZE_MODE},
 	{"compactitem", CmdList, ITEMIZE_MODE},
     {"description", CmdList, DESCRIPTION_MODE},
+    {"acronym", CmdList, DESCRIPTION_MODE},
     
     {"asparaenum", CmdList, ENUMERATE_MODE},
 	{"inparaenum", CmdList, INPARAENUM_MODE},
@@ -884,7 +925,7 @@ static CommandArray params[] = {
     {"table", CmdTable, TABLE},
     {"table*", CmdTable, TABLE_STAR},
     {"thebibliography", CmdThebibliography, 0},
-    {"abstract", CmdAbstract, 1},
+    {"abstract", CmdAbstract, ABSTRACT_BEGIN_END},
 	{"acknowledgments", CmdAcknowledgments, 0},
     {"titlepage", CmdTitlepage, 0},
 
@@ -1001,6 +1042,7 @@ static CommandArray apaciteCommands[] = {
 	{"APACaddressPublisher", CmdApaCite, CITE_APA_ADD_PUB},
 	{"PrintBackRefs", CmdApaCite, CITE_PRINT_BACK_REFS}, 
 	{"PrintCardinal", CmdApaCite, CITE_PRINT_CARDINAL},
+	{"PrintOrdinal", CmdApaCite, CITE_PRINT_ORDINAL},
 	{"APACaddressPublisherEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
 	{"APACrefaetitle", CmdApaCite, CITE_APA_REF_A_E_TITLE},
 	{"APACrefbetitle", CmdApaCite, CITE_APA_REF_B_E_TITLE},
@@ -1062,6 +1104,7 @@ static CommandArray natbibCommands[] = {
     {"Citealp", CmdNatbibCite, CITE_ALP_CAP},
     {"Citeauthor", CmdNatbibCite, CITE_AUTHOR_CAP},
     {"bibpunct", CmdBibpunct, 0},
+    {"natexlab", CmdNatexlab, 0},
     {"", NULL, 0}
 };
 
@@ -1141,7 +1184,7 @@ static CommandArray ignoreCommands[] = {
     {"", NULL, 0}
 };
 
-bool CallCommandFunc(char *cCommand)
+int CallCommandFunc(char *cCommand)
 
 /****************************************************************************
 purpose: Tries to call the command-function for the commandname
@@ -1219,7 +1262,7 @@ globals: command-functions have side effects or recursive calls
     if (AddParam == ON) {
         snprintf(unknown_environment, 100, "\\%s%s%s", "end{", cCommand, "}");
         Ignore_Environment(cCommand);
-        diagnostics(WARNING, "Unknown environment \\begin{%s} ... \end{%s}", cCommand, cCommand);
+        diagnostics(WARNING, "Unknown environment \\begin{%s} ... \\end{%s}", cCommand, cCommand);
     }
 }
 
@@ -1260,7 +1303,7 @@ static char *EnvironmentName(CommandArray *code)
 	if (code == CzechModeCommands)
 		return strdup("czech");
 	if (code == FigureCommands)
-		return strdup("figure");
+		return strdup("figure or wrapfigure");
 	if (code == ignoreCommands)
 		return strdup("unknown environment");
 	if (code == hyperlatexCommands)
@@ -1428,7 +1471,7 @@ purpose: removes the environment-commands list added by last PushEnvironment;
 globals: changes Environment - array of active environments
 		 iEnvCount - counter of active environments
  ****************************************************************************/
-void PopEnvironment()
+void PopEnvironment(void)
 {
 	char *this_env, *last_env;
 

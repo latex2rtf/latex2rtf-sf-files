@@ -25,7 +25,7 @@ Authors:
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
+#include "preparse.h"
 #include "cfg.h"
 #include "main.h"
 #include "utils.h"
@@ -35,14 +35,14 @@ Authors:
 
 #define SECTION_BUFFER_SIZE 2048
 static char *section_buffer = NULL;
-static size_t section_buffer_size = SECTION_BUFFER_SIZE;
-static size_t section_buffer_end = 0;
+static long section_buffer_size = SECTION_BUFFER_SIZE;
+static long section_buffer_end = 0;
 
 static void increase_buffer_size(void)
 {
     char *new_section_buffer;
 
-    new_section_buffer = malloc(2 * section_buffer_size + 1);
+    new_section_buffer = (char *) malloc(2 * section_buffer_size + 1);
     if (new_section_buffer == NULL)
         diagnostics(ERROR, "Could not allocate enough memory to process file. Sorry.");
     memmove(new_section_buffer, section_buffer, section_buffer_size);
@@ -72,7 +72,7 @@ static void show_buffer(char *s)
 static void add_chr_to_buffer(char c)
 {
     if (section_buffer == NULL) {
-        section_buffer = malloc(section_buffer_size + 1);
+        section_buffer = (char *) malloc(section_buffer_size + 1);
         if (section_buffer == NULL)
             diagnostics(ERROR, "Could not allocate enough memory to process file. Sorry.");
     }
@@ -104,10 +104,10 @@ static void add_str_to_buffer(const char *s)
 
 static int matches_buffer_tail(const char *s)
 {
-	size_t len;
+	long len;
 
 	if (s==NULL) return FALSE;
-	len = strlen(s);
+	len = (long) strlen(s);
 	
 	if (len > section_buffer_end+1) return FALSE;
 	
@@ -143,40 +143,6 @@ static void move_end_of_buffer(size_t n)
 		*(section_buffer+section_buffer_end)
 		);
 	}
-}
-
-static char *getBeginEndParam(void)
-
-/**************************************************************************
-     purpose: allocates and returns the next parameter in the LaTeX file
-              Examples:  (^ indicates the current file position)
-              
-     \beginning    --->  NULL                \begin \alpha --->  NULL
-           ^                                       ^
-     \begin{text}  --->  "text"              \begin { text } --->  "text"
-           ^                                       ^
- **************************************************************************/
-{
-    char s, *text, *raw;
-
-    s = getNonSpace();       /* skip spaces and one possible newline */
-    if (s == '\n')
-        s = getNonSpace();
-
-    if (s != '{') {
-        ungetTexChar(s);
-        return NULL;
-    }
-
-    PushTrackLineNumber(FALSE);
-    
-    raw = getDelimitedText('{', '}', FALSE);
-    text = strdup_noendblanks(raw);
-    free(raw);
-
-    PopTrackLineNumber();
-    diagnostics(6, "Leaving getBeginEndParam {%s}", text);
-    return text;
 }
 
 void preParse(char **body, char **header, char **label)
@@ -332,15 +298,16 @@ void preParse(char **body, char **header, char **label)
 		   if it is a user environment, then expansion also happens here
 		   it it is something else then we may or may not have to mess with it. */
 
-		/* hack to convert '\begin { environment}' --> '\begin{environ}' */
-        if (matches_buffer_tail("\\begin") || matches_buffer_tail("\\end") ) {
-        	char *env = getBeginEndParam();
-        	if (env != NULL) {    /* now add '{environ}' to buffer */
-        		add_chr_to_buffer('{');
-        		add_str_to_buffer(env);
-        		add_chr_to_buffer('}');
-       			free(env);
-        	}
+		/* hack to convert '\begin   {' --> '\begin{' */
+        if (cThis==' ' && (matches_buffer_tail("\\begin") || matches_buffer_tail("\\end")) ) {
+        	diagnostics(5, "matched '\\begin ' or '\\end '");
+        	do {cThis = getRawTexChar();} while (cThis == ' ');
+        }
+        
+		/* hack to convert '\begin{   ' --> '\begin{' */
+        if (cThis==' ' && (matches_buffer_tail("\\begin{") || matches_buffer_tail("\\end{")) ) {
+        	diagnostics(5, "matched '\\begin{ ' or '\\end{ '");
+        	do {cThis = getRawTexChar();} while (cThis == ' ');
         }
         
         any_possible_match = FALSE;
@@ -381,8 +348,8 @@ void preParse(char **body, char **header, char **label)
 
         /* is it a user defined environment? */
         if (possible_match[1]) {
-			char *p = section_buffer + section_buffer_end - cmd_pos;
-            possible_match[1] = maybeEnvironment(p, cmd_pos);
+			char *pp = section_buffer + section_buffer_end - cmd_pos;
+            possible_match[1] = maybeEnvironment(pp, cmd_pos);
             
         	if (possible_match[1] == TRUE) {
 	
@@ -391,25 +358,25 @@ void preParse(char **body, char **header, char **label)
 	
 				/* \begin{name} or \end{name} will end with '}' */
 				if (cNext == '}') {
-					char *str = NULL;
+					char *ss = NULL;
 					
-					*(p + cmd_pos + 1) = '\0';
-					if (*(p + 1) == 'e') {  
-						i = existsEnvironment(p + strlen("\\end{"));
-						str = expandEnvironment(i, CMD_END);
+					*(pp + cmd_pos + 1) = '\0';
+					if (*(pp + 1) == 'e') {  
+						i = existsEnvironment(pp + strlen("\\end{"));
+						ss = expandEnvironment(i, CMD_END);
 					} else { 
-						i = existsEnvironment(p + strlen("\\begin{"));
-						str = expandEnvironment(i, CMD_BEGIN);
+						i = existsEnvironment(pp + strlen("\\begin{"));
+						ss = expandEnvironment(i, CMD_BEGIN);
 					}
 	
-					if (str) {          /* found */
-						diagnostics(5, "matched <%s}>", p);
-						diagnostics(5, "expanded to <%s>", str);
+					if (ss) {          /* found */
+						diagnostics(5, "matched <%s}>", pp);
+						diagnostics(5, "expanded to <%s>", ss);
 	
-						PushSource(NULL, str);
+						PushSource(NULL, ss);
 						move_end_of_buffer(-cmd_pos-1); /* remove \begin{userenvironment} */
 						
-						free(str);
+						free(ss);
 						cmd_pos = 0;
 						continue;
 					}

@@ -68,7 +68,7 @@ int WriteFontName(const char **buffpoint)
     }
 
     fontname[i] = '\0';
-    fnumber = RtfFontNumber(fontname);
+    fnumber = TexFontNumber(fontname);
 
     if (fnumber < 0)
         diagnostics(ERROR, "Unknown font <%s>\nFound in cfg file command <%s>", fontname, buff);
@@ -78,7 +78,7 @@ int WriteFontName(const char **buffpoint)
     return fnumber;
 }
 
-bool TryDirectConvert(char *command)
+int TryDirectConvert(char *command)
 /******************************************************************************
   purpose: uses data from direct.cfg to try and immediately convert some
            LaTeX commands into RTF commands.  
@@ -87,18 +87,19 @@ bool TryDirectConvert(char *command)
     const char *buffpoint;
     const char *RtfCommand;
     char *TexCommand;
-    int font_number;
 
     TexCommand = strdup_together("\\", command);
-    RtfCommand = SearchRtfCmd(TexCommand, DIRECT_A);
-    if (RtfCommand == NULL)
+    RtfCommand = SearchCfgRtf(TexCommand, DIRECT_A);
+    if (RtfCommand == NULL) {
+    	free(TexCommand);
         return FALSE;
-
+	}
+	
     buffpoint = RtfCommand;
     diagnostics(4, "Directly converting %s to %s", TexCommand, RtfCommand);
     while (buffpoint[0] != '\0') {
         if (buffpoint[0] == '*') 
-            font_number = WriteFontName(&buffpoint);
+			WriteFontName(&buffpoint);
         else
             fprintRTF("%c", *buffpoint);
 

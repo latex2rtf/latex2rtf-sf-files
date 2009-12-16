@@ -23,6 +23,11 @@
  * Authors: 1995-1997 Ralf Schlatterbeck 1998-2000 Georg Lehner 2001-2002 Scott
  * Prahl
  */
+#if defined(NOSTDERR)
+#define ERROUT stdout
+#else
+#define ERROUT stderr
+#endif 
 
 #include <math.h>
 #include <stdlib.h>
@@ -34,17 +39,17 @@
 /******************************************************************************
  purpose:  returns true if n is odd
 ******************************************************************************/
-int odd(int n)
+int odd(long n)
 {
-    return (n & 1);
+    return (int) (n & 1);
 }
 
 /******************************************************************************
  purpose:  returns true if n is even
 ******************************************************************************/
-int even(int n)
+int even(long n)
 {
-    return (!(n & 1));
+    return (int) (!(n & 1));
 }
 
 /******************************************************************************
@@ -81,7 +86,8 @@ int strstr_count(const char *s, char *t)
 }
 
 /******************************************************************************
- purpose:  returns a new string with n characters from s (with '\0' at the end)
+ purpose:  returns a new string having n characters from src terminated with
+           '\0' at the end.  (so the length is n+1)
 ******************************************************************************/
 char *my_strndup(const char *src, size_t n)
 {
@@ -102,7 +108,8 @@ char *my_strndup(const char *src, size_t n)
 char *strdup_together(const char *s, const char *t)
 {
     char *both;
-
+	size_t siz;
+	
     if (s == NULL) {
         if (t == NULL)
             return NULL;
@@ -111,13 +118,17 @@ char *strdup_together(const char *s, const char *t)
     if (t == NULL)
         return strdup(s);
 
-    both = malloc(strlen(s) + strlen(t) + 1);
+	if (0) diagnostics(1, "'%s' + '%s'", s, t);
+    siz = strlen(s) + strlen(t) + 1;
+    both = (char *) malloc(siz);
+
     if (both == NULL)
         diagnostics(ERROR, "Could not allocate memory for both strings.");
 
-    strcpy(both, s);
-    strcat(both, t);
-    return both;
+    my_strlcpy(both, s, siz);
+    my_strlcat(both, t, siz);
+
+	return both;
 }
 
 /******************************************************************************
@@ -154,7 +165,7 @@ char *strdup_nocomments(const char *s)
     if (s == NULL)
         return NULL;
 
-    dup = malloc(strlen(s) + 1);
+    dup = (char *) malloc(strlen(s) + 1);
     p = dup;
 
     while (*s) {
@@ -186,7 +197,7 @@ char *strdup_noblanks(const char *s)
         return NULL;
     while (*s == ' ' || *s == '\n')
         s++;                    /* skip to non blank */
-    dup = malloc(strlen(s) + 1);
+    dup = (char *) malloc(strlen(s) + 1);
     p = dup;
     while (*s) {
         *p = *s;
@@ -227,7 +238,7 @@ char *strdup_printable(const char *s)
     
     if (s == NULL) return NULL;
 
-    dup = malloc(2*strlen(s));
+    dup = (char *) malloc(2*strlen(s));
 
     i=0;
     while (*s) {
@@ -477,6 +488,7 @@ int getStringDimension(char *s)
 		PopSource();
 	}
 	
+    diagnostics(5, "getStringDimension fore '%s' is %d twips", s, size);
 	return size;
 }
 
@@ -495,18 +507,103 @@ void show_string(int level, const char *s, const char *label)
 	}
 		
 	len = strlen(s);
-	fprintf(stderr, "\n%s: ", label);
+	fprintf(ERROUT, "\n%s: ", label);
 
 	for (i=0; i<len; i++) {
 	
 		if (i==width)
-			fprintf(stderr, "\n%-*d: ", (int) strlen(label), (int) strlen(s));
+			fprintf(ERROUT, "\n%-*d: ", (int) strlen(label), (int) strlen(s));
 		else if (i>1 && i % width == 0) 
-			fprintf(stderr, "\n%s: ",label);
+			fprintf(ERROUT, "\n%s: ",label);
 		c = s[i];
 		if (c == '\n') c = '=';
 		if (c == '\0') c = '*';
-		fprintf(stderr,"%c",c);
+		fprintf(ERROUT,"%c",c);
 	}
 }
 
+/* these next two routines fall under the copyright banner below.  The
+names of the routines have had 'my_' prepended to avoid conflicting
+with existing versions in string.h  */
+
+/*
+ * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*
+ * Copy src to string dst of size siz.  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless siz == 0).
+ * Returns strlen(src); if retval >= siz, truncation occurred.
+ */
+size_t
+my_strlcpy(char *dst, const char *src, size_t siz)
+{
+        char *d = dst;
+        const char *s = src;
+        size_t n = siz;
+
+        /* Copy as many bytes as will fit */
+        if (n != 0) {
+                while (--n != 0) {
+                        if ((*d++ = *s++) == '\0')
+                                break;
+                }
+        }
+
+        /* Not enough room in dst, add NUL and traverse rest of src */
+        if (n == 0) {
+                if (siz != 0)
+                        *d = '\0';                /* NUL-terminate dst */
+                while (*s++)
+                        ;
+        }
+
+        return(s - src - 1);        /* count does not include NUL */
+}
+
+/*
+ * Appends src to string dst of size siz (unlike strncat, siz is the
+ * full size of dst, not space left).  At most siz-1 characters
+ * will be copied.  Always NUL terminates (unless siz <= strlen(dst)).
+ * Returns strlen(src) + MIN(siz, strlen(initial dst)).
+ * If retval >= siz, truncation occurred.
+ */
+size_t
+my_strlcat(char *dst, const char *src, size_t siz)
+{
+        char *d = dst;
+        const char *s = src;
+        size_t n = siz;
+        size_t dlen;
+
+        /* Find the end of dst and adjust bytes left but don't go past end */
+        while (n-- != 0 && *d != '\0')
+                d++;
+        dlen = d - dst;
+        n = siz - dlen;
+
+        if (n == 0)
+                return(dlen + strlen(s));
+        while (*s != '\0') {
+                if (n != 1) {
+                        *d++ = *s;
+                        n--;
+                }
+                s++;
+        }
+        *d = '\0';
+
+        return(dlen + (s - src));        /* count does not include NUL */
+}

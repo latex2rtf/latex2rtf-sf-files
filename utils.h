@@ -24,8 +24,8 @@ Authors:
     2001-2003 Scott Prahl
 */
 
-int     odd(int n);
-int     even(int n);
+int     odd(long n);
+int     even(long n);
 double  my_rint(double nr);
 int     strstr_count(const char *s, char *t);
 char *  my_strndup(const char *s, size_t n);
@@ -44,3 +44,6 @@ char *  keyvalue_pair(char *t, char **key, char **value);
 int     getStringDimension(char *s);
 char *  getStringBraceParam(char **s);
 void    show_string(int level, const char *s, const char *label);
+
+size_t my_strlcpy(char *dst, const char *src, size_t siz);
+size_t my_strlcat(char *dst, const char *src, size_t siz);

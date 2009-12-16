@@ -116,8 +116,9 @@ void CmdIgnoreDef(int code);
 void CmdItem(int code);
 void CmdMinipage(int code);
 
-#define FIGURE 1
-#define FIGURE_1 5
+#define FIGURE      1
+#define FIGURE_1    5
+#define WRAP_FIGURE 6
 
 #define IGNORE_HTMLONLY  1
 #define IGNORE_PICTURE   2
@@ -142,14 +143,18 @@ void CmdMinipage(int code);
 #define NewPage 1
 #define NewColumn 2
 
-extern bool  g_processing_list_environment;
+#define ABSTRACT_SIMPLE             1
+#define ABSTRACT_BEGIN_END          2
+#define ABSTRACT_PRELUDE_BEGIN      3
+#define ABSTRACT_PRELUDE_END        4
+
+extern int  g_processing_list_environment;
 
 void CmdIgnoreEnviron(int code);
 void CmdFigure(int code);
 void CmdSubFigure(int code);
 void Cmd_OptParam_Without_braces(int code);
 void CmdColumn(int code);
-void CmdNewPage(int code);
 void GetInputParam(char *, int);
 void CmdBottom(int code);
 void CmdAbstract(int code);
@@ -176,4 +181,9 @@ void CmdRule(int code);
 void CmdTolerateEnviron(int code);
 void CmdIflatextortf(int code);
 void CmdNewif(int code);
+void CmdElse(int code);
+void CmdFi(int code);
+int TryConditionSet(char *command);
 void CmdAppendix(int code);
+void CmdAcronymItem(int code);
+

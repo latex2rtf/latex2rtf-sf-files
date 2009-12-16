@@ -303,23 +303,41 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Installation">Installation</a>
 
 <p>
 LaTeX2RTF
- is available for many Unix Platforms, for the Macintosh, and for MS-DOS, including
-all versions of MS Windows.
+ is available for many Unix Platforms, for the Macintosh, and for MS-DOS, 
+including all versions of MS Windows.
 
 The latest version of LaTeX2RTF
  is available at 
-<a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a> and &mdash; with some delay &mdash; on
-CTAN sites: e.g., <a href="http://www.dante.de">http://www.dante.de</a> or <a href="http://www.ctan.org">http://www.ctan.org</a>.
+<a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a> 
+and &mdash; with some delay &mdash; on CTAN sites: 
+e.g., <a href="http://www.dante.de">http://www.dante.de</a> or <a href="http://www.ctan.org">http://www.ctan.org</a>.
 
-The MS-DOS version (1.8aa and up) will also run under all MS Windows versions
-(including Windows Vista). It requires an i386 processor or better.  
+The DOS package (1.8aa and up) will also run under all MS Windows versions. 
+It requires an i386 processor or better.<br>
+It should only be used on older Microsoft systems
+(before Win95) because it has known issues when
+converting more than 26 equations to bitmaps.<br>
+For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI package.
 
-The Win32 distribution (starting from LaTeX2RTF
- 1.9.15) is the MS-DOS version 
+The win-NO-GUI package (starting from LaTeX2RTF
+ 1.9.19) is identical 
+to the DOS package except that it is compiled with Cygwin (up to 1.9.19) 
+or MinGW (1.9.20 and up), and only runs under Win32 
+(Win9x, ME, NT, 2000, XP, 2003, Vista).
+
+The win package (starting from LaTeX2RTF
+ 1.9.15) is the DOS package
+(up to LaTeX2RTF
+ 1.9.17) or the win-NO-GUI package (LaTeX2RTF
+ 1.9.18 and up)
 plus Win32 GUI program (l2rshell).<br>
-Starting from LaTeX2RTF
- 1.9.19, the Win32 distribution differs from the MS-DOS
-distribution in being compiled with Cygwin and thus having less restrictions.
+Up to version 1.9.19 it does not run under 64bit systems. 
+From version 1.9.20 it also runs under 64bit systems.
+
+The win64 package (LaTeX2RTF
+ 1.9.19) is the win package
+but with 32bit versions of the shell utilities so that it also runs
+on 64bit systems.
 
 There are a few people working on LaTeX2RTF
 , and some more make 
@@ -420,10 +438,11 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Installation">Installation</a>
 <h3 class="section">2.4 DOS</h3>
 
 <p>
-The <acronym>UNIX</acronym> and Mac distributions do not contain an executable for DOS 
+The <acronym>UNIX</acronym> and Mac packages do not contain an executable for DOS 
 or Windows. You may compile it yourself (with djgpp or MinGW)
-or get the DOS distribution as file <samp><span class="file">latex2rtf-x.x.x_dos.zip</span></samp>
-(where x.x.x is the version number) 
+or get the DOS package as file <samp><span class="file">latex2rtf-x.x.x_dos.zip</span></samp>
+(where x.x.x is the version number)
+or the Windows package as file <samp><span class="file">latex2rtf-x.x.x_win.zip</span></samp>
 from <a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a><br>
 
 The DOS distribution contains a precompiled executable 
@@ -434,21 +453,17 @@ The DOS version has a bug which causes conversion of equations
 to bitmaps to fail for the remaining equations after successfully 
 converting the first 26 of them.
 
-So <strong>if you run a Win32 system</strong>, i.e. WinNT, Win2000, WinXP, 
-WinVista) <strong>it is highly recommended to use the
-Windows version</strong>.
-The Win32 version starting from 1.9.14a also has a Win32 GUI interface 
-(LaTeX2RTF
- Shell) and is wrapped in an automatic installer, 
-see <a href="#Win32-systems">Win32 systems</a>. 
-But starting from 1.9.17, the installer and GUI interface do not
-support Windows 9x and ME. 
+So <strong>if you run a Win32 system</strong> (i.e. Win 9x, ME, NT, 2000, XP, 
+2003, Vista) <strong>it is highly recommended to use the
+Windows package</strong>.
 
-To install the DOS version of LaTeX2RTF
-, extract all files from the zip archive, 
-preserving the folder structure (winzip: check &ldquo;use folder names&rdquo;),
-preferably to <samp><span class="file">C:\l2r</span></samp>, because then it will find its cfg files 
-by default.<br>
+To install the DOS or Windows package of LaTeX2RTF
+, extract all files 
+from the zip archive, preserving the folder structure 
+(winzip: check &ldquo;use folder names&rdquo;),
+preferably to <samp><span class="file">C:\l2r</span></samp>, or under Windows, to your "Program Files" 
+folder (which ever it is named in your system)
+because then it will find its cfg files by default.<br>
 If you extracted them to another folder (e.g. <samp><span class="file">C:\my files\l2r</span></samp>),
 either edit the file <samp><span class="file">L2RPREP.BAT</span></samp> 
 and change the folder <samp><span class="file">C:\l2r</span></samp> to where you put them, or specify the 
@@ -479,20 +494,16 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Installation">Installation</a>
 <p>
 To install LaTeX2RTF
  on a Win32 system (WinNT, Win2000, WinXP, 
-WinVista), download and execute the <samp><span class="file">latex2rtf-x.x.x_win.exe</span></samp> 
+WinVista), download the win-gui package,
+execute the <samp><span class="file">latex2rtf-x.x.x_win.exe</span></samp> 
 (where x.x.x is the version number) and follow the instructions.
 
 Note: The installer and GUI shell do not support Win9x and WinMe
 since LaTeX2RTF
  v.1.9.17. 
-If you have one of these systems, you should use an older Win32 version 
-or the current DOS version (without GUI) of LaTeX2RTF
+If you have one of these systems, you should use the 
+win package (1.9.19 and up) of LaTeX2RTF
 . 
-As the DOS version of <code>latex2rt.exe</code> has a bug which causes conversion 
-of equations to bitmaps to fail for more than 26 equations, you should
-get and install LaTeX2RTF
- v.1.9.19, delete <code>latex2rt.exe</code> 
-and rename <code>latex2rt_win.exe</code> to <code>latex2rt.exe</code>.
 
 To start the program double-click the LaTeX2RTF
  icon, 
@@ -3062,10 +3073,10 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-align-788"><code>align</code></a>: <a href="#Environments">Environments</a></li>
 <li><a href="#index-align_002a-789"><code>align*</code></a>: <a href="#Environments">Environments</a></li>
 <li><a href="#index-alltt-790"><code>alltt</code></a>: <a href="#Environments">Environments</a></li>
-<li><a href="#index-Alph-163"><code>Alph</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-alph-164"><code>alph</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
-<li><a href="#index-alpha-165"><code>alpha</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
+<li><a href="#index-Alph-163"><code>Alph</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-Alpha-166"><code>Alpha</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
+<li><a href="#index-alpha-165"><code>alpha</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-amalg-167"><code>amalg</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-AmSLaTeX-111"><code>AmSLaTeX</code></a>: <a href="#Logos">Logos</a></li>
 <li><a href="#index-AmSTeX-112"><code>AmSTeX</code></a>: <a href="#Logos">Logos</a></li>
@@ -3081,8 +3092,8 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-b-124"><code>b</code></a>: <a href="#Special-Characters">Special Characters</a></li>
 <li><a href="#index-BAnd-695"><code>BAnd</code></a>: <a href="#Apacite-Commands">Apacite Commands</a></li>
 <li><a href="#index-bar-125"><code>bar</code></a>: <a href="#Special-Characters">Special Characters</a></li>
-<li><a href="#index-baselineskip-175"><code>baselineskip</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-baselineskip-510"><code>baselineskip</code></a>: <a href="#Preamble-Commands">Preamble Commands</a></li>
+<li><a href="#index-baselineskip-175"><code>baselineskip</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-BBA-696"><code>BBA</code></a>: <a href="#Apacite-Commands">Apacite Commands</a></li>
 <li><a href="#index-BBAA-697"><code>BBAA</code></a>: <a href="#Apacite-Commands">Apacite Commands</a></li>
 <li><a href="#index-BBAB-698"><code>BBAB</code></a>: <a href="#Apacite-Commands">Apacite Commands</a></li>
@@ -3389,8 +3400,8 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-htmlref-536"><code>htmlref</code></a>: <a href="#Preamble-Commands">Preamble Commands</a></li>
 <li><a href="#index-htmlref-257"><code>htmlref</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-huge-61"><code>huge</code></a>: <a href="#Font-Commands">Font Commands</a></li>
-<li><a href="#index-Huge-60"><code>Huge</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-HUGE-59"><code>HUGE</code></a>: <a href="#Font-Commands">Font Commands</a></li>
+<li><a href="#index-Huge-60"><code>Huge</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-hyphenation-537"><code>hyphenation</code></a>: <a href="#Preamble-Commands">Preamble Commands</a></li>
 <li><a href="#index-i-135"><code>i</code></a>: <a href="#Special-Characters">Special Characters</a></li>
 <li><a href="#index-ieme-604"><code>ieme</code></a>: <a href="#French-Commands">French Commands</a></li>
@@ -3742,8 +3753,8 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-textiota-437"><code>textiota</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textit-96"><code>textit</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-textkappa-438"><code>textkappa</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
-<li><a href="#index-textLambda-439"><code>textLambda</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textlambda-440"><code>textlambda</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
+<li><a href="#index-textLambda-439"><code>textLambda</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textmd-97"><code>textmd</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-textmu-441"><code>textmu</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textnormal-98"><code>textnormal</code></a>: <a href="#Font-Commands">Font Commands</a></li>
@@ -3755,8 +3766,8 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-textphi-447"><code>textphi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textPi-448"><code>textPi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textpi-449"><code>textpi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
-<li><a href="#index-textPsi-450"><code>textPsi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textpsi-451"><code>textpsi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
+<li><a href="#index-textPsi-450"><code>textPsi</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-textrm-99"><code>textrm</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-textsc-100"><code>textsc</code></a>: <a href="#Font-Commands">Font Commands</a></li>
 <li><a href="#index-textsf-101"><code>textsf</code></a>: <a href="#Font-Commands">Font Commands</a></li>
@@ -3835,8 +3846,8 @@ Up:&nbsp;<a rel="up" accesskey="u" href="#Top">Top</a>
 <li><a href="#index-vee-495"><code>vee</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-verb-496"><code>verb</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
 <li><a href="#index-verb_002a-497"><code>verb*</code></a>: <a href="#Uncategorized">Uncategorized</a></li>
-<li><a href="#index-verbatim-850"><code>verbatim</code></a>: <a href="#Environments">Environments</a></li>
 <li><a href="#index-Verbatim-851"><code>Verbatim</code></a>: <a href="#Environments">Environments</a></li>
+<li><a href="#index-verbatim-850"><code>verbatim</code></a>: <a href="#Environments">Environments</a></li>
 <li><a href="#index-verbositylevel-584"><code>verbositylevel</code></a>: <a href="#Preamble-Commands">Preamble Commands</a></li>
 <li><a href="#index-verse-852"><code>verse</code></a>: <a href="#Environments">Environments</a></li>
 <li><a href="#index-voffset-585"><code>voffset</code></a>: <a href="#Preamble-Commands">Preamble Commands</a></li>

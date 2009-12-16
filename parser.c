@@ -45,7 +45,7 @@ typedef struct InputStackType {
     char *string_start;
     FILE *file;
     char *file_name;
-    long file_line;
+    int file_line;
 } InputStackType;
 
 #define PARSER_SOURCE_MAX 100
@@ -394,7 +394,7 @@ void CmdInclude(int code)
      	return;
 	}
 	
-    if (basename && strstr(basename, ".tex") == NULL)         /* append .tex if missing */
+    if (basename && strstr(basename, ".tex") == NULL && strstr(basename, ".ltx") == NULL)         /* append .tex if missing */
         texname = strdup_together(basename, ".tex");
 
     if (texname && PushSource(texname, NULL) == 0)            /* Try the .tex name first*/
@@ -650,7 +650,7 @@ int getSameChar(char c)
     return count;
 }
 
-char *getDelimitedText(char left, char right, bool raw)
+char *getDelimitedText(char left, char right, int raw)
 
 /******************************************************************************
   purpose: general scanning routine that allocates and returns a string
@@ -705,7 +705,7 @@ void parseBrace(void)
     free(s);
 }
 
-void parseBracket(void)
+static void parseBracket(void)
 
 /****************************************************************************
   Description: Skip text to balancing close bracket
@@ -914,8 +914,8 @@ char *getLeftRightParam(void)
                     return strdup(text);
                 }
             }
-            strcat(text + i, command);
-            i += strlen(command);
+            my_strlcat(text + i, command, 5000);
+            i += (int) strlen(command);
             if (i > 4950)
                 diagnostics(ERROR, "Contents of \\left .. \\right too large.");
             if (strcmp(command, "\\left") == 0)
@@ -945,9 +945,9 @@ char *getTexUntil(char *target, int raw)
     char buffer[BUFFSIZE];
     int last_i = -1;
     int i = 0;                  /* size of string that has been read */
-    size_t j = 0;               /* number of found characters */
-    bool end_of_file_reached = FALSE;
-    size_t len = strlen(target);
+    int j = 0;               /* number of found characters */
+    int end_of_file_reached = FALSE;
+    int len = (int) strlen(target);
 
     PushTrackLineNumber(FALSE);
 
@@ -1017,18 +1017,15 @@ char *getSpacedTexUntil(char *target, int raw)
     char buffer[BUFFSIZE];
     char *s;
     int buffer_pos, target_pos, target_len, max_buffer_pos, start_pos;
-    bool end_of_file_reached = FALSE;
-	bool matched;
 	
     PushTrackLineNumber(FALSE);
 
-    diagnostics(5, "getSpaceTexUntil target = <%s> raw_search = %d ", target, raw);
+    diagnostics(5, "getSpacedTexUntil target = <%s> raw_search = %d ", target, raw);
 
-	matched = FALSE;	
 	buffer_pos = 0;
 	target_pos = 0;
 	start_pos  = 0;
-	target_len = strlen(target);
+	target_len = (int) strlen(target);
 	max_buffer_pos = -1;
 	
     do {
@@ -1040,7 +1037,6 @@ char *getSpacedTexUntil(char *target, int raw)
         } 
 
         if (buffer[buffer_pos] == '\0') {
-            end_of_file_reached = TRUE;
             diagnostics(ERROR, "end of file reached before '%s' was found",target);
         }
 
@@ -1114,17 +1110,17 @@ int getDimension(void)
 
 /* skip "to" */
     if (cThis == 't') {
-        cThis = getTexChar();
+        getTexChar();
         cThis = getTexChar();
     }
 
 /* skip "spread" */
     if (cThis == 's') {
-        cThis = getTexChar();
-        cThis = getTexChar();
-        cThis = getTexChar();
-        cThis = getTexChar();
-        cThis = getTexChar();
+        getTexChar();
+		getTexChar();
+        getTexChar();
+        getTexChar();
+        getTexChar();
         cThis = getTexChar();
     }
 
@@ -1166,9 +1162,9 @@ int getDimension(void)
 	
 /* skip "true" */
     if (buffer[0] == 't') {
-        cThis = getTexChar();
-        cThis = getTexChar();
-        cThis = getTexChar();
+        getTexChar();
+        getTexChar();
+        getTexChar();
         skipSpaces();
         buffer[0] = tolower((int) getTexChar());
     }
@@ -1221,5 +1217,26 @@ int getDimension(void)
         return (int) num;
     }
 
+}
+
+/***************************************************************************
+ purpose: return twips for \\, \\[1pt], \\*[1pt] 
+ ***************************************************************************/
+int getSlashSlashParam(void)
+{
+    char cThis, *vertical_space;
+	int height = 0;
+	
+    cThis = getTexChar();
+    if (cThis != '*')
+        ungetTexChar(cThis);
+
+    vertical_space = getBracketParam();
+    if (vertical_space) { 
+        height = getStringDimension(vertical_space);
+        free(vertical_space);
+    }
+	
+	return height;
 }
 
