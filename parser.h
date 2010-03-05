@@ -6,41 +6,57 @@
  * 070798 adapted Frank Barnes contribution to r2l coding conventions SAP
  */
 
-char	*CurrentFileName(void);
-int		PushSource(const char * filename, const char * string);
-int		StillSource(void);
-void	PopSource(void);
+#ifndef _PARSER_H_INCLUDED
+#define _PARSER_H_INCLUDED 1
 
-char	getRawTexChar(void);
-char	getTexChar(void);
-char	getNonSpace(void);
-char	getNonBlank(void);
-int 	getSameChar(char c);
+char    *CurrentFileName(void);
+int     PushSource(const char * filename, const char * string);
+int     StillSource(void);
+void    PopSource(void);
 
-void	ungetTexChar(char c);
+char    getRawTexChar(void);
+char    getTexChar(void);
+char    getNonSpace(void);
+char    getNonBlank(void);
+int     getSameChar(char c);
 
-void	skipToEOL(void);
-void	skipSpaces(void);
-void	skipWhiteSpace(void);
+void    ungetTexChar(char c);
 
-void	CmdIgnoreParameter(int);
+void    skipToEOL(void);
+void    skipSpaces(void);
+void    skipWhiteSpace(void);
+
+void    CmdIgnoreParameter(int);
 void    CmdInclude(int code);
-char	*getBraceParam(void);
+char    *getBraceParam(void);
 char    *getBraceRawParam(void);
-char	*getLeftRightParam(void);
-char	*getBracketParam(void);
-char	*getSimpleCommand(void);
-char	*getTexUntil(char * target, int raw);
+char    *getLeftRightParam(void);
+char    *getBracketParam(void);
+char    *getSimpleCommand(void);
+char    *getTexUntil(char * target, int raw);
 char    *getSpacedTexUntil(char *target, int raw);
-int 	getDimension(void);
-void	parseBrace(void);
-char	*getDelimitedText(char left, char right, int raw);
+int     getDimension(void);
+void    parseBrace(void);
+char    *getDelimitedText(char left, char right, int raw);
 
-int 	CurrentLineNumber(void);
-void	PushTrackLineNumber(int flag);
-void	PopTrackLineNumber(void);
-void	UpdateLineNumber(char *s);
-void	EndSource(void);
-int 	CurrentFileDescriptor(void);
-int 	getParserDepth(void);
-int 	getSlashSlashParam(void);
+int     CurrentLineNumber(void);
+void    PushTrackLineNumber(int flag);
+void    PopTrackLineNumber(void);
+void    UpdateLineNumber(char *s);
+void    EndSource(void);
+int     CurrentFileDescriptor(void);
+int     getParserDepth(void);
+int     getSlashSlashParam(void);
+
+static void inline ignoreBraceParam() {
+    char *p = getBraceParam();
+    if (NULL != p)
+    free(p);
+}
+
+static void inline ignoreBracketParam() {
+    char *p = getBracketParam();
+    if (NULL != p)
+    free(p);
+}
+#endif

@@ -13,7 +13,6 @@ void CmdGraveChar(int code);
 void CmdAcuteChar(int code);
 void CmdDoubleAcuteChar(int code);
 void CmdTildeChar(int code);
-void CmdSymbolChar(int code);
 void CmdUnderdotChar(int code);
 void CmdCaronChar(int code);
 void CmdRingChar(int code);
@@ -21,27 +20,21 @@ void CmdHatChar(int code);
 void CmdMacronChar(int code);
 void CmdVecChar(int code);
 void CmdBreveChar(int code);
+void CmdWideBreveChar(int code);
 void CmdDotChar(int code);
 void CmdUnderbarChar(int code);
 void CmdDotlessChar(int code);
-void CmdChar(int code);
 void CmdSymbol(int code);
-void CmdSTIXChar(int code);
 void CmdUnicodeChar(int code);
 
 void CmdLogo(int code);
 
 void CmdFrenchAbbrev(int code);
 void CmdCzechAbbrev(int code);
-void CmdCyrillicChar(int code);
-void CmdLatin1Char(int code);
 void CmdLatin2Char(int code);
-void CmdCyrillicStrChar(char *s);
 void CmdEuro(int code);
 void CmdDegreeCelsius(int code);
-void CmdMTExtraChar(int code);
-void CmdPolishL(int code);
-void CmdLdots(int code);
+void CmdNot(int code);
 
 #define IERF 1
 #define IEREF 2
@@ -60,19 +53,19 @@ void CmdLdots(int code);
 #define QUARTO 15
 #define FUP 16
 
-#define INFERIEURA	 17
-#define SUPERIEURA	 18
-#define FRENCH_LQ	 19
-#define FRENCH_RQ	 20
-#define FRENCH_LQQ	 21
-#define FRENCH_RQQ	 22
-#define POINT_VIRGULE	 23
-#define POINT_EXCLAMATION	 24
-#define POINT_INTERROGATION	 25
-#define DITTO_MARK	 26
-#define DEUX_POINTS	 27
-#define LCS	 28
-#define FCS	 29
+#define INFERIEURA   17
+#define SUPERIEURA   18
+#define FRENCH_LQ    19
+#define FRENCH_RQ    20
+#define FRENCH_LQQ   21
+#define FRENCH_RQQ   22
+#define POINT_VIRGULE    23
+#define POINT_EXCLAMATION    24
+#define POINT_INTERROGATION  25
+#define DITTO_MARK   26
+#define DEUX_POINTS  27
+#define LCS  28
+#define FCS  29
 #define FRENCH_OG 30
 #define FRENCH_FG 31
 

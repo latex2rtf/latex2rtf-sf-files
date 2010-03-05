@@ -44,6 +44,8 @@ Authors:
 #include "direct.h"
 #include "styles.h"
 #include "vertical.h"
+#include "auxfile.h"
+#include "acronyms.h"
 
 extern char *Version;  /*storage and definition in version.h */
 
@@ -58,10 +60,11 @@ static int g_geomMargr = 0;
 static int g_geomMargt = 0;
 static int g_geomMargb = 0;
 
+static int gColorPackage = 0;
+
 static char *g_preambleTitle = NULL;
 static char *g_preambleAuthor = NULL;
 static char *g_preambleDate = NULL;
-static char *g_preambleEncoding = NULL;
 static char *g_preambleAffiliation = NULL;
 static char *g_preambleAbstract = NULL;
 static char *g_preambleAck = NULL;
@@ -83,115 +86,97 @@ void ExecGeomOptions (char *option, char *value1, char *value2);
 
 void setPackageBabel(char *option)
 {
-    if (strcmp(option, "german") == 0 || strcmp(option, "ngerman") == 0) {
+
+   if (strstr(option, "german")) { /* also catches ngerman */
         GermanMode = TRUE;
         PushEnvironment(GERMAN_MODE);
         ReadLanguage("german");
     }
 
-    if (strcmp(option, "french") == 0 || strcmp(option, "frenchb") == 0) {
+    if (strstr(option, "french")) { /* also frenchb */
         FrenchMode = TRUE;
         PushEnvironment(FRENCH_MODE);
         ReadLanguage("french");
     }
 
-    if (strcmp(option, "russian") == 0) {
+    if (strstr(option, "russian")) {
         RussianMode = TRUE;
         PushEnvironment(RUSSIAN_MODE);
         ReadLanguage("russian");
     }
 
-    if (strcmp(option, "spanish") == 0) {
+    if (strstr(option, "spanish")) {
         ReadLanguage("spanish");
     }
 
-    if (strcmp(option, "czech") == 0) {
+    if (strstr(option, "czech")) {
         CzechMode = TRUE;
         PushEnvironment(CZECH_MODE);
         ReadLanguage("czech");
-        g_fcharset_number = 238;    /* East European in RTF Specification */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
+        CmdFontEncoding(ENCODING_LATIN_2);
     }
 
 }
 
 void setPackageInputenc(char *option)
 {
-    g_preambleEncoding = strdup_noblanks(option);
-
-    if (strcmp(option, "ansinew") == 0)
-        my_strlcpy(g_charset_encoding_name, "cp1252", 20);
-
-    else if (strcmp(option, "applemac") == 0 ||
-      strcmp(option, "decmulti") == 0 ||
-      strcmp(option, "latin1") == 0 ||
-      strcmp(option, "latin2") == 0 ||
-      strcmp(option, "latin3") == 0 ||
-      strcmp(option, "latin4") == 0 ||
-      strcmp(option, "latin5") == 0 ||
-      strcmp(option, "latin9") == 0 ||
-      strcmp(option, "next") == 0 ||
-      strcmp(option, "cp437") == 0 ||
-      strcmp(option, "cp437de") == 0 ||
-      strcmp(option, "cp850") == 0 ||
-      strcmp(option, "cp852") == 0 ||
-      strcmp(option, "cp855") == 0 ||
-      strcmp(option, "cp865") == 0 ||
-      strcmp(option, "cp866") == 0 ||
-      strcmp(option, "cp1250") == 0 ||
-      strcmp(option, "cp1251") == 0 ||
-      strcmp(option, "cp1252") == 0 ||
-      strcmp(option, "437") == 0 ||
-      strcmp(option, "437de") == 0 ||
-      strcmp(option, "850") == 0 ||
-      strcmp(option, "852") == 0 ||
-      strcmp(option, "855") == 0 ||
-      strcmp(option, "865") == 0 ||
-      strcmp(option, "866") == 0 ||
-      strcmp(option, "1250") == 0 ||
-      strcmp(option, "1251") == 0 ||
-      strcmp(option, "1252") == 0 ||
-      strcmp(option, "maccyr") == 0 ||
-      strcmp(option, "macukr") == 0 || 
-      strcmp(option, "koi8-r") == 0 || 
-      strcmp(option, "koi8-u") == 0) {
-
-        my_strlcpy(g_charset_encoding_name, option, 20);
-        g_fcharset_number = 0;  /* ANSI in RTF Specification */
-
-    } else if (strcmp(option, "raw") == 0) {
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-        g_fcharset_number = 255;    /* OEM in RTF Specification */
-
-    } else if (strcmp(option, "raw437") == 0) {
-        g_fcharset_number = 254;    /* IBM PC in RTF Specification */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-
-    } else if (strcmp(option, "raw852") == 0) {
-        g_fcharset_number = 255;    /* Microsoft bug ... */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-
-    } else if (strcmp(option, "raw1250") == 0) {
-        g_fcharset_number = 238;    /* East European in RTF Specification */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-
-    } else if (strcmp(option, "raw1251") == 0) {
-        g_fcharset_number = 204;    /* Cyrillic in RTF Specification */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-
-    } else if (strcmp(option, "raw1253") == 0) {
-        g_fcharset_number = 161;    /* Greek in RTF Specification */
-        my_strlcpy(g_charset_encoding_name, "raw", 20);
-        
-    } else if (strcmp(option, "utf8") == 0) {
-        diagnostics(WARNING, "Input Encoding utf8 - experimental support");
-        my_strlcpy(g_charset_encoding_name, "utf8", 20);
-
-    } else if (strcmp(option, "utf8x") == 0) {
-        diagnostics(WARNING, "Input Encoding utf8x - experimental support");
-        my_strlcpy(g_charset_encoding_name, "utf8", 20);
-
-    } else
+    if (strstr(option, "applemac"))
+        CmdFontEncoding(ENCODING_APPLE);
+    else if (strstr(option, "decmulti"))
+        CmdFontEncoding(ENCODING_DEC);
+    else if (strstr(option, "latin1"))
+        CmdFontEncoding(ENCODING_1251);
+    else if (strstr(option, "latin2"))
+        CmdFontEncoding(ENCODING_LATIN_2);
+    else if (strstr(option, "latin3"))
+        CmdFontEncoding(ENCODING_LATIN_3);
+    else if (strstr(option, "latin4"))
+        CmdFontEncoding(ENCODING_LATIN_4);
+    else if (strstr(option, "latin5"))
+        CmdFontEncoding(ENCODING_LATIN_5);
+    else if (strstr(option, "latin9"))
+        CmdFontEncoding(ENCODING_LATIN_9);
+    else if (strstr(option, "latin10"))
+        CmdFontEncoding(ENCODING_LATIN_10);
+    else if (strstr(option, "next"))
+        CmdFontEncoding(ENCODING_NEXT);
+    else if (strstr(option, "maccyr"))
+        CmdFontEncoding(ENCODING_APPLE_CYRILLIC);
+    else if (strstr(option, "macce"))
+        CmdFontEncoding(ENCODING_APPLE_CE);
+    else if (strstr(option, "koi8-r"))
+        CmdFontEncoding(ENCODING_KOI8_R);
+    else if (strstr(option, "koi8-u"))
+        CmdFontEncoding(ENCODING_KOI8_U);
+    else if (strstr(option, "437"))
+        CmdFontEncoding(ENCODING_437);
+    else if (strstr(option, "ansinew"))
+        CmdFontEncoding(ENCODING_1252);
+    else if (strstr(option, "1252"))
+        CmdFontEncoding(ENCODING_1252);
+    else if (strstr(option, "850"))
+        CmdFontEncoding(ENCODING_850);
+    else if (strstr(option, "852"))
+        CmdFontEncoding(ENCODING_852);
+    else if (strstr(option, "855"))
+        CmdFontEncoding(ENCODING_852);
+    else if (strstr(option, "865"))
+        CmdFontEncoding(ENCODING_865);
+    else if (strstr(option, "866"))
+        CmdFontEncoding(ENCODING_866);
+    else if (strstr(option, "1250"))
+        CmdFontEncoding(ENCODING_1250);
+    else if (strstr(option, "1251"))
+        CmdFontEncoding(ENCODING_1251);
+    else if (strstr(option, "1253"))
+        CmdFontEncoding(ENCODING_1253);
+    else if (strstr(option, "raw"))
+        CmdFontEncoding(ENCODING_RAW);
+    else if (strstr(option, "utf8"))
+        CmdFontEncoding(ENCODING_UTF8);
+    else if (strstr(option, "ot2enc"))
+        setPackageBabel("russian");     
+    else
         diagnostics(WARNING, "Input Encoding <%s> not supported", option);
 }
 
@@ -394,19 +379,19 @@ static void setPaperSize(char *option)
 static void setPointSize(char *option)
 {
     if (strcmp(option, "10pt") == 0) {
-        InitializeDocumentFont(-1, 20, -1, -1);
+        InitializeDocumentFont(-1, 20, -1, -1, ENCODING_1251);
         setLength("baselineskip", 12 * 20);
         setLength("parindent", 15 * 20);
         setLength("parskip", 0 * 20);
 
     } else if (strcmp(option, "11pt") == 0) {
-        InitializeDocumentFont(-1, 22, -1, -1);
+        InitializeDocumentFont(-1, 22, -1, -1, ENCODING_1251);
         setLength("baselineskip", 14 * 20);
         setLength("parindent", 17 * 20);
         setLength("parskip", 0 * 20);
 
     } else {
-        InitializeDocumentFont(-1, 24, -1, -1);
+        InitializeDocumentFont(-1, 24, -1, -1, ENCODING_1251);
         setLength("baselineskip", (int) 14.5 * 20);
         setLength("parindent", 18 * 20);
         setLength("parskip", 0 * 20);
@@ -418,15 +403,17 @@ static void setDocumentOptions(char *optionlist)
 {
     char *option;
 
-	if (optionlist == NULL) return;
-	
+    if (optionlist == NULL) return;
+    
     option = strtok(optionlist, ",");
 
     while (option) {
 
-/*		while (*option == ' ') option++;  skip leading blanks */
+/*      while (*option == ' ') option++;  skip leading blanks */
         diagnostics(2, " (setDocumentOptions) option <%s>", option);
-        if (strcmp(option, "10pt") == 0 || strcmp(option, "11pt") == 0 || strcmp(option, "12pt") == 0)
+        if (TryPackageIgnore(option)) {
+            /* silently ignore */
+        } else if (strcmp(option, "10pt") == 0 || strcmp(option, "11pt") == 0 || strcmp(option, "12pt") == 0)
             setPointSize(option);
         else if (strcmp(option, "a4"         ) == 0 ||
                  strcmp(option, "a4paper"    ) == 0 ||
@@ -467,6 +454,9 @@ static void setDocumentOptions(char *optionlist)
         else if (strcmp(option, "harvard") == 0) {
             PushEnvironment(HARVARD_MODE);
             g_document_bibstyle = BIBSTYLE_HARVARD;
+            /* parse the .aux file for harvardcite's */
+            /* if not already done so                */
+            LoadAuxFile();
         } else if (strcmp(option, "natbib") == 0) {
             PushEnvironment(NATBIB_MODE);
             g_document_bibstyle = BIBSTYLE_NATBIB;
@@ -481,9 +471,9 @@ static void setDocumentOptions(char *optionlist)
             PushEnvironment(APACITE_MODE);
             g_document_bibstyle = BIBSTYLE_APACITE;
         } else if (strcmp(option, "hyperref") == 0) {
-        	PushEnvironment(HYPERREF_MODE);
+            PushEnvironment(HYPERREF_MODE);
         } else if (strcmp(option, "amsmath") == 0) {
-		 	g_amsmath_package = TRUE;
+            g_amsmath_package = TRUE;
             diagnostics(WARNING, "Incomplete support for package/option '%s' ", option);
         } else if (strcmp(option, "endnotes"    ) == 0 ||
                    strcmp(option, "pstricks-add") == 0 ||
@@ -495,22 +485,17 @@ static void setDocumentOptions(char *optionlist)
                    strcmp(option, "paralist"    ) == 0 ) {
             diagnostics(WARNING, "Incomplete support for package/option '%s' ", option);
 
-        } else if (strcmp(option, "textcomp"    ) == 0 || 
-                   strcmp(option, "fontenc"     ) == 0 ||
-                   strcmp(option, "eurosym"     ) == 0 ||
-                   strcmp(option, "ucs"         ) == 0 ||
-                   strcmp(option, "alltt"       ) == 0 ||
-                   strcmp(option, "url"         ) == 0 ||
-                   strcmp(option, "nameref"     ) == 0 ||
-                   strcmp(option, "amssymb"     ) == 0) {
-            /* do nothing ... but don't complain */
-        } else if (strcmp(option, "color") == 0) {
-            diagnostics(WARNING, "Color support limited to eight basic colors");
+        } 
+        else if (strcmp(option, "color") == 0) {
+            gColorPackage = 1;
         } else if (strcmp(option, "man") == 0 ||
                    strcmp(option, "jou") == 0) {
             diagnostics(WARNING, "ignoring [%s], assuming [doc]", option);
         } else if (strcmp(option, "doc") == 0) {
             diagnostics(WARNING, "Some support for apa class");
+        } else if (strcmp(option,"ifpdf") == 0) {
+            diagnostics(WARNING, "Trivial support for the ifpdf package");
+            ConvertString("\\newif\\ifpdf");
         } else {
             diagnostics(WARNING, "Package/option '%s' unknown.", option);
         }
@@ -577,9 +562,12 @@ static void CmdUseOnepackage(char* package, char *options)
 {
      diagnostics(4, "CmdUseOnepackage \\usepackage[%s]{%s}", options, package);
 
-    if (strcmp(package, "inputenc") == 0 && options)
-		setPackageInputenc(options);
+    if (TryPackageIgnore(package) == TRUE) 
+        return;
     
+    if (strcmp(package, "inputenc") == 0 && options)
+        setPackageInputenc(options);
+
     else if (strcmp(package, "graphics") == 0)
         g_graphics_package = GRAPHICS_GRAPHICS;
     
@@ -587,88 +575,91 @@ static void CmdUseOnepackage(char* package, char *options)
         g_graphics_package = GRAPHICS_GRAPHICX;
 
     else if (strcmp(package, "isolatin1") == 0)
-		setPackageInputenc("latin1");
+        setPackageInputenc("latin1");
 
     else if (strcmp(package, "spanish") == 0)
-		setPackageBabel(package);
+        setPackageBabel(package);
 
     else if (strcmp(package, "babel") == 0) {
-		if (options)
-			setPackageBabel(options);
+        if (options)
+            setPackageBabel(options);
 
     } else if ( strcmp(package, "german")  == 0 ||
-	    		strcmp(package, "ngerman") == 0 ||
-	    		strcmp(package, "czech")   == 0 || 
-	    		strcmp(package, "frenchb") == 0 || 
-	    		strcmp(package, "french") == 0)
-		    setPackageBabel(package);
+                strcmp(package, "ngerman") == 0 ||
+                strcmp(package, "czech")   == 0 || 
+                strcmp(package, "frenchb") == 0 || 
+                strcmp(package, "french") == 0)
+            setPackageBabel(package);
 
     else if (strcmp(package, "palatino") == 0 ||
-	     strcmp(package, "times") == 0 ||
-	     strcmp(package, "bookman") == 0 ||
-	     strcmp(package, "chancery") == 0 ||
-	     strcmp(package, "courier") == 0 ||
-	     strstr(package, "avant") || strstr(package, "newcen") || strstr(package, "helvet"))
-		setPackageFont(package);
+         strcmp(package, "times") == 0 ||
+         strcmp(package, "bookman") == 0 ||
+         strcmp(package, "chancery") == 0 ||
+         strcmp(package, "courier") == 0 ||
+         strstr(package, "avant") || strstr(package, "newcen") || strstr(package, "helvet"))
+        setPackageFont(package);
 
     else if (strcmp(package, "endfloat") == 0) {
-		g_endfloat_figures = TRUE;
-		g_endfloat_tables  = TRUE;
-		if (options && strstr(options,"nomarkers")) g_endfloat_markers = FALSE;
+        g_endfloat_figures = TRUE;
+        g_endfloat_tables  = TRUE;
+        if (options && strstr(options,"nomarkers")) g_endfloat_markers = FALSE;
 
     } else if (strcmp(package, "cite") == 0) {
-		set_sorted_citations();
-		set_compressed_citations();
+        set_sorted_citations();
+        set_compressed_citations();
 
     } else if (strcmp(package, "subfigure") == 0) {
-		diagnostics(WARNING, "partial support for subfigure package");
+        diagnostics(WARNING, "partial support for subfigure package");
 
     } else if (strcmp(package, "natbib") == 0) {
-		if (options && strstr(options, "longnamesfirst"))
-			set_longnamesfirst();
-		if (options && strstr(options, "super"))
-			set_bibpunct_style_super();
-		if (options && strstr(options, "comma"))
-			set_bibpunct_style_separator(",");
-		if (options && strstr(options, "colon"))
-			set_bibpunct_style_separator(":");
-		if (options && strstr(options, "round"))
-			set_bibpunct_style_paren("(",")");
-		if (options && strstr(options, "square"))
-			set_bibpunct_style_paren("[","]");
-		if (options && strstr(options, "curly"))
-			set_bibpunct_style_paren("{","}");
-		if (options && strstr(options, "angle"))
-			set_bibpunct_style_paren("<",">");
-		if (options && strstr(options, "sort"))
-			set_sorted_citations();
-		if (options && strstr(options, "compress"))
-			set_compressed_citations();
-		  
-		PushEnvironment(NATBIB_MODE);
-		g_document_bibstyle = BIBSTYLE_NATBIB;
-	
+        if (options && strstr(options, "longnamesfirst"))
+            set_longnamesfirst();
+        if (options && strstr(options, "super"))
+            set_bibpunct_style_super();
+        if (options && strstr(options, "comma"))
+            set_bibpunct_style_separator(",");
+        if (options && strstr(options, "colon"))
+            set_bibpunct_style_separator(":");
+        if (options && strstr(options, "round"))
+            set_bibpunct_style_paren("(",")");
+        if (options && strstr(options, "square"))
+            set_bibpunct_style_paren("[","]");
+        if (options && strstr(options, "curly"))
+            set_bibpunct_style_paren("{","}");
+        if (options && strstr(options, "angle"))
+            set_bibpunct_style_paren("<",">");
+        if (options && strstr(options, "sort"))
+            set_sorted_citations();
+        if (options && strstr(options, "compress"))
+            set_compressed_citations();
+          
+        PushEnvironment(NATBIB_MODE);
+        g_document_bibstyle = BIBSTYLE_NATBIB;
+    
     } else if (strcmp(package, "geometry") == 0) {
 
-	/* Set default values for geometry package */        
+    /* Set default values for geometry package */        
         g_preambleGeometry = TRUE;
         if(g_preambleTwoside==FALSE) {
-			g_geomMargr = (int) (getLength("pagewidth") * 0.15);
-			g_geomMargl = g_geomMargr;
-		} else {
-			g_geomMargr = (int) (getLength("pagewidth") * 0.3 * 0.4);
-			g_geomMargl = (int) (getLength("pagewidth") * 0.3 * 0.6);
-		}
+            g_geomMargr = (int) (getLength("pagewidth") * 0.15);
+            g_geomMargl = g_geomMargr;
+        } else {
+            g_geomMargr = (int) (getLength("pagewidth") * 0.3 * 0.4);
+            g_geomMargl = (int) (getLength("pagewidth") * 0.3 * 0.6);
+        }
         g_geomMargt = (int) (getLength("pageheight") * 0.3 * 0.4);
         g_geomMargb = (int) (getLength("pageheight") * 0.3 * 0.6);
-	
+    
         if (options) {
-	    	ParseOptGeometry(options);
-	    }
-	
-    } else
-		setDocumentOptions(package);
-	  
+            ParseOptGeometry(options);
+        }
+    } else if (strcmp(package,"acronym") == 0) {
+        UsePackageAcronym(options);
+    } else if (strcmp(package,"ifpdf") == 0) {
+        ConvertString("\\newif\\ifpdf");
+    } else {
+        setDocumentOptions(package);
+    }
 }
 
 /******************************************************************************
@@ -679,9 +670,9 @@ void CmdGeometry(int code)
     char *options;
     options = getBraceParam();
     if (options) {
-    	diagnostics(2, "geometry command, argument %s\n", options);
-    	ParseOptGeometry(options);
-    	free(options);
+        diagnostics(2, "geometry command, argument %s\n", options);
+        ParseOptGeometry(options);
+        free(options);
     }
 }
 
@@ -695,39 +686,39 @@ void ParseOptGeometry(char *options)
     char *key, *value1, *value2, *next, *comma = ", ", *colon = ": ";
 
     while (options) {
-		next = keyvalue_pair(options,&key,&value1);
-				
-		if (value1 == NULL) {
-			diagnostics(2, "geometry package, single option=[%s]", key);
-			ExecGeomOptions (key, NULL, NULL);
-		}
-		else if (*value1 == '{') {
-			PushSource(NULL, value1);
-			free(value1);
-			value1 = getBraceParam();
-			PopSource();
-			value1 = strtok(value1, comma);
-			value2 = strtok(NULL, comma);
-			diagnostics(2, "option=%s with values %s and %s", key, value1, value2);
-			ExecGeomOptions (key, value1, value2);
-			free(value1);
-		}
-		else if (strchr(value1, ':')) {
-			value1 = strtok(value1, colon);
-			value2 = strtok(NULL, colon);
-			diagnostics(2, "option=%s with ratio '%s:%s'", key, value1, value2);
-			ExecGeomOptions (key, value1, value2);
-			free(value1);
-		}
-		else {
-			diagnostics(2, "geometry package, option=[%s], value=%s", key, value1);
-			value2=value1;
-			ExecGeomOptions (key, value1, value2);
-			free(value1);
-		}
-				
-		if (key) free(key);
-		options = next;
+        next = keyvalue_pair(options,&key,&value1);
+                
+        if (value1 == NULL) {
+            diagnostics(2, "geometry package, single option=[%s]", key);
+            ExecGeomOptions (key, NULL, NULL);
+        }
+        else if (*value1 == '{') {
+            PushSource(NULL, value1);
+            free(value1);
+            value1 = getBraceParam();
+            PopSource();
+            value1 = strtok(value1, comma);
+            value2 = strtok(NULL, comma);
+            diagnostics(2, "option=%s with values %s and %s", key, value1, value2);
+            ExecGeomOptions (key, value1, value2);
+            free(value1);
+        }
+        else if (strchr(value1, ':')) {
+            value1 = strtok(value1, colon);
+            value2 = strtok(NULL, colon);
+            diagnostics(2, "option=%s with ratio '%s:%s'", key, value1, value2);
+            ExecGeomOptions (key, value1, value2);
+            free(value1);
+        }
+        else {
+            diagnostics(2, "geometry package, option=[%s], value=%s", key, value1);
+            value2=value1;
+            ExecGeomOptions (key, value1, value2);
+            free(value1);
+        }
+                
+        if (key) free(key);
+        options = next;
     }
 }
 
@@ -739,67 +730,67 @@ void ExecGeomOptions (char *key, char *value1, char *value2)
 {
     int ratio_sum, margin_sum;
     char *value1b = NULL, *value2b = NULL;
-	int dist1 = 0;
-	int dist2 = 0;
-	
+    int dist1 = 0;
+    int dist2 = 0;
+    
     if (strstr(key, "ratio")) {
-		if (strchr(value1, ':')) { /* each value is a ratio */
-			value1 = strtok(value1, ": ");
-			value1b = strtok(NULL, ": ");
-			value2 = strtok(value2, ": ");
-			value2b = strtok(NULL, ": ");
-		} else { /* each value is part of a single ratio */
-			dist1 = atoi(value1);
-			dist2 = atoi(value2);
-			diagnostics(3, "one ratio parameter, %d:%d", dist1, dist2);
-		}
+        if (strchr(value1, ':')) { /* each value is a ratio */
+            value1 = strtok(value1, ": ");
+            value1b = strtok(NULL, ": ");
+            value2 = strtok(value2, ": ");
+            value2b = strtok(NULL, ": ");
+        } else { /* each value is part of a single ratio */
+            dist1 = atoi(value1);
+            dist2 = atoi(value2);
+            diagnostics(3, "one ratio parameter, %d:%d", dist1, dist2);
+        }
     } else if (strstr(key, "centering") == NULL) {
-		dist1=getStringDimension(value1);
-		dist2=getStringDimension(value2);
-		diagnostics(3, "twips parameters, %d and %d", dist1, dist2);
+        dist1=getStringDimension(value1);
+        dist2=getStringDimension(value2);
+        diagnostics(3, "twips parameters, %d and %d", dist1, dist2);
     }
 
     if (strcmp(key, "vmargin") == 0) {
-		diagnostics(3, "vmargin distance(top)=%d, distance (bottom)=%d twips", dist1, dist2);
-		g_geomMargt = dist1;
-		g_geomMargb = dist2;
+        diagnostics(3, "vmargin distance(top)=%d, distance (bottom)=%d twips", dist1, dist2);
+        g_geomMargt = dist1;
+        g_geomMargb = dist2;
     } else if (strcmp(key, "hmargin") == 0) {
-		diagnostics(3, "hmargin distance(left)=%d, distance (right)=%d twips", dist1, dist2);
-		g_geomMargl = dist1;
-		g_geomMargr = dist2;
+        diagnostics(3, "hmargin distance(left)=%d, distance (right)=%d twips", dist1, dist2);
+        g_geomMargl = dist1;
+        g_geomMargr = dist2;
     } else if (strcmp(key, "margin") == 0) {
-		ExecGeomOptions ("hmargin", value1, value2);
-		ExecGeomOptions ("vmargin", value1, value2);
+        ExecGeomOptions ("hmargin", value1, value2);
+        ExecGeomOptions ("vmargin", value1, value2);
     } else if ((strcmp(key, "left") == 0) || (strcmp(key, "lmargin") == 0) || (strcmp(key, "inner") == 0) ) {
-		g_geomMargl = dist1;
+        g_geomMargl = dist1;
     } else if ((strcmp(key, "right") == 0) || (strcmp(key, "rmargin") == 0) || (strcmp(key, "outer") == 0) ) {
-		g_geomMargr = dist1;
+        g_geomMargr = dist1;
     } else if ((strcmp(key, "top") == 0) || (strcmp(key, "tmargin") == 0)) {
-		g_geomMargt = dist1;
+        g_geomMargt = dist1;
     } else if ((strcmp(key, "bottom") == 0) || (strcmp(key, "bmargin") == 0)) {
-		g_geomMargb = dist1;
+        g_geomMargb = dist1;
     } else if (strcmp(key, "hmarginratio") == 0) {
-		ratio_sum = dist1 + dist2;
-		margin_sum = g_geomMargl + g_geomMargr;
-		g_geomMargl = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
-		diagnostics(3, "g_geomMargl %d", g_geomMargl);
-		g_geomMargr = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
-		diagnostics(3, "g_geomMargr %d", g_geomMargr);
+        ratio_sum = dist1 + dist2;
+        margin_sum = g_geomMargl + g_geomMargr;
+        g_geomMargl = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
+        diagnostics(3, "g_geomMargl %d", g_geomMargl);
+        g_geomMargr = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
+        diagnostics(3, "g_geomMargr %d", g_geomMargr);
     } else if (strcmp(key, "vmarginratio") == 0) {
-		ratio_sum = dist1 + dist2;
-		margin_sum = g_geomMargt + g_geomMargb;
-		g_geomMargt = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
-		g_geomMargb = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
+        ratio_sum = dist1 + dist2;
+        margin_sum = g_geomMargt + g_geomMargb;
+        g_geomMargt = (int) (((float) dist1 / (float) ratio_sum) * (float) margin_sum);
+        g_geomMargb = (int) (((float) dist2 / (float) ratio_sum) * (float) margin_sum);
     } else if ((strcmp(key, "marginratio") == 0) || (strcmp(key, "ratio") == 0)) {
-		ExecGeomOptions ("hmarginratio", value1, value1b);
-		ExecGeomOptions ("vmarginratio", value2, value2b);
+        ExecGeomOptions ("hmarginratio", value1, value1b);
+        ExecGeomOptions ("vmarginratio", value2, value2b);
     } else if (strcmp(key, "hcentering") == 0) {
-		ExecGeomOptions ("hmarginratio", "1", "1");
+        ExecGeomOptions ("hmarginratio", "1", "1");
     } else if (strcmp(key, "vcentering") == 0) {
-		ExecGeomOptions ("vmarginratio", "1", "1");
+        ExecGeomOptions ("vmarginratio", "1", "1");
     } else if (strcmp(key, "centering") == 0) {
-		ExecGeomOptions ("vmarginratio", "1", "1");
-		ExecGeomOptions ("hmarginratio", "1", "1");
+        ExecGeomOptions ("vmarginratio", "1", "1");
+        ExecGeomOptions ("hmarginratio", "1", "1");
     }
 
 }
@@ -811,8 +802,8 @@ void CmdUsepackage(int code)
 {
     char *package, *package_with_spaces;
     char *options, *options_with_spaces;
-	char *p,*comma;
-	
+    char *p,*comma;
+    
     options = NULL;
     options_with_spaces = getBracketParam();
     package_with_spaces = getBraceParam();
@@ -829,10 +820,10 @@ void CmdUsepackage(int code)
     /* process package names one at a time */
     p = package;
     do {
-    	comma = strchr(p,',');
-    	if (comma) *comma = '\0';	/* replace ',' by '\0' */
-    	CmdUseOnepackage(p,options);
-    	if (comma) p = comma+1;
+        comma = strchr(p,',');
+        if (comma) *comma = '\0';   /* replace ',' by '\0' */
+        CmdUseOnepackage(p,options);
+        if (comma) p = comma+1;
     } while (comma != NULL);
     
     if (options) free(options);
@@ -885,17 +876,17 @@ void CmdTitle(int code)
 
 void CmdTableOfContents(int code)
 {
-	startParagraph("contents", SECTION_TITLE_PARAGRAPH);
-	fprintRTF(" ");
-	ConvertBabelName("CONTENTSNAME");
-	CmdEndParagraph(0);
-	
-	g_tableofcontents = TRUE;
-	startParagraph("Normal", GENERIC_PARAGRAPH);
-	CmdVspace(VSPACE_SMALL_SKIP);
-	fprintRTF("{\\field{\\*\\fldinst TOC \\\\o \"1-3\" }{\\fldrslt }}\n");  
-	CmdNewPage(NewPage);
-	CmdEndParagraph(0);
+    startParagraph("contents", SECTION_TITLE_PARAGRAPH);
+    fprintRTF(" ");
+    ConvertBabelName("CONTENTSNAME");
+    CmdEndParagraph(0);
+    
+    g_tableofcontents = TRUE;
+    startParagraph("Normal", GENERIC_PARAGRAPH);
+    CmdVspace(VSPACE_SMALL_SKIP);
+    fprintRTF("{\\field{\\*\\fldinst TOC \\\\o \"1-3\" }{\\fldrslt }}\n");  
+    CmdNewPage(NewPage);
+    CmdEndParagraph(0);
 }
 
 /******************************************************************************
@@ -903,7 +894,7 @@ void CmdTableOfContents(int code)
  ******************************************************************************/
 void CmdAnd(int code)
 {
-	startParagraph("author", GENERIC_PARAGRAPH);
+    startParagraph("author", GENERIC_PARAGRAPH);
 }
 
 
@@ -916,8 +907,8 @@ void CmdMakeTitle(int code)
     char author_begin[10];
     char date_begin[10];
 
-	diagnostics(4,"CmdMakeTitle with  title ='%s'",g_preambleTitle);
-	diagnostics(4,"CmdMakeTitle with author ='%s'",g_preambleAuthor);
+    diagnostics(4,"CmdMakeTitle with  title ='%s'",g_preambleTitle);
+    diagnostics(4,"CmdMakeTitle with author ='%s'",g_preambleAuthor);
     PushTrackLineNumber(FALSE);
     snprintf(title_begin, 10, "%s%2d", "\\fs", (30 * CurrentFontSize()) / 20);
     snprintf(author_begin, 10, "%s%2d", "\\fs", (24 * CurrentFontSize()) / 20);
@@ -926,50 +917,50 @@ void CmdMakeTitle(int code)
     setAlignment(CENTERED);
     
     if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0) {
-    	startParagraph("title", GENERIC_PARAGRAPH);
+        startParagraph("title", GENERIC_PARAGRAPH);
         ConvertString(g_preambleTitle);
-	}
-	
+    }
+    
     if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0) {
-    	startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAuthor);
-	}
+    }
 
     if (g_preambleAffiliation != NULL && strcmp(g_preambleAffiliation, "") != 0) {
-    	startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAffiliation);
-	}
+    }
 
     startParagraph("author", GENERIC_PARAGRAPH);
     if (g_preambleDate == NULL || strcmp(g_preambleDate, "") == 0) 
-    	fprintRTF("\\chdate ");
+        fprintRTF("\\chdate ");
     else
         ConvertString(g_preambleDate);
 
     if (g_preambleAck != NULL && strcmp(g_preambleAck, "") != 0) {
-    	startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", GENERIC_PARAGRAPH);
         ConvertString(g_preambleAck);
-	}
+    }
 
     CmdEndParagraph(0);
     setAlignment(JUSTIFIED);
 
     if (g_preambleAbstract != NULL && strcmp(g_preambleAbstract, "") != 0) {
-    	char *s = strdup_together3("{",g_preambleAbstract,"}");
-    	CmdAbstract(ABSTRACT_PRELUDE_BEGIN);
-    	ConvertString("\\noindent");
-    	ConvertString(s);
-    	CmdAbstract(ABSTRACT_PRELUDE_END);
-    	free(s);
+        char *s = strdup_together3("{",g_preambleAbstract,"}");
+        CmdAbstract(ABSTRACT_PRELUDE_BEGIN);
+        ConvertString("\\noindent");
+        ConvertString(s);
+        CmdAbstract(ABSTRACT_PRELUDE_END);
+        free(s);
     }
 
     if (g_preambleTitlepage)
         fprintRTF("\\page ");
 
     if (g_document_type == FORMAT_APA)
-    	startParagraph("Normal",FIRST_PARAGRAPH);
+        startParagraph("Normal",FIRST_PARAGRAPH);
 
-	PopTrackLineNumber();
+    PopTrackLineNumber();
 }
 
 void CmdPreambleBeginEnd(int code)
@@ -1047,8 +1038,8 @@ Needs to be terminated for:
         headings = TRUE;
 
         /*--- insert code to put empty section information in header, will be
-		      provided by markboth, markright
-		      pagenumbering in header */
+              provided by markboth, markright
+              pagenumbering in header */
     } else {
         diagnostics(WARNING, "\\pagestyle{%s} unknown", style);
     }
@@ -1145,28 +1136,14 @@ static void WriteFontHeader(void)
 {
     int num=0;
     ConfigEntryT **config_handle;
-    char *font_type, *font_name;
-    int charset;
+    char *font_name;
 
     fprintRTF("{\\fonttbl");
 
     config_handle = CfgStartIterate();
     while ((config_handle = CfgNextByInsertion(FONT_A, config_handle)) != NULL) {
-        font_type = (char *) (*config_handle)->TexCommand;
         font_name = (char *) (*config_handle)->RtfCommand;
-        charset = g_fcharset_number;
-
-		if (strncmp(font_name, "Symbol",   6) == 0 || strncmp(font_name, "MT Extra", 8) == 0)
-            charset = 2;
-
-        if (strncmp(font_type, "Cyrillic", 8) == 0)
-            charset = 204;
-
-        if (strncmp(font_type, "Latin2", 6) == 0)
-            charset = 238;
-
-        fprintRTF("{\\f%d\\fnil\\fcharset%d %s;}\n", num, charset, font_name);
-
+        fprintRTF("{\\f%d\\fnil\\fcharset0 %s;}\n", num, font_name);
         num++;
     }
 
@@ -1203,7 +1180,7 @@ static void WriteStyleHeader(void)
         rtf = (*style)->RtfCommand;
         diagnostics(5, "style <%s>=<%s>", (*style)->TexCommand, rtf);
         fprintRTF("{");
-        InsertBasicStyle(rtf, TRUE);
+        InsertBasicStyle(rtf, INSERT_STYLE_FOR_HEADER);
         fprintRTF(";}\n");
     }
     fprintRTF("}\n");
@@ -1283,12 +1260,12 @@ static void WriteHeadFoot(void)
 ****************************************************************************/
 {
     int family = DefaultFontFamily();
-	int size   = DefaultFontSize(); 
+    int size   = DefaultFontSize(); 
     int textwidth = getLength("textwidth");
 
     if (g_preambleLFOOT || g_preambleCFOOT || g_preambleRFOOT) {
         fprintRTF("{\\footer\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth / 2, textwidth);
-    	setTexMode(MODE_HORIZONTAL); 
+        setTexMode(MODE_HORIZONTAL); 
 
         if (g_preambleLFOOT)
             ConvertString(g_preambleLFOOT);
@@ -1304,12 +1281,12 @@ static void WriteHeadFoot(void)
 
         fprintRTF("\\par}\n");
     } else {
-		fprintRTF("{\\footer\\pard\\plain\\f%d\\fs%d\\qc\\chpgn\\par}\n",family,size);
+        fprintRTF("{\\footer\\pard\\plain\\f%d\\fs%d\\qc\\chpgn\\par}\n",family,size);
     }
 
     if (g_preambleLHEAD || g_preambleCHEAD || g_preambleRHEAD) {
         fprintRTF("{\\header\\pard\\plain\\tqc\\tx%d\\tqr\\tx%d ", textwidth / 2, textwidth);
-    	setTexMode(MODE_HORIZONTAL); 
+        setTexMode(MODE_HORIZONTAL); 
 
         if (g_preambleLHEAD)
             ConvertString(g_preambleLHEAD);
@@ -1386,6 +1363,12 @@ static void WriteColorTable(void)
     fprintRTF("\\red255\\green0\\blue0;\n");    /* red */
     fprintRTF("\\red255\\green255\\blue0;\n");  /* yellow */
     fprintRTF("\\red255\\green255\\blue255;\n");    /* white */
+    
+    if (!gColorPackage) {
+        fprintRTF("}\n");
+        return;
+    }
+
     fprintRTF("\\red0\\green0\\blue128;\n");    /* dark blue */
     fprintRTF("\\red0\\green128\\blue128;\n");  /* dark cyan */
     fprintRTF("\\red0\\green128\\blue0;\n");    /* dark green */
@@ -1394,127 +1377,128 @@ static void WriteColorTable(void)
     fprintRTF("\\red128\\green128\\blue0;\n");  /* dark yellow */
     fprintRTF("\\red128\\green128\\blue128;\n");    /* dark gray */
     fprintRTF("\\red192\\green192\\blue192;\n");    /* light gray */
-	fprintRTF("\\red239\\green219\\blue197;\n");	/* Almond */	
-	fprintRTF("\\red205\\green149\\blue117;\n");	/* Antique Brass */	
-	fprintRTF("\\red253\\green217\\blue181;\n");	/* Apricot */	
-	fprintRTF("\\red120\\green219\\blue226;\n");	/* Aquamarine */	
-	fprintRTF("\\red135\\green169\\blue107;\n");	/* Asparagus */	
-	fprintRTF("\\red255\\green164\\blue116;\n");	/* Atomic Tangerine */	
-	fprintRTF("\\red250\\green231\\blue181;\n");	/* Banana Mania */	
-	fprintRTF("\\red159\\green129\\blue112;\n");	/* Beaver */	
-	fprintRTF("\\red253\\green124\\blue110;\n");	/* Bittersweet */	
-	fprintRTF("\\red35\\green35\\blue35;\n");	/* Black */	
-	fprintRTF("\\red31\\green117\\blue254;\n");	/* Blue */	
-	fprintRTF("\\red173\\green173\\blue214;\n");	/* Blue Bell */	
-	fprintRTF("\\red25\\green158\\blue189;\n");	/* Blue Green */	
-	fprintRTF("\\red115\\green102\\blue189;\n");	/* Blue Violet */	
-	fprintRTF("\\red222\\green93\\blue131;\n");	/* Blush */	
-	fprintRTF("\\red203\\green65\\blue84;\n");	/* Brick Red */	
-	fprintRTF("\\red180\\green103\\blue77;\n");	/* Brown */	
-	fprintRTF("\\red255\\green127\\blue73;\n");	/* Burnt Orange */	
-	fprintRTF("\\red234\\green126\\blue93;\n");	/* Burnt Sienna */	
-	fprintRTF("\\red176\\green183\\blue198;\n");	/* Cadet Blue */	
-	fprintRTF("\\red255\\green255\\blue153;\n");	/* Canary */	
-	fprintRTF("\\red28\\green211\\blue162;\n");	/* Caribbean Green */	
-	fprintRTF("\\red255\\green170\\blue204;\n");	/* Carnation Pink */	
-	fprintRTF("\\red221\\green68\\blue146;\n");	/* Cerise */	
-	fprintRTF("\\red29\\green172\\blue214;\n");	/* Cerulean */	
-	fprintRTF("\\red188\\green93\\blue88;\n");	/* Chestnut */	
-	fprintRTF("\\red221\\green148\\blue117;\n");	/* Copper */	
-	fprintRTF("\\red154\\green206\\blue235;\n");	/* Cornflower */	
-	fprintRTF("\\red255\\green188\\blue217;\n");	/* Cotton Candy */	
-	fprintRTF("\\red253\\green219\\blue109;\n");	/* Dandelion */	
-	fprintRTF("\\red43\\green108\\blue196;\n");	/* Denim */	
-	fprintRTF("\\red239\\green205\\blue184;\n");	/* Desert Sand */	
-	fprintRTF("\\red110\\green81\\blue96;\n");	/* Eggplant */	
-	fprintRTF("\\red29\\green249\\blue20;\n");	/* Electric Lime */	
-	fprintRTF("\\red113\\green188\\blue120;\n");	/* Fern */	
-	fprintRTF("\\red109\\green174\\blue129;\n");	/* Forest Green */	
-	fprintRTF("\\red195\\green100\\blue197;\n");	/* Fuchsia */	
-	fprintRTF("\\red204\\green102\\blue102;\n");	/* Fuzzy Wuzzy Brown */	
-	fprintRTF("\\red231\\green198\\blue151;\n");	/* Gold */	
-	fprintRTF("\\red252\\green217\\blue117;\n");	/* Goldenrod */	
-	fprintRTF("\\red168\\green228\\blue160;\n");	/* Granny Smith Apple */	
-	fprintRTF("\\red149\\green145\\blue140;\n");	/* Gray */	
-	fprintRTF("\\red28\\green172\\blue120;\n");	/* Green */	
-	fprintRTF("\\red240\\green232\\blue145;\n");	/* Green Yellow */	
-	fprintRTF("\\red255\\green29\\blue206;\n");	/* Hot Magenta */	
-	fprintRTF("\\red178\\green236\\blue93;\n");	/* Inch Worm */	
-	fprintRTF("\\red93\\green118\\blue203;\n");	/* Indigo */	
-	fprintRTF("\\red202\\green55\\blue103;\n");	/* Jazzberry Jam */	
-	fprintRTF("\\red59\\green176\\blue143;\n");	/* Jungle Green */	
-	fprintRTF("\\red253\\green252\\blue116;\n");	/* Laser Lemon */	
-	fprintRTF("\\red252\\green180\\blue213;\n");	/* Lavender */	
-	fprintRTF("\\red255\\green189\\blue136;\n");	/* Macaroni and Cheese */	
-	fprintRTF("\\red246\\green100\\blue175;\n");	/* Magenta */	
-	fprintRTF("\\red205\\green74\\blue74;\n");	/* Mahogany */	
-	fprintRTF("\\red151\\green154\\blue170;\n");	/* Manatee */	
-	fprintRTF("\\red255\\green130\\blue67;\n");	/* Mango Tango */	
-	fprintRTF("\\red200\\green56\\blue90;\n");	/* Maroon */	
-	fprintRTF("\\red239\\green152\\blue170;\n");	/* Mauvelous */	
-	fprintRTF("\\red253\\green188\\blue180;\n");	/* Melon */	
-	fprintRTF("\\red26\\green72\\blue118;\n");	/* Midnight Blue */	
-	fprintRTF("\\red48\\green186\\blue143;\n");	/* Mountain Meadow */	
-	fprintRTF("\\red25\\green116\\blue210;\n");	/* Navy Blue */	
-	fprintRTF("\\red255\\green163\\blue67;\n");	/* Neon Carrot */	
-	fprintRTF("\\red186\\green184\\blue108;\n");	/* Olive Green */	
-	fprintRTF("\\red255\\green117\\blue56;\n");	/* Orange */	
-	fprintRTF("\\red230\\green168\\blue215;\n");	/* Orchid */	
-	fprintRTF("\\red65\\green74\\blue76;\n");	/* Outer Space */	
-	fprintRTF("\\red255\\green110\\blue74;\n");	/* Outrageous Orange */	
-	fprintRTF("\\red28\\green169\\blue201;\n");	/* Pacific Blue */	
-	fprintRTF("\\red255\\green207\\blue171;\n");	/* Peach */	
-	fprintRTF("\\red197\\green208\\blue230;\n");	/* Periwinkle */	
-	fprintRTF("\\red253\\green215\\blue228;\n");	/* Piggy Pink */	
-	fprintRTF("\\red21\\green128\\blue120;\n");	/* Pine Green */	
-	fprintRTF("\\red252\\green116\\blue253;\n");	/* Pink Flamingo */	
-	fprintRTF("\\red247\\green128\\blue161;\n");	/* Pink Sherbet */	
-	fprintRTF("\\red142\\green69\\blue133;\n");	/* Plum */	
-	fprintRTF("\\red116\\green66\\blue200;\n");	/* Purple Heart */	
-	fprintRTF("\\red157\\green129\\blue186;\n");	/* Purple Mountains’ Majesty */	
-	fprintRTF("\\red255\\green29\\blue206;\n");	/* Purple Pizzazz */	
-	fprintRTF("\\red255\\green73\\blue108;\n");	/* Radical Red */	
-	fprintRTF("\\red214\\green138\\blue89;\n");	/* Raw Sienna */	
-	fprintRTF("\\red255\\green72\\blue208;\n");	/* Razzle Dazzle Rose */	
-	fprintRTF("\\red227\\green37\\blue107;\n");	/* Razzmatazz */	
-	fprintRTF("\\red238\\green32\\blue77;\n");	/* Red */	
-	fprintRTF("\\red255\\green83\\blue73;\n");	/* Red Orange */	
-	fprintRTF("\\red192\\green68\\blue143;\n");	/* Red Violet */	
-	fprintRTF("\\red31\\green206\\blue203;\n");	/* Robin Egg Blue */	
-	fprintRTF("\\red120\\green81\\blue169;\n");	/* Royal Purple */	
-	fprintRTF("\\red255\\green155\\blue170;\n");	/* Salmon */	
-	fprintRTF("\\red252\\green40\\blue71;\n");	/* Scarlet */	
-	fprintRTF("\\red118\\green255\\blue122;\n");	/* Screamin Green */	
-	fprintRTF("\\red159\\green226\\blue191;\n");	/* Sea Green */	
-	fprintRTF("\\red165\\green105\\blue79;\n");	/* Sepia */	
-	fprintRTF("\\red138\\green121\\blue93;\n");	/* Shadow */	
-	fprintRTF("\\red69\\green206\\blue162;\n");	/* Shamrock */	
-	fprintRTF("\\red251\\green126\\blue253;\n");	/* Shocking Pink */	
-	fprintRTF("\\red205\\green197\\blue194;\n");	/* Silver */	
-	fprintRTF("\\red128\\green218\\blue235;\n");	/* Sky Blue */	
-	fprintRTF("\\red236\\green234\\blue190;\n");	/* Spring Green */	
-	fprintRTF("\\red255\\green207\\blue72;\n");	/* Sunglow */	
-	fprintRTF("\\red253\\green94\\blue83;\n");	/* Sunset Orange */	
-	fprintRTF("\\red250\\green167\\blue108;\n");	/* Tan */	
-	fprintRTF("\\red252\\green137\\blue172;\n");	/* Tickle Me Pink */	
-	fprintRTF("\\red219\\green215\\blue210;\n");	/* Timberwolf */	
-	fprintRTF("\\red23\\green128\\blue109;\n");	/* Tropical Rain Forest */	
-	fprintRTF("\\red222\\green170\\blue136;\n");	/* Tumbleweed */	
-	fprintRTF("\\red119\\green221\\blue231;\n");	/* Turquoise Blue */	
-	fprintRTF("\\red253\\green252\\blue116;\n");	/* Unmellow Yellow */	
-	fprintRTF("\\red146\\green110\\blue174;\n");	/* Violet (Purple) */	
-	fprintRTF("\\red247\\green83\\blue148;\n");	/* Violet Red */	
-	fprintRTF("\\red255\\green160\\blue137;\n");	/* Vivid Tangerine */	
-	fprintRTF("\\red143\\green80\\blue157;\n");	/* Vivid Violet */	
-	fprintRTF("\\red237\\green237\\blue237;\n");	/* White */	
-	fprintRTF("\\red162\\green173\\blue208;\n");	/* Wild Blue Yonder */	
-	fprintRTF("\\red255\\green67\\blue164;\n");	/* Wild Strawberry */	
-	fprintRTF("\\red252\\green108\\blue133;\n");	/* Wild Watermelon */	
-	fprintRTF("\\red205\\green164\\blue222;\n");	/* Wisteria */	
-	fprintRTF("\\red252\\green232\\blue131;\n");	/* Yellow */	
-	fprintRTF("\\red197\\green227\\blue132;\n");	/* Yellow Green */	
-	fprintRTF("\\red255\\green182\\blue83;\n");	/* Yellow Orange */	    
-	fprintRTF("}\n");
+    fprintRTF("\\red239\\green219\\blue197;\n");    /* Almond */    
+    fprintRTF("\\red205\\green149\\blue117;\n");    /* Antique Brass */ 
+    fprintRTF("\\red253\\green217\\blue181;\n");    /* Apricot */   
+    fprintRTF("\\red120\\green219\\blue226;\n");    /* Aquamarine */    
+    fprintRTF("\\red135\\green169\\blue107;\n");    /* Asparagus */ 
+    fprintRTF("\\red255\\green164\\blue116;\n");    /* Atomic Tangerine */  
+    fprintRTF("\\red250\\green231\\blue181;\n");    /* Banana Mania */  
+    fprintRTF("\\red159\\green129\\blue112;\n");    /* Beaver */    
+    fprintRTF("\\red253\\green124\\blue110;\n");    /* Bittersweet */   
+    fprintRTF("\\red35\\green35\\blue35;\n");   /* Black */ 
+    fprintRTF("\\red31\\green117\\blue254;\n"); /* Blue */  
+    fprintRTF("\\red173\\green173\\blue214;\n");    /* Blue Bell */ 
+    fprintRTF("\\red25\\green158\\blue189;\n"); /* Blue Green */    
+    fprintRTF("\\red115\\green102\\blue189;\n");    /* Blue Violet */   
+    fprintRTF("\\red222\\green93\\blue131;\n"); /* Blush */ 
+    fprintRTF("\\red203\\green65\\blue84;\n");  /* Brick Red */ 
+    fprintRTF("\\red180\\green103\\blue77;\n"); /* Brown */ 
+    fprintRTF("\\red255\\green127\\blue73;\n"); /* Burnt Orange */  
+    fprintRTF("\\red234\\green126\\blue93;\n"); /* Burnt Sienna */  
+    fprintRTF("\\red176\\green183\\blue198;\n");    /* Cadet Blue */    
+    fprintRTF("\\red255\\green255\\blue153;\n");    /* Canary */    
+    fprintRTF("\\red28\\green211\\blue162;\n"); /* Caribbean Green */   
+    fprintRTF("\\red255\\green170\\blue204;\n");    /* Carnation Pink */    
+    fprintRTF("\\red221\\green68\\blue146;\n"); /* Cerise */    
+    fprintRTF("\\red29\\green172\\blue214;\n"); /* Cerulean */  
+    fprintRTF("\\red188\\green93\\blue88;\n");  /* Chestnut */  
+    fprintRTF("\\red221\\green148\\blue117;\n");    /* Copper */    
+    fprintRTF("\\red154\\green206\\blue235;\n");    /* Cornflower */    
+    fprintRTF("\\red255\\green188\\blue217;\n");    /* Cotton Candy */  
+    fprintRTF("\\red253\\green219\\blue109;\n");    /* Dandelion */ 
+    fprintRTF("\\red43\\green108\\blue196;\n"); /* Denim */ 
+    fprintRTF("\\red239\\green205\\blue184;\n");    /* Desert Sand */   
+    fprintRTF("\\red110\\green81\\blue96;\n");  /* Eggplant */  
+    fprintRTF("\\red29\\green249\\blue20;\n");  /* Electric Lime */ 
+    fprintRTF("\\red113\\green188\\blue120;\n");    /* Fern */  
+    fprintRTF("\\red109\\green174\\blue129;\n");    /* Forest Green */  
+    fprintRTF("\\red195\\green100\\blue197;\n");    /* Fuchsia */   
+    fprintRTF("\\red204\\green102\\blue102;\n");    /* Fuzzy Wuzzy Brown */ 
+    fprintRTF("\\red231\\green198\\blue151;\n");    /* Gold */  
+    fprintRTF("\\red252\\green217\\blue117;\n");    /* Goldenrod */ 
+    fprintRTF("\\red168\\green228\\blue160;\n");    /* Granny Smith Apple */    
+    fprintRTF("\\red149\\green145\\blue140;\n");    /* Gray */  
+    fprintRTF("\\red28\\green172\\blue120;\n"); /* Green */ 
+    fprintRTF("\\red240\\green232\\blue145;\n");    /* Green Yellow */  
+    fprintRTF("\\red255\\green29\\blue206;\n"); /* Hot Magenta */   
+    fprintRTF("\\red178\\green236\\blue93;\n"); /* Inch Worm */ 
+    fprintRTF("\\red93\\green118\\blue203;\n"); /* Indigo */    
+    fprintRTF("\\red202\\green55\\blue103;\n"); /* Jazzberry Jam */ 
+    fprintRTF("\\red59\\green176\\blue143;\n"); /* Jungle Green */  
+    fprintRTF("\\red253\\green252\\blue116;\n");    /* Laser Lemon */   
+    fprintRTF("\\red252\\green180\\blue213;\n");    /* Lavender */  
+    fprintRTF("\\red255\\green189\\blue136;\n");    /* Macaroni and Cheese */   
+    fprintRTF("\\red246\\green100\\blue175;\n");    /* Magenta */   
+    fprintRTF("\\red205\\green74\\blue74;\n");  /* Mahogany */  
+    fprintRTF("\\red151\\green154\\blue170;\n");    /* Manatee */   
+    fprintRTF("\\red255\\green130\\blue67;\n"); /* Mango Tango */   
+    fprintRTF("\\red200\\green56\\blue90;\n");  /* Maroon */    
+    fprintRTF("\\red239\\green152\\blue170;\n");    /* Mauvelous */ 
+    fprintRTF("\\red253\\green188\\blue180;\n");    /* Melon */ 
+    fprintRTF("\\red26\\green72\\blue118;\n");  /* Midnight Blue */ 
+    fprintRTF("\\red48\\green186\\blue143;\n"); /* Mountain Meadow */   
+    fprintRTF("\\red25\\green116\\blue210;\n"); /* Navy Blue */ 
+    fprintRTF("\\red255\\green163\\blue67;\n"); /* Neon Carrot */   
+    fprintRTF("\\red186\\green184\\blue108;\n");    /* Olive Green */   
+    fprintRTF("\\red255\\green117\\blue56;\n"); /* Orange */    
+    fprintRTF("\\red230\\green168\\blue215;\n");    /* Orchid */    
+    fprintRTF("\\red65\\green74\\blue76;\n");   /* Outer Space */   
+    fprintRTF("\\red255\\green110\\blue74;\n"); /* Outrageous Orange */ 
+    fprintRTF("\\red28\\green169\\blue201;\n"); /* Pacific Blue */  
+    fprintRTF("\\red255\\green207\\blue171;\n");    /* Peach */ 
+    fprintRTF("\\red197\\green208\\blue230;\n");    /* Periwinkle */    
+    fprintRTF("\\red253\\green215\\blue228;\n");    /* Piggy Pink */    
+    fprintRTF("\\red21\\green128\\blue120;\n"); /* Pine Green */    
+    fprintRTF("\\red252\\green116\\blue253;\n");    /* Pink Flamingo */ 
+    fprintRTF("\\red247\\green128\\blue161;\n");    /* Pink Sherbet */  
+    fprintRTF("\\red142\\green69\\blue133;\n"); /* Plum */  
+    fprintRTF("\\red116\\green66\\blue200;\n"); /* Purple Heart */  
+    fprintRTF("\\red157\\green129\\blue186;\n");    /* Purple Mountains’ Majesty */ 
+    fprintRTF("\\red255\\green29\\blue206;\n"); /* Purple Pizzazz */    
+    fprintRTF("\\red255\\green73\\blue108;\n"); /* Radical Red */   
+    fprintRTF("\\red214\\green138\\blue89;\n"); /* Raw Sienna */    
+    fprintRTF("\\red255\\green72\\blue208;\n"); /* Razzle Dazzle Rose */    
+    fprintRTF("\\red227\\green37\\blue107;\n"); /* Razzmatazz */    
+    fprintRTF("\\red238\\green32\\blue77;\n");  /* Red */   
+    fprintRTF("\\red255\\green83\\blue73;\n");  /* Red Orange */    
+    fprintRTF("\\red192\\green68\\blue143;\n"); /* Red Violet */    
+    fprintRTF("\\red31\\green206\\blue203;\n"); /* Robin Egg Blue */    
+    fprintRTF("\\red120\\green81\\blue169;\n"); /* Royal Purple */  
+    fprintRTF("\\red255\\green155\\blue170;\n");    /* Salmon */    
+    fprintRTF("\\red252\\green40\\blue71;\n");  /* Scarlet */   
+    fprintRTF("\\red118\\green255\\blue122;\n");    /* Screamin Green */    
+    fprintRTF("\\red159\\green226\\blue191;\n");    /* Sea Green */ 
+    fprintRTF("\\red165\\green105\\blue79;\n"); /* Sepia */ 
+    fprintRTF("\\red138\\green121\\blue93;\n"); /* Shadow */    
+    fprintRTF("\\red69\\green206\\blue162;\n"); /* Shamrock */  
+    fprintRTF("\\red251\\green126\\blue253;\n");    /* Shocking Pink */ 
+    fprintRTF("\\red205\\green197\\blue194;\n");    /* Silver */    
+    fprintRTF("\\red128\\green218\\blue235;\n");    /* Sky Blue */  
+    fprintRTF("\\red236\\green234\\blue190;\n");    /* Spring Green */  
+    fprintRTF("\\red255\\green207\\blue72;\n"); /* Sunglow */   
+    fprintRTF("\\red253\\green94\\blue83;\n");  /* Sunset Orange */ 
+    fprintRTF("\\red250\\green167\\blue108;\n");    /* Tan */   
+    fprintRTF("\\red252\\green137\\blue172;\n");    /* Tickle Me Pink */    
+    fprintRTF("\\red219\\green215\\blue210;\n");    /* Timberwolf */    
+    fprintRTF("\\red23\\green128\\blue109;\n"); /* Tropical Rain Forest */  
+    fprintRTF("\\red222\\green170\\blue136;\n");    /* Tumbleweed */    
+    fprintRTF("\\red119\\green221\\blue231;\n");    /* Turquoise Blue */    
+    fprintRTF("\\red253\\green252\\blue116;\n");    /* Unmellow Yellow */   
+    fprintRTF("\\red146\\green110\\blue174;\n");    /* Violet (Purple) */   
+    fprintRTF("\\red247\\green83\\blue148;\n"); /* Violet Red */    
+    fprintRTF("\\red255\\green160\\blue137;\n");    /* Vivid Tangerine */   
+    fprintRTF("\\red143\\green80\\blue157;\n"); /* Vivid Violet */  
+    fprintRTF("\\red237\\green237\\blue237;\n");    /* White */ 
+    fprintRTF("\\red162\\green173\\blue208;\n");    /* Wild Blue Yonder */  
+    fprintRTF("\\red255\\green67\\blue164;\n"); /* Wild Strawberry */   
+    fprintRTF("\\red252\\green108\\blue133;\n");    /* Wild Watermelon */   
+    fprintRTF("\\red205\\green164\\blue222;\n");    /* Wisteria */  
+    fprintRTF("\\red252\\green232\\blue131;\n");    /* Yellow */    
+    fprintRTF("\\red197\\green227\\blue132;\n");    /* Yellow Green */  
+    fprintRTF("\\red255\\green182\\blue83;\n"); /* Yellow Orange */   
+    
+    fprintRTF("}\n");
 }
 
 static void WriteInfo(void)
@@ -1532,15 +1516,15 @@ static void WriteInfo(void)
 {\info {\title This is a page} {\doccomm Converted using}}
  ***************************************************************************/
 {
-/*	struct stat sb;*/
-	time_t tm;
+/*  struct stat sb;*/
+    time_t tm;
 
-	fprintRTF("{\\info\n{\\title Original file was %s}\n",CurrentFileName());
-	tm = time(NULL);
-	fprintRTF("{\\doccomm Created using latex2rtf %s on %s}\n", Version, ctime(&tm));
-/*	if (fstat(CurrentFileDescriptor(),&sb)) {} */
-/*	fprintRTF("{\\creatim %s}\n", ctime(&tm)); */
-	fprintRTF("}\n");
+    fprintRTF("{\\info\n{\\title Original file was %s}\n",CurrentFileName());
+    tm = time(NULL);
+    fprintRTF("{\\doccomm Created using latex2rtf %s on %s}\n", Version, ctime(&tm));
+/*  if (fstat(CurrentFileDescriptor(),&sb)) {} */
+/*  fprintRTF("{\\creatim %s}\n", ctime(&tm)); */
+    fprintRTF("}\n");
 }
 
 void WriteRtfHeader(void)
@@ -1553,11 +1537,11 @@ purpose: writes header info for the RTF file
 {
     int family = DefaultFontFamily();
 
-/*	int size   = DefaultFontSize(); */
+/*  int size   = DefaultFontSize(); */
 
     diagnostics(4, "Writing header for RTF file");
 
-/*	fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family); */
+/*  fprintRTF("{\\rtf1\\ansi\\fs%d\\deff%d\\deflang1024\n", size, family); */
     fprintRTF("{\\rtf1\\ansi\\uc1\\deff%d\\deflang1024\n", family);
     WriteFontHeader();
     WriteColorTable();

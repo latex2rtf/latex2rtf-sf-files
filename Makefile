@@ -1,26 +1,29 @@
 CC?=gcc
 TAR?=gnutar
-RM?=rm
-MKDIR=mkdir -p
+RM?=rm -f
+MKDIR?=mkdir -p
+RMDIR?=rm -rf
 PKGMANDIR?=man
 
-CFLAGS:=$(CFLAGS) -DUNIX
-#CFLAGS:=$(CFLAGS) -DUNIX -fexceptions -fstack-protector --param=ssp-buffer-size=4 -m64  -mtune=generic
-#CFLAGS:=$(CFLAGS) -DMSDOS -DNOSTDERR #Windows/DOS
-#CFLAGS:=$(CFLAGS) -DMAC_CLASSIC   #MacOS 8/9
-#CFLAGS:=$(CFLAGS) -DOS2           #OS/2
+#reasonable default set of compiler flags
+CFLAGS?=-g -Wall -Wno-write-strings
 
-#Uncomment for some windows machines (not needed for djgpp)
+PLATFORM?=-DUNIX   # Mac OS X, Linux, BSD
+#PLATFORM?=-DMSDOS # Windows/DOS
+#PLATFORM?=-DOS2   # OS/2 (does anyone still use this?)
+#PLATFORM?=-DMSDOS -DNOSTDERR  # Windows/DOS without stderr
+
+#Uncomment for some windows machines (neither needed for djgpp nor for MinGW)
 #EXE_SUFFIX=.exe
 
-#Uncomment next line for windows machines
-#PREFIX_DRIVE=c:
-
-#Uncomment next line when using rsx compiler, target win32
-#CFLAGS:=$(CFLAGS) -Zwin32  
+#Uncomment next line for DOS/Windows
+#PREFIX_DRIVE=C:
 
 #Base directory - adapt as needed
+# Unix:
 PREFIX?=$(PREFIX_DRIVE)/usr/local
+# Windows:
+#PREFIX?=$(PREFIX_DRIVE)/PROGRA~1/latex2rtf
 
 #Name of executable binary --- beware of 8.3 restriction under DOS
 BINARY_NAME=latex2rtf$(EXE_SUFFIX)
@@ -34,7 +37,7 @@ CFG_INSTALL=$(PREFIX)/share/latex2rtf/cfg
 
 # Nothing to change below this line
 
-CFLAGS:=$(CFLAGS) -g -Wall -fsigned-char
+CFLAGS:=$(CFLAGS) $(PLATFORM)
 
 LIBS= -lm
 
@@ -43,12 +46,14 @@ L2R_VERSION:="latex2rtf-`grep 'Version' version.h | sed 's/[^"]*"\([^" ]*\).*/\1
 SRCS=commands.c chars.c direct.c encodings.c fonts.c funct1.c tables.c ignore.c \
 	main.c stack.c cfg.c utils.c parser.c lengths.c counters.c letterformat.c \
 	preamble.c equations.c convert.c xrefs.c definitions.c graphics.c \
-	mygetopt.c styles.c preparse.c vertical.c fields.c
+	mygetopt.c styles.c preparse.c vertical.c fields.c \
+	labels.c biblio.c acronyms.c auxfile.c
 
 HDRS=commands.h chars.h direct.h encodings.h fonts.h funct1.h tables.h ignore.h \
     main.h stack.h cfg.h utils.h parser.h lengths.h counters.h letterformat.h \
     preamble.h equations.h convert.h xrefs.h definitions.h graphics.h encoding_tables.h \
-    version.h mygetopt.h styles.h preparse.h vertical.h fields.h
+    version.h mygetopt.h styles.h preparse.h vertical.h fields.h labels.h biblio.h acronyms.h \
+	auxfile.h
 
 CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg cfg/style.cfg \
     cfg/afrikaans.cfg cfg/bahasa.cfg cfg/basque.cfg cfg/brazil.cfg cfg/breton.cfg \
@@ -88,7 +93,7 @@ TEST=  \
 	test/bib_apacite_dblsp.tex   test/enc_latin5.tex     test/german.tex        \
 	test/bib_apalike.tex         test/enc_latin9.tex     test/head_article.tex  \
 	test/bib_apalike2.tex        test/enc_maccyr.tex     test/head_book.tex     \
-	test/bib_apanat.tex          test/enc_macukr.tex     test/head_report.tex   \
+	test/bib_apanat.tex          test/head_report.tex                           \
 	test/bib_authordate.tex      test/enc_next.tex       test/hndout.sty        \
 	test/bib_harvard.bib         test/enc_utf8x.tex      test/ifclause.tex      \
 	test/bib_harvard.tex         test/endnote.tex        test/include.tex       \
@@ -114,19 +119,23 @@ TEST=  \
 	test/enc_cp1251.tex          test/fig_testb.pdf      test/tabular.tex       \
 	test/enc_cp1252.tex          test/fig_testb.ps       test/theorem.tex       \
 	test/enc_cp437.tex           test/fig_testc.pdf      test/ttgfsr7.tex       \
-	test/enc_cp850.tex           test/fig_testc.ps       test/ucsymbols.tex       \
+	test/enc_cp850.tex           test/fig_testc.ps       test/ucsymbols.tex     \
 	test/bib_apa.tex             test/bib_apa.bib        test/bib_apacite2.tex  \
 	test/bib_apacite2.bib        test/fig_subfig.tex     test/include4.tex      \
 	test/include5.tex            test/hyperref.tex       test/bib_super.bib     \
 	test/longstack.tex           test/table_array1.tex   test/table_array2.tex  \
 	test/bib_apacite3.tex        test/bib_apacite3.bib   test/color2.tex        \
-	test/fig_png.tex             test/fig_10x15.png      test/psfig.sty \
-	test/cyrillic.tex            test/greek.tex
+	test/fig_png.tex             test/fig_10x15.png      test/psfig.sty         \
+	test/cyrillic.tex            test/greek.tex          test/direct.tex        \
+	test/acronym.tex             test/acronym.bib        test/style.tex         \
+	test/enc_moroz_koi8.tex      test/enc_moroz_ot2.tex  test/enc_moroz_utf8.tex\
+	test/enc_ot2.tex      
 	
 OBJS=fonts.o direct.o encodings.o commands.o stack.o funct1.o tables.o \
 	chars.o ignore.o cfg.o main.o utils.o parser.o lengths.o counters.o \
 	preamble.o letterformat.o equations.o convert.o xrefs.o definitions.o graphics.o \
-	mygetopt.o styles.o preparse.o vertical.o fields.o
+	mygetopt.o styles.o preparse.o vertical.o fields.o \
+	labels.o biblio.o auxfile.o	acronyms.o
 
 all : checkdir latex2rtf
 
@@ -153,8 +162,8 @@ fullcheck: latex2rtf
 checkdir: $(README) $(SRCS) $(HDRS) $(CFGS) $(SCRIPTS) $(TEST) doc/latex2rtf.texi Makefile vms_make.com
 
 clean: checkdir
-	$(RM) -f $(OBJS) core $(BINARY_NAME)
-	$(RM) -rf tmp
+	-$(RM) $(OBJS) core $(BINARY_NAME)
+	-$(RMDIR) tmp
 
 depend: $(SRCS)
 	$(CC) -MM $(SRCS) >makefile.depend
@@ -177,7 +186,7 @@ dist: checkdir releasedate latex2rtf doc $(SRCS) $(HDRS) $(CFGS) $(README) Makef
 	ln $(SCRIPTS)      $(L2R_VERSION)/scripts
 	ln $(TEST)         $(L2R_VERSION)/test
 	$(TAR) cvfz $(L2R_VERSION).tar.gz $(L2R_VERSION)
-	rm -rf $(L2R_VERSION)
+	$(RMDIR) $(L2R_VERSION)
 
 uptodate:
 	perl -pi.bak -e '$$date=scalar localtime; s/\(.*/($$date)";/' version.h
@@ -224,10 +233,14 @@ install-info: doc/latex2rtf.info
 	install-info --info-dir=$(INFO_INSTALL) doc/latex2rtf.info
 
 realclean: checkdir clean
-	$(RM) -f makefile.depend $(L2R_VERSION).tar.gz
+	$(RM) makefile.depend $(L2R_VERSION).tar.gz
 	cd doc && $(MAKE) clean
 	cd test && $(MAKE) clean
 
+appleclean:
+	sudo xattr -r -d com.apple.FinderInfo ../trunk
+	sudo xattr -r -d com.apple.TextEncoding ../trunk
+	
 splint: 
 	splint -weak $(SRCS) $(HDRS)
 	
@@ -236,12 +249,13 @@ splint:
 # created using "make depend"
 commands.o: commands.c cfg.h main.h convert.h chars.h fonts.h preamble.h \
   funct1.h tables.h equations.h letterformat.h commands.h parser.h \
-  xrefs.h ignore.h lengths.h definitions.h graphics.h vertical.h
+  xrefs.h ignore.h lengths.h definitions.h graphics.h vertical.h \
+  encodings.h labels.h acronyms.h biblio.h
 chars.o: chars.c main.h commands.h fonts.h cfg.h ignore.h encodings.h \
   parser.h chars.h funct1.h convert.h utils.h vertical.h fields.h
 direct.o: direct.c main.h direct.h fonts.h cfg.h utils.h
-encodings.o: encodings.c main.h fonts.h funct1.h encodings.h \
-  encoding_tables.h chars.h
+encodings.o: encodings.c main.h encoding_tables.h encodings.h fonts.h \
+  chars.h parser.h vertical.h
 fonts.o: fonts.c main.h convert.h fonts.h funct1.h commands.h cfg.h \
   parser.h stack.h vertical.h
 funct1.o: funct1.c main.h convert.h funct1.h commands.h stack.h fonts.h \
@@ -257,9 +271,9 @@ main.o: main.c main.h mygetopt.h convert.h commands.h chars.h fonts.h \
   stack.h direct.h ignore.h version.h funct1.h cfg.h encodings.h utils.h \
   parser.h lengths.h counters.h preamble.h xrefs.h preparse.h vertical.h \
   fields.h
-stack.o: stack.c main.h stack.h
+stack.o: stack.c main.h stack.h fonts.h
 cfg.o: cfg.c main.h convert.h funct1.h cfg.h utils.h
-utils.o: utils.c main.h utils.h parser.h
+utils.o: utils.c cfg.h main.h utils.h parser.h
 parser.o: parser.c main.h commands.h cfg.h stack.h utils.h parser.h \
   fonts.h lengths.h definitions.h funct1.h
 lengths.o: lengths.c main.h utils.h lengths.h parser.h
@@ -268,7 +282,7 @@ letterformat.o: letterformat.c main.h parser.h letterformat.h cfg.h \
   commands.h funct1.h convert.h vertical.h
 preamble.o: preamble.c main.h convert.h utils.h preamble.h fonts.h cfg.h \
   encodings.h parser.h funct1.h lengths.h ignore.h commands.h counters.h \
-  xrefs.h direct.h styles.h vertical.h
+  xrefs.h direct.h styles.h vertical.h auxfile.h acronyms.h
 equations.o: equations.c main.h convert.h commands.h stack.h fonts.h \
   cfg.h ignore.h parser.h equations.h counters.h funct1.h lengths.h \
   utils.h graphics.h xrefs.h chars.h preamble.h vertical.h fields.h
@@ -277,7 +291,8 @@ convert.o: convert.c main.h convert.h commands.h chars.h funct1.h fonts.h \
   utils.h parser.h lengths.h counters.h preamble.h vertical.h fields.h
 xrefs.o: xrefs.c main.h utils.h convert.h funct1.h commands.h cfg.h \
   xrefs.h parser.h preamble.h lengths.h fonts.h styles.h definitions.h \
-  equations.h vertical.h fields.h counters.h
+  equations.h vertical.h fields.h counters.h auxfile.h labels.h \
+  acronyms.h biblio.h
 definitions.o: definitions.c main.h convert.h definitions.h parser.h \
   funct1.h utils.h cfg.h counters.h
 graphics.o: graphics.c main.h cfg.h graphics.h parser.h utils.h \
@@ -289,5 +304,10 @@ preparse.o: preparse.c preparse.h cfg.h main.h utils.h definitions.h \
   parser.h funct1.h
 vertical.o: vertical.c main.h funct1.h cfg.h utils.h parser.h lengths.h \
   vertical.h convert.h commands.h styles.h fonts.h stack.h xrefs.h \
-  counters.h fields.h
+  counters.h fields.h acronyms.h
 fields.o: fields.c main.h fields.h
+labels.o: labels.c main.h parser.h utils.h auxfile.h labels.h
+biblio.o: biblio.c main.h utils.h parser.h auxfile.h biblio.h
+acronyms.o: acronyms.c main.h parser.h utils.h cfg.h convert.h commands.h \
+  lengths.h vertical.h auxfile.h acronyms.h biblio.h labels.h
+auxfile.o: auxfile.c main.h utils.h parser.h convert.h

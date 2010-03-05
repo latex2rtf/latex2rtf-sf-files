@@ -36,46 +36,38 @@ Authors:
 
 #define MAXFONTLEN 100
 
-int WriteFontName(const char **buffpoint)
+void WriteCFGFontNumber(char **cfg_stream)
 
 /******************************************************************************
-  purpose: reads the fontname at buffpoint and writes the appropriate font
-           number into the RTF stream.  This supports the *FONTNAME* syntax
-           found in direct.cfg and in style.cfg
+  purpose: reads the fontname from cfg_stream and returns the appropriate font
+           number. Supports the *FONTNAME* syntax in direct.cfg and in style.cfg
  ******************************************************************************/
 {
-    char fontname[MAXFONTLEN + 1];
-    int i;
-    int fnumber;
-    const char *buff;
+    int n=-1;
+    char *font_name, *star;
 
-    (*buffpoint)++;             /* move past initial '*' */
-
-    buff = *buffpoint;
-    if (**buffpoint == '*') {
-        fprintRTF("*");
-        return -1;
-    }
-
-    i = 0;
-    while (**buffpoint != '*') {
-        if ((i >= MAXFONTLEN) || (**buffpoint == '\0'))
-            diagnostics(ERROR, "No terminating '*' in font name\nFound in cfg file command <%s>", buff);
-
-        fontname[i] = **buffpoint;
-        i++;
-        (*buffpoint)++;
-    }
-
-    fontname[i] = '\0';
-    fnumber = TexFontNumber(fontname);
-
-    if (fnumber < 0)
-        diagnostics(ERROR, "Unknown font <%s>\nFound in cfg file command <%s>", fontname, buff);
-    else
-        fprintRTF("%u", (unsigned int) fnumber);
+    *cfg_stream += 1;                  /* move past initial '*' */
     
-    return fnumber;
+    if (**cfg_stream == '*') {     /* two stars in a row ... bail */
+        fprintRTF("*");
+        return;
+    }
+    
+    font_name = strdup(*cfg_stream);   
+    star = strchr(font_name,'*');
+    
+    if (star) {
+        *star = '\0';
+        n = TexFontNumber(font_name);
+        
+        if (n < 0)
+            diagnostics(ERROR, "Unknown font <%s>\nFound in cfg line <%s>", font_name, cfg_stream);
+
+        *cfg_stream += strlen(font_name);
+        fprintRTF("%d",n);
+    }
+    
+    free(font_name);
 }
 
 int TryDirectConvert(char *command)
@@ -84,22 +76,20 @@ int TryDirectConvert(char *command)
            LaTeX commands into RTF commands.  
  ******************************************************************************/
 {
-    const char *buffpoint;
-    const char *RtfCommand;
-    char *TexCommand;
+    char *buffpoint, *RtfCommand, *TexCommand;
 
     TexCommand = strdup_together("\\", command);
     RtfCommand = SearchCfgRtf(TexCommand, DIRECT_A);
     if (RtfCommand == NULL) {
-    	free(TexCommand);
+        free(TexCommand);
         return FALSE;
-	}
-	
+    }
+    
     buffpoint = RtfCommand;
     diagnostics(4, "Directly converting %s to %s", TexCommand, RtfCommand);
     while (buffpoint[0] != '\0') {
-        if (buffpoint[0] == '*') 
-			WriteFontName(&buffpoint);
+        if (buffpoint[0] == '*')
+            WriteCFGFontNumber(&buffpoint);
         else
             fprintRTF("%c", *buffpoint);
 

@@ -5,7 +5,7 @@ LaTeX2RTF
 
  This file documents LaTeX2RTF , a converter that translates LaTeX
 to RTF.    Copyright 1998-2002 Georg Lehner,
- updates Copyright 1999-2007 by Wilfried Hennings and Scott Prahl,
+ updates Copyright 1999-2010 by Wilfried Hennings and Scott Prahl,
  with contributions by Mikhail Polianski.  Permission is granted
 to make and distribute verbatim copies of this manual provided the
 copyright notice and this permission notice are preserved on all
@@ -77,10 +77,12 @@ the links at `http://latex2rtf.sf.net/'
 2.1 General
 ===========
 
- The documentation of the program is found in the `doc/' directory in
-the file `latex2rtf.texi' in the GNU TeXInfo format.  For your
-convenience, you can find HTML and PDF versions of the manual there
-as well. 
+ The documentation of the program is found in the `doc/' directory 
+in the file `latex2rtf.texi' in the GNU TeXInfo format.   For your
+convenience, you can find HTML and PDF  versions of the manual there
+as well.
+ Note: In this manual, the terms "directory" and "folder" are used
+interchangeably. 
 
 2.2 Obtaining LaTeX2RTF
 
@@ -91,27 +93,22 @@ and for MS-DOS,  including all versions of MS Windows.  The
 latest version of LaTeX2RTF  is available at  SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  and -- with some delay
 -- on CTAN sites:  e.g., `http://www.dante.de' or
-`http://www.ctan.org'.  The DOS package (1.8aa and up) will also
-run under all MS Windows versions.  It requires an i386 processor or
-better.
- It should only be used on older Microsoft systems (before Win95)
-because it has known issues when converting more than 26 equations to
-bitmaps.
+`http://www.ctan.org'.  The DOS package will also run under all MS
+Windows versions except 64bit systems.  It requires an i386
+processor or better.
+ It should only be used on older Microsoft systems.
  For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
-package.  The win-NO-GUI package (starting from LaTeX2RTF  1.9.19)
-is identical  to the DOS package except that it is compiled with
-Cygwin (up to 1.9.19)  or MinGW (1.9.20 and up), and only runs under
-Win32  (Win9x, ME, NT, 2000, XP, 2003, Vista).  The win package
-(starting from LaTeX2RTF  1.9.15) is the DOS package (up to LaTeX2RTF
-1.9.17) or the win-NO-GUI package (LaTeX2RTF  1.9.18 and up) plus
-Win32 GUI program (l2rshell).
- Up to version 1.9.19 it does not run under 64bit systems.  From
-version 1.9.20 it also runs under 64bit systems.  The win64 package
-(LaTeX2RTF  1.9.19) is the win package but with 32bit versions of the
-shell utilities so that it also runs on 64bit systems.  There are
-a few people working on LaTeX2RTF , and some more make 
-contributions, coordinated by Wilfried Hennings (texconvfaq "at"
-gmx.de). See the SourceForge
+package.  The win-NO-GUI package is compiled with  MinGW (2.0.0
+and up), and only runs under Win32  (Win9x, ME, NT, 2000, XP, 2003,
+Vista). From version 2.0.0 up it also runs on 64bit systems.  The
+win package is the win-NO-GUI package plus Win32 GUI program
+(l2rshell).
+ From version 2.0.0 up it also runs on 64bit systems.  The win64
+package (LaTeX2RTF  1.9.19) is the win package but with 32bit
+versions of the shell utilities so that it also runs on 64bit
+systems.  There are a few people working on LaTeX2RTF , and some
+more make  contributions, coordinated by Wilfried Hennings
+(texconvfaq "at" gmx.de). See the SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  project pages for the
 latest news. 
 
@@ -172,29 +169,28 @@ for the new location of the `cfg' directory.
 
  The UNIX and Mac packages do not contain an executable for DOS  or
 Windows. You may compile it yourself (with djgpp or MinGW) or get the
-DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
-version number) or the Windows package as file
-`latex2rtf-x.x.x_win.zip' from SourceForge
-(http://sourceforge.net/projects/latex2rtf/)
+ DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
+version number)
+ or the Windows package as file `latex2rtf-x.x.x_win-NO-GUI.zip'
+(no installer, no GUI)
+ or file `latex2rtf-x.x.x_win.zip' (with installer and GUI)
+ from SourceForge (http://sourceforge.net/projects/latex2rtf/)
   The DOS distribution contains a precompiled executable  which
 should run under plain DOS and also in the command prompt  (or
-"console") of any MS Windows system including Vista.
- *Limitations of the DOS version:* The DOS version has a bug which
-causes conversion of equations  to bitmaps to fail for the remaining
-equations after successfully  converting the first 26 of them. 
-So *if you run a Win32 system* (i.e. Win 9x, ME, NT, 2000, XP,  2003,
-Vista) *it is highly recommended to use the Windows package*.  To
-install the DOS or Windows package of LaTeX2RTF , extract all files 
-from the zip archive, preserving the folder structure  (winzip: check
-"use folder names"), preferably to `C:\l2r', or under Windows, to
-your "Program Files"  folder (which ever it is named in your system)
-because then it will find its cfg files by default.
- If you extracted them to another folder (e.g. `C:\my files\l2r'),
+"console") of any MS Windows system including Vista but not on 64bit
+systems.
+  To install the DOS or Windows package of LaTeX2RTF , extract all
+files  from the zip archive, preserving the folder structure 
+(winzip: check "use folder names"), preferably to `C:\l2r', or under
+Windows, to your "Program Files"  folder (which ever it is named in
+your system) because then it will find its cfg files by default.
+ If you extracted them to another folder (e.g. `C:\my_files\l2r'),
 either edit the file `L2RPREP.BAT'  and change the folder `C:\l2r' to
 where you put them, or specify the  path to the cfg folder in the
-command line.  Make sure that the folder containing the file
-`L2RPREP.BAT'   is in your search path, or put this file into a
-folder  which is in your search path.
+command line.
+ Avoid blanks in folder and file names!  Make sure that the
+folder containing the file `L2RPREP.BAT'   is in your search path, or
+put this file into a folder  which is in your search path.
  To display the current search path, enter `PATH'  from the command
 prompt (with no arguments).  Under plain DOS, conversion of
 equations or figures to bitmaps is not  possible because Ghostscript
@@ -204,19 +200,24 @@ and ImageMagick are not available for plain DOS.
 =================
 
  To install LaTeX2RTF  on a Win32 system (WinNT, Win2000, WinXP, 
-WinVista), download the win-gui package, execute the
+WinVista), download the win package, execute the
 `latex2rtf-x.x.x_win.exe'  (where x.x.x is the version number) and
 follow the instructions.  Note: The installer and GUI shell do not
 support Win9x and WinMe since LaTeX2RTF  v.1.9.17.  If you have one
-of these systems, you should use the  win package (1.9.19 and up) of
-LaTeX2RTF .   To start the program double-click the LaTeX2RTF
+of these systems, you should use the  win-NO-GUI package (1.9.19 and
+up) of LaTeX2RTF .   To start the program double-click the LaTeX2RTF
 icon,  or drag and drop a `.tex' file onto the icon.  If your
 LaTeX  document refers to external graphic files, e.g. eps,  or you
 want to use the option to convert equations to bitmaps, you must have
 LaTeX, ImageMagick and Ghostscript installed. These programs are 
 freely available for download at `http://www.miktex.org/', 
-`http://www.imagemagick.org' and `http://www.ghostscript.com'  If
-MikTeX, ImageMagick and Ghostscript are installed, the paths to their 
+`http://www.imagemagick.org' and `http://www.ghostscript.com'  The
+following versions were available at the time of writing  and used
+together with LaTeX2RTF  version 2.0.0 and 2.1.0:
+ - MikTeX 2.8
+ - Ghostscript 8.70
+ - ImageMagick-6.5.7-3-Q8-windows-dll.exe   If MikTeX,
+ImageMagick and Ghostscript are installed, the paths to their 
 executables are detected automatically. If for any reason this doesn't
  happen, these paths can be specified manually in the "Environment" 
 tab of the LaTeX2RTF  GUI shell window.  If you need to start
@@ -228,15 +229,25 @@ specifying it in the options.
  If this is not possible, you can add the latex2rtf folder to
 Windows' default path like follows:  To add a folder - e.g.
 C:\Program Files\latex2rtf - to the search path:
+   * Note that the folder name "Program Files" contains a blank. This
+     would lead to some problems as some parts of the latex2rtf program
+      package interpret the blank as a parameter delimiter.
+     Therefore in the following example the folder name "Program Files"
+     is replaced by its DOS equivalent "PROGRA~1" which has the
+     additional effect that this is similar for several if not all
+     European languages.
+     
+
    * Win95, Win98, WinME
         * Open the file `C:\Autoexec.bat' either with Edit (DOS) or 
           with Notepad (Windows).
 
         * At the end of that file, add the line
-           `PATH=C:\PROGRA~1\latex2rtf;%PATH%' 
+          `PATH=C:\PROGRA~1\latex2rtf;%PATH%' 
 
         * Save the file to its original location. Shutdown and reboot
           the PC.
+          
 
    * WinNT, Win2000, WinXP
         * Right-click "My Computer" (German: "Arbeitsplatz"), then
@@ -253,29 +264,20 @@ C:\Program Files\latex2rtf - to the search path:
 
         * Click "OK"
  Either the folders where TeX, ImageMagick and Ghostscript are
-installed must be in your search path, or you must edit the file
+installed must also be in your search path, or you must edit the file
 `L2RPREP.BAT',  ensure that the pathes in this file point to the
 folders where  TeX, ImageMagick and Ghostscript are installed on your
 machine, and call `L2RPREP' before calling `latex2rt'.
  Or you edit `L2R.BAT' and call `L2R' instead of calling
 `LATEX2RT.EXE'.  When equations are to be converted to bitmaps, for
-each equation LaTeX2RTF  first writes a temporary .tex file to disk
-which consists of only  the equation to be converted. It then sends
-the call for  `"bash latex2png l2r_nnnn.tex"' to the operating
+each equation LaTeX2RTF  first writes a temporary l2r_nnnn.tex file
+to disk which consists  of only the equation to be converted. It then
+sends the call  for `"bash latex2png l2r_nnnn.tex"' to the operating
 system.
  In previous versions of latex2rtf, some users got the message 
 "Out of environment space" (can occur only under Windows 95, Windows 98
  or Windows ME); this should be solved now  by using bash.exe
-instead of command.com.   Some notes on Windows Vista compatibility:
- I only tested LaTeX2RTF  under Vista with the following system
-settings:
- - User Account Control OFF
- - Install and run all programs with admin rights.
- With these settings, the Windows installer of LaTeX2RTF  and the 
-following helper software versions were successfully installed and used:
- - MikTeX 2.6
- - Ghostscript 8.60
- - ImageMagick-6.3.6-10-Q8-windows-dll.exe  
+instead of command.com.   
 
 2.6 Macintosh
 =============
@@ -342,16 +344,16 @@ environment variable RTFPATH may contain a search path for the support
 files (all files ending in `.cfg'). If no file is found during the
 search in the search-path or if the environment variable is not set,
 the compiled-in default for the configuration-file directory is used.
-If the files are not found at all the program aborts.  In the
-MS-DOS version the search path is separated by `;' in the Unix version
-by `:'. For the paths themselves apply `\' and `/'. A separator may
-appear at the beginning or ending of RTFPATH.  Make sure that the
-configuration files are in the correct directory. LaTeX2RTF  will need
-at least `fonts.cfg', `direct.cfg', `ignore.cfg', `english.cfg'. You
-may have to change one ore more of them to suit your needs (*note
-Configuration::).  *Note Missing options::, for actual
-implementations irregularities.  *Note Reporting Bugs::, for
-information on how to reach the maintainer. 
+If the files are not found at all the program aborts.  In the DOS
+and Windows versions the search path is separated by `;' in the Unix
+version by `:'. For the paths themselves apply `\' and `/'. A
+separator may appear at the beginning or ending of RTFPATH.  Make
+sure that the configuration files are in the correct directory (or
+folder). LaTeX2RTF  will need at least `fonts.cfg', `direct.cfg',
+`ignore.cfg', `english.cfg'. You may have to change one ore more of
+them to suit your needs (*note Configuration::).  *Note Missing
+options::, for actual implementations irregularities.  *Note
+Reporting Bugs::, for information on how to reach the maintainer. 
 
 3.2 LaTeX2RTF
  Options
@@ -544,21 +546,21 @@ syntax is:
      find its cfg files  in the following locations:
       1. the folder specified by the environment variable `RTFPATH',
      if this variable exists;
-      2. the folder `C:/%PROGRAMFILES%/latex2rtf/cfg', if the
-     variable  `PROGRAMFILES' exists - this is the folder in which
-     LaTeX2RTF  is installed  by the Windows GUI installer with
-     default settings;
+      2. The folder `%PROGRAMFILES%\latex2rtf\cfg', if the variable 
+     `PROGRAMFILES' exists - this is the folder in which LaTeX2RTF  is
+     installed  by the Windows GUI installer with default settings;
       3. the folder specified at compilation time by the variable
-     `CFGDIR'. This is set in the Makefile. The DOS and Windows
-     versions are compiled with `CFGDIR=C:/l2r'. 
+     `CFGDIR'. This is set in the Makefile. The DOS version is
+     compiled with `CFGDIR=C:/l2r', the Windows version with 
+     `CFGDIR=C:/PROGRA~1/latex2rtf'. 
 
 `-se#'
      selects the scale for equation conversion, where # is the scale
-     factor  (default 1.22). 
+     factor  (default 1.00). 
 
 `-sf#'
      selects the scale for figure conversion, where # is the scale
-     factor (default 1.35). 
+     factor (default 1.00). 
 
 `-t#'
      where # selects the type of table conversion.  Use
@@ -590,15 +592,16 @@ syntax is:
      This is useful for files that are not cleanly converted by
      LaTeX2RTF . 
     With no arguments other than switches starting with a "-", 
-LaTeX2RTF  acts as a filter, i.e., it reads from `stdin' and writes to
-`stdout'. In addition, diagnostic messages are sent to `stderr'. If
-these standard channels are not redirected using `<' and `>', then
-the input is read from the command line, and both output and error
-messages are printed on the screen.  If a non-switch argument is
-present, LaTeX2RTF  assumes it is the name of the input file. The
-file must have extension ".tex" but the extension is optional. The
-output file is constructed from the input file name by removing the
-extension ".tex" and adding ".rtf". 
+LaTeX2RTF  acts as a filter, i.e., it reads from `stdin' and writes 
+to `stdout'. In addition, diagnostic messages are sent to `stderr' or
+ (DOS and Windows versions) also to `stdout'. If these standard
+channels are not redirected using `<' and `>', then the input is read
+from the command line, and both output and error messages are printed
+on the screen.  If a non-switch argument is present, LaTeX2RTF
+assumes it is the name of the input file. The file must have
+extension ".tex" but the extension is optional. The output file is
+constructed from the input file name by removing the extension ".tex"
+and adding ".rtf". 
 
 3.3 Debugging
 =============
@@ -641,10 +644,12 @@ translate correctly to RTF.
 
  As of version 1.9.17, LaTeX2RTF  has limited unicode support.  LaTeX
 files that use unicode sequences are just emitted directly into the
-RTF file. Symbols and odd characters in math sequences may also be
-converted to a unicode sequence if there is no corresponding symbol
-in the "Symbol" or "MT Extra" fonts.  Support for unicode encoded
-input  is activated by the LaTeX  command
+RTF file.
+ Symbols and odd characters in math sequences may also be converted
+to a unicode sequence. Some of them need the STIXGeneral fonts 
+(see *Note Math and Special Symbols::) to be installed on the system 
+where the rtf file is to be displayed or printed.   Support for
+unicode encoded input  is activated by the LaTeX  command
  `\usepackage[utf8]{inputenc}'
  or
  `\usepackage[utf8x]{inputenc}'.  
@@ -679,7 +684,7 @@ translation of the word "Chapter" in the converted document.  You
 can select any of the above languages using the `-l' option.  This is
 not needed if your LaTeX  file contains
 `\usepackage[language]{babel}'.  Encountering the `german' package
-or documentstyle option (by H. Partl of the Viena University) makes
+or documentstyle option (by H. Partl of the Vienna University) makes
 LaTeX2RTF  behave like that: German Quotes, German Umlauts by `"a',
 etc....  This support is programmed directly  into LaTeX2RTF  and
 supporting similar features for other languages will require 
@@ -784,55 +789,39 @@ Wilfried tried to automate this  in a Word macro, but this fails
 because the macro does not wait until MathType is started and ready
 to receive the pasted code. Maybe the MathType authors will  give us
 a hint or provide such a macro.
- MathType can be downloaded from `http://www.dessci.com/en/' (30 day
-test version). 
+ MathType can be downloaded from
+`http://www.dessci.com/en/products/mathtype/'  (30 day test
+version). 
 
 4.8 Math and Special Symbols
 ============================
 
  The way that symbols are converted in the RTF is based on the
 following observations.  If the symbol is found in the latin 1
-character set, then the current font is used.  The font "Symbol" is
-widely available, and therefore it is used  for as many translations
-as possible.  The font "MT Extra" is less common, but is free (as in
-beer from Design Science, see below) and characters from this font 
-are used when possible.  Note that early versions of "MT Extra",
-including the one which is installed if you choose to install the
-Equation Editor coming with MS Word and MS Office, are missing some
-characters;   the most recent version of this font (from Design
-Science) should be installed for best results.  Finally, if the
-symbol is not found in any of the previous fonts, then LaTeX2RTF
-will use the unicode sequence for  that symbol.  The means that
-on the system where the `.rtf' file is opened, a unicode font should
-be available or these glyphs will not be displayed correctly. On
-Windows machines the unicode font is "Lucida Sans Unicode", on MacOS X
-the font is "Lucida Grande".  Even when these fonts are installed,
-support for these unicode sequences seems to be hit-or-miss in
-various versions of Word since many of these symbols are not (yet)
-contained in the standard unicode fonts.  Many mathematical and
-special symbols are directly supported by LaTeX2RTF . Less common
-symbols (not found in the fonts "Symbol" or "MT Extra") are supported
-by the conversion table in the file `direct.cfg',  see *Note Direct
-Conversion::.  An alternative `direct.cfg' is available in which the
-symbols  are explicitly taken from "Lucida Sans Unicode", which
-contains more of the  symbols than the standard font Times / Times
-New Roman but which is only available on PCs with MS Windows. To
-use "Lucida Sans Unicode", rename `direct.cfg'  (to e.g.,
-`direct_mt.cfg') and rename `direct_ucs.cfg' to `direct.cfg'. 
-Required fonts are: 
+character set, then the current font is used, else the unicode code
+is inserted in the rtf code. (Implemented since version 2.1.0) 
+The means that on the system where the `.rtf' file is opened, a
+unicode font should be available or these glyphs will not be
+displayed correctly.  As only the STIX fonts (see *Note Math and
+Special Symbols::)  contain all needed characters, these fonts should
+be  installed on the system where the rtf file is to be displayed or
+printed.   Many mathematical and special symbols are directly
+supported by LaTeX2RTF . Less common symbols (not found in the
+standard font) are supported by the conversion table in the file
+`direct.cfg',  see *Note Direct Conversion::.   Required fonts
+are: 
      
 
-   * "Times" / "Times New Roman", preferably with Unicode extension
-     (i.e.  supporting all European languages including Cyrillic,
-     Greek, and Hebrew). "Times"  or "Times New Roman" is standard on
-     all systems, but not its Unicode extension. 
+   * "Times" / "Times New Roman" or "Helvetica" / "Arial", 
+     preferably with Unicode extension (i.e. supporting all European
+     languages  including Cyrillic, Greek, and Hebrew). "Times" or
+     "Times New Roman" and  "Helvetica" or "Arial" are standard on
+     all systems,  but not their Unicode extension. 
 
-   * "Symbol", which is standard on all systems. 
-
-   * "MT Extra". This font is installed with the Microsoft Equation
-     Editor, which comes with Microsoft Word, or its full version
-     MathType.  If you don't have Word or MathType, you can get this
-     font from  `http://www.mathtype.com/en/dl/fonts/' 
+   * "STIXGeneral" (4 fonts in plain, italic, bold, bold-italic). These
+     fonts  are available from
+     `http://www.mozilla.org/projects/mathml/fonts/' or from
+     `http://latex2rtf.sourceforge.net/'  
     
 
 4.9 Tables
@@ -850,19 +839,19 @@ added in version 1.9.19.
 4.10 Graphics
 =============
 
- There is now rudimentary support for `\includegraphics'.  Three file
-types will be inserted into the RTF file without needing conversion:
-`.pict', `.jpeg', and `.png' files.  EPS and PDF files are converted
-to PNG using `convert' from the ImageMagick  package.  Some options
-are even handled properly. 
+ There is now rudimentary support for `\includegraphics'.   Three
+file types will be inserted into the RTF file without needing 
+conversion: `.pict', `.jpeg', and `.png' files.   EPS and PDF files
+are converted to PNG using `convert' from the  ImageMagick package.
+Some options are even handled properly. 
 
 4.11 Pagestyles
 ===============
 
  If there is no `\pagestyle' command, the RTF output is generated as
-with plain pagestyle, i.e. each page has its page number centered at
+with  plain pagestyle, i.e. each page has its page number centered at
 the bottom.  You must turn this off with the \pagestyle{empty}
-command in the LaTeX  file if you don't want pagenumbers. The
+command in  the LaTeX  file if you don't want pagenumbers. The
 headings and myheadings styles are silently ignored by now. The
 twosided option to the \documentstyle or \documentclass produces the
 corresponding RTF tokens. Note that these features require RTF
@@ -886,6 +875,16 @@ away right now, see *Note LaTeX2RTF under Development::.  Note that
 you have to update your `.cfg' files if you are upgrading, since
 there are a lot of HTML oriented commands in Hyperlatex that we simply
 can `ignore'. 
+
+4.13 APA Support
+================
+
+ Some APA citation styles are supported, see *Note Citation
+Commands::   Support for APA text formatting is only rudimentary at
+the moment (headings without numbering).  If you want to format a
+document according to APA, rename cfg/style.cfg to style_sav.cfg 
+and rename cfg/styleAPA.cfg to style.cfg before starting LaTeX2RTF .
+
 
 5 Configuration
 ***************
@@ -1018,24 +1017,25 @@ followed by `.'. Possible types are
      anything but a letter e.g., `\newbox\bak'
 
 `SINGLE'
-     ignore single command e.g., `\noindent'
+     ignores single command e.g., `\noindent'
 
 `PARAMETER'
      ignores a command with one parameter e.g., `\foo{bar}'
 
 `PACKAGE'
      does not produce a Warning message if PACKAGE is encountered,
-     e.g., `PACKAGE,kleenex.'
+     e.g., ``\kleenex,PACKAGE.'' ignores ``\usepackage{kleenex}''
 
 `ENVCMD'
-     proceses contents of unknown environment as if it were plain LaTeX
-      eg. `ENVCMD,environ.' Therefore `\begin{environ} text
-     \end{environ}'' as `text'.
+     intended to process contents of unknown environment as if it were
+      plain LaTeX , e.g. ``\environ,ENVCMD.''
+      Therefore ``\begin{environ} text \end{environ}'' would be
+     converted to `text'. Doesn't work in LaTeX2RTF  version 2.1.0.
 
 `ENVIRONMENT'
      ignores contents of that environment, e.g., with
-     `ENVIRONMENT,ifhtml.' `\begin{ifhtml} text \end{ifhtml}' ignores
-     `text'.
+     ``\ifhtml,ENVIRONMENT.'", ``\begin{ifhtml} text \end{ifhtml}''
+     ignores `text'.
     The types are in upper case exactly as above. Do not use spaces.
 Lines starting with a `#' character are ignored. After the `.'
 everything is ignored to end of line. Example:
@@ -1145,11 +1145,9 @@ page: users list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-users) or
 developers list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers) 
-As of November 2007, version 1.9.19 of LaTeX2RTF  is available.  One
-day there shall be a jump to Version 2.0, but this is not history but
-future ...  The contents of this manual were composed by copying
-shamelessly what was available in the original sources and
-documentation. 
+As of February 2010, version 2.1.0 of LaTeX2RTF  is available.  
+The contents of this manual were composed by copying shamelessly what
+was available in the original sources and documentation. 
 
 8 LaTeX2RTF under Development
 *****************************
@@ -3316,7 +3314,26 @@ citeyear
 citeyearpar
    
 
-8.6.6 Other Commands
+8.6.6 Acronym Commands
+----------------------
+
+
+usepackage [options] {acronym}
+
+ac
+
+acfi
+
+acro
+
+acrodef
+
+acrodefplural
+
+acused
+   
+
+8.6.7 Other Commands
 --------------------
 
  Other Commands:
@@ -3325,7 +3342,7 @@ citeyearpar
  center
  
 
-8.6.7 Environments
+8.6.8 Environments
 ------------------
 
  Environments processed - found in `params[]' in commands.c. 

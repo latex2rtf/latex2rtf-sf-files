@@ -1,6 +1,6 @@
 
 /* stack.c - code that implements a stack to handle braces and recursive calls
-	         created by environments, and open and closing-braces
+             created by environments, and open and closing-braces
 
 Copyright (C) 1994-2002 The Free Software Foundation
 
@@ -29,6 +29,7 @@ Authors:
 #include <stdlib.h>
 #include "main.h"
 #include "stack.h"
+#include "fonts.h"
 
 #define STACKSIZE 10000
 
@@ -75,7 +76,7 @@ int BasicPush(int lev, int brack)
  ******************************************************************************/
 {
 
-	diagnostics(6,"pushing rec=%d and bra=%d on  stack",lev,brack);
+    diagnostics(6,"pushing rec=%d and bra=%d on  stack",lev,brack);
     ++top;
     stack[top] = lev;
     ++top;
@@ -102,7 +103,7 @@ int BasicPop(int *lev, int *brack)
     if (top < 0)
         diagnostics(ERROR, "Nesting problem.  latex2rtf bug, if file TeXs properly");
 
-/*	diagnostics(6,"popped rec=%d and bra=%d off stack",*lev,*brack); */
+/*  diagnostics(6,"popped rec=%d and bra=%d off stack",*lev,*brack); */
     return top;
 }
 
@@ -185,8 +186,9 @@ void PushBrace(void)
  ******************************************************************************/
 {
 
-/*	diagnostics(6,"Pushing Brace Level");*/
+/*  diagnostics(6,"Pushing Brace Level");*/
     BasicPush(RecursionLevel, BraceLevel);
+    PushFontSettings();
     ++BraceLevel;
 }
 
@@ -202,6 +204,7 @@ int PopBrace(void)
 
     diagnostics(6, "Popping Brace Level");
     BraceLevel--;
+    PopFontSettings();
     PPopLevel = RecursionLevel;
 
     BasicPop(&PopLevel, &PopBrack);
@@ -244,7 +247,7 @@ The begin document command Pushes 1,1
 For example:
 
 { Text {\em Text} Text }
-1      2 3	    4      5
+1      2 3      4      5
 
 1 Push 12
 2 Push 13
@@ -269,7 +272,7 @@ After every TranslateCommand-function the stack is cleaned
 For example:
 
 \ldots \LaTeX \today \TeX
- 1	2      3      4
+ 1  2      3      4
 1 Push 11
 2 Push 11
 3 Push 11

@@ -1,4 +1,3 @@
-
 /* commands.c - Defines subroutines to translate LaTeX commands to RTF
 
 Copyright (C) 1995-2002 The Free Software Foundation
@@ -45,12 +44,11 @@ Authors:
 #include "definitions.h"
 #include "graphics.h"
 #include "vertical.h"
+#include "encodings.h"
 
-typedef struct commandtag {
-    char *cmd_name;            /* LaTeX command name without \ */
-    void (*func) (int);         /* function to convert LaTeX to RTF */
-    int param;                  /* used in various ways */
-} CommandArray;
+#include "labels.h"
+#include "acronyms.h"
+#include "biblio.h"
 
 static int iEnvCount = 0;               /* number of current environments */
 static CommandArray *Environments[100]; /* call chain for current environments */
@@ -63,10 +61,10 @@ static CommandArray commands[] = {
     {"begin", CmdBeginEnd, CMD_BEGIN},
     {"end", CmdBeginEnd, CMD_END},
     {"today", CmdToday, 0},
-	{"footnote", CmdFootNote, FOOTNOTE},
-	{"endnote", CmdFootNote, ENDNOTE},
+    {"footnote", CmdFootNote, FOOTNOTE},
+    {"endnote", CmdFootNote, ENDNOTE},
 
-	{"rmfamily", CmdFontFamily, F_FAMILY_ROMAN  },
+    {"rmfamily", CmdFontFamily, F_FAMILY_ROMAN  },
     {"rm", CmdFontFamily, F_FAMILY_ROMAN_1},
     {"mathrm", CmdFontFamily, F_FAMILY_ROMAN_2},
     {"textrm", CmdFontFamily, F_FAMILY_ROMAN_2},
@@ -177,10 +175,10 @@ static CommandArray commands[] = {
     {"c", CmdCedillaChar, 0},
     {"i", CmdDotlessChar, 0},
     {"j", CmdDotlessChar, 1},
-	{"H", CmdDoubleAcuteChar, 0},
-    {"l", CmdPolishL, 0},
-    {"L", CmdPolishL, 1},
-	
+    {"H", CmdDoubleAcuteChar, 0},
+    {"l", CmdUnicodeChar, 323},
+    {"L", CmdUnicodeChar, 322},
+    
 /* sectioning commands */
     {"part", CmdSection, SECT_PART},
     {"part*", CmdSection, SECT_PART_STAR},
@@ -197,10 +195,10 @@ static CommandArray commands[] = {
     {"subparagraph", CmdSection, SECT_SUBSUBSUBSUB},
     {"subparagraph*", CmdSection, SECT_SUBSUBSUBSUB_STAR},
 
-    {"ldots", CmdLdots, 0},
-    {"dots", CmdLdots, 0},
-    {"dotfill", CmdLdots, 1},
-    {"textellipsis", CmdLdots, 2},
+    {"ldots", CmdUnicodeChar, 8230},
+    {"dots", CmdUnicodeChar, 8230},
+    {"dotfill", CmdUnicodeChar, 8230},
+    {"textellipsis", CmdUnicodeChar, 8230},
 
     {"maketitle", CmdMakeTitle, 0},
     {"par", CmdEndParagraph, 0},
@@ -219,6 +217,8 @@ static CommandArray commands[] = {
     {"vbox", CmdBox, BOX_VBOX},
     {"fbox", CmdBox, BOX_FBOX},
     {"parbox", CmdBox, BOX_PARBOX},
+    {"makebox", CmdBox, BOX_MAKEBOX},
+    {"framebox", CmdBox, BOX_FRAMEBOX},
     {"frenchspacing", CmdIgnore, 0},
     {"nonfrenchspacing", CmdIgnore, 0},
     {"include", CmdIgnoreParameter, No_Opt_One_NormParam},  /* should not happen */
@@ -246,8 +246,8 @@ static CommandArray commands[] = {
     {"pageref", CmdLabel, LABEL_PAGEREF},
     {"nameref", CmdLabel, LABEL_NAMEREF},
     {"cite", CmdCite, CITE_CITE},
-	{"onlinecite", CmdCite, CITE_CITE},
-	{"citeonline", CmdCite, CITE_CITE},
+    {"onlinecite", CmdCite, CITE_CITE},
+    {"citeonline", CmdCite, CITE_CITE},
     {"nobibliography", CmdIgnoreParameter, No_Opt_One_NormParam},  
     {"bibliography", CmdBibliography, 0},
     {"bibitem", CmdBibitem, 0},
@@ -257,7 +257,6 @@ static CommandArray commands[] = {
     {"usebox", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"subfigure", CmdSubFigure, 0},
 
-/*	{"fbox", CmdIgnoreParameter, No_Opt_One_NormParam}, */
     {"quad", CmdQuad, 1},
     {"qquad", CmdQuad, 2},
     {"textsuperscript", CmdSuperscript, 1},
@@ -295,8 +294,6 @@ static CommandArray commands[] = {
     {"newcount", CmdIgnoreDef, 0},
     {"output", CmdIgnoreDef, 0},
     {"value", CmdCounter, COUNTER_VALUE},
-    {"makebox", CmdIgnoreParameter, Two_Opt_One_NormParam},
-    {"framebox", CmdIgnoreParameter, Two_Opt_One_NormParam},
     {"sbox", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"savebox", CmdIgnoreParameter, Two_Opt_Two_NormParam},
     {"rule", CmdRule,0},
@@ -339,66 +336,23 @@ static CommandArray commands[] = {
     {"stackrel", CmdStackrel, 0},
     {"matrix", CmdMatrix, 0},
     {"overline",CmdOverLine,0},
-    {"rightleftarrows",  CmdUnicodeChar, 8644},
-    {"leftrightarrows",  CmdUnicodeChar, 8646},
-    {"leftleftarrows",   CmdUnicodeChar, 8647},
-    {"rightrightarrows", CmdUnicodeChar, 8649},
-/*  {"longleftarrow", CmdUnicodeChar, 10229}, */
-    {"longleftarrow", CmdArrows, LONG_LEFT},
-/*  {"longrightarrow", CmdUnicodeChar, 10230}, */
-    {"longrightarrow", CmdArrows, LONG_RIGHT},
-/*  {"longleftrightarrow", CmdUnicodeChar, 10231}, */
-    {"longleftrightarrow", CmdArrows, LONG_LEFTRIGHT},
-    {"Longleftarrow", CmdUnicodeChar, 10232},
-    {"Longrightarrow", CmdUnicodeChar, 10233},
-    {"Longleftrightarrow", CmdUnicodeChar, 10234},
+    {"rightleftharpoons", CmdArrows, RIGHT_LEFT_HARPOONS},
     {"psset", CmdPsset, 0},
     {"newpsstyle", CmdNewPsStyle, 0},
-
-    {"mho",               CmdMTExtraChar, MTEXTRA_MHO},
-    {"ddots",             CmdMTExtraChar, MTEXTRA_DDOTS},
-    {"mapsto",            CmdMTExtraChar, MTEXTRA_MAPSTO},
-    {"updownarrow",       CmdMTExtraChar, MTEXTRA_UPDOWNARROW},
-    {"nwarrow",           CmdMTExtraChar, MTEXTRA_NWARROW},
-    {"nearrow",           CmdMTExtraChar, MTEXTRA_NEARROW},
-    {"searrow",           CmdMTExtraChar, MTEXTRA_SEARROW},
-    {"swarrow",           CmdMTExtraChar, MTEXTRA_SWARROW},
-
-    {"triangleleft",      CmdMTExtraChar, MTEXTRA_TRIANGLELEFT},
-    {"triangleright",     CmdMTExtraChar, MTEXTRA_TRIANGLERIGHT},
-    {"cdots",             CmdMTExtraChar, MTEXTRA_CDOTS},
-    {"vdots",             CmdMTExtraChar, MTEXTRA_VDOTS},
-    {"hbar",              CmdMTExtraChar, MTEXTRA_HBAR},
-    {"hslash",            CmdMTExtraChar, MTEXTRA_HBAR},
-    {"ell",               CmdMTExtraChar, MTEXTRA_ELL},
-    {"mp",                CmdMTExtraChar, MTEXTRA_MP},
-    {"succ",              CmdMTExtraChar, MTEXTRA_SUCC},
-    {"prec",              CmdMTExtraChar, MTEXTRA_PREC},
-    {"amalg",             CmdMTExtraChar, MTEXTRA_COPROD},
-    {"coprod",            CmdMTExtraChar, MTEXTRA_COPROD},
- 
-    {"simeq",             CmdMTExtraChar, MTEXTRA_SIMEQ},
-    {"ll",                CmdUnicodeChar, 8810},
-    {"gg",                CmdUnicodeChar, 8811},
-    {"doteq",             CmdMTExtraChar, MTEXTRA_DOTEQ},
-    {"because",           CmdMTExtraChar, MTEXTRA_BECAUSE},
-    {"measuredangle",     CmdMTExtraChar, MTEXTRA_MEASUREDANGLE},
-    {"Updownarrow",       CmdMTExtraChar, MTEXTRA_DOUBLEUPDOWNARROW},
-    {"rightleftarrows",   CmdMTExtraChar, MTEXTRA_RIGHTLEFTARROWS},
-    {"rightleftharpoons", CmdMTExtraChar, MTEXTRA_RIGHTLEFTHARPOONS},
-    {"rightharpoonup",    CmdMTExtraChar, MTEXTRA_RIGHTHARPOONUP},
-    {"leftharpoondown",   CmdMTExtraChar, MTEXTRA_LEFTHARPOONDOWN},
 
     {"nonumber", CmdNonumber, EQN_NO_NUMBER},
     {"notag", CmdNonumber, EQN_NO_NUMBER},
     {"char", CmdSymbol, 0},
     {"symbol", CmdSymbol, 1},
+    {"rlap", CmdLap, 0},
+    {"llap", CmdLap, 1},
+    {"not", CmdNot, 0},
 
     {"url",               CmdHtml, LABEL_URL},
     {"urlstyle",          CmdHtml, LABEL_URLSTYLE},
     {"htmladdnormallink", CmdHtml, LABEL_HTMLADDNORMALREF},
     {"htmlref",           CmdHtml, LABEL_HTMLREF},
-	
+    
     {"nobreakspace", CmdNonBreakSpace, 100},
     {"thinspace", CmdNonBreakSpace, 50},
     {"abstract", CmdAbstract, ABSTRACT_SIMPLE},
@@ -411,192 +365,22 @@ static CommandArray commands[] = {
     {"numberline", CmdNumberLine, 0},
     {"contentsline", CmdContentsLine, 0},
     {"centering", CmdAlign, PAR_CENTERING},
+    
+    {"halign", CmdHAlign, 0},
+        
+    {"efloatseparator", CmdIgnoreParameter,0},
     {"pagestyle", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"pagenumbering", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
+
+    /************ commands for auxfile.c *******************/
+    { "newlabel",      CmdNewLabel,       0 },
+    { "newacro",       CmdAcrodef,        ACRONYM_NEWACRO },
+    { "newacroplural", CmdAcrodef,        ACRONYM_NEWACROPLURAL },
+    { "harvardcite",   CmdAuxHarvardCite, 0 },
+    { "bibcite",       CmdBibCite,        0 },
     
-	{"acrodef",    CmdAcronymDef,   0},
-	{"acresetall", CmdAcronymReset, 0},
-	{"AC"     ,    CmdAC,           0},
-	{"ac"     ,    CmdAcronymAc,    ACRONYM_AC},
-	{"acl"    ,    CmdAcronymAc,    ACRONYM_ACL},
-	{"acs"    ,    CmdAcronymAc,    ACRONYM_ACS},
-	{"acf"    ,    CmdAcronymAc,    ACRONYM_ACF},
-	{"acfi"   ,    CmdAcronymAc,    ACRONYM_ACF}, 
-	{"acp"    ,    CmdAcronymAc,    ACRONYM_ACP},
-	{"aclp"   ,    CmdAcronymAc,    ACRONYM_ACLP},
-	{"acsp"   ,    CmdAcronymAc,    ACRONYM_ACSP},
-	{"acfp"   ,    CmdAcronymAc,    ACRONYM_ACFP},
-	{"acsu"   ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_USED},
-	{"aclu"   ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_USED},
-	{"ac*"    ,    CmdAcronymAc,    ACRONYM_AC   | ACRONYM_STAR},
-	{"acs*"   ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_STAR},
-	{"acl*"   ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_STAR},
-	{"acf*"   ,    CmdAcronymAc,    ACRONYM_ACF  | ACRONYM_STAR},
-	{"acp*"   ,    CmdAcronymAc,    ACRONYM_ACP  | ACRONYM_STAR},
-	{"acsp*"  ,    CmdAcronymAc,    ACRONYM_ACSP | ACRONYM_STAR},
-	{"aclp*"  ,    CmdAcronymAc,    ACRONYM_ACLP | ACRONYM_STAR},
-	{"acfp*"  ,    CmdAcronymAc,    ACRONYM_ACFP | ACRONYM_STAR},
-	{"acfi*"  ,    CmdAcronymAc,    ACRONYM_AC   | ACRONYM_STAR},
-	{"acsu*"  ,    CmdAcronymAc,    ACRONYM_ACS  | ACRONYM_STAR | ACRONYM_USED},
-	{"aclu*"  ,    CmdAcronymAc,    ACRONYM_ACL  | ACRONYM_STAR | ACRONYM_USED},
-    
-	{"aleph", CmdSymbolChar, 0xc0},
-	{"alpha", CmdSymbolChar, (int) 'a'},
-	{"Alpha", CmdSymbolChar, (int) 'A'},
-	{"angle", CmdSymbolChar, 0xd0},
-	{"approx", CmdSymbolChar, 0xbb},
-	{"ast", CmdSymbolChar, 0x2a},
-	{"beta", CmdSymbolChar, (int) 'b'},
-	{"Beta", CmdSymbolChar, (int) 'B'},
-	{"bot", CmdSymbolChar, 0x5e},
-	{"bullet", CmdSymbolChar, 0xb7},
-	{"cap", CmdSymbolChar, 0xc7}, 
-	{"cdot", CmdSymbolChar, 0xd7},
-	{"chi", CmdSymbolChar, (int) 'c'},
-	{"Chi", CmdSymbolChar, (int) 'C'},
-	{"circ", CmdSymbolChar, 0x6f},
-	{"clubsuit", CmdSymbolChar, 0xa7},
-	{"cong", CmdSymbolChar, 0x40},
-	{"cup", CmdSymbolChar, 0xc8},      
-	{"delta", CmdSymbolChar, (int) 'd'},
-	{"Delta", CmdSymbolChar, (int) 'D'},
-	{"Diamond", CmdSymbolChar, 0xe0},
-	{"diamondsuit", CmdSymbolChar, 0xa8},
-	{"div", CmdSymbolChar, 0xb8},
-	{"dots", CmdSymbolChar, 0xbc},
-	{"downarrow", CmdSymbolChar, 0xaf},
-	{"Downarrow", CmdSymbolChar, 0xdf},
-	{"emptyset", CmdSymbolChar, 0xc6},
-	{"epsilon", CmdSymbolChar, 0x65},
-	{"equiv", CmdSymbolChar, 0xba},
-	{"eta", CmdSymbolChar, (int) 'h'},
-	{"exists", CmdSymbolChar, 0x24},
-	{"forall", CmdSymbolChar, 0x22},
-	{"gamma", CmdSymbolChar, (int) 'g'},
-	{"Gamma", CmdSymbolChar, (int) 'G'},
-	{"ge", CmdSymbolChar, 0xb3},
-	{"geq", CmdSymbolChar, 0xb3},
-	{"heartsuit", CmdSymbolChar, 0xa9},
-	{"Im", CmdSymbolChar, 0xc1},
-	{"in", CmdSymbolChar, 0xce},
-	{"infty", CmdSymbolChar, 0xa5},
-	{"int", CmdSymbolChar, 0xf2},
-	{"iota", CmdSymbolChar, (int) 'i'},
-	{"kappa", CmdSymbolChar, (int) 'k'},
-/*	{"lambda", CmdSTIXChar, 0xE1A0}, */
-	{"lambda", CmdSymbolChar, (int) 'l'},
-	{"Lambda", CmdSymbolChar, (int) 'L'},
-	{"land", CmdSymbolChar, 0xd9},
-	{"langle", CmdSymbolChar, 0xe1},
-	{"lceil", CmdSymbolChar, 0xe9},
-	{"le", CmdSymbolChar, 0xa3},
-	{"leftarrow", CmdSymbolChar, 0xac},
-	{"Leftarrow", CmdSymbolChar, 0xdc},
-	{"leftrightarrow", CmdSymbolChar, 0xab},
-	{"Leftrightarrow", CmdSymbolChar, 0xdb},
-	{"leq", CmdSymbolChar, 0xa3},
-	{"lfloor", CmdSymbolChar, 0xeb},
-	{"lor", CmdSymbolChar, 0xda},
-	{"mu", CmdSymbolChar, (int) 'm'},
-	{"nabla", CmdSymbolChar, 0xd1},
-	{"ne", CmdSymbolChar, 0xb9},
-	{"neg", CmdSymbolChar, 0xd8},             
-	{"neq", CmdSymbolChar, 0xb9},
-	{"nu", CmdSymbolChar, (int) 'n'},
-	{"omega", CmdSymbolChar, (int) 'w'},
-	{"Omega", CmdSymbolChar, (int) 'W'},
-	{"omicron", CmdSymbolChar, (int) 'o'},    
-	{"oplus", CmdSymbolChar, 0xc5},
-	{"oslash", CmdSymbolChar, 0xc6},  
-	{"otimes", CmdSymbolChar, 0xc4},
-	{"partial", CmdSymbolChar, 0xb6},
-	{"perp", CmdSymbolChar, 0x5e},
-	{"phi", CmdSymbolChar, (int) 'f'},
-	{"Phi", CmdSymbolChar, (int) 'F'},
-	{"pi", CmdSymbolChar, (int) 'p'},
-	{"Pi", CmdSymbolChar, (int) 'P'},
-	{"pm", CmdSymbolChar, 0xb1},
-	{"prod", CmdSymbolChar, 0xd5},
-	{"propto", CmdSymbolChar, 0xb5},
-	{"psi", CmdSymbolChar, (int) 'y'},
-	{"Psi", CmdSymbolChar, (int) 'Y'},
-	{"rangle", CmdSymbolChar, 0xf1},
-	{"rceil", CmdSymbolChar, 0xf9},
-	{"Re", CmdSymbolChar, 0xc2},
-	{"rfloor", CmdSymbolChar, 0xfb},
-	{"rho", CmdSymbolChar, (int) 'r'},
-	{"Rightarrow", CmdSymbolChar, 0xde},
-	{"rightarrow", CmdSymbolChar, 0xae},
-	{"sigma", CmdSymbolChar, (int) 's'},
-	{"Sigma", CmdSymbolChar, (int) 'S'},
-	{"sim", CmdSymbolChar, 0x7e},
-	{"spadesuit", CmdSymbolChar, 0xaa},
-	{"subset", CmdSymbolChar, 0xcc},
-	{"subseteq", CmdSymbolChar, 0xcd},
-	{"sum", CmdSymbolChar, 0xe5},
-	{"supset", CmdSymbolChar, 0xc9},
-	{"supseteq", CmdSymbolChar, 0xca},
-	{"surd", CmdSymbolChar, 0xd6},
-	{"tau", CmdSymbolChar, (int) 't'},
-	{"textbullet", CmdSymbolChar, 0xb7},
-	{"textperiodcentered", CmdSymbolChar, 0xd7},
-/*	{"textalpha", CmdSymbolChar, (int) 'a'},
-	{"textbeta", CmdSymbolChar, (int) 'b'},
-	{"textchi", CmdSymbolChar, (int) 'c'},
-	{"textDelta", CmdSymbolChar, (int) 'D'},
-	{"textdelta", CmdSymbolChar, (int) 'd'},
-	{"textepsilon", CmdSymbolChar, (int) 'e'},
-	{"texteta", CmdSymbolChar, (int) 'h'},
-	{"textGamma", CmdSymbolChar, (int) 'G'},
-	{"textgamma", CmdSymbolChar, (int) 'g'},
-	{"textiota", CmdSymbolChar, (int) 'i'},
-	{"textkappa", CmdSymbolChar, (int) 'k'},
-	{"textLambda", CmdSymbolChar, (int) 'L'},
-	{"textlambda", CmdSymbolChar, (int) 'l'},
-	{"textmu", CmdSymbolChar, (int) 'm'},
-	{"textnu", CmdSymbolChar, (int) 'n'},
-	{"textOmega", CmdSymbolChar, (int) 'W'},
-	{"textomega", CmdSymbolChar, (int) 'w'},
-	{"textPhi", CmdSymbolChar, (int) 'F'},
-	{"textphi", CmdSymbolChar, (int) 'f'},
-	{"textPi", CmdSymbolChar, (int) 'P'},
-	{"textpi", CmdSymbolChar, (int) 'p'},
-	{"textPsi", CmdSymbolChar, (int) 'Y'},
-	{"textpsi", CmdSymbolChar, (int) 'y'},
-	{"textSigma", CmdSymbolChar, (int) 'S'},
-	{"textsigma", CmdSymbolChar, (int) 's'},
-	{"textTau", CmdSymbolChar, (int) 'T'},
-	{"texttau", CmdSymbolChar, (int) 't'},
-	{"textTheta", CmdSymbolChar, (int) 'Q'},
-	{"texttheta", CmdSymbolChar, (int) 'q'},
-	{"textXi", CmdSymbolChar, (int) 'X'},
-	{"textxi", CmdSymbolChar, (int) 'x'},
-	{"textzeta", CmdSymbolChar, (int) 'z'},*/
-	{"therefore", CmdSymbolChar, 0x5c},
-	{"Theta", CmdSymbolChar, (int) 'Q'},
-	{"theta", CmdSymbolChar, (int) 'q'},
-	{"times", CmdSymbolChar, 0xb4},
-	{"to", CmdSymbolChar, 0xae},
-	{"Uparrow", CmdSymbolChar, 0xdd},
-	{"uparrow", CmdSymbolChar, 0xad},
-	{"upsilon", CmdSymbolChar, (int) 'u'},
-	{"Upsilon", CmdSymbolChar, (int) 'U'},
-	{"varepsilon", CmdSymbolChar, (int) 'e'},
-	{"varnothing", CmdSymbolChar, 0xc6},
-	{"varphi", CmdSymbolChar, (int) 'j'},
-	{"varpi", CmdSymbolChar, (int) 'v'},
-	{"varpropto", CmdSymbolChar, 0xb5},
-	{"varsigma", CmdSymbolChar, (int) 'V'},
-	{"vartheta", CmdSymbolChar, (int) 'J'},
-	{"vee", CmdSymbolChar, 0xda},
-	{"wedge", CmdSymbolChar, 0xd9},
-	{"wp", CmdSymbolChar, 0xc3},
-	{"xi", CmdSymbolChar, (int) 'x'},
-	{"Xi", CmdSymbolChar, (int) 'X'},
-	{"zeta", CmdSymbolChar, (int) 'z'},
-	{"efloatseparator", CmdIgnoreParameter,0},
     {"", NULL, 0}
 };
 
@@ -607,7 +391,7 @@ static CommandArray PreambleCommands[] = {
     {"documentclass", CmdDocumentStyle, 0},
     {"documentstyle", CmdDocumentStyle, 0},
     {"usepackage", CmdUsepackage, 0},
-/*    {"begin", CmdPreambleBeginEnd, CMD_BEGIN},*/
+    {"RequirePackage", CmdUsepackage, 0},
     {"flushbottom", CmdBottom, 0},
     {"raggedbottom", CmdBottom, 0},
     {"addtolength", CmdLength, LENGTH_ADD},
@@ -642,6 +426,7 @@ static CommandArray PreambleCommands[] = {
     {"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"makeindex", CmdIgnoreParameter, 0},
+    {"hfil", CmdIgnoreParameter, 0},
     {"makeglossary", CmdIgnoreParameter, 0},
     {"listoffiles", CmdIgnoreParameter, 0},
     {"nofiles", CmdIgnoreParameter, 0},
@@ -668,6 +453,7 @@ static CommandArray PreambleCommands[] = {
     {"hline", CmdHline, 0},
     {"cline", CmdHline, 1},
     {"ifx", CmdIf, 0},
+    {"ifpdf", CmdIf, 0},
     {"theendnotes", CmdTheEndNotes, 0},
     {"euro", CmdEuro, 0},
     {"EUR", CmdEuro, 1},
@@ -676,7 +462,7 @@ static CommandArray PreambleCommands[] = {
     {"resizebox", CmdResizeBox, 0},
     {"resizebox*", CmdResizeBox, 1},    
     {"geometry",CmdGeometry,0},
-	{"doublespacing", CmdDoubleSpacing, 0},
+    {"doublespacing", CmdDoubleSpacing, 0},
     {"verbositylevel", CmdVerbosityLevel, 0},
     {"iflatextortf",CmdIflatextortf,0},
     {"latextortftrue",CmdIgnore,1}, 
@@ -690,11 +476,12 @@ static CommandArray PreambleCommands[] = {
     {"date", CmdTitle, TITLE_DATE},
     {"affiliation", CmdTitle, TITLE_AFFILIATION},
     {"abstract", CmdTitle, TITLE_ABSTRACT},
-	{"acknowledgements", CmdTitle, TITLE_ACKNOWLEDGE},
+    {"acknowledgements", CmdTitle, TITLE_ACKNOWLEDGE},
     {"bibliographystyle", CmdBibliographyStyle, 0},
     {"extrasfrench", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"AtEndDocument", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"docnumber", CmdIgnoreParameter, No_Opt_One_NormParam},
+    { "graphicspath",  CmdGraphicsPath, 0 },
     {"", NULL, 0}
 };                              /* end of list */
 
@@ -705,7 +492,7 @@ static CommandArray ItemizeCommands[] = {
 
 static CommandArray DescriptionCommands[] = {
     {"item", CmdItem, DESCRIPTION_MODE},
-    {"acro", CmdAcronymItem, 0},
+    /* {"acro", CmdAcronymItem, 0}, */
     {"", NULL, 0}
 };
 
@@ -792,75 +579,107 @@ static CommandArray FrenchModeCommands[] = {
 };
 
 /********************************************************************/
-
 /* commands for Russian Mode */
-
 /********************************************************************/
 static CommandArray RussianModeCommands[] = {
-    {"CYRA", CmdCyrillicChar, 0xC0},
-    {"CYRB", CmdCyrillicChar, 0xC1},
-    {"CYRV", CmdCyrillicChar, 0xC2},
-    {"CYRG", CmdCyrillicChar, 0xC3},
-    {"CYRD", CmdCyrillicChar, 0xC4},
-    {"CYRE", CmdCyrillicChar, 0xC5},
-    {"CYRZH", CmdCyrillicChar, 0xC6},
-    {"CYRZ", CmdCyrillicChar, 0xC7},
-    {"CYRI", CmdCyrillicChar, 0xC8},
-    {"CYRISHRT", CmdCyrillicChar, 0xC9},
-    {"CYRK", CmdCyrillicChar, 0xCA},
-    {"CYRL", CmdCyrillicChar, 0xCB},
-    {"CYRM", CmdCyrillicChar, 0xCC},
-    {"CYRN", CmdCyrillicChar, 0xCD},
-    {"CYRO", CmdCyrillicChar, 0xCE},
-    {"CYRP", CmdCyrillicChar, 0xCF},
-    {"CYRR", CmdCyrillicChar, 0xD0},
-    {"CYRS", CmdCyrillicChar, 0xD1},
-    {"CYRT", CmdCyrillicChar, 0xD2},
-    {"CYRU", CmdCyrillicChar, 0xD3},
-    {"CYRF", CmdCyrillicChar, 0xD4},
-    {"CYRH", CmdCyrillicChar, 0xD5},
-    {"CYRC", CmdCyrillicChar, 0xD6},
-    {"CYRCH", CmdCyrillicChar, 0xD7},
-    {"CYRSH", CmdCyrillicChar, 0xD8},
-    {"CYRCHSH", CmdCyrillicChar, 0xD9},
-    {"CYRHRDSN", CmdCyrillicChar, 0xDA},
-    {"CYRERY", CmdCyrillicChar, 0xDB},
-    {"CYRSFTSN", CmdCyrillicChar, 0xDC},
-    {"CYREREV", CmdCyrillicChar, 0xDD},
-    {"CYRYU", CmdCyrillicChar, 0xDE},
-    {"CYRYA", CmdCyrillicChar, 0xDF},
-    {"cyra", CmdCyrillicChar, 0xE0},
-    {"cyrb", CmdCyrillicChar, 0xE1},
-    {"cyrv", CmdCyrillicChar, 0xE2},
-    {"cyrg", CmdCyrillicChar, 0xE3},
-    {"cyrd", CmdCyrillicChar, 0xE4},
-    {"cyre", CmdCyrillicChar, 0xE5},
-    {"cyrzh", CmdCyrillicChar, 0xE6},
-    {"cyrz", CmdCyrillicChar, 0xE7},
-    {"cyri", CmdCyrillicChar, 0xE8},
-    {"cyrishrt", CmdCyrillicChar, 0xE9},
-    {"cyrk", CmdCyrillicChar, 0xEA},
-    {"cyrl", CmdCyrillicChar, 0xEB},
-    {"cyrm", CmdCyrillicChar, 0xEC},
-    {"cyrn", CmdCyrillicChar, 0xED},
-    {"cyro", CmdCyrillicChar, 0xEE},
-    {"cyrp", CmdCyrillicChar, 0xEF},
-    {"cyrr", CmdCyrillicChar, 0xF0},
-    {"cyrs", CmdCyrillicChar, 0xF1},
-    {"cyrt", CmdCyrillicChar, 0xF2},
-    {"cyru", CmdCyrillicChar, 0xF3},
-    {"cyrf", CmdCyrillicChar, 0xF4},
-    {"cyrh", CmdCyrillicChar, 0xF5},
-    {"cyrc", CmdCyrillicChar, 0xF6},
-    {"cyrch", CmdCyrillicChar, 0xF7},
-    {"cyrsh", CmdCyrillicChar, 0xF8},
-    {"cyrchsh", CmdCyrillicChar, 0xF9},
-    {"cyrhrdsn", CmdCyrillicChar, 0xFA},
-    {"cyrery", CmdCyrillicChar, 0xFB},
-    {"cyrsftsn", CmdCyrillicChar, 0xFC},
-    {"cyrerev", CmdCyrillicChar, 0xFD},
-    {"cyryu", CmdCyrillicChar, 0xFE},
-    {"cyrya", CmdCyrillicChar, 0xFF},
+    {"cyr", CmdFontEncoding, ENCODING_OT2},
+    {"CYRYO",CmdUnicodeChar,0x0401},
+    {"CYRDJE",CmdUnicodeChar,0x0402},
+    {"CYRIE",CmdUnicodeChar,0x0404},
+    {"CYRDZE",CmdUnicodeChar,0x0405},
+    {"CYRII",CmdUnicodeChar,0x0406},
+    {"CYRYI",CmdUnicodeChar,0x0407},
+    {"CYRJE",CmdUnicodeChar,0x0408},
+    {"CYRLJE",CmdUnicodeChar,0x0409},
+    {"CYRNJE",CmdUnicodeChar,0x040A},
+    {"CYRTSHE",CmdUnicodeChar,0x040B},
+    {"CYRUSHRT",CmdUnicodeChar,0x040E},
+    {"CYRDZHE",CmdUnicodeChar,0x040F},
+    {"CYRA",CmdUnicodeChar,0x0410},
+    {"CYRB",CmdUnicodeChar,0x0411},
+    {"CYRV",CmdUnicodeChar,0x0412},
+    {"CYRG",CmdUnicodeChar,0x0413},
+    {"CYRD",CmdUnicodeChar,0x0414},
+    {"CYRE",CmdUnicodeChar,0x0415},
+    {"CYRZH",CmdUnicodeChar,0x0416},
+    {"CYRZ",CmdUnicodeChar,0x0417},
+    {"CYRI",CmdUnicodeChar,0x0418},
+    {"CYRISHRT",CmdUnicodeChar,0x0419},
+    {"CYRK",CmdUnicodeChar,0x041A},
+    {"CYRL",CmdUnicodeChar,0x041B},
+    {"CYRM",CmdUnicodeChar,0x041C},
+    {"CYRN",CmdUnicodeChar,0x041D},
+    {"CYRO",CmdUnicodeChar,0x041E},
+    {"CYRP",CmdUnicodeChar,0x041F},
+    {"CYRR",CmdUnicodeChar,0x0420},
+    {"CYRS",CmdUnicodeChar,0x0421},
+    {"CYRT",CmdUnicodeChar,0x0422},
+    {"CYRU",CmdUnicodeChar,0x0423},
+    {"CYRF",CmdUnicodeChar,0x0424},
+    {"CYRH",CmdUnicodeChar,0x0425},
+    {"CYRC",CmdUnicodeChar,0x0426},
+    {"CYRCH",CmdUnicodeChar,0x0427},
+    {"CYRSH",CmdUnicodeChar,0x0428},
+    {"CYRSHCH",CmdUnicodeChar,0x0429},
+    {"CYRHRDSN",CmdUnicodeChar,0x042A},
+    {"CYRERY",CmdUnicodeChar,0x042B},
+    {"CYRSFTSN",CmdUnicodeChar,0x042C},
+    {"CYREREV",CmdUnicodeChar,0x042D},
+    {"CYRYU",CmdUnicodeChar,0x042E},
+    {"CYRYA",CmdUnicodeChar,0x042F},
+    {"cyra",CmdUnicodeChar,0x0430},
+    {"cyrb",CmdUnicodeChar,0x0431},
+    {"cyrv",CmdUnicodeChar,0x0432},
+    {"cyrg",CmdUnicodeChar,0x0433},
+    {"cyrd",CmdUnicodeChar,0x0434},
+    {"cyre",CmdUnicodeChar,0x0435},
+    {"cyrzh",CmdUnicodeChar,0x0436},
+    {"cyrz",CmdUnicodeChar,0x0437},
+    {"cyri",CmdUnicodeChar,0x0438},
+    {"cyrishrt",CmdUnicodeChar,0x0439},
+    {"cyrk",CmdUnicodeChar,0x043A},
+    {"cyrl",CmdUnicodeChar,0x043B},
+    {"cyrm",CmdUnicodeChar,0x043C},
+    {"cyrn",CmdUnicodeChar,0x043D},
+    {"cyro",CmdUnicodeChar,0x043E},
+    {"cyrp",CmdUnicodeChar,0x043F},
+    {"cyrr",CmdUnicodeChar,0x0440},
+    {"cyrs",CmdUnicodeChar,0x0441},
+    {"cyrt",CmdUnicodeChar,0x0442},
+    {"cyru",CmdUnicodeChar,0x0443},
+    {"cyrf",CmdUnicodeChar,0x0444},
+    {"cyrh",CmdUnicodeChar,0x0445},
+    {"cyrc",CmdUnicodeChar,0x0446},
+    {"cyrch",CmdUnicodeChar,0x0447},
+    {"cyrsh",CmdUnicodeChar,0x0448},
+    {"cyrshch",CmdUnicodeChar,0x0449},
+    {"cyrhrdsn",CmdUnicodeChar,0x044A},
+    {"cyrery",CmdUnicodeChar,0x044B},
+    {"cyrsftsn",CmdUnicodeChar,0x044C},
+    {"cyrerev",CmdUnicodeChar,0x044D},
+    {"cyryu",CmdUnicodeChar,0x044E},
+    {"cyrya",CmdUnicodeChar,0x044F},
+    {"cyryo",CmdUnicodeChar,0x0451},
+    {"cyrdje",CmdUnicodeChar,0x0452},
+    {"cyrie",CmdUnicodeChar,0x0454},
+    {"cyrdze",CmdUnicodeChar,0x0455},
+    {"cyrii",CmdUnicodeChar,0x0456},
+    {"cyryi",CmdUnicodeChar,0x0457},
+    {"cyrje",CmdUnicodeChar,0x0458},
+    {"cyrlje",CmdUnicodeChar,0x0459},
+    {"cyrnje",CmdUnicodeChar,0x045A},
+    {"cyrtshe",CmdUnicodeChar,0x045B},
+    {"cyrushrt",CmdUnicodeChar,0x045E},
+    {"cyrdzhe",CmdUnicodeChar,0x045F},
+    {"CYRYAT",CmdUnicodeChar,0x0462},
+    {"cyryat",CmdUnicodeChar,0x0463},
+    {"CYRBYUS",CmdUnicodeChar,0x046A},
+    {"cyrbyus",CmdUnicodeChar,0x046B},    
+    {"CYRFITA",CmdUnicodeChar,0x0472},    
+    {"cyrfita",CmdUnicodeChar,0x0473},    
+    {"CYRIZH",CmdUnicodeChar,0x0474},    
+    {"cyrizh",CmdUnicodeChar,0x0475},    
+    {"U", CmdWideBreveChar, 0},
     {"", NULL, 0}
 };
 
@@ -892,15 +711,21 @@ static CommandArray params[] = {
     {"enumerate", CmdList, ENUMERATE_MODE},
     {"list", CmdList, ITEMIZE_MODE},
     {"itemize", CmdList, ITEMIZE_MODE},
-	{"compactitem", CmdList, ITEMIZE_MODE},
+    {"compactitem", CmdList, ITEMIZE_MODE},
     {"description", CmdList, DESCRIPTION_MODE},
-    {"acronym", CmdList, DESCRIPTION_MODE},
+    
+    {"enumerate*", CmdList, ENUMERATE_MODE},
+    {"itemize*", CmdList, ITEMIZE_MODE},
+    {"description*", CmdList, DESCRIPTION_MODE},
+    {"basedescipt", CmdList, DESCRIPTION_MODE},
+    
+    {"acronym", CmdBeginAcronym, 0},
     
     {"asparaenum", CmdList, ENUMERATE_MODE},
-	{"inparaenum", CmdList, INPARAENUM_MODE},
-	{"compactenum", CmdList, ENUMERATE_MODE},
-	{"compactdesc", CmdList, DESCRIPTION_MODE},
-	{"compactitem", CmdList, ITEMIZE_MODE},
+    {"inparaenum", CmdList, INPARAENUM_MODE},
+    {"compactenum", CmdList, ENUMERATE_MODE},
+    {"compactdesc", CmdList, DESCRIPTION_MODE},
+    {"compactitem", CmdList, ITEMIZE_MODE},
 
     {"verbatim", CmdVerbatim, VERBATIM_1},
     {"comment", CmdVerbatim, VERBATIM_4},
@@ -926,7 +751,7 @@ static CommandArray params[] = {
     {"table*", CmdTable, TABLE_STAR},
     {"thebibliography", CmdThebibliography, 0},
     {"abstract", CmdAbstract, ABSTRACT_BEGIN_END},
-	{"acknowledgments", CmdAcknowledgments, 0},
+    {"acknowledgments", CmdAcknowledgments, 0},
     {"titlepage", CmdTitlepage, 0},
 
     {"em", CmdEmphasize, F_EMPHASIZE_3},
@@ -942,9 +767,9 @@ static CommandArray params[] = {
     {"sc", CmdFontShape, F_SHAPE_CAPS_4},
     {"sl", CmdFontShape, F_SHAPE_SLANTED_4},
     {"bf", CmdFontShape, F_SERIES_BOLD_4},
-    {"sf", CmdFontFamily, F_FAMILY_ROMAN_4},
-    {"tt", CmdFontFamily, F_FAMILY_SANSSERIF_4},
-    {"rm", CmdFontFamily, F_FAMILY_TYPEWRITER_4},
+    {"rm", CmdFontFamily, F_FAMILY_ROMAN_4},
+    {"sf", CmdFontFamily, F_FAMILY_SANSSERIF_4},
+    {"tt", CmdFontFamily, F_FAMILY_TYPEWRITER_4},
     {"Verbatim", CmdVerbatim, VERBATIM_2},
     {"alltt", CmdVerbatim, VERBATIM_3},
     {"latexonly", CmdIgnore, 0},
@@ -977,10 +802,10 @@ purpose: commands for hyperref package
 static CommandArray hyperrefCommands[] = {
     {"url",               CmdHtml, LABEL_URL_HYPER},
     {"href",              CmdHtml, LABEL_HREF},
-	{"hypersetup",        CmdIgnoreParameter, No_Opt_One_NormParam},
-	{"nolinkurl",         CmdHtml, LABEL_NO_LINK_URL},
-	{"hyperbaseurl",      CmdHtml, LABEL_BASE_URL},
-	{"hyperref",          CmdHtml, LABEL_HYPERREF},
+    {"hypersetup",        CmdIgnoreParameter, No_Opt_One_NormParam},
+    {"nolinkurl",         CmdHtml, LABEL_NO_LINK_URL},
+    {"hyperbaseurl",      CmdHtml, LABEL_BASE_URL},
+    {"hyperref",          CmdHtml, LABEL_HYPERREF},
     {"", NULL, 0}
 };                              /* end of list */
 
@@ -1027,37 +852,37 @@ static CommandArray apaciteCommands[] = {
     {"BBA", CmdApaCite, 35},    /* "&" in paren, "and" otherwise */
     {"AX", CmdApaCite, 36},     /* index name */
     {"BPBI", CmdApaCite,37},    /* Period between initials */
-	{"BIn", CmdApaCite, 38},
+    {"BIn", CmdApaCite, 38},
     
     {"APACyear", CmdApaCite, CITE_APA_CITE_YEAR},
     {"APACmetastar", CmdApaCite, CITE_APA_CITE_METASTAR},
-	{"APACciteatitle", CmdApaCite, CITE_APA_CITE_A_TITLE},
-	{"APACcitebtitle", CmdApaCite, CITE_APA_CITE_B_TITLE},
-	{"APACinsertmetastar", CmdApaCite, CITE_APA_CITE_INSERT},
-	{"APACrefYearMonthDay", CmdApaCite, CITE_APA_YMD},
-	{"APACrefatitle", CmdApaCite, CITE_APA_REF_A_TITLE},
-	{"APACrefbtitle", CmdApaCite, CITE_APA_REF_B_TITLE},
-	{"APACjournalVolNumPages", CmdApaCite, CITE_APA_JVNP},
-	{"APACrefYear", CmdApaCite, CITE_APA_REF_YEAR},
-	{"APACaddressPublisher", CmdApaCite, CITE_APA_ADD_PUB},
-	{"PrintBackRefs", CmdApaCite, CITE_PRINT_BACK_REFS}, 
-	{"PrintCardinal", CmdApaCite, CITE_PRINT_CARDINAL},
-	{"PrintOrdinal", CmdApaCite, CITE_PRINT_ORDINAL},
-	{"APACaddressPublisherEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
-	{"APACrefaetitle", CmdApaCite, CITE_APA_REF_A_E_TITLE},
-	{"APACrefbetitle", CmdApaCite, CITE_APA_REF_B_E_TITLE},
-	{"APACmonth", CmdApaCite, CITE_APA_MONTH},
-	{"APACbVolEdTR", CmdApaCite, CITE_APA_B_VOL_ED_TR},
-	{"APACaddressInstitution", CmdApaCite, CITE_APA_ADD_INST},
-	{"APAChowpublished", CmdApaCite, CITE_APA_HOW},
-	{"APACorigyearnote", CmdApaCite, CITE_APA_ORIG_YEAR_NOTE},
-	{"APACrefnote", CmdApaCite, CITE_APA_REF_NOTE},
-	{"APACbVolEdTRpgs", CmdApaCite, CITE_APA_B_VOL_ED_TR_PGS},
-	{"APACorigjournalnote", CmdApaCite, CITE_APA_ORIG_JOUR},
-	{"APACaddressInstitutionEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
-	{"unskip", CmdApaCite, CITE_APA_UNSKIP},
-	
-	{"Bem", CmdEmphasize, F_EMPHASIZE_2},
+    {"APACciteatitle", CmdApaCite, CITE_APA_CITE_A_TITLE},
+    {"APACcitebtitle", CmdApaCite, CITE_APA_CITE_B_TITLE},
+    {"APACinsertmetastar", CmdApaCite, CITE_APA_CITE_INSERT},
+    {"APACrefYearMonthDay", CmdApaCite, CITE_APA_YMD},
+    {"APACrefatitle", CmdApaCite, CITE_APA_REF_A_TITLE},
+    {"APACrefbtitle", CmdApaCite, CITE_APA_REF_B_TITLE},
+    {"APACjournalVolNumPages", CmdApaCite, CITE_APA_JVNP},
+    {"APACrefYear", CmdApaCite, CITE_APA_REF_YEAR},
+    {"APACaddressPublisher", CmdApaCite, CITE_APA_ADD_PUB},
+    {"PrintBackRefs", CmdApaCite, CITE_PRINT_BACK_REFS}, 
+    {"PrintCardinal", CmdApaCite, CITE_PRINT_CARDINAL},
+    {"PrintOrdinal", CmdApaCite, CITE_PRINT_ORDINAL},
+    {"APACaddressPublisherEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
+    {"APACrefaetitle", CmdApaCite, CITE_APA_REF_A_E_TITLE},
+    {"APACrefbetitle", CmdApaCite, CITE_APA_REF_B_E_TITLE},
+    {"APACmonth", CmdApaCite, CITE_APA_MONTH},
+    {"APACbVolEdTR", CmdApaCite, CITE_APA_B_VOL_ED_TR},
+    {"APACaddressInstitution", CmdApaCite, CITE_APA_ADD_INST},
+    {"APAChowpublished", CmdApaCite, CITE_APA_HOW},
+    {"APACorigyearnote", CmdApaCite, CITE_APA_ORIG_YEAR_NOTE},
+    {"APACrefnote", CmdApaCite, CITE_APA_REF_NOTE},
+    {"APACbVolEdTRpgs", CmdApaCite, CITE_APA_B_VOL_ED_TR_PGS},
+    {"APACorigjournalnote", CmdApaCite, CITE_APA_ORIG_JOUR},
+    {"APACaddressInstitutionEqAuth", CmdApaCite, CITE_APA_ADD_PUB_EQ_AUTHOR},
+    {"unskip", CmdApaCite, CITE_APA_UNSKIP},
+    
+    {"Bem", CmdEmphasize, F_EMPHASIZE_2},
     {"BCAY", CmdBCAY, 0},
     {"citeauthoryear", CmdBCAY, 0},
     {"fullcite", CmdCite, CITE_FULL},
@@ -1184,6 +1009,90 @@ static CommandArray ignoreCommands[] = {
     {"", NULL, 0}
 };
 
+int CurrentEnvironmentCount(void)
+
+/****************************************************************************
+purpose: to eliminate the iEnvCount global variable 
+****************************************************************************/
+{
+    return iEnvCount;
+}
+
+/****************************************************************************
+purpose: returns a name for the current environment
+ ****************************************************************************/
+static char *EnvironmentName(CommandArray *code)
+{
+    if (code == PreambleCommands)
+        return strdup("preamble");
+    if (code == commands)
+        return strdup("document");
+    if (code == ItemizeCommands)
+        return strdup("itemize");
+    if (code == EnumerateCommands)
+        return strdup("enumerate");
+    if (code == DescriptionCommands)
+        return strdup("description");
+    if (code == InparaenumCommands)
+        return strdup("inparaenum");
+    if (code == LetterCommands)
+        return strdup("letter");
+    if (code == GermanModeCommands)
+        return strdup("german");
+    if (code == FrenchModeCommands)
+        return strdup("french");
+    if (code == RussianModeCommands)
+        return strdup("russian");
+    if (code == CzechModeCommands)
+        return strdup("czech");
+    if (code == FigureCommands)
+        return strdup("figure or wrapfigure");
+    if (code == ignoreCommands)
+        return strdup("unknown environment");
+    if (code == hyperlatexCommands)
+        return strdup("hyperlatex");
+    if (code == apaciteCommands)
+        return strdup("apacite");
+    if (code == natbibCommands)
+        return strdup("natbib");
+    if (code == harvardCommands)
+        return strdup("harvard");
+    if (code == authordateCommands)
+        return strdup("authordate");
+    if (code == verbatimCommands)
+        return strdup("verbatim");
+    if (code == quoteCommands)
+        return strdup("quote");
+    if (code == quotationCommands)
+        return strdup("quotation");
+    if (code == bibliographyCommands)
+        return strdup("bibliography");
+    if (code == verseCommands)
+        return strdup("verse");
+    if (code == genericCommands)
+        return strdup("generic");
+    if (code == acronymCommands)
+        return strdup("acronym");
+    return strdup("unknown");
+}
+
+/****************************************************************************
+purpose: prints the names of all the current environments
+ ****************************************************************************/
+#if 0
+static void WriteEnvironmentStack(void)
+{
+    int i;
+    char *s;
+        
+    for (i=0; i<iEnvCount; i++) {
+        s=EnvironmentName(Environments[i]);
+        diagnostics(6, "Environments[%2d]=\"%12s\"", i, s);
+        free(s);
+    }
+}
+#endif
+
 int CallCommandFunc(char *cCommand)
 
 /****************************************************************************
@@ -1196,7 +1105,7 @@ globals: command-functions have side effects or recursive calls
     int iCommand, iEnv,user_def_index;
     char *macro_string;
 
-    diagnostics(5, "CallCommandFunc seeking <%s> (%d environments to look through)", cCommand, iEnvCount);
+    diagnostics(6, "CallCommandFunc seeking <%s> (%d environments to look through)", cCommand, iEnvCount);
 
     user_def_index = existsDefinition(cCommand);
     if (user_def_index > -1) {
@@ -1207,17 +1116,17 @@ globals: command-functions have side effects or recursive calls
         return TRUE;
     }
 
-	/* search backwards through chain of environments*/
+    /* search backwards through chain of environments*/
     for (iEnv = iEnvCount - 1; iEnv >= 0; iEnv--) {
     
-    	/* test every command in the current enviroment */
+        /* test every command in the current enviroment */
         iCommand = 0;
         while (strcmp(Environments[iEnv][iCommand].cmd_name, "") != 0) {
 
-          /*  if (iCommand<10)
-            	diagnostics(8,"CallCommandFunc (%d,%3d) Trying %s",iEnv,iCommand,Environments[iEnv][iCommand].cmd_name);
-		*/
-		
+            /*if (iCommand<3)
+                diagnostics(1,"CallCommandFunc (%d,%3d) Trying %s",iEnv,iCommand,Environments[iEnv][iCommand].cmd_name);
+            */
+        
             if (strcmp(Environments[iEnv][iCommand].cmd_name, cCommand) == 0) {
                 if (Environments[iEnv][iCommand].func == NULL)
                     return FALSE;
@@ -1241,7 +1150,7 @@ void CallParamFunc(char *cCommand, int AddParam)
 /****************************************************************************
 purpose: Try to call the environment-function for the commandname
 params:  cCommand - string with command name
-	 AddParam - param "ORed"(||) to the int param of command-funct
+     AddParam - param "ORed"(||) to the int param of command-funct
 returns: sucess or not
 globals: command-functions have side effects or recursive calls
  ****************************************************************************/
@@ -1266,110 +1175,27 @@ globals: command-functions have side effects or recursive calls
     }
 }
 
-int CurrentEnvironmentCount(void)
-
-/****************************************************************************
-purpose: to eliminate the iEnvCount global variable 
-****************************************************************************/
-{
-    return iEnvCount;
-}
-
-/****************************************************************************
-purpose: returns a name for the current environment
- ****************************************************************************/
-static char *EnvironmentName(CommandArray *code)
-{
-	if (code == PreambleCommands)
-		return strdup("preamble");
-	if (code == commands)
-		return strdup("document");
-	if (code == ItemizeCommands)
-		return strdup("itemize");
-	if (code == EnumerateCommands)
-		return strdup("enumerate");
-	if (code == DescriptionCommands)
-		return strdup("description");
-	if (code == InparaenumCommands)
-		return strdup("inparaenum");
-	if (code == LetterCommands)
-		return strdup("letter");
-	if (code == GermanModeCommands)
-		return strdup("german");
-	if (code == FrenchModeCommands)
-		return strdup("french");
-	if (code == RussianModeCommands)
-		return strdup("russian");
-	if (code == CzechModeCommands)
-		return strdup("czech");
-	if (code == FigureCommands)
-		return strdup("figure or wrapfigure");
-	if (code == ignoreCommands)
-		return strdup("unknown environment");
-	if (code == hyperlatexCommands)
-		return strdup("hyperlatex");
-	if (code == apaciteCommands)
-		return strdup("apacite");
-	if (code == natbibCommands)
-		return strdup("natbib");
-	if (code == harvardCommands)
-		return strdup("harvard");
-	if (code == authordateCommands)
-		return strdup("authordate");
-	if (code == verbatimCommands)
-		return strdup("verbatim");
-	if (code == quoteCommands)
-		return strdup("quote");
-	if (code == quotationCommands)
-		return strdup("quotation");
-	if (code == bibliographyCommands)
-		return strdup("bibliography");
-	if (code == verseCommands)
-		return strdup("verse");
-	if (code == genericCommands)
-		return strdup("generic");
-
-	return strdup("unknown");
-}
-
 /****************************************************************************
 purpose: returns a name for the current environment number
  ****************************************************************************/
 static char *EnvironmentNameByNumber(int n)
 {
     if (n<0) return "";
-	return EnvironmentName(Environments[n]);
+    return EnvironmentName(Environments[n]);
 }
-
-/****************************************************************************
-purpose: prints the names of all the current environments
- ****************************************************************************/
-/*
-static void WriteEnvironmentStack(void)
-{
-    int i;
-    char *s;
-        
-    for (i=0; i<iEnvCount; i++) {
-    	s=EnvironmentName(Environments[i]);
-    	diagnostics(WARNING, "Environments[%2d]=\"%12s\"", i, s);
-    	free(s);
-    }
-}
-*/
 
 void PushEnvironment(int code)
 
 /****************************************************************************
 purpose: adds the command list for a specific environment to the list
-	 of commands searched through.
+     of commands searched through.
 params:  constant identifying the environment
 globals: changes Environment - array of active environments
-		 iEnvCount   - counter of active environments
+         iEnvCount   - counter of active environments
  ****************************************************************************/
 {
     char *diag;
-	
+    
     g_par_indent_array[iEnvCount] = getLength("parindent");
     g_left_indent_array[iEnvCount] = getLeftMarginIndent();
     g_right_indent_array[iEnvCount] = getRightMarginIndent();
@@ -1393,7 +1219,7 @@ globals: changes Environment - array of active environments
         case INPARAENUM_MODE:
             Environments[iEnvCount] = InparaenumCommands;
             break;
-		case LETTER_MODE:
+        case LETTER_MODE:
             Environments[iEnvCount] = LetterCommands;
             break;
         case DESCRIPTION_MODE:
@@ -1453,6 +1279,9 @@ globals: changes Environment - array of active environments
         case IGNORE_MODE:
             Environments[iEnvCount] = ignoreCommands;
             break;
+        case ACRONYM_MODE:
+            Environments[iEnvCount] = acronymCommands;
+            break;
 
         default:
             diagnostics(ERROR, "assertion failed at function PushEnvironment");
@@ -1461,22 +1290,22 @@ globals: changes Environment - array of active environments
     iEnvCount++;
     diag = EnvironmentNameByNumber(iEnvCount-1);
     diagnostics(4, "\\begin{%s} [%d]", diag, iEnvCount-1);
-	free(diag);
+    free(diag);
 
-  /*  WriteEnvironmentStack();*/
+/*    WriteEnvironmentStack();*/
 }
 
 /****************************************************************************
 purpose: removes the environment-commands list added by last PushEnvironment;
 globals: changes Environment - array of active environments
-		 iEnvCount - counter of active environments
+         iEnvCount - counter of active environments
  ****************************************************************************/
 void PopEnvironment(void)
 {
-	char *this_env, *last_env;
+    char *this_env, *last_env;
 
-	this_env = EnvironmentNameByNumber(iEnvCount-1);
-	last_env = EnvironmentNameByNumber(iEnvCount-2);
+    this_env = EnvironmentNameByNumber(iEnvCount-1);
+    last_env = EnvironmentNameByNumber(iEnvCount-2);
     
     /* always pop the current environment */
     --iEnvCount;
@@ -1490,8 +1319,8 @@ void PopEnvironment(void)
 
     diagnostics(3, "\\end{%s} [%d]", this_env, iEnvCount-1);
    
-	free(this_env);
-	free(last_env);
-	
-  /*  WriteEnvironmentStack(); */
+    free(this_env);
+    free(last_env);
+    
+/*    WriteEnvironmentStack(); */
 }

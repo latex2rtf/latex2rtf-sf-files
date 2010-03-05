@@ -1,5 +1,3 @@
-/* $Id: fonts.h,v 1.6 2004/12/07 03:17:54 prahl Exp $ */
-
 #define F_FAMILY_ROMAN          1
 #define F_FAMILY_ROMAN_1        2
 #define F_FAMILY_ROMAN_2        3
@@ -63,34 +61,35 @@
 #define F_SMALLER           -1
 #define F_LARGER            -2
 
-void	InitializeDocumentFont(int family, int size, int shape, int series);
+void    InitializeDocumentFont(int family, int size, int shape, int series, int encoding);
 
-void	CmdFontFamily(int code);
-int		CurrentFontFamily(void);
-int		DefaultFontFamily(void);
+void    CmdFontFamily(int code);
+int     CurrentFontFamily(void);
+int     DefaultFontFamily(void);
 
-void	CmdFontShape(int code);
-int		CurrentFontShape(void);
-int		DefaultFontShape(void);
+void    CmdFontShape(int code);
+int     CurrentFontShape(void);
+int     DefaultFontShape(void);
 
-void	CmdFontSeries(int code);
-int 	CurrentFontSeries(void);
-int 	DefaultFontSeries(void);
+void    CmdFontSeries(int code);
+int     CurrentFontSeries(void);
+int     DefaultFontSeries(void);
 
-void	CmdFontSize(int code);
-int		CurrentFontSize(void);
-int		DefaultFontSize(void);
-int 	CurrentCyrillicFontFamily(void);
-int 	CurrentLatin1FontFamily(void);
-int 	CurrentLatin2FontFamily(void);
+void    CmdFontSize(int code);
+int     CurrentFontSize(void);
+int     DefaultFontSize(void);
 
-void	CmdEmphasize(int code);
-void	CmdUnderline(int code);
-void	CmdTextNormal(int code);
+void    CmdFontEncoding(int code);
+int     CurrentFontEncoding(void);
+int     DefaultFontEncoding(void);
 
-int 	TexFontNumber(const char *Fname);
-int 	RtfFontNumber(const char *Fname);
+void    CmdEmphasize(int code);
+void    CmdUnderline(int code);
+void    CmdTextNormal(int code);
 
-void	PushFontSettings(void);
-void	PopFontSettings(void);
-void  	MonitorFontChanges(const unsigned char *text);
+int     TexFontNumber(const char *Fname);
+int     RtfFontNumber(const char *Fname);
+
+void    PushFontSettings(void);
+void    PopFontSettings(void);
+void    MonitorFontChanges(const unsigned char *text);

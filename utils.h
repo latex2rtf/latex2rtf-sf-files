@@ -23,23 +23,27 @@ Authors:
     1998-2000 Georg Lehner
     2001-2003 Scott Prahl
 */
+#ifndef _UTILS_H_DEFINED
+#define _UTILS_H_DEFINED 1
 
 int     odd(long n);
 int     even(long n);
 double  my_rint(double nr);
 int     strstr_count(const char *s, char *t);
+
+char *  my_strcpy(char *dest, const char *src);
 char *  my_strndup(const char *s, size_t n);
 char *  strdup_together(const char *s, const char *t);
 char *  strdup_together3(const char *s, const char *t, const char *u);
 char *  strdup_together4(const char *s, const char *t, const char *u, const char *v);
-char *	strdup_noblanks(const char *s);
-char *	strdup_nocomments(const char *s);
-char *	strdup_nobadchars(const char *s);
-char *	strdup_noendblanks(const char *s);
+char *  strdup_noblanks(const char *s);
+char *  strdup_nocomments(const char *s);
+char *  strdup_nobadchars(const char *s);
+char *  strdup_noendblanks(const char *s);
 char *  strdup_printable(const char *s);
 void    strncpy_printable(char* dst, char *src, int n);
-char *	ExtractLabelTag(const char *text);
-char *	ExtractAndRemoveTag(char *tag, char *text);
+char *  ExtractLabelTag(const char *text);
+char *  ExtractAndRemoveTag(char *tag, char *text);
 char *  keyvalue_pair(char *t, char **key, char **value);
 int     getStringDimension(char *s);
 char *  getStringBraceParam(char **s);
@@ -47,3 +51,27 @@ void    show_string(int level, const char *s, const char *label);
 
 size_t my_strlcpy(char *dst, const char *src, size_t siz);
 size_t my_strlcat(char *dst, const char *src, size_t siz);
+int    file_exists(char *fname);
+int    my_fgetc(FILE *f);
+char * my_fgets(char *buffer, int maxBuffer, FILE *f);
+
+static inline int streq(const char *s1, const char *s2)
+{
+    return (strcmp(s1,s2) == 0);
+}
+
+static inline int strHasChar(const char *s1, const char c)
+{
+    return (NULL != strchr(s1,c));
+}
+
+static inline int strstarts(const char *s1, const char *s2)
+{
+    return (s1 == strstr(s1,s2));
+}
+
+static inline void safe_free(char *s)
+{
+    if (s) free(s); 
+}
+#endif

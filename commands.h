@@ -1,3 +1,6 @@
+#ifndef _INCLUDED_COMMANDS_H
+#define _INCLUDED_COMMANDS_H 1
+
 #define PREAMBLE_MODE      1
 #define DOCUMENT_MODE      2
 #define ITEMIZE_MODE       3
@@ -23,6 +26,7 @@
 #define QUOTATION_MODE    24
 #define BIBLIOGRAPHY_MODE 25
 #define HYPERREF_MODE     26
+#define ACRONYM_MODE      27
 
 #define ON 0x4000
 #define OFF 0x0000
@@ -32,3 +36,17 @@ void PopEnvironment(void);
 int CallCommandFunc(char *cCommand);
 void CallParamFunc(char *cCommand, int AddParam);
 int  CurrentEnvironmentCount(void);
+
+/*
+ * move this here to associate the CommandArray 
+ * with the implementation of the commands 
+ * i.e. place the array for the acronym commands
+ * in acronyms.c
+ */
+typedef struct commandtag {
+    char *cmd_name;            /* LaTeX command name without \ */
+    void (*func) (int);         /* function to convert LaTeX to RTF */
+    int param;                  /* used in various ways */
+} CommandArray;
+
+#endif

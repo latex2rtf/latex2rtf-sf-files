@@ -58,7 +58,8 @@ Features
 * Tables::                      
 * Graphics::                    
 * Pagestyles::                  
-* Hyperlatex::                  
+* Hyperlatex::
+* APA Support::                  
 
 Configuration 
 
@@ -85,7 +86,8 @@ Command List
 * Preamble Commands::           
 * Letter Commands::             
 * Language Commands::           
-* Citation Commands::           
+* Citation Commands::
+* Acronym Commands::           
 * Other Commands::              
 * Environments::                
 
@@ -114,7 +116,7 @@ Citation Commands
 * Natbib Commands::             
 
      Copyright 1998-2002 Georg Lehner,
- updates Copyright 1999-2007 by Wilfried Hennings and Scott Prahl,
+ updates Copyright 1999-2010 by Wilfried Hennings and Scott Prahl,
  with contributions by Mikhail Polianski.  Permission is granted
 to make and distribute verbatim copies of this manual provided the
 copyright notice and this permission notice are preserved on all
@@ -207,10 +209,12 @@ File: latex2rtf.info,  Node: General,  Next: Obtaining LaTeX2RTF,  Prev: Install
 2.1 General
 ===========
 
- The documentation of the program is found in the `doc/' directory in
-the file `latex2rtf.texi' in the GNU TeXInfo format.  For your
-convenience, you can find HTML and PDF versions of the manual there
-as well. 
+ The documentation of the program is found in the `doc/' directory 
+in the file `latex2rtf.texi' in the GNU TeXInfo format.   For your
+convenience, you can find HTML and PDF  versions of the manual there
+as well.
+ Note: In this manual, the terms "directory" and "folder" are used
+interchangeably. 
 
 
 File: latex2rtf.info,  Node: Obtaining LaTeX2RTF,  Next: UNIX,  Prev: General,  Up: Installation
@@ -224,27 +228,22 @@ and for MS-DOS,  including all versions of MS Windows.  The
 latest version of LaTeX2RTF  is available at  SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  and -- with some delay
 -- on CTAN sites:  e.g., `http://www.dante.de' or
-`http://www.ctan.org'.  The DOS package (1.8aa and up) will also
-run under all MS Windows versions.  It requires an i386 processor or
-better.
- It should only be used on older Microsoft systems (before Win95)
-because it has known issues when converting more than 26 equations to
-bitmaps.
+`http://www.ctan.org'.  The DOS package will also run under all MS
+Windows versions except 64bit systems.  It requires an i386
+processor or better.
+ It should only be used on older Microsoft systems.
  For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
-package.  The win-NO-GUI package (starting from LaTeX2RTF  1.9.19)
-is identical  to the DOS package except that it is compiled with
-Cygwin (up to 1.9.19)  or MinGW (1.9.20 and up), and only runs under
-Win32  (Win9x, ME, NT, 2000, XP, 2003, Vista).  The win package
-(starting from LaTeX2RTF  1.9.15) is the DOS package (up to LaTeX2RTF
-1.9.17) or the win-NO-GUI package (LaTeX2RTF  1.9.18 and up) plus
-Win32 GUI program (l2rshell).
- Up to version 1.9.19 it does not run under 64bit systems.  From
-version 1.9.20 it also runs under 64bit systems.  The win64 package
-(LaTeX2RTF  1.9.19) is the win package but with 32bit versions of the
-shell utilities so that it also runs on 64bit systems.  There are
-a few people working on LaTeX2RTF , and some more make 
-contributions, coordinated by Wilfried Hennings (texconvfaq "at"
-gmx.de). See the SourceForge
+package.  The win-NO-GUI package is compiled with  MinGW (2.0.0
+and up), and only runs under Win32  (Win9x, ME, NT, 2000, XP, 2003,
+Vista). From version 2.0.0 up it also runs on 64bit systems.  The
+win package is the win-NO-GUI package plus Win32 GUI program
+(l2rshell).
+ From version 2.0.0 up it also runs on 64bit systems.  The win64
+package (LaTeX2RTF  1.9.19) is the win package but with 32bit
+versions of the shell utilities so that it also runs on 64bit
+systems.  There are a few people working on LaTeX2RTF , and some
+more make  contributions, coordinated by Wilfried Hennings
+(texconvfaq "at" gmx.de). See the SourceForge
 (http://sourceforge.net/projects/latex2rtf/)  project pages for the
 latest news. 
 
@@ -311,29 +310,28 @@ File: latex2rtf.info,  Node: DOS or Windows,  Next: Win32 systems,  Prev: UNIX, 
 
  The UNIX and Mac packages do not contain an executable for DOS  or
 Windows. You may compile it yourself (with djgpp or MinGW) or get the
-DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
-version number) or the Windows package as file
-`latex2rtf-x.x.x_win.zip' from SourceForge
-(http://sourceforge.net/projects/latex2rtf/)
+ DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
+version number)
+ or the Windows package as file `latex2rtf-x.x.x_win-NO-GUI.zip'
+(no installer, no GUI)
+ or file `latex2rtf-x.x.x_win.zip' (with installer and GUI)
+ from SourceForge (http://sourceforge.net/projects/latex2rtf/)
   The DOS distribution contains a precompiled executable  which
 should run under plain DOS and also in the command prompt  (or
-"console") of any MS Windows system including Vista.
- *Limitations of the DOS version:* The DOS version has a bug which
-causes conversion of equations  to bitmaps to fail for the remaining
-equations after successfully  converting the first 26 of them. 
-So *if you run a Win32 system* (i.e. Win 9x, ME, NT, 2000, XP,  2003,
-Vista) *it is highly recommended to use the Windows package*.  To
-install the DOS or Windows package of LaTeX2RTF , extract all files 
-from the zip archive, preserving the folder structure  (winzip: check
-"use folder names"), preferably to `C:\l2r', or under Windows, to
-your "Program Files"  folder (which ever it is named in your system)
-because then it will find its cfg files by default.
- If you extracted them to another folder (e.g. `C:\my files\l2r'),
+"console") of any MS Windows system including Vista but not on 64bit
+systems.
+  To install the DOS or Windows package of LaTeX2RTF , extract all
+files  from the zip archive, preserving the folder structure 
+(winzip: check "use folder names"), preferably to `C:\l2r', or under
+Windows, to your "Program Files"  folder (which ever it is named in
+your system) because then it will find its cfg files by default.
+ If you extracted them to another folder (e.g. `C:\my_files\l2r'),
 either edit the file `L2RPREP.BAT'  and change the folder `C:\l2r' to
 where you put them, or specify the  path to the cfg folder in the
-command line.  Make sure that the folder containing the file
-`L2RPREP.BAT'   is in your search path, or put this file into a
-folder  which is in your search path.
+command line.
+ Avoid blanks in folder and file names!  Make sure that the
+folder containing the file `L2RPREP.BAT'   is in your search path, or
+put this file into a folder  which is in your search path.
  To display the current search path, enter `PATH'  from the command
 prompt (with no arguments).  Under plain DOS, conversion of
 equations or figures to bitmaps is not  possible because Ghostscript
@@ -346,19 +344,24 @@ File: latex2rtf.info,  Node: Win32 systems,  Next: Macintosh,  Prev: DOS or Wind
 =================
 
  To install LaTeX2RTF  on a Win32 system (WinNT, Win2000, WinXP, 
-WinVista), download the win-gui package, execute the
+WinVista), download the win package, execute the
 `latex2rtf-x.x.x_win.exe'  (where x.x.x is the version number) and
 follow the instructions.  Note: The installer and GUI shell do not
 support Win9x and WinMe since LaTeX2RTF  v.1.9.17.  If you have one
-of these systems, you should use the  win package (1.9.19 and up) of
-LaTeX2RTF .   To start the program double-click the LaTeX2RTF
+of these systems, you should use the  win-NO-GUI package (1.9.19 and
+up) of LaTeX2RTF .   To start the program double-click the LaTeX2RTF
 icon,  or drag and drop a `.tex' file onto the icon.  If your
 LaTeX  document refers to external graphic files, e.g. eps,  or you
 want to use the option to convert equations to bitmaps, you must have
 LaTeX, ImageMagick and Ghostscript installed. These programs are 
 freely available for download at `http://www.miktex.org/', 
-`http://www.imagemagick.org' and `http://www.ghostscript.com'  If
-MikTeX, ImageMagick and Ghostscript are installed, the paths to their 
+`http://www.imagemagick.org' and `http://www.ghostscript.com'  The
+following versions were available at the time of writing  and used
+together with LaTeX2RTF  version 2.0.0 and 2.1.0:
+ - MikTeX 2.8
+ - Ghostscript 8.70
+ - ImageMagick-6.5.7-3-Q8-windows-dll.exe   If MikTeX,
+ImageMagick and Ghostscript are installed, the paths to their 
 executables are detected automatically. If for any reason this doesn't
  happen, these paths can be specified manually in the "Environment" 
 tab of the LaTeX2RTF  GUI shell window.  If you need to start
@@ -370,15 +373,25 @@ specifying it in the options.
  If this is not possible, you can add the latex2rtf folder to
 Windows' default path like follows:  To add a folder - e.g.
 C:\Program Files\latex2rtf - to the search path:
+   * Note that the folder name "Program Files" contains a blank. This
+     would lead to some problems as some parts of the latex2rtf program
+      package interpret the blank as a parameter delimiter.
+     Therefore in the following example the folder name "Program Files"
+     is replaced by its DOS equivalent "PROGRA~1" which has the
+     additional effect that this is similar for several if not all
+     European languages.
+     
+
    * Win95, Win98, WinME
         * Open the file `C:\Autoexec.bat' either with Edit (DOS) or 
           with Notepad (Windows).
 
         * At the end of that file, add the line
-           `PATH=C:\PROGRA~1\latex2rtf;%PATH%' 
+          `PATH=C:\PROGRA~1\latex2rtf;%PATH%' 
 
         * Save the file to its original location. Shutdown and reboot
           the PC.
+          
 
    * WinNT, Win2000, WinXP
         * Right-click "My Computer" (German: "Arbeitsplatz"), then
@@ -395,29 +408,20 @@ C:\Program Files\latex2rtf - to the search path:
 
         * Click "OK"
  Either the folders where TeX, ImageMagick and Ghostscript are
-installed must be in your search path, or you must edit the file
+installed must also be in your search path, or you must edit the file
 `L2RPREP.BAT',  ensure that the pathes in this file point to the
 folders where  TeX, ImageMagick and Ghostscript are installed on your
 machine, and call `L2RPREP' before calling `latex2rt'.
  Or you edit `L2R.BAT' and call `L2R' instead of calling
 `LATEX2RT.EXE'.  When equations are to be converted to bitmaps, for
-each equation LaTeX2RTF  first writes a temporary .tex file to disk
-which consists of only  the equation to be converted. It then sends
-the call for  `"bash latex2png l2r_nnnn.tex"' to the operating
+each equation LaTeX2RTF  first writes a temporary l2r_nnnn.tex file
+to disk which consists  of only the equation to be converted. It then
+sends the call  for `"bash latex2png l2r_nnnn.tex"' to the operating
 system.
  In previous versions of latex2rtf, some users got the message 
 "Out of environment space" (can occur only under Windows 95, Windows 98
  or Windows ME); this should be solved now  by using bash.exe
-instead of command.com.   Some notes on Windows Vista compatibility:
- I only tested LaTeX2RTF  under Vista with the following system
-settings:
- - User Account Control OFF
- - Install and run all programs with admin rights.
- With these settings, the Windows installer of LaTeX2RTF  and the 
-following helper software versions were successfully installed and used:
- - MikTeX 2.6
- - Ghostscript 8.60
- - ImageMagick-6.3.6-10-Q8-windows-dll.exe  
+instead of command.com.   
 
 
 File: latex2rtf.info,  Node: Macintosh,  Next: Problems Compiling,  Prev: Win32 systems,  Up: Installation
@@ -506,16 +510,16 @@ environment variable RTFPATH may contain a search path for the support
 files (all files ending in `.cfg'). If no file is found during the
 search in the search-path or if the environment variable is not set,
 the compiled-in default for the configuration-file directory is used.
-If the files are not found at all the program aborts.  In the
-MS-DOS version the search path is separated by `;' in the Unix version
-by `:'. For the paths themselves apply `\' and `/'. A separator may
-appear at the beginning or ending of RTFPATH.  Make sure that the
-configuration files are in the correct directory. LaTeX2RTF  will need
-at least `fonts.cfg', `direct.cfg', `ignore.cfg', `english.cfg'. You
-may have to change one ore more of them to suit your needs (*note
-Configuration::).  *Note Missing options::, for actual
-implementations irregularities.  *Note Reporting Bugs::, for
-information on how to reach the maintainer. 
+If the files are not found at all the program aborts.  In the DOS
+and Windows versions the search path is separated by `;' in the Unix
+version by `:'. For the paths themselves apply `\' and `/'. A
+separator may appear at the beginning or ending of RTFPATH.  Make
+sure that the configuration files are in the correct directory (or
+folder). LaTeX2RTF  will need at least `fonts.cfg', `direct.cfg',
+`ignore.cfg', `english.cfg'. You may have to change one ore more of
+them to suit your needs (*note Configuration::).  *Note Missing
+options::, for actual implementations irregularities.  *Note
+Reporting Bugs::, for information on how to reach the maintainer. 
 
 
 File: latex2rtf.info,  Node: LaTeX2RTF Options,  Next: Debugging,  Prev: General Assumptions,  Up: Using LaTeX2RTF
@@ -711,21 +715,21 @@ syntax is:
      find its cfg files  in the following locations:
       1. the folder specified by the environment variable `RTFPATH',
      if this variable exists;
-      2. the folder `C:/%PROGRAMFILES%/latex2rtf/cfg', if the
-     variable  `PROGRAMFILES' exists - this is the folder in which
-     LaTeX2RTF  is installed  by the Windows GUI installer with
-     default settings;
+      2. The folder `%PROGRAMFILES%\latex2rtf\cfg', if the variable 
+     `PROGRAMFILES' exists - this is the folder in which LaTeX2RTF  is
+     installed  by the Windows GUI installer with default settings;
       3. the folder specified at compilation time by the variable
-     `CFGDIR'. This is set in the Makefile. The DOS and Windows
-     versions are compiled with `CFGDIR=C:/l2r'. 
+     `CFGDIR'. This is set in the Makefile. The DOS version is
+     compiled with `CFGDIR=C:/l2r', the Windows version with 
+     `CFGDIR=C:/PROGRA~1/latex2rtf'. 
 
 `-se#'
      selects the scale for equation conversion, where # is the scale
-     factor  (default 1.22). 
+     factor  (default 1.00). 
 
 `-sf#'
      selects the scale for figure conversion, where # is the scale
-     factor (default 1.35). 
+     factor (default 1.00). 
 
 `-t#'
      where # selects the type of table conversion.  Use
@@ -757,15 +761,16 @@ syntax is:
      This is useful for files that are not cleanly converted by
      LaTeX2RTF . 
     With no arguments other than switches starting with a "-", 
-LaTeX2RTF  acts as a filter, i.e., it reads from `stdin' and writes to
-`stdout'. In addition, diagnostic messages are sent to `stderr'. If
-these standard channels are not redirected using `<' and `>', then
-the input is read from the command line, and both output and error
-messages are printed on the screen.  If a non-switch argument is
-present, LaTeX2RTF  assumes it is the name of the input file. The
-file must have extension ".tex" but the extension is optional. The
-output file is constructed from the input file name by removing the
-extension ".tex" and adding ".rtf". 
+LaTeX2RTF  acts as a filter, i.e., it reads from `stdin' and writes 
+to `stdout'. In addition, diagnostic messages are sent to `stderr' or
+ (DOS and Windows versions) also to `stdout'. If these standard
+channels are not redirected using `<' and `>', then the input is read
+from the command line, and both output and error messages are printed
+on the screen.  If a non-switch argument is present, LaTeX2RTF
+assumes it is the name of the input file. The file must have
+extension ".tex" but the extension is optional. The output file is
+constructed from the input file name by removing the extension ".tex"
+and adding ".rtf". 
 
 
 File: latex2rtf.info,  Node: Debugging,  Prev: LaTeX2RTF Options,  Up: Using LaTeX2RTF
@@ -814,7 +819,8 @@ translate correctly to RTF.
 * Tables::                      
 * Graphics::                    
 * Pagestyles::                  
-* Hyperlatex::                  
+* Hyperlatex::
+* APA Support::                  
    
 
 
@@ -836,10 +842,12 @@ File: latex2rtf.info,  Node: Unicode Support,  Next: Input Encoding,  Prev: LaTe
 
  As of version 1.9.17, LaTeX2RTF  has limited unicode support.  LaTeX
 files that use unicode sequences are just emitted directly into the
-RTF file. Symbols and odd characters in math sequences may also be
-converted to a unicode sequence if there is no corresponding symbol
-in the "Symbol" or "MT Extra" fonts.  Support for unicode encoded
-input  is activated by the LaTeX  command
+RTF file.
+ Symbols and odd characters in math sequences may also be converted
+to a unicode sequence. Some of them need the STIXGeneral fonts 
+(see *Note Math and Special Symbols::) to be installed on the system 
+where the rtf file is to be displayed or printed.   Support for
+unicode encoded input  is activated by the LaTeX  command
  `\usepackage[utf8]{inputenc}'
  or
  `\usepackage[utf8x]{inputenc}'.  
@@ -880,7 +888,7 @@ translation of the word "Chapter" in the converted document.  You
 can select any of the above languages using the `-l' option.  This is
 not needed if your LaTeX  file contains
 `\usepackage[language]{babel}'.  Encountering the `german' package
-or documentstyle option (by H. Partl of the Viena University) makes
+or documentstyle option (by H. Partl of the Vienna University) makes
 LaTeX2RTF  behave like that: German Quotes, German Umlauts by `"a',
 etc....  This support is programmed directly  into LaTeX2RTF  and
 supporting similar features for other languages will require 
@@ -994,8 +1002,9 @@ Wilfried tried to automate this  in a Word macro, but this fails
 because the macro does not wait until MathType is started and ready
 to receive the pasted code. Maybe the MathType authors will  give us
 a hint or provide such a macro.
- MathType can be downloaded from `http://www.dessci.com/en/' (30 day
-test version). 
+ MathType can be downloaded from
+`http://www.dessci.com/en/products/mathtype/'  (30 day test
+version). 
 
 
 File: latex2rtf.info,  Node: Math and Special Symbols,  Next: Tables,  Prev: Equations,  Up: Features
@@ -1005,47 +1014,30 @@ File: latex2rtf.info,  Node: Math and Special Symbols,  Next: Tables,  Prev: Equ
 
  The way that symbols are converted in the RTF is based on the
 following observations.  If the symbol is found in the latin 1
-character set, then the current font is used.  The font "Symbol" is
-widely available, and therefore it is used  for as many translations
-as possible.  The font "MT Extra" is less common, but is free (as in
-beer from Design Science, see below) and characters from this font 
-are used when possible.  Note that early versions of "MT Extra",
-including the one which is installed if you choose to install the
-Equation Editor coming with MS Word and MS Office, are missing some
-characters;   the most recent version of this font (from Design
-Science) should be installed for best results.  Finally, if the
-symbol is not found in any of the previous fonts, then LaTeX2RTF
-will use the unicode sequence for  that symbol.  The means that
-on the system where the `.rtf' file is opened, a unicode font should
-be available or these glyphs will not be displayed correctly. On
-Windows machines the unicode font is "Lucida Sans Unicode", on MacOS X
-the font is "Lucida Grande".  Even when these fonts are installed,
-support for these unicode sequences seems to be hit-or-miss in
-various versions of Word since many of these symbols are not (yet)
-contained in the standard unicode fonts.  Many mathematical and
-special symbols are directly supported by LaTeX2RTF . Less common
-symbols (not found in the fonts "Symbol" or "MT Extra") are supported
-by the conversion table in the file `direct.cfg',  see *Note Direct
-Conversion::.  An alternative `direct.cfg' is available in which the
-symbols  are explicitly taken from "Lucida Sans Unicode", which
-contains more of the  symbols than the standard font Times / Times
-New Roman but which is only available on PCs with MS Windows. To
-use "Lucida Sans Unicode", rename `direct.cfg'  (to e.g.,
-`direct_mt.cfg') and rename `direct_ucs.cfg' to `direct.cfg'. 
-Required fonts are: 
+character set, then the current font is used, else the unicode code
+is inserted in the rtf code. (Implemented since version 2.1.0) 
+The means that on the system where the `.rtf' file is opened, a
+unicode font should be available or these glyphs will not be
+displayed correctly.  As only the STIX fonts (see *Note Math and
+Special Symbols::)  contain all needed characters, these fonts should
+be  installed on the system where the rtf file is to be displayed or
+printed.   Many mathematical and special symbols are directly
+supported by LaTeX2RTF . Less common symbols (not found in the
+standard font) are supported by the conversion table in the file
+`direct.cfg',  see *Note Direct Conversion::.   Required fonts
+are: 
      
 
-   * "Times" / "Times New Roman", preferably with Unicode extension
-     (i.e.  supporting all European languages including Cyrillic,
-     Greek, and Hebrew). "Times"  or "Times New Roman" is standard on
-     all systems, but not its Unicode extension. 
+   * "Times" / "Times New Roman" or "Helvetica" / "Arial", 
+     preferably with Unicode extension (i.e. supporting all European
+     languages  including Cyrillic, Greek, and Hebrew). "Times" or
+     "Times New Roman" and  "Helvetica" or "Arial" are standard on
+     all systems,  but not their Unicode extension. 
 
-   * "Symbol", which is standard on all systems. 
-
-   * "MT Extra". This font is installed with the Microsoft Equation
-     Editor, which comes with Microsoft Word, or its full version
-     MathType.  If you don't have Word or MathType, you can get this
-     font from  `http://www.mathtype.com/en/dl/fonts/' 
+   * "STIXGeneral" (4 fonts in plain, italic, bold, bold-italic). These
+     fonts  are available from
+     `http://www.mozilla.org/projects/mathml/fonts/' or from
+     `http://latex2rtf.sourceforge.net/'  
     
 
 
@@ -1069,11 +1061,11 @@ File: latex2rtf.info,  Node: Graphics,  Next: Pagestyles,  Prev: Tables,  Up: Fe
 4.10 Graphics
 =============
 
- There is now rudimentary support for `\includegraphics'.  Three file
-types will be inserted into the RTF file without needing conversion:
-`.pict', `.jpeg', and `.png' files.  EPS and PDF files are converted
-to PNG using `convert' from the ImageMagick  package.  Some options
-are even handled properly. 
+ There is now rudimentary support for `\includegraphics'.   Three
+file types will be inserted into the RTF file without needing 
+conversion: `.pict', `.jpeg', and `.png' files.   EPS and PDF files
+are converted to PNG using `convert' from the  ImageMagick package.
+Some options are even handled properly. 
 
 
 File: latex2rtf.info,  Node: Pagestyles,  Next: Hyperlatex,  Prev: Graphics,  Up: Features
@@ -1082,16 +1074,16 @@ File: latex2rtf.info,  Node: Pagestyles,  Next: Hyperlatex,  Prev: Graphics,  Up
 ===============
 
  If there is no `\pagestyle' command, the RTF output is generated as
-with plain pagestyle, i.e. each page has its page number centered at
+with  plain pagestyle, i.e. each page has its page number centered at
 the bottom.  You must turn this off with the \pagestyle{empty}
-command in the LaTeX  file if you don't want pagenumbers. The
+command in  the LaTeX  file if you don't want pagenumbers. The
 headings and myheadings styles are silently ignored by now. The
 twosided option to the \documentstyle or \documentclass produces the
 corresponding RTF tokens. Note that these features require RTF
 Version 1.4. 
 
 
-File: latex2rtf.info,  Node: Hyperlatex,  Prev: Pagestyles,  Up: Features
+File: latex2rtf.info,  Node: Hyperlatex,  Next: APA Support,  Prev: Pagestyles,  Up: Features
 
 4.12 Hyperlatex
 ===============
@@ -1111,6 +1103,19 @@ away right now, see *Note LaTeX2RTF under Development::.  Note that
 you have to update your `.cfg' files if you are upgrading, since
 there are a lot of HTML oriented commands in Hyperlatex that we simply
 can `ignore'. 
+
+
+File: latex2rtf.info,  Node: APA Support,  Prev: Hyperlatex,  Up: Features
+
+4.13 APA Support
+================
+
+ Some APA citation styles are supported, see *Note Citation
+Commands::   Support for APA text formatting is only rudimentary at
+the moment (headings without numbering).  If you want to format a
+document according to APA, rename cfg/style.cfg to style_sav.cfg 
+and rename cfg/styleAPA.cfg to style.cfg before starting LaTeX2RTF .
+
 
 
 File: latex2rtf.info,  Node: Configuration,  Next: Error Messages and Logging,  Prev: Features,  Up: Top
@@ -1272,24 +1277,25 @@ followed by `.'. Possible types are
      anything but a letter e.g., `\newbox\bak'
 
 `SINGLE'
-     ignore single command e.g., `\noindent'
+     ignores single command e.g., `\noindent'
 
 `PARAMETER'
      ignores a command with one parameter e.g., `\foo{bar}'
 
 `PACKAGE'
      does not produce a Warning message if PACKAGE is encountered,
-     e.g., `PACKAGE,kleenex.'
+     e.g., ``\kleenex,PACKAGE.'' ignores ``\usepackage{kleenex}''
 
 `ENVCMD'
-     proceses contents of unknown environment as if it were plain LaTeX
-      eg. `ENVCMD,environ.' Therefore `\begin{environ} text
-     \end{environ}'' as `text'.
+     intended to process contents of unknown environment as if it were
+      plain LaTeX , e.g. ``\environ,ENVCMD.''
+      Therefore ``\begin{environ} text \end{environ}'' would be
+     converted to `text'. Doesn't work in LaTeX2RTF  version 2.1.0.
 
 `ENVIRONMENT'
      ignores contents of that environment, e.g., with
-     `ENVIRONMENT,ifhtml.' `\begin{ifhtml} text \end{ifhtml}' ignores
-     `text'.
+     ``\ifhtml,ENVIRONMENT.'", ``\begin{ifhtml} text \end{ifhtml}''
+     ignores `text'.
     The types are in upper case exactly as above. Do not use spaces.
 Lines starting with a `#' character are ignored. After the `.'
 everything is ignored to end of line. Example:
@@ -1411,11 +1417,9 @@ page: users list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-users) or
 developers list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers) 
-As of November 2007, version 1.9.19 of LaTeX2RTF  is available.  One
-day there shall be a jump to Version 2.0, but this is not history but
-future ...  The contents of this manual were composed by copying
-shamelessly what was available in the original sources and
-documentation. 
+As of February 2010, version 2.1.0 of LaTeX2RTF  is available.  
+The contents of this manual were composed by copying shamelessly what
+was available in the original sources and documentation. 
 
 
 File: latex2rtf.info,  Node: LaTeX2RTF under Development,  Next: Function Index,  Prev: History,  Up: Top
@@ -1583,7 +1587,8 @@ least contemplated implementing.
 * Preamble Commands::           
 * Letter Commands::             
 * Language Commands::           
-* Citation Commands::           
+* Citation Commands::
+* Acronym Commands::           
 * Other Commands::              
 * Environments::                
    
@@ -3471,7 +3476,7 @@ cyrzh
    
 
 
-File: latex2rtf.info,  Node: Citation Commands,  Next: Other Commands,  Prev: Language Commands,  Up: LaTeX Commands
+File: latex2rtf.info,  Node: Citation Commands,  Next: Acronym Commands,  Prev: Language Commands,  Up: LaTeX Commands
 
 8.6.5 Citation Commands
 -----------------------
@@ -3712,9 +3717,31 @@ citeyearpar
    
 
 
-File: latex2rtf.info,  Node: Other Commands,  Next: Environments,  Prev: Citation Commands,  Up: LaTeX Commands
+File: latex2rtf.info,  Node: Acronym Commands,  Next: Other Commands,  Prev: Citation Commands,  Up: LaTeX Commands
 
-8.6.6 Other Commands
+8.6.6 Acronym Commands
+----------------------
+
+
+usepackage [options] {acronym}
+
+ac
+
+acfi
+
+acro
+
+acrodef
+
+acrodefplural
+
+acused
+   
+
+
+File: latex2rtf.info,  Node: Other Commands,  Next: Environments,  Prev: Acronym Commands,  Up: LaTeX Commands
+
+8.6.7 Other Commands
 --------------------
 
  Other Commands:
@@ -3726,7 +3753,7 @@ File: latex2rtf.info,  Node: Other Commands,  Next: Environments,  Prev: Citatio
 
 File: latex2rtf.info,  Node: Environments,  Prev: Other Commands,  Up: LaTeX Commands
 
-8.6.7 Environments
+8.6.8 Environments
 ------------------
 
  Environments processed - found in `params[]' in commands.c. 
@@ -3946,7 +3973,13 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * \:                                     Special Characters. (line    7)
 * abstract <1>:                          Uncategorized.      (line   10)
 * abstract:                              Environments.       (line    7)
+* ac:                                    Acronym Commands.   (line    9)
+* acfi:                                  Acronym Commands.   (line   11)
 * acknowledgments:                       Environments.       (line   10)
+* acro:                                  Acronym Commands.   (line   13)
+* acrodef:                               Acronym Commands.   (line   15)
+* acrodefplural:                         Acronym Commands.   (line   17)
+* acused:                                Acronym Commands.   (line   19)
 * acute:                                 Special Characters. (line    9)
 * addcontents:                           Uncategorized.      (line   13)
 * addcontentsline:                       Uncategorized.      (line   16)
@@ -3958,10 +3991,10 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * align:                                 Environments.       (line   13)
 * align*:                                Environments.       (line   16)
 * alltt:                                 Environments.       (line   19)
-* alph:                                  Uncategorized.      (line   28)
 * Alph:                                  Uncategorized.      (line   25)
-* Alpha:                                 Uncategorized.      (line   34)
+* alph:                                  Uncategorized.      (line   28)
 * alpha:                                 Uncategorized.      (line   31)
+* Alpha:                                 Uncategorized.      (line   34)
 * amalg:                                 Uncategorized.      (line   37)
 * AmSLaTeX:                              Logos.              (line    7)
 * AmSTeX:                                Logos.              (line    9)
@@ -4006,12 +4039,12 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * Beta:                                  Uncategorized.      (line   70)
 * bf <1>:                                Environments.       (line   25)
 * bf:                                    Font Commands.      (line    7)
-* bfseries <1>:                          Font Commands.      (line    9)
-* bfseries:                              Environments.       (line   28)
+* bfseries <1>:                          Environments.       (line   28)
+* bfseries:                              Font Commands.      (line    9)
 * bibentry:                              Uncategorized.      (line   73)
 * bibitem:                               Uncategorized.      (line   76)
 * bibliography:                          Uncategorized.      (line   79)
-* bibliographystyle:                     Uncategorized.      (line   82)
+* bibliographystyle:                     Uncategorized.      (line   85)
 * bibpunct:                              Natbib Commands.    (line    7)
 * BibTeX:                                Logos.              (line   11)
 * bigskip:                               Uncategorized.      (line   88)
@@ -4058,23 +4091,23 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * Chi:                                   Uncategorized.      (line  121)
 * chi:                                   Uncategorized.      (line  118)
 * circ:                                  Uncategorized.      (line  124)
-* cite <1>:                              Harvard Commands.   (line    7)
-* cite <2>:                              Natbib Commands.    (line    9)
-* cite:                                  Uncategorized.      (line  127)
+* cite:                                  Natbib Commands.    (line    9)
 * Cite:                                  HyperLatex Commands.
                                                              (line    7)
+* cite <1>:                              Uncategorized.      (line  127)
+* cite:                                  Harvard Commands.   (line    7)
 * citeA:                                 Apacite Commands.   (line   87)
 * citeaffixed:                           Harvard Commands.   (line    9)
-* citealp:                               Natbib Commands.    (line   11)
 * Citealp:                               Natbib Commands.    (line   13)
+* citealp:                               Natbib Commands.    (line   11)
 * citealp*:                              Natbib Commands.    (line   15)
-* citealt:                               Natbib Commands.    (line   17)
 * Citealt:                               Natbib Commands.    (line   19)
+* citealt:                               Natbib Commands.    (line   17)
 * citealt*:                              Natbib Commands.    (line   21)
 * citeasnoun:                            Harvard Commands.   (line   11)
-* citeauthor <1>:                        Natbib Commands.    (line   23)
-* citeauthor:                            Apacite Commands.   (line   89)
+* citeauthor:                            Natbib Commands.    (line   23)
 * Citeauthor:                            Natbib Commands.    (line   25)
+* citeauthor:                            Apacite Commands.   (line   89)
 * citeauthor*:                           Natbib Commands.    (line   27)
 * citename <1>:                          Harvard Commands.   (line   13)
 * citename:                              AuthorDate Commands.
@@ -4084,13 +4117,13 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * citep:                                 Natbib Commands.    (line   29)
 * Citep:                                 Natbib Commands.    (line   31)
 * citep*:                                Natbib Commands.    (line   33)
-* citet:                                 Natbib Commands.    (line   35)
 * Citet:                                 Natbib Commands.    (line   37)
+* citet:                                 Natbib Commands.    (line   35)
 * citet*:                                Natbib Commands.    (line   39)
 * citetext:                              Natbib Commands.    (line   41)
-* citeyear <1>:                          Natbib Commands.    (line   43)
+* citeyear <1>:                          Apacite Commands.   (line   93)
 * citeyear <2>:                          Harvard Commands.   (line   15)
-* citeyear:                              Apacite Commands.   (line   93)
+* citeyear:                              Natbib Commands.    (line   43)
 * citeyear*:                             Harvard Commands.   (line   17)
 * citeyearNP:                            Apacite Commands.   (line   95)
 * citeyearpar:                           Natbib Commands.    (line   45)
@@ -4111,26 +4144,26 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * cyra:                                  Russian Commands.   (line    9)
 * CYRB:                                  Russian Commands.   (line   11)
 * cyrb:                                  Russian Commands.   (line   13)
-* CYRC:                                  Russian Commands.   (line   15)
 * cyrc:                                  Russian Commands.   (line   17)
+* CYRC:                                  Russian Commands.   (line   15)
 * CYRCH:                                 Russian Commands.   (line   19)
 * cyrch:                                 Russian Commands.   (line   21)
-* cyrchsh:                               Russian Commands.   (line   25)
 * CYRCHSH:                               Russian Commands.   (line   23)
-* CYRD:                                  Russian Commands.   (line   27)
+* cyrchsh:                               Russian Commands.   (line   25)
 * cyrd:                                  Russian Commands.   (line   29)
+* CYRD:                                  Russian Commands.   (line   27)
 * CYRE:                                  Russian Commands.   (line   31)
 * cyre:                                  Russian Commands.   (line   33)
 * CYREREV:                               Russian Commands.   (line   35)
 * cyrerev:                               Russian Commands.   (line   37)
 * CYRERY:                                Russian Commands.   (line   39)
 * cyrery:                                Russian Commands.   (line   41)
-* cyrf:                                  Russian Commands.   (line   45)
 * CYRF:                                  Russian Commands.   (line   43)
+* cyrf:                                  Russian Commands.   (line   45)
 * CYRG:                                  Russian Commands.   (line   47)
 * cyrg:                                  Russian Commands.   (line   49)
-* cyrh:                                  Russian Commands.   (line   53)
 * CYRH:                                  Russian Commands.   (line   51)
+* cyrh:                                  Russian Commands.   (line   53)
 * CYRHRDSN:                              Russian Commands.   (line   55)
 * cyrhrdsn:                              Russian Commands.   (line   57)
 * cyri:                                  Russian Commands.   (line   61)
@@ -4145,30 +4178,30 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * CYRM:                                  Russian Commands.   (line   75)
 * cyrn:                                  Russian Commands.   (line   81)
 * CYRN:                                  Russian Commands.   (line   79)
-* cyro:                                  Russian Commands.   (line   85)
 * CYRO:                                  Russian Commands.   (line   83)
+* cyro:                                  Russian Commands.   (line   85)
 * CYRP:                                  Russian Commands.   (line   87)
 * cyrp:                                  Russian Commands.   (line   89)
-* CYRR:                                  Russian Commands.   (line   91)
 * cyrr:                                  Russian Commands.   (line   93)
+* CYRR:                                  Russian Commands.   (line   91)
 * CYRS:                                  Russian Commands.   (line   95)
 * cyrs:                                  Russian Commands.   (line   97)
 * CYRSFTSN:                              Russian Commands.   (line   99)
 * cyrsftsn:                              Russian Commands.   (line  101)
-* cyrsh:                                 Russian Commands.   (line  105)
 * CYRSH:                                 Russian Commands.   (line  103)
+* cyrsh:                                 Russian Commands.   (line  105)
 * CYRT:                                  Russian Commands.   (line  107)
 * cyrt:                                  Russian Commands.   (line  109)
 * CYRU:                                  Russian Commands.   (line  111)
 * cyru:                                  Russian Commands.   (line  113)
-* cyrv:                                  Russian Commands.   (line  117)
 * CYRV:                                  Russian Commands.   (line  115)
+* cyrv:                                  Russian Commands.   (line  117)
 * CYRYA:                                 Russian Commands.   (line  119)
 * cyrya:                                 Russian Commands.   (line  121)
 * CYRYU:                                 Russian Commands.   (line  123)
 * cyryu:                                 Russian Commands.   (line  125)
-* cyrz:                                  Russian Commands.   (line  129)
 * CYRZ:                                  Russian Commands.   (line  127)
+* cyrz:                                  Russian Commands.   (line  129)
 * cyrzh:                                 Russian Commands.   (line  133)
 * CYRZH:                                 Russian Commands.   (line  131)
 * d:                                     Special Characters. (line   21)
@@ -4179,8 +4212,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * DeclareRobustCommand*:                 Preamble Commands.  (line   32)
 * def:                                   Preamble Commands.  (line   35)
 * degreecelsius:                         Preamble Commands.  (line   38)
-* delta:                                 Uncategorized.      (line  160)
 * Delta:                                 Uncategorized.      (line  163)
+* delta:                                 Uncategorized.      (line  160)
 * description:                           Environments.       (line   43)
 * deuxpoints:                            French Commands.    (line    7)
 * dfrac:                                 Uncategorized.      (line  166)
@@ -4195,10 +4228,10 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * dot:                                   Special Characters. (line   25)
 * doteq:                                 Uncategorized.      (line  178)
 * dotfill:                               Uncategorized.      (line  181)
-* dots:                                  Uncategorized.      (line  185)
+* dots:                                  Uncategorized.      (line  188)
 * doublespacing:                         Preamble Commands.  (line   47)
-* Downarrow:                             Uncategorized.      (line  194)
 * downarrow:                             Uncategorized.      (line  191)
+* Downarrow:                             Uncategorized.      (line  194)
 * efloatseparator:                       Uncategorized.      (line  197)
 * ell:                                   Uncategorized.      (line  200)
 * em <1>:                                Environments.       (line   52)
@@ -4244,8 +4277,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * footnotesize:                          Font Commands.      (line   19)
 * footnotetext:                          Preamble Commands.  (line   72)
 * forall:                                Uncategorized.      (line  248)
-* Frac:                                  Uncategorized.      (line  254)
 * frac:                                  Uncategorized.      (line  251)
+* Frac:                                  Uncategorized.      (line  254)
 * framebox:                              Uncategorized.      (line  257)
 * frenchspacing:                         Uncategorized.      (line  260)
 * fullcite:                              Apacite Commands.   (line   97)
@@ -4283,14 +4316,14 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * hslash:                                Uncategorized.      (line  296)
 * hspace:                                Uncategorized.      (line  299)
 * hspace*:                               Uncategorized.      (line  302)
-* htmladdnormallink <1>:                 Preamble Commands.  (line   92)
-* htmladdnormallink:                     Uncategorized.      (line  305)
+* htmladdnormallink <1>:                 Uncategorized.      (line  305)
+* htmladdnormallink:                     Preamble Commands.  (line   92)
 * htmlonly:                              Environments.       (line   82)
 * htmlref <1>:                           Preamble Commands.  (line   95)
 * htmlref:                               Uncategorized.      (line  308)
-* huge:                                  Font Commands.      (line   25)
 * HUGE:                                  Font Commands.      (line   21)
 * Huge:                                  Font Commands.      (line   23)
+* huge:                                  Font Commands.      (line   25)
 * hyphenation:                           Preamble Commands.  (line   98)
 * i:                                     Special Characters. (line   33)
 * ieme:                                  French Commands.    (line   17)
@@ -4305,8 +4338,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * iint:                                  Uncategorized.      (line  314)
 * Im:                                    Uncategorized.      (line  317)
 * in:                                    Uncategorized.      (line  320)
-* include <1>:                           Preamble Commands.  (line  107)
-* include:                               Uncategorized.      (line  323)
+* include <1>:                           Uncategorized.      (line  323)
+* include:                               Preamble Commands.  (line  107)
 * includegraphics:                       Uncategorized.      (line  326)
 * includegraphics*:                      Uncategorized.      (line  329)
 * includeonly:                           Uncategorized.      (line  332)
@@ -4317,29 +4350,29 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * infty:                                 Uncategorized.      (line  344)
 * input <1>:                             Preamble Commands.  (line  110)
 * input:                                 Uncategorized.      (line  347)
-* int:                                   Uncategorized.      (line  350)
+* int:                                   Uncategorized.      (line  353)
 * iota:                                  Uncategorized.      (line  356)
-* it <1>:                                Environments.       (line   85)
-* it:                                    Font Commands.      (line   27)
+* it <1>:                                Font Commands.      (line   27)
+* it:                                    Environments.       (line   85)
 * itemize:                               Environments.       (line   88)
 * itshape <1>:                           Environments.       (line   91)
 * itshape:                               Font Commands.      (line   29)
 * j:                                     Special Characters. (line   35)
 * kappa:                                 Uncategorized.      (line  359)
 * kern:                                  Logos.              (line   13)
-* l:                                     Special Characters. (line   37)
 * L:                                     Special Characters. (line   39)
+* l:                                     Special Characters. (line   37)
 * label:                                 Uncategorized.      (line  362)
-* lambda:                                Uncategorized.      (line  365)
 * Lambda:                                Uncategorized.      (line  368)
+* lambda:                                Uncategorized.      (line  365)
 * land:                                  Uncategorized.      (line  371)
 * landscape:                             Environments.       (line   94)
 * langle:                                Uncategorized.      (line  374)
-* LARGE:                                 Font Commands.      (line   31)
 * large:                                 Font Commands.      (line   35)
 * Large:                                 Font Commands.      (line   33)
-* latex:                                 Logos.              (line   17)
+* LARGE:                                 Font Commands.      (line   31)
 * LaTeX:                                 Logos.              (line   15)
+* latex:                                 Logos.              (line   17)
 * LaTeXe:                                Logos.              (line   19)
 * latexonly:                             Environments.       (line   97)
 * latextortffalse:                       Preamble Commands.  (line  113)
@@ -4349,8 +4382,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * ldots:                                 Uncategorized.      (line  380)
 * le:                                    Uncategorized.      (line  383)
 * left:                                  Uncategorized.      (line  386)
-* Leftarrow:                             Uncategorized.      (line  392)
 * leftarrow:                             Uncategorized.      (line  389)
+* Leftarrow:                             Uncategorized.      (line  392)
 * leftharpoondown:                       Uncategorized.      (line  395)
 * leftleftarrows:                        Uncategorized.      (line  398)
 * leftrightarrow:                        Uncategorized.      (line  401)
@@ -4392,10 +4425,10 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * maketitle:                             Uncategorized.      (line  461)
 * mapsto:                                Uncategorized.      (line  464)
 * marginpar:                             Uncategorized.      (line  467)
-* markboth <1>:                          Uncategorized.      (line  470)
-* markboth:                              Preamble Commands.  (line  137)
-* markright <1>:                         Preamble Commands.  (line  140)
-* markright:                             Uncategorized.      (line  473)
+* markboth <1>:                          Preamble Commands.  (line  137)
+* markboth:                              Uncategorized.      (line  470)
+* markright <1>:                         Uncategorized.      (line  473)
+* markright:                             Preamble Commands.  (line  140)
 * math:                                  Environments.       (line  112)
 * mathbf:                                Font Commands.      (line   37)
 * mathcal:                               Font Commands.      (line   39)
@@ -4421,8 +4454,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * moveright:                             Uncategorized.      (line  494)
 * mp:                                    Uncategorized.      (line  497)
 * mu:                                    Uncategorized.      (line  500)
-* multicolumn <1>:                       Uncategorized.      (line  503)
-* multicolumn:                           Environments.       (line  121)
+* multicolumn <1>:                       Environments.       (line  121)
+* multicolumn:                           Uncategorized.      (line  503)
 * music:                                 Environments.       (line  124)
 * nabla:                                 Uncategorized.      (line  506)
 * ne:                                    Uncategorized.      (line  509)
@@ -4441,8 +4474,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * newsavebox:                            Uncategorized.      (line  533)
 * newtheorem:                            Preamble Commands.  (line  158)
 * nobibliography:                        Uncategorized.      (line  536)
-* nobreakspace <1>:                      Uncategorized.      (line  539)
-* nobreakspace:                          Preamble Commands.  (line  161)
+* nobreakspace <1>:                      Preamble Commands.  (line  161)
+* nobreakspace:                          Uncategorized.      (line  539)
 * nocite:                                Uncategorized.      (line  542)
 * nofiles:                               Preamble Commands.  (line  164)
 * noindent:                              Uncategorized.      (line  545)
@@ -4462,8 +4495,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * nwarrow:                               Uncategorized.      (line  569)
 * oddsidemargin:                         Preamble Commands.  (line  167)
 * og:                                    French Commands.    (line   45)
-* Omega:                                 Uncategorized.      (line  575)
 * omega:                                 Uncategorized.      (line  572)
+* Omega:                                 Uncategorized.      (line  575)
 * omicron:                               Uncategorized.      (line  578)
 * onecolumn:                             Uncategorized.      (line  581)
 * onlinecite:                            Uncategorized.      (line  584)
@@ -4476,11 +4509,11 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * pagebreak:                             Uncategorized.      (line  602)
 * pagenumbering <1>:                     Preamble Commands.  (line  170)
 * pagenumbering:                         Uncategorized.      (line  605)
-* pageref:                               Uncategorized.      (line  608)
 * Pageref:                               HyperLatex Commands.
                                                              (line   11)
-* pagestyle <1>:                         Uncategorized.      (line  611)
-* pagestyle:                             Preamble Commands.  (line  173)
+* pageref:                               Uncategorized.      (line  608)
+* pagestyle <1>:                         Preamble Commands.  (line  173)
+* pagestyle:                             Uncategorized.      (line  611)
 * par:                                   Uncategorized.      (line  614)
 * paragraph:                             Sectioning Commands.
                                                              (line   11)
@@ -4497,8 +4530,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * perp:                                  Uncategorized.      (line  623)
 * Phi:                                   Uncategorized.      (line  629)
 * phi:                                   Uncategorized.      (line  626)
-* pi:                                    Uncategorized.      (line  632)
 * Pi:                                    Uncategorized.      (line  635)
+* pi:                                    Uncategorized.      (line  632)
 * picture:                               Environments.       (line  127)
 * pm:                                    Uncategorized.      (line  638)
 * pointexclamation:                      French Commands.    (line   47)
@@ -4508,15 +4541,15 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * prec:                                  Uncategorized.      (line  641)
 * primo:                                 French Commands.    (line   53)
 * printindex:                            Uncategorized.      (line  644)
-* prod:                                  Uncategorized.      (line  650)
+* prod:                                  Uncategorized.      (line  647)
 * propto:                                Uncategorized.      (line  653)
 * protect:                               Uncategorized.      (line  656)
 * providecommand:                        Preamble Commands.  (line  182)
 * ps:                                    Letter Commands.    (line   22)
 * psfig:                                 Uncategorized.      (line  659)
 * psfrag:                                Uncategorized.      (line  662)
-* Psi:                                   Uncategorized.      (line  668)
 * psi:                                   Uncategorized.      (line  665)
+* Psi:                                   Uncategorized.      (line  668)
 * qquad:                                 Uncategorized.      (line  671)
 * quad:                                  Uncategorized.      (line  674)
 * quarto:                                French Commands.    (line   55)
@@ -4530,9 +4563,9 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * rawhtml:                               Environments.       (line  136)
 * rceil:                                 Uncategorized.      (line  683)
 * Re:                                    Uncategorized.      (line  686)
+* ref:                                   Uncategorized.      (line  689)
 * Ref:                                   HyperLatex Commands.
                                                              (line   13)
-* ref:                                   Uncategorized.      (line  689)
 * refstepcounter:                        Uncategorized.      (line  692)
 * renewcommand:                          Preamble Commands.  (line  188)
 * renewenvironment:                      Preamble Commands.  (line  191)
@@ -4550,10 +4583,10 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * rightleftarrows:                       Uncategorized.      (line  713)
 * rightleftharpoons:                     Uncategorized.      (line  716)
 * rightrightarrows:                      Uncategorized.      (line  719)
-* rm <1>:                                Font Commands.      (line   67)
-* rm:                                    Environments.       (line  139)
-* rmfamily <1>:                          Font Commands.      (line   69)
-* rmfamily:                              Environments.       (line  142)
+* rm <1>:                                Environments.       (line  139)
+* rm:                                    Font Commands.      (line   67)
+* rmfamily <1>:                          Environments.       (line  142)
+* rmfamily:                              Font Commands.      (line   69)
 * Roman:                                 Uncategorized.      (line  722)
 * roman:                                 Uncategorized.      (line  725)
 * rq:                                    French Commands.    (line   57)
@@ -4580,13 +4613,13 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * setcounter:                            Preamble Commands.  (line  209)
 * setlength:                             Preamble Commands.  (line  212)
 * settowidth:                            Uncategorized.      (line  746)
-* sf <1>:                                Font Commands.      (line   79)
-* sf:                                    Environments.       (line  151)
+* sf <1>:                                Environments.       (line  151)
+* sf:                                    Font Commands.      (line   79)
 * sffamily <1>:                          Font Commands.      (line   81)
 * sffamily:                              Environments.       (line  154)
-* shortcite <1>:                         Apacite Commands.   (line  105)
-* shortcite:                             AuthorDate Commands.
+* shortcite <1>:                         AuthorDate Commands.
                                                              (line    9)
+* shortcite:                             Apacite Commands.   (line  105)
 * shortciteA:                            Apacite Commands.   (line  107)
 * shortciteauthor:                       Apacite Commands.   (line  109)
 * shortciteNP:                           Apacite Commands.   (line  111)
@@ -4596,8 +4629,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * signature:                             Letter Commands.    (line   25)
 * sim:                                   Uncategorized.      (line  755)
 * simeq:                                 Uncategorized.      (line  758)
-* sl <1>:                                Font Commands.      (line   83)
-* sl:                                    Environments.       (line  157)
+* sl <1>:                                Environments.       (line  157)
+* sl:                                    Font Commands.      (line   83)
 * SLiTeX:                                Logos.              (line   25)
 * sloppypar:                             Environments.       (line  160)
 * slshape <1>:                           Font Commands.      (line   85)
@@ -4665,11 +4698,11 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * textmu:                                Uncategorized.      (line  860)
 * textnormal:                            Font Commands.      (line   99)
 * textnu:                                Uncategorized.      (line  863)
-* textomega:                             Uncategorized.      (line  869)
 * textOmega:                             Uncategorized.      (line  866)
+* textomega:                             Uncategorized.      (line  869)
 * textperiodcentered:                    Uncategorized.      (line  872)
-* textPhi:                               Uncategorized.      (line  875)
 * textphi:                               Uncategorized.      (line  878)
+* textPhi:                               Uncategorized.      (line  875)
 * textPi:                                Uncategorized.      (line  881)
 * textpi:                                Uncategorized.      (line  884)
 * textpsi:                               Uncategorized.      (line  890)
@@ -4682,15 +4715,15 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * textsl:                                Font Commands.      (line  107)
 * textsubscript:                         Uncategorized.      (line  899)
 * textsuperscript:                       Uncategorized.      (line  902)
-* textTau:                               Uncategorized.      (line  905)
 * texttau:                               Uncategorized.      (line  908)
+* textTau:                               Uncategorized.      (line  905)
 * texttheta:                             Uncategorized.      (line  914)
 * textTheta:                             Uncategorized.      (line  911)
 * texttt:                                Font Commands.      (line  109)
 * textup:                                Font Commands.      (line  111)
 * textwidth:                             Preamble Commands.  (line  221)
-* textXi:                                Uncategorized.      (line  917)
 * textxi:                                Uncategorized.      (line  920)
+* textXi:                                Uncategorized.      (line  917)
 * textzeta:                              Uncategorized.      (line  923)
 * thanks:                                Uncategorized.      (line  926)
 * the:                                   Basic Commands.     (line   19)
@@ -4714,19 +4747,19 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * triangleright:                         Uncategorized.      (line  950)
 * tt <1>:                                Environments.       (line  193)
 * tt:                                    Font Commands.      (line  115)
-* ttfamily <1>:                          Font Commands.      (line  117)
-* ttfamily:                              Environments.       (line  196)
+* ttfamily <1>:                          Environments.       (line  196)
+* ttfamily:                              Font Commands.      (line  117)
 * twocolumn:                             Uncategorized.      (line  953)
 * typeaout:                              Uncategorized.      (line  956)
-* typein:                                Uncategorized.      (line  962)
 * Typein:                                Uncategorized.      (line  959)
+* typein:                                Uncategorized.      (line  962)
 * typeout:                               Uncategorized.      (line  965)
 * u:                                     Special Characters. (line   45)
 * underbar:                              Font Commands.      (line  119)
 * underline:                             Font Commands.      (line  121)
 * up:                                    French Commands.    (line   67)
-* Uparrow:                               Uncategorized.      (line  968)
 * uparrow:                               Uncategorized.      (line  971)
+* Uparrow:                               Uncategorized.      (line  968)
 * updownarrow:                           Uncategorized.      (line  974)
 * Updownarrow:                           Uncategorized.      (line  977)
 * upshape:                               Font Commands.      (line  123)
@@ -4735,6 +4768,7 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * url:                                   Uncategorized.      (line  986)
 * usebox:                                Uncategorized.      (line  989)
 * usepackage:                            Preamble Commands.  (line  236)
+* usepackage [options] {acronym}:        Acronym Commands.   (line    7)
 * uv:                                    Czech Commands.     (line    7)
 * v:                                     Special Characters. (line   47)
 * value:                                 Uncategorized.      (line  992)
@@ -4764,8 +4798,8 @@ File: latex2rtf.info,  Node: Function Index,  Next: Concept Index,  Prev: LaTeX2
 * vspace*:                               Uncategorized.      (line 1043)
 * wedge:                                 Uncategorized.      (line 1046)
 * wp:                                    Uncategorized.      (line 1049)
-* Xi:                                    Uncategorized.      (line 1055)
 * xi:                                    Uncategorized.      (line 1052)
+* Xi:                                    Uncategorized.      (line 1055)
 * xlink:                                 HyperLatex Commands.
                                                              (line   17)
 * zeta:                                  Uncategorized.      (line 1058)
@@ -4784,6 +4818,7 @@ File: latex2rtf.info,  Node: Concept Index,  Prev: Function Index,  Up: Top
 * Menu:
 
 * %latex2rtf:                            Conditional Parsing.  (line  6)
+* APA Support:                           APA Support.          (line  6)
 * apacite:                               Cross References.     (line 24)
 * apalike:                               Cross References.     (line 24)
 * apanat1b:                              Cross References.     (line 24)
@@ -4834,73 +4869,75 @@ File: latex2rtf.info,  Node: Concept Index,  Prev: Function Index,  Up: Top
 
 Tag Table:
 Node: Top135
-Node: Introduction3846
-Node: Installation6804
-Node: General7225
-Node: Obtaining LaTeX2RTF7575
-Node: UNIX9356
-Node: DOS or Windows12179
-Node: Win32 systems14135
-Node: Macintosh18015
-Node: Problems Compiling18956
-Node: Problems with make check19678
-Node: Using LaTeX2RTF20213
-Node: General Assumptions20466
-Node: LaTeX2RTF Options22319
-Node: Debugging32980
-Node: Features33642
-Node: LaTeX2e34283
-Node: Unicode Support34612
-Node: Input Encoding35221
-Node: Language Support36011
-Node: Cross References37553
-Node: Page Formatting40285
-Node: Equations40817
-Node: Math and Special Symbols43631
-Node: Tables46354
-Node: Graphics46971
-Node: Pagestyles47401
-Node: Hyperlatex48013
-Node: Configuration49097
-Node: Input Processing49485
-Node: Conditional Parsing50887
-Node: Output Formatting52932
-Node: Direct Conversion53654
-Node: Ignore Command54968
-Node: Font Configuration56714
-Node: Language Configuration58044
-Node: Error Messages and Logging58672
-Node: History60815
-Node: LaTeX2RTF under Development62716
-Node: Unimplemented Features63108
-Node: Missing options63920
-Node: Known Bugs64524
-Node: Reporting Bugs65401
-Node: Todo List67083
-Node: LaTeX Commands67909
-Node: General Commands68964
-Node: Basic Commands69494
-Node: Font Commands69783
-Node: Logos70455
-Node: Special Characters70721
-Node: Sectioning Commands71036
-Node: Uncategorized71383
-Node: Preamble Commands77764
-Node: Letter Commands79887
-Node: Language Commands80207
-Node: German Commands80531
-Node: Czech Commands80819
-Node: French Commands80996
-Node: Russian Commands81419
-Node: Citation Commands82008
-Node: Apacite Commands82365
-Node: AuthorDate Commands82950
-Node: Harvard Commands83161
-Node: HyperLatex Commands83486
-Node: Natbib Commands83711
-Node: Other Commands84055
-Node: Environments84262
-Node: Function Index85578
-Node: Concept Index145815
+Node: Introduction3885
+Node: Installation6843
+Node: General7264
+Node: Obtaining LaTeX2RTF7703
+Node: UNIX9174
+Node: DOS or Windows11997
+Node: Win32 systems13777
+Node: Macintosh17908
+Node: Problems Compiling18849
+Node: Problems with make check19571
+Node: Using LaTeX2RTF20106
+Node: General Assumptions20359
+Node: LaTeX2RTF Options22234
+Node: Debugging32987
+Node: Features33649
+Node: LaTeX2e34307
+Node: Unicode Support34636
+Node: Input Encoding35337
+Node: Language Support36127
+Node: Cross References37670
+Node: Page Formatting40402
+Node: Equations40934
+Node: Math and Special Symbols43767
+Node: Tables45346
+Node: Graphics45963
+Node: Pagestyles46396
+Node: Hyperlatex47010
+Node: APA Support48114
+Node: Configuration48567
+Node: Input Processing48955
+Node: Conditional Parsing50357
+Node: Output Formatting52402
+Node: Direct Conversion53124
+Node: Ignore Command54438
+Node: Font Configuration56313
+Node: Language Configuration57643
+Node: Error Messages and Logging58271
+Node: History60414
+Node: LaTeX2RTF under Development62228
+Node: Unimplemented Features62620
+Node: Missing options63432
+Node: Known Bugs64036
+Node: Reporting Bugs64913
+Node: Todo List66595
+Node: LaTeX Commands67421
+Node: General Commands68498
+Node: Basic Commands69028
+Node: Font Commands69317
+Node: Logos69989
+Node: Special Characters70255
+Node: Sectioning Commands70570
+Node: Uncategorized70917
+Node: Preamble Commands77298
+Node: Letter Commands79421
+Node: Language Commands79741
+Node: German Commands80065
+Node: Czech Commands80353
+Node: French Commands80530
+Node: Russian Commands80953
+Node: Citation Commands81542
+Node: Apacite Commands81901
+Node: AuthorDate Commands82486
+Node: Harvard Commands82697
+Node: HyperLatex Commands83022
+Node: Natbib Commands83247
+Node: Acronym Commands83591
+Node: Other Commands83844
+Node: Environments84050
+Node: Function Index85366
+Node: Concept Index146114
 
 End Tag Table

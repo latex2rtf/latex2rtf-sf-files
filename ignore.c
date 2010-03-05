@@ -40,112 +40,152 @@ Authors:
 #include "utils.h"
 #include "vertical.h"
 
-static void IgnoreVar(void);
-static void IgnoreCmd(void);
+/****************************************************************************
+purpose : ignores anything till an alphanumeric character
+ ****************************************************************************/
+static void IgnoreCmd(void)
+{
+    char c;
 
-int TryVariableIgnore(const char *command)
+    do { c = getTexChar(); } while (c && c != '\\');
+    do { c = getTexChar(); } while (c && isalpha((int) c));
+    
+    ungetTexChar(c);
+}
+
+/****************************************************************************
+purpose : ignores a number 
+          \tolerance = 10000
+          \tolerance 10000
+          \tolerance10000
+ ****************************************************************************/
+static void IgnoreNumber(void)
+{
+    char c;
+    
+    c = getNonSpace();
+    if (c == '=')
+        c = getNonSpace();
+
+    while (c=='-' || c=='+' || c== '.' || isdigit(c))
+        c = getTexChar();
+    
+    ungetTexChar(c);
+}
+
+/****************************************************************************
+purpose : ignores a dimension
+ ****************************************************************************/
+static void IgnoreMeasure(void)
+{
+    char c = getNonSpace();
+    if (c == '=')
+        c = getNonSpace();
+    
+    ungetTexChar(c);
+
+    getDimension();
+}
 
 /****************************************************************************
 purpose : ignores variable-formats shown in file "ignore.cfg"
 returns : TRUE if variable was ignored correctly, otherwise FALSE
 
-#  NUMBER        simple numeric value
-#  MEASURE 		 numeric value with following unit of measure
+#  SINGLE        ignore single command. e.g., \noindent
+#  NUMBER        simple numeric value e.g., \tolerance10000
+#  MEASURE       numeric value with following unit of measure
 #  OTHER         ignores anything to the first character after '='
-#	             and from there to next space. eg. \setbox\bak=\hbox
+#                and from there to next space. eg. \setbox\bak=\hbox
 #  COMMAND       ignores anything to next '\' and from there to occurence
-#	             of anything but a letter. eg. \newbox\bak
-#  SINGLE        ignore single command. eg. \noindent
-#  PARAMETER	 ignores a command with one paramter
-#  PACKAGE		 does not produce a Warning message if PACKAGE is encountered
-#  ENVCMD		 proceses contents of unknown environment as if it were plain latex
+#                of anything but a letter. eg. \newbox\bak
+#  PARAMETER     ignores a command with one paramter
+#  PACKAGE       does not produce a Warning message if PACKAGE is encountered
+#  ENVCMD        proceses contents of unknown environment as if it were plain latex
 #  ENVIRONMENT   ignores contents of that environment
  ****************************************************************************/
+int TryVariableIgnore(const char *command)
 {
     const char *RtfCommand;
-    char *TexCommand;
-	
-	diagnostics(4, "trying to ignore '%s'", command);
-	
+    char *TexCommand, c;
+        
     TexCommand = strdup_together("\\", command);
     RtfCommand = SearchCfgRtf(TexCommand, IGNORE_A);
     free(TexCommand);
     
+    diagnostics(4, "Ignoring '%s' as '%s'", command, RtfCommand);
     if (RtfCommand == NULL) return FALSE;
     
-    if (strcmp(RtfCommand, "NUMBER") == 0) {
-        IgnoreVar();
+    if (strcmp(RtfCommand, "SINGLE") == 0) {
+    
+        /* don't need to do anything */
+        
+    } else if (strcmp(RtfCommand, "NUMBER") == 0) {
+    
+        IgnoreNumber();
         
     } else if (strcmp(RtfCommand, "MEASURE") == 0) {
-        IgnoreVar();
+    
+        IgnoreMeasure();
         
     } else if (strcmp(RtfCommand, "OTHER") == 0) {
-        IgnoreVar();
+    
+        c = getNonSpace();
+        if (c == '=')
+            c = getNonSpace();
+        
+        while (c && !isspace(c))
+            c = getTexChar();
+
+        if (c) {
+            c = getNonSpace();
+            ungetTexChar(c);
+        }
         
     } else if (strcmp(RtfCommand, "COMMAND") == 0) {
+    
         IgnoreCmd();
         
-    } else if (strcmp(RtfCommand, "SINGLE") == 0) {
-    
-    } else if (strcmp(RtfCommand, "PARAMETER") == 0) {
+    } else  if (strcmp(RtfCommand, "PARAMETER") == 0) {
         CmdIgnoreParameter(No_Opt_One_NormParam);
         
     } else if (strcmp(RtfCommand, "TWOPARAMETER") == 0) {
         CmdIgnoreParameter(No_Opt_Two_NormParam);
         
     } else if (strcmp(RtfCommand, "ENVIRONMENT") == 0) {
-		char *str = strdup_together3("end{", command, "}");
+        char *str = strdup_together3("end{", command, "}");
         Ignore_Environment(str);
         free(str);
         
     } else if (strcmp(RtfCommand, "ENVCMD") == 0) {
         PushEnvironment(IGNORE_MODE);
-        
-    } else if (strcmp(RtfCommand, "PACKAGE") == 0) {
-    
     } 
     
     return TRUE;
 }
 
+int TryPackageIgnore(const char *package) {
+    const char *RtfCommand;
+    char *TexCommand;
+    int  result = FALSE;
+    
+    diagnostics(4, "trying to ignore '%s'", package);
+    
+    TexCommand = strdup_together("\\", package);
+    RtfCommand = SearchCfgRtf(TexCommand, IGNORE_A);
+    free(TexCommand);
 
-void IgnoreVar(void)
-
-/****************************************************************************
-purpose : ignores anything till a space or a newline
- ****************************************************************************/
-{
-    char c;
-
-    while ((c = getTexChar()) && c != '\n' && c != ' ') {
-    }
+    if (NULL != RtfCommand)
+        result = (0 == strcmp(RtfCommand,"PACKAGE"));
+    return result;
 }
-
-
-void IgnoreCmd(void)
-
-/****************************************************************************
-purpose : ignores anything till an alphanumeric character
- ****************************************************************************/
-{
-    char c;
-
-    while ((c = getTexChar()) && c != '\\') {
-    }
-    while ((c = getTexChar()) && !isalpha((int) c)) {
-    }
-    ungetTexChar(c);
-}
-
-void Ignore_Environment(char *cCommand)
-
 /******************************************************************************
   purpose: function, which ignores an unconvertable environment in LaTex
            and writes text unchanged into the Rtf-file.
 parameter: searchstring : includes the string to search for
-	   example: \begin{unknown} ... \end{unknown}
-		    searchstring="end{unknown}"
+       example: \begin{unknown} ... \end{unknown}
+            searchstring="end{unknown}"
  ******************************************************************************/
+void Ignore_Environment(char *cCommand)
 {
     char unknown_environment[100];
     char *buffer;

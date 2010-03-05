@@ -60,7 +60,7 @@ void ConvertString(const char *string)
     if (PushSource(NULL, string) == 0) {
         diagnostics(5, "Entering Convert() from ConvertString()");
 
-		show_string(5, string, "convert");
+        show_string(5, string, "convert");
 
         while (StillSource())
             Convert();
@@ -74,9 +74,9 @@ void ConvertAllttString(char *s)
 
 /******************************************************************************
      purpose : converts string in TeX-format to Rtf-format
-			   according to the alltt environment, which is like
-			   verbatim environment except that \, {, and } have
-			   their usual meanings
+               according to the alltt environment, which is like
+               verbatim environment except that \, {, and } have
+               their usual meanings
 ******************************************************************************/
 {
     char cThis;
@@ -127,7 +127,7 @@ purpose: converts inputfile and writes result to outputfile
     char cThis = '\n';
     char cLast = '\0';
     char cNext;
-    int count, pending_new_paragraph;
+    int count;
 
     diagnostics(6, "Entering Convert ret = %d", ret);
     RecursionLevel++;
@@ -142,46 +142,39 @@ purpose: converts inputfile and writes result to outputfile
             diagnostics(6, "Current character is '%c' mode = %d ret = %d level = %d", cThis, getTexMode(), ret,
               RecursionLevel);
 
-        pending_new_paragraph--;
+        /* preliminary support for utf8 sequences.  Thanks to CSH */
+        if ((cThis & 0x8000) && (CurrentFontEncoding() == ENCODING_UTF8)) {
+            uint8_t byte;
+            uint16_t len, value, i;
 
-		/* preliminary support for utf8 sequences.  Thanks to CSH */
-        if ((cThis & 0x8000) && (strcmp(g_charset_encoding_name, "utf8") == 0)) {
-        	unsigned char byte;
-        	unsigned int len, value, i;
-
-        	/* Get the number of bytes in the sequence        */
-        	/* Must use an unsigned character for comparisons */
-        	byte = cThis;
-        	len = 0;
-        	value = 0;
-        	if (byte >= 0xF0) { 
-        		len = 3; 
-        		value = byte & ~0xF0; 
-        	} 
-        	else if (byte >= 0xE0) { 
-        		len = 2; 
-        		value = byte & ~0xE0; 
-        	}		
-        	else if (byte >= 0xC0) { 
-        		len = 1; 
-        		value = byte & ~0xC0; 
-        	}
-        	
-        	/* reassemble the character */
-        	for ( i=0; i<len; i++) {
-        		byte = getTexChar() & ~0xC0;
-        		value = (value << 6) + byte;
-        	}
-        	
-        	diagnostics(4,"(flag = 0x%X) char value = 0X%04X or %ud (%d bytes)", (unsigned char) cThis, value, value, len);
-
-        	/* values above 0x8000 must be negative! */
-			if (value < 0x8000)
-				fprintRTF("\\u%d?", value);
-			else
-				fprintRTF("\\u%d?", (int)((double)value-0x10000));
-        }        	        	
-		else
+            /* Get the number of bytes in the sequence        */
+            /* Must use an unsigned character for comparisons */
+            byte = cThis;
+            len = 0;
+            value = 0;
+            if (byte >= 0xF0) { 
+                len = 3; 
+                value = byte & ~0xF0; 
+            } 
+            else if (byte >= 0xE0) { 
+                len = 2; 
+                value = byte & ~0xE0; 
+            }       
+            else if (byte >= 0xC0) { 
+                len = 1; 
+                value = byte & ~0xC0; 
+            }
+            
+            /* reassemble the character */
+            for ( i=0; i<len; i++) {
+                byte = getTexChar() & ~0xC0;
+                value = (value << 6) + byte;
+            }
+            
+            diagnostics(4,"(flag = 0x%X) char value = 0X%04X or %u (%u bytes)", (unsigned char) cThis, value, value, len);
+            CmdUnicodeChar(value);
+        }                       
+        else
 
         switch (cThis) {
 
@@ -248,7 +241,6 @@ purpose: converts inputfile and writes result to outputfile
                     cNext = getNonSpace();
 
                     if (cNext == '\n') {    /* new paragraph ... skip all ' ' and '\n' */
-                        pending_new_paragraph = 2;
                         CmdEndParagraph(0);
 
                     } else {    /* add a space if needed */
@@ -274,32 +266,32 @@ purpose: converts inputfile and writes result to outputfile
 
             case '&':
             
-            	/* just write '&' if we are not in math mode */
+                /* just write '&' if we are not in math mode */
                 if (getTexMode() != MODE_MATH && getTexMode() != MODE_DISPLAYMATH) {    
-                	if (g_processing_tabular) 
-                		diagnostics(0,"should not happen! tabular should handle this!");
+                    if (g_processing_tabular) 
+                        diagnostics(0,"should not happen! tabular should handle this!");
 
- 	               	fprintRTF("&");
- 	                break;
- 	            }
- 	            
-				/* are we are in the middle of \begin{array} ... \end{array} */
-				if (g_processing_arrays) {
-					fprintRTF("%c", g_field_separator);
-					break;
-				}
-				
-				/* must be in 'eqnarray' or 'align' environment */
-				if (EQ_field_active()) {
-					diagnostics(4,"ending/restarting field before alignment '&'");
-					endCurrentField();
-					fprintRTF("\\tab\n");
-                	startField(FIELD_EQ);
+                    fprintRTF("&");
+                    break;
+                }
+                
+                /* are we are in the middle of \begin{array} ... \end{array} */
+                if (g_processing_arrays) {
+                    fprintRTF("%c", g_field_separator);
+                    break;
+                }
+                
+                /* must be in 'eqnarray' or 'align' environment */
+                if (EQ_field_active()) {
+                    diagnostics(4,"ending/restarting field before alignment '&'");
+                    endCurrentField();
+                    fprintRTF("\\tab\n");
+                    startField(FIELD_EQ);
                 } else {
-					diagnostics(4,"tabbing to match '&'");
-					fprintRTF("\\tab\n");
-				}
-	           	g_equation_column++;
+                    diagnostics(4,"tabbing to match '&'");
+                    fprintRTF("\\tab\n");
+                }
+                g_equation_column++;
                
                 break;
 
@@ -317,7 +309,7 @@ purpose: converts inputfile and writes result to outputfile
 
             case '-':
                 if (getTexMode() == MODE_MATH || getTexMode() == MODE_DISPLAYMATH)
-                	CmdSymbolChar(0x2d);
+                    CmdUnicodeChar(8722); /* MINUS SIGN */
                 else {
                     changeTexMode(MODE_HORIZONTAL);
 
@@ -498,13 +490,13 @@ purpose: converts inputfile and writes result to outputfile
             case ',':
             
                 if (g_field_separator == ',' && processing_fields()) {
-                	if (g_processing_arrays) {
-                	/* this is crazy, fields fail if \, is present in EQ array! */
-                	/* substitute semi-colon because it is least worst option   */
-						fprintRTF(";"); 
-                	} else {
-						fprintRTF("\\\\,"); 
-                	}
+                    if (g_processing_arrays) {
+                    /* this is crazy, fields fail if \, is present in EQ array! */
+                    /* substitute semi-colon because it is least worst option   */
+                        fprintRTF(";"); 
+                    } else {
+                        fprintRTF("\\\\,"); 
+                    }
                 } else {
                 /* ,, is \quotedblbase nearly always */
                     if ((cNext = getTexChar()) && cNext == ',') {
@@ -518,21 +510,25 @@ purpose: converts inputfile and writes result to outputfile
 
             default:
                 if (getTexMode() == MODE_MATH || getTexMode() == MODE_DISPLAYMATH) {
-                	if (('a' <= cThis && cThis <= 'z') || ('A' <= cThis && cThis <= 'Z')) {
-                    	if (CurrentFontSeries() == F_SERIES_BOLD)    /* do not italicize */
-                        	fprintRTF("%c", cThis);
+                    if (('a' <= cThis && cThis <= 'z') || ('A' <= cThis && cThis <= 'Z')) {
+                        if (CurrentFontSeries() == F_SERIES_BOLD)    /* do not italicize */
+                            fprintRTF("%c", cThis);
                         else if (CurrentFontShape() == F_SHAPE_MATH_UPRIGHT)
-                        	fprintRTF("%c", cThis);
-						else
-                        	fprintRTF("{\\i %c}", cThis);
-                	} else
+                            fprintRTF("%c", cThis);
+                        else
+                            fprintRTF("{\\i %c}", cThis);
+                    } else
                         fprintRTF("%c", cThis);
                 
 
                 } else {
-
-                    changeTexMode(MODE_HORIZONTAL);
-                    fprintRTF("%c", cThis);
+                    if (getTexMode()==MODE_VERTICAL) 
+                        changeTexMode(MODE_HORIZONTAL);
+                        
+                    if (CurrentFontEncoding() != ENCODING_OT2)
+                        fprintRTF("%c", cThis);
+                    else
+                        CmdOT2Transliteration(cThis);
                 }
                 break;
         }
@@ -548,7 +544,7 @@ static void TranslateCommand(void)
 
 /****************************************************************************
 purpose: The function is called on a backslash in input file and
-	 tries to call the command-function for the following command.
+     tries to call the command-function for the following command.
 returns: success or not
  ****************************************************************************/
 {
@@ -559,7 +555,7 @@ returns: success or not
     cThis = getTexChar();
     mode = getTexMode();
 
-    diagnostics(5, "Beginning TranslateCommand() \\%c", cThis);
+    diagnostics(4, "Beginning TranslateCommand() \\%c", cThis);
 
     switch (cThis) {
         case 'a':
@@ -609,23 +605,23 @@ returns: success or not
         case '\\':             /* \\[1mm] or \\*[1mm] possible */
             diagnostics(5,"here we are in TranslateCommand with '\\\\'");
             height = getSlashSlashParam();
-			if (g_processing_arrays)			/* \begin{array} ... \end{array} */
-            	CmdArraySlashSlash(height);     /* may be contained in eqnarray environment */
+            if (g_processing_arrays)            /* \begin{array} ... \end{array} */
+                CmdArraySlashSlash(height);     /* may be contained in eqnarray environment */
             else if (g_processing_eqnarray)
-            	CmdEqnArraySlashSlash(height);
+                CmdEqnArraySlashSlash(height);
             else  if (g_processing_tabbing)
-            	diagnostics(1,"should not be processing \\\\ in tabbing here");
+                diagnostics(1,"should not be processing \\\\ in tabbing here");
             else if (g_processing_tabular)
-            	diagnostics(1,"should not be processing \\\\ in tabular here");
+                diagnostics(1,"should not be processing \\\\ in tabular here");
             else
-            	CmdSlashSlash(height);
+                CmdSlashSlash(height);
             return;
 
         case 0x0D:  /*handle any CRLF that might have snuck in*/
-			cNext = getTexChar();
-			if (cNext != 0x0A)
-				ungetTexChar(cNext);
-			/* fall through */
+            cNext = getTexChar();
+            if (cNext != 0x0A)
+                ungetTexChar(cNext);
+            /* fall through */
 
         case '\t':  /* tabs should already be spaces */
         case ' ':
@@ -645,7 +641,7 @@ returns: success or not
                 (void) PopBrace();
                 PushBrace();
             } else
-				fprintRTF("\\-");
+                fprintRTF("\\-");
             return;
 
         case '+':
@@ -721,12 +717,12 @@ returns: success or not
             
             cThis = getTexChar();
             if (cThis=='^') {
-            	/* usually \^^M ... just replace with a blank */
-            	getTexChar();
-            	fprintRTF(" ");
+                /* usually \^^M ... just replace with a blank */
+                getTexChar();
+                fprintRTF(" ");
             } else {
-            	ungetTexChar(cThis);
-				CmdHatChar(0);
+                ungetTexChar(cThis);
+                CmdHatChar(0);
             }
             return;
         case '.':
@@ -808,12 +804,12 @@ returns: success or not
     }
 
     cCommand[i] = '\0';         /* mark end of string with zero */
-    diagnostics(5, "TranslateCommand() <%s>", cCommand);
+    diagnostics(4, "TranslateCommand() <%s>", cCommand);
 
-	if (i==MAXCOMMANDLEN-1) {
-	    diagnostics(WARNING, "Skipping absurdly long command <%s>", cCommand);
-	    return;
-	}
+    if (i==MAXCOMMANDLEN-1) {
+        diagnostics(WARNING, "Skipping absurdly long command <%s>", cCommand);
+        return;
+    }
 
     if (i == 0)
         return;
@@ -825,9 +821,9 @@ returns: success or not
 
     if (CallCommandFunc(cCommand)) {    /* call handling function for command */
         if (strcmp(cCommand, "end") == 0) {
-    		diagnostics(5, "before PopBrace()");
+            diagnostics(5, "before PopBrace()");
             ret = RecursionLevel - PopBrace();
-    		diagnostics(5, "after PopBrace(), ret=%d",ret);
+            diagnostics(5, "after PopBrace(), ret=%d",ret);
             fprintRTF("}");
         }
         return;

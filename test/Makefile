@@ -1,12 +1,16 @@
 #
 # Initial version 28 May 2001 Scott Prahl
 #
-LATEX= latex
+LATEX= latex -interaction=nonstopmode
 BIBTEX= bibtex
-LATEX2RTF= ../latex2rtf
-OPTIONS  = -Z3 -P ../cfg/:../scripts/ -T tmp/
+LATEX2RTF= ../latex2rtf 
+OPTIONS  = -Z3 -P ../cfg/:../scripts/ -T tmp/ 
+MKDIR?=mkdir -p
+RMDIR?=rm -rf
+RM?=rm -f
+MV?=mv
 
-LATEX_LOG = >latex.log
+LATEX_LOG = > latex.log
 #LATEX_LOG = 
 
 RTF=	align.rtf	 array.rtf 		box.rtf 			ch.rtf	             \
@@ -28,25 +32,28 @@ BIB_TESTS=  bib_apacite.rtf        bib_harvard.rtf        bib_super.rtf      \
 	
 FIG_TESTS=  fig_endfloat.rtf  fig_test.rtf      fig_test3.rtf \
             fig_size.rtf      fig_test2.rtf     fig_test4.rtf \
-            picture.rtf       fig_subfig.rtf    fig_png.rtf
+            picture.rtf       fig_subfig.rtf    fig_png.rtf \
+            graphicspath.rtf
 
 ENC_TESTS= 	enc_applemac.rtf enc_cp437.rtf  enc_cp865.rtf    enc_latin2.rtf enc_latin5.rtf \
 			enc_cp1250.rtf   enc_cp850.rtf  enc_decmulti.rtf enc_latin3.rtf enc_latin9.rtf\
 			enc_cp1252.rtf   enc_cp852.rtf  enc_latin1.rtf   enc_latin4.rtf enc_next.rtf\
 			enc_cp1251.rtf   enc_cp855.rtf  enc_cp866.rtf    enc_koi8-r.rtf enc_koi8-u.rtf \
-			enc_maccyr.rtf   enc_macukr.rtf eqns-koi8.rtf 	 enc_utf8x.rtf
+			enc_maccyr.rtf   eqns-koi8.rtf 	enc_utf8x.rtf    enc_ot2.rtf    enc_moroz_koi8.rtf \
+			enc_moroz_utf8.rtf enc_moroz_ot2.rtf
 
 BABEL_TESTS=babel_german.rtf babel_russian.rtf babel_czech.rtf babel_french.rtf \
-	        babel_spanish.rtf babel_frenchb.rtf bib_simple.rtf
+	        babel_frenchb.rtf # babel_spanish.rtf 
 	        
 EQN_TESTS=  eqns.rtf	eqns2.rtf eqns-koi8.rtf ttgfsr7.rtf spago1.rtf misc2.rtf\
             frac.rtf	subsup.rtf	theorem.rtf eqnnumber.rtf eqnnumber2.rtf
 
-CHAR_TESTS= accentchars.rtf oddchars.rtf overstrike.rtf ucsymbols.rtf greek.rtf cyrillic.rtf
+CHAR_TESTS= accentchars.rtf oddchars.rtf overstrike.rtf ucsymbols.rtf greek.rtf cyrillic.rtf \
+            direct.rtf
 
 TABLE_TESTS= tabbing.rtf tabular.rtf table_array1.rtf table_array2.rtf
 
-EXTRA_TESTS= excalibur.rtf
+EXTRA_TESTS= excalibur.rtf acronym.rtf qualisex.rtf
 
 basic:
 	$(MAKE) basic_tests
@@ -55,7 +62,7 @@ bib:
 	$(MAKE) bib_tests
 
 fig:
-	mkdir -p tmp
+	-$(MKDIR) tmp
 	$(MAKE) fig_tests
 
 enc:
@@ -71,15 +78,16 @@ char:
 	$(MAKE) char_tests
 
 table:
-	mkdir -p tmp
+	-$(MKDIR) tmp
 	$(MAKE) table_tests
 
 extra:
 	$(MAKE) extra_tests
 	
 all:
-	mkdir -p tmp
+	-$(MKDIR) tmp
 	$(MAKE) basic_tests
+	$(MAKE) babel_tests
 	$(MAKE) bib_tests
 	$(MAKE) eqn_tests
 	$(MAKE) fig_tests
@@ -110,6 +118,45 @@ extra_tests: $(EXTRA_TESTS)
 
 %.rtf:	%.tex
 	$(LATEX2RTF) $(OPTIONS) $<
+
+acronym.rtf:	acronym
+
+acronym:
+	$(LATEX) acronym $(LATEX_LOG)
+	$(BIBTEX) acronym $(LATEX_LOG)
+	$(LATEX) acronym $(LATEX_LOG)
+	$(LATEX) acronym $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) acronym
+
+babel_czech.rtf: babel_czech.tex
+	$(LATEX) babel_czech $(LATEX_LOG)
+	$(LATEX) babel_czech $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_czech
+
+babel_french.rtf: babel_french.tex
+	$(LATEX) babel_french $(LATEX_LOG)
+	$(LATEX) babel_french $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_french
+
+babel_frenchb.rtf: babel_frenchb.tex
+	$(LATEX) babel_frenchb $(LATEX_LOG)
+	$(LATEX) babel_frenchb $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_frenchb
+
+babel_german.rtf: babel_german.tex
+	$(LATEX) babel_german $(LATEX_LOG)
+	$(LATEX) babel_german $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_german
+
+babel_russian.rtf: babel_russian.tex
+	$(LATEX) babel_russian $(LATEX_LOG)
+	$(LATEX) babel_russian $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_russian
+
+babel_spanish.rtf: babel_spanish.tex
+	$(LATEX) babel_spanish $(LATEX_LOG)
+	$(LATEX) babel_spanish $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) babel_spanish
 
 bib_simple.rtf: bib_simple.tex bib_simple.bib
 	$(LATEX) bib_simple $(LATEX_LOG)
@@ -195,7 +242,7 @@ bib_harvard.rtf: bib_harvard.tex bib_harvard.bib
 	$(LATEX) bib_harvard $(LATEX_LOG)
 	$(LATEX) bib_harvard $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) bib_harvard
-	rm -rf bib_harvard.out
+	$(RM) bib_harvard.out
 
 bibentry_plain.rtf: bibentry_plain.tex bibentry_plain.bib
 	$(LATEX) bibentry_plain $(LATEX_LOG)
@@ -225,16 +272,6 @@ misc4.rtf: misc4.tex
 	$(LATEX) misc4 $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) misc4
 
-german.rtf: german.tex
-	$(LATEX) german $(LATEX_LOG)
-	$(LATEX) german $(LATEX_LOG)
-	$(LATEX2RTF) $(OPTIONS) german
-
-russian.rtf: russian.tex
-	$(LATEX) russian > russian.log
-	$(LATEX) russian > russian.log
-	$(LATEX2RTF) $(OPTIONS) russian
-
 ttgfsr7.rtf: ttgfsr7.tex
 	$(LATEX) ttgfsr7 $(LATEX_LOG)
 	$(LATEX) ttgfsr7 $(LATEX_LOG)
@@ -247,7 +284,7 @@ fig_test.rtf: fig_test.tex fig_test.eps fig_testc.ps
 
 fig_test2.rtf: fig_test2.tex fig_testb.pdf fig_testc.pdf
 	$(LATEX2RTF) $(OPTIONS) -D 300 fig_test2
-	mv fig_test2.rtf fig_test2a.rtf
+	$(MV) fig_test2.rtf fig_test2a.rtf
 	$(LATEX2RTF) $(OPTIONS) fig_test2
 
 fig_test3.rtf: fig_test3.tex fig_testd.ps fig_testd.pdf
@@ -300,6 +337,10 @@ essential.rtf: essential.tex
 	$(LATEX) essential $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) essential
 
+qualisex.rtf: qualisex.tex
+	$(LATEX) qualisex $(LATEX_LOG)
+	$(LATEX2RTF) $(OPTIONS) qualisex
+
 hyperref.rtf: hyperref.tex
 	$(LATEX) hyperref $(LATEX_LOG)
 	$(LATEX2RTF) $(OPTIONS) hyperref
@@ -312,21 +353,24 @@ tabbing.rtf: tabbing.tex
 
 table_array1.rtf: table_array1.tex
 	$(LATEX2RTF) $(OPTIONS) -t3 table_array1
+
+direct.rtf: direct.tex
+	$(LATEX2RTF) $(OPTIONS) direct
 	
 check:
 	./bracecheck
 	
 clean:
-	mv fig_testb.pdf fig_testb.tmp
-	mv fig_testc.pdf fig_testc.tmp
-	mv fig_testd.pdf fig_testd.tmp
-	mv fig_teste.pdf fig_teste.tmp
-	rm -f *.dvi *.rtf *.aux *.blg *.bbl *.log *.pdf *.toc *.lot *.idx *.ilg *.ind
-	rm -f l2r*tex frlicense.dat *.fff *.lof
-	mv fig_testb.tmp fig_testb.pdf
-	mv fig_testc.tmp fig_testc.pdf
-	mv fig_testd.tmp fig_testd.pdf
-	mv fig_teste.tmp fig_teste.pdf
-	rm -rf tmp
+	-$(MV) fig_testb.pdf fig_testb.tmp
+	-$(MV) fig_testc.pdf fig_testc.tmp
+	-$(MV) fig_testd.pdf fig_testd.tmp
+	-$(MV) fig_teste.pdf fig_teste.tmp
+	-$(RM) *.dvi *.rtf *.aux *.blg *.bbl *.log *.pdf *.toc *.lot *.idx *.ilg *.ind
+	-$(RM) l2r*tex frlicense.dat *.fff *.lof
+	-$(MV) fig_testb.tmp fig_testb.pdf
+	-$(MV) fig_testc.tmp fig_testc.pdf
+	-$(MV) fig_testd.tmp fig_testd.pdf
+	-$(MV) fig_teste.tmp fig_teste.pdf
+	-$(RMDIR) tmp
 
 .PHONY: clean all check
