@@ -321,7 +321,7 @@ static TabularT *TabularPreamble(const char *format)
 
     if (getTexMode() != MODE_HORIZONTAL) {
         CmdIndent(INDENT_NONE);
-        startParagraph("last", FIRST_PARAGRAPH);
+        startParagraph("last", PARAGRAPH_FIRST);
     }
 
     fprintRTF("\\par\n");
@@ -339,10 +339,12 @@ static void TabularGetRow(const char *tabular_text, char **row, char **next_row,
 {
     char *s, *dimension, *dim_start;
     int slash = FALSE;
+    int tabularnewline = FALSE;
     int row_chars = 0;
     int dim_chars = 0;
-
-    diagnostics(5, "TabularGetFirstRow contents=%s", tabular_text);
+    int brace = 0;
+    
+    diagnostics(6, "TabularGetFirstRow contents=%s", tabular_text);
     s = (char *) tabular_text;
     *row = NULL;
     *next_row = NULL;
@@ -351,10 +353,17 @@ static void TabularGetRow(const char *tabular_text, char **row, char **next_row,
     if (!s)
         return;
 
-    while ( (*s != '\0') && (*s != '\\' || !slash)) {
+    while ( (*s != '\0') && (brace != 0 || *s != '\\' || !slash)) {
         slash = (*s == '\\') ? TRUE : FALSE;
         row_chars++;
         s++;
+        if (!slash && *s =='{') brace++;
+        if (!slash && *s =='}') brace--;        
+
+        if (slash && strncmp(s,"tabularnewline", 14) == 0) {
+    		tabularnewline = TRUE;
+    		break;
+        }
     }
 
     /* don't include final \\ in copied text */
@@ -372,6 +381,11 @@ static void TabularGetRow(const char *tabular_text, char **row, char **next_row,
     if (*s == '\0') 
         return;
 
+	if (tabularnewline) {
+		*next_row = s+14;
+		return;
+	}
+	
     /* move after \\ */
     s++;
 
@@ -1365,7 +1379,7 @@ void CmdTabbing(int code)
     
         if (getTexMode() != MODE_HORIZONTAL) {
             CmdIndent(INDENT_NONE);
-            startParagraph("tabbing", FIRST_PARAGRAPH);
+            startParagraph("tabbing", PARAGRAPH_FIRST);
         }
     
         fprintRTF("\\par\n");
@@ -1434,7 +1448,7 @@ void CmdTable(int code)
         if (g_endfloat_tables) {
             if (g_endfloat_markers) {
                 setAlignment(CENTERED);
-                startParagraph("endfloat", GENERIC_PARAGRAPH);
+                startParagraph("endfloat", PARAGRAPH_GENERIC);
                 incrementCounter("endfloattable");  /* two separate counters */
                 fprintRTF("[");                     /* one for tables and one for */
                 ConvertBabelName("TABLENAME");      /* endfloat tables */
@@ -1445,7 +1459,7 @@ void CmdTable(int code)
                 fprintRTF("%d about here]", getCounter("endfloattable"));
             }
         } else {
-            startParagraph("table", GENERIC_PARAGRAPH);
+            startParagraph("table", PARAGRAPH_GENERIC);
             ConvertString(table_contents);
         }
         free(table_contents);
@@ -1736,6 +1750,7 @@ void CmdHAlign(int code)
     char **lines;
     int nlines, ncols,tcols,trepeat,i,line;
     
+    CmdEndParagraph(0);
     contents = getBraceParam();
     HA_ExtractTemplateAndLines(contents, &HA_template, &lines, &nlines);
     free(contents);
@@ -1753,6 +1768,7 @@ void CmdHAlign(int code)
         for (i = 1; i <= ncols; i++)
             fprintRTF("\\cellx%d", getLength("textwidth") * (i) / (ncols));
         fprintRTF("\n");
+        setTexMode(MODE_HORIZONTAL);
 
         for (i=1; i<=ncols; i++) {
             char *cell, *cell_template, *cell_text;
@@ -1777,6 +1793,7 @@ void CmdHAlign(int code)
         free(lines[line]);
     }
 
+    setTexMode(MODE_VERTICAL);
     free(align);
     free(lines);
     free(HA_template);

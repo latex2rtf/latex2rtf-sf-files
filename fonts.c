@@ -428,8 +428,8 @@ void CmdFontSize(int code)
       FontInfoDepth, RtfFontInfo[FontInfoDepth].family,
       RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
 
-    if (getTexMode() == MODE_VERTICAL)
-        changeTexMode(MODE_HORIZONTAL);
+//    if (getTexMode() == MODE_VERTICAL)
+//        changeTexMode(MODE_HORIZONTAL);
 
     if (code == F_SMALLER)
         scaled_size = (int) (CurrentFontSize() / 1.2 + 0.5);
@@ -441,6 +441,26 @@ void CmdFontSize(int code)
     fprintRTF("\\fs%d ", scaled_size);
 
     diagnostics(5, "CmdFontSize (after) depth=%d, family=%d, size=%d, shape=%d, series=%d",
+      FontInfoDepth, RtfFontInfo[FontInfoDepth].family,
+      RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
+}
+
+void CmdFontSizeEnviron(int code)
+
+/******************************************************************************
+  purpose: sets the font size e.g., \begin{small} ... \end{small}
+ ******************************************************************************/
+{
+    int true_code = code & ~ON;
+
+    diagnostics(6, "CmdFontSizeEnviron (before) depth=%d, family=%d, size=%d, shape=%d, series=%d",
+      FontInfoDepth, RtfFontInfo[FontInfoDepth].family,
+      RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
+
+    if (!(code & ON)) return;
+	CmdFontSize(true_code);
+
+    diagnostics(6, "CmdFontSizeEnviron (after) depth=%d, family=%d, size=%d, shape=%d, series=%d",
       FontInfoDepth, RtfFontInfo[FontInfoDepth].family,
       RtfFontInfo[FontInfoDepth].size, RtfFontInfo[FontInfoDepth].shape, RtfFontInfo[FontInfoDepth].series);
 }
@@ -658,7 +678,7 @@ int DefaultFontSeries(void)
 
 int DefaultFontEncoding(void)
 {
-    diagnostics(5, "DefaultFontSeries -- series=%d", RtfFontInfo[0].encoding);
+    diagnostics(6, "DefaultFontSeries -- series=%d", RtfFontInfo[0].encoding);
     return RtfFontInfo[0].encoding;
 }
 
@@ -699,7 +719,7 @@ int CurrentFontSeries(void)
   purpose: returns the current RTF series
  ******************************************************************************/
 {
-    diagnostics(5, "CurrentFontSeries -- series=%d", RtfFontInfo[FontInfoDepth].series);
+    diagnostics(6, "CurrentFontSeries -- series=%d", RtfFontInfo[FontInfoDepth].series);
     return RtfFontInfo[FontInfoDepth].series;
 }
 
@@ -709,7 +729,7 @@ int CurrentFontEncoding(void)
   purpose: returns the current RTF encoding
  ******************************************************************************/
 {
-    diagnostics(5, "CurrentFontSeries -- encoding=%d", RtfFontInfo[FontInfoDepth].encoding);
+    diagnostics(6, "CurrentFontSeries -- encoding=%d", RtfFontInfo[FontInfoDepth].encoding);
     return RtfFontInfo[FontInfoDepth].encoding;
 }
 
@@ -719,8 +739,9 @@ void CmdFontEncoding(int code)
   purpose: sets the current RTF encoding
  ******************************************************************************/
 {
+/* 	fprintf(stderr,"setting encoding from %d to %d\n",RtfFontInfo[FontInfoDepth].encoding,code);*/
     RtfFontInfo[FontInfoDepth].encoding = code;
-    diagnostics(5, "CurrentFontSeries -- encoding=%d", RtfFontInfo[FontInfoDepth].encoding);
+    diagnostics(6, "CurrentFontSeries -- encoding=%d", RtfFontInfo[FontInfoDepth].encoding);
 }
 
 void PushFontSettings(void)

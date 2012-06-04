@@ -54,13 +54,13 @@ void ConvertString(const char *string)
      purpose : converts string in TeX-format to Rtf-format
  ******************************************************************************/
 {
-    if (string == NULL)
+    if (string == NULL || string == '\0')
         return;
 
     if (PushSource(NULL, string) == 0) {
         diagnostics(5, "Entering Convert() from ConvertString()");
 
-        show_string(5, string, "convert");
+        show_string(4, string, "converting");
 
         while (StillSource())
             Convert();
@@ -83,7 +83,7 @@ void ConvertAllttString(char *s)
 
     if (s == NULL)
         return;
-    diagnostics(4, "Entering Convert() from StringAllttConvert()");
+    diagnostics(3, "Entering Convert() from StringAllttConvert()");
 
     if (PushSource(NULL, s) == 0) {
 
@@ -115,7 +115,7 @@ void ConvertAllttString(char *s)
         }
         PopSource();
     }
-    diagnostics(4, "Exiting Convert() from StringAllttConvert()");
+    diagnostics(3, "Exiting Convert() from StringAllttConvert()");
 }
 
 void Convert(void)
@@ -129,7 +129,7 @@ purpose: converts inputfile and writes result to outputfile
     char cNext;
     int count;
 
-    diagnostics(6, "Entering Convert ret = %d", ret);
+    diagnostics(3, "Entering Convert ret = %d", ret);
     RecursionLevel++;
     PushLevels();
 
@@ -180,13 +180,11 @@ purpose: converts inputfile and writes result to outputfile
 
             case '\\':
                 PushLevels();
-
                 TranslateCommand();
-
                 CleanStack();
 
-                if (ret > 0) {
-                    diagnostics(5, "Exiting Convert via TranslateCommand ret = %d level = %d", ret, RecursionLevel);
+                if (ret > 1) {
+                    diagnostics(3, "Exiting Convert via TranslateCommand ret = %d level = %d", ret, RecursionLevel);
                     ret--;
                     RecursionLevel--;
                     return;
@@ -207,8 +205,8 @@ purpose: converts inputfile and writes result to outputfile
                 CleanStack();
                 ret = RecursionLevel - PopBrace();
                 fprintRTF("}");
-                if (ret > 0) {
-                    diagnostics(5, "Exiting Convert via '}' ret = %d level = %d", ret, RecursionLevel);
+                if (ret > 1) {
+                    diagnostics(3, "Exiting Convert via '}' ret = %d level = %d", ret, RecursionLevel);
                     ret--;
                     RecursionLevel--;
                     return;
@@ -264,17 +262,9 @@ purpose: converts inputfile and writes result to outputfile
                 }
                 break;
 
-            case '&':
-            
-                /* just write '&' if we are not in math mode */
-                if (getTexMode() != MODE_MATH && getTexMode() != MODE_DISPLAYMATH) {    
-                    if (g_processing_tabular) 
-                        diagnostics(0,"should not happen! tabular should handle this!");
+            case '&':         
+                /* should occur in array, align, or eqnarray environments  */
 
-                    fprintRTF("&");
-                    break;
-                }
-                
                 /* are we are in the middle of \begin{array} ... \end{array} */
                 if (g_processing_arrays) {
                     fprintRTF("%c", g_field_separator);
@@ -291,8 +281,7 @@ purpose: converts inputfile and writes result to outputfile
                     diagnostics(4,"tabbing to match '&'");
                     fprintRTF("\\tab\n");
                 }
-                g_equation_column++;
-               
+                g_equation_column++;               
                 break;
 
             case '~':
@@ -537,7 +526,7 @@ purpose: converts inputfile and writes result to outputfile
         cLast = cThis;
     }
     RecursionLevel--;
-    diagnostics(5, "Exiting Convert via exhaustion ret = %d", ret);
+    diagnostics(3, "Exiting Convert via exhaustion ret = %d", ret);
 }
 
 static void TranslateCommand(void)
@@ -789,7 +778,7 @@ returns: success or not
             }
 
             /* all spaces after commands are ignored, a single \n may occur */
-            while (cThis == ' ' || (cThis == '\n' && !found_nl)) {
+            while (cThis == ' ' || (0 && cThis == '\n' && !found_nl)) {
                 if (cThis == '\n')
                     found_nl = TRUE;
                 cThis = getTexChar();
@@ -821,9 +810,9 @@ returns: success or not
 
     if (CallCommandFunc(cCommand)) {    /* call handling function for command */
         if (strcmp(cCommand, "end") == 0) {
-            diagnostics(5, "before PopBrace()");
+            diagnostics(4, "before PopBrace()");
             ret = RecursionLevel - PopBrace();
-            diagnostics(5, "after PopBrace(), ret=%d",ret);
+            diagnostics(4, "after PopBrace(), ret=%d",ret);
             fprintRTF("}");
         }
         return;

@@ -3,12 +3,12 @@ LATEX2PNG(1)                         User                         LATEX2PNG(1)
 
 
 NAME
-       latex2png - manual page for latex2png 1.1
+       latex2png ‚àí manual page for latex2png 1.1
 
 DESCRIPTION
-       latex2png -- Convert a LaTeX file to a PNG image
+       latex2png ‚à‚àí‚à‚àí Convert a LaTeX file to a PNG image
 
-       USAGE:  latex2png  [-d  density] [-h] [-k] [-c] [-g] [-m] [-H home dir]
+       USAGE:  latex2png  [‚Äêd  density] [‚Äêh] [‚Äêk] [‚Äêc] [‚Äêg] [‚Äêm] [‚ÄêH home dir]
        file[.tex|.eps]
 
        The latex2png command converts a LaTeX file  into  a  PNG  image.   The
@@ -17,31 +17,31 @@ DESCRIPTION
        files to PNG images.
 
    OPTIONS:
-       -c produce color image
+       ‚à‚àíc produce color image
 
-       -d density
+       ‚à‚àíd density
               density  is   the  number of dots per inch to use in the created
               image (default 144 dpi)
 
-       -g produce gray images
+       ‚à‚àíg produce gray images
 
-       -h help
+       ‚à‚àíh help
 
-       -H home_dir
+       ‚à‚àíH home_dir
               home_dir is a directory to be included in search  path  (default
               is  directory  that  contains  the LaTeX file).  This is used to
               create PNG images in another directory (e.g.,  /tmp)  and  still
               allow LaTeX to find files that it needs to include.
 
-       -k keep intermediate files (for debugging)
+       ‚à‚àík keep intermediate files (for debugging)
 
-       -m produce monochrome (black and white) image
+       ‚à‚àím produce monochrome (black and white) image
               (default)
 
-       -v version
+       ‚à‚àív version
 
    EXAMPLES:
-       latex2png -d 144 /tmp/file
+       latex2png ‚à‚àíd 144 /tmp/file
               #create /tmp/file.png at 144 dpi
 
        latex2png file.eps
@@ -50,7 +50,7 @@ DESCRIPTION
        latex2png file.tex
               #create file.png via latex
 
-       latex2png -H . /tmp/file
+       latex2png ‚à‚àíH . /tmp/file
               #search the cwd for image files
 
 SEE ALSO

@@ -48,15 +48,7 @@ int     CurrentFileDescriptor(void);
 int     getParserDepth(void);
 int     getSlashSlashParam(void);
 
-static void inline ignoreBraceParam() {
-    char *p = getBraceParam();
-    if (NULL != p)
-    free(p);
-}
+void	ignoreBraceParam(void);
+void	ignoreBracketParam(void);
 
-static void inline ignoreBracketParam() {
-    char *p = getBracketParam();
-    if (NULL != p)
-    free(p);
-}
 #endif

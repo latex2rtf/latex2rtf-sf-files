@@ -117,63 +117,63 @@ static void SlurpEquation(int code, char **pre, char **eq, char **post)
     switch (true_code) {
 
         case EQN_MATH:
-            diagnostics(4, "SlurpEquation() ... \\begin{math}");
+            diagnostics(4, "SlurpEquation() --- \\begin{math}");
             *pre = strdup("\\begin{math}");
             *post = strdup("\\end{math}");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_DOLLAR:
-            diagnostics(4, "SlurpEquation() ... $");
+            diagnostics(4, "SlurpEquation() --- $");
             *pre = strdup("$");
             *post = strdup("$");
             *eq = SlurpDollarEquation();
             break;
 
         case EQN_RND_OPEN:
-            diagnostics(4, "SlurpEquation() ... \\(");
+            diagnostics(4, "SlurpEquation() --- \\(");
             *pre = strdup("\\(");
             *post = strdup("\\)");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_DISPLAYMATH:
-            diagnostics(4, "SlurpEquation -- displaymath");
+            diagnostics(4, "SlurpEquation --- displaymath");
             *pre = strdup("\\begin{displaymath}");
             *post = strdup("\\end{displaymath}");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_EQUATION_STAR:
-            diagnostics(4, "SlurpEquation() -- equation*");
+            diagnostics(4, "SlurpEquation() --- equation*");
             *pre = strdup("\\begin{equation*}");
             *post = strdup("\\end{equation*}");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_DOLLAR_DOLLAR:
-            diagnostics(4, "SlurpEquation() -- $$");
+            diagnostics(4, "SlurpEquation() --- $$");
             *pre = strdup("$$");
             *post = strdup("$$");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_BRACKET_OPEN:
-            diagnostics(4, "SlurpEquation()-- \\[");
+            diagnostics(4, "SlurpEquation() --- \\[");
             *pre = strdup("\\[");
             *post = strdup("\\]");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_EQUATION:
-            diagnostics(4, "SlurpEquation() -- equation");
+            diagnostics(4, "SlurpEquation() --- equation");
             *pre = strdup("\\begin{equation}");
             *post = strdup("\\end{equation}");
             *eq = getTexUntil(*post, 0);
             break;
 
         case EQN_ARRAY_STAR:
-            diagnostics(4, "Entering CmdDisplayMath -- eqnarray* ");
+            diagnostics(4, "SlurpEquation() --- eqnarray* ");
             *pre = strdup("\\begin{eqnarray*}");
             *post = strdup("\\end{eqnarray*}");
             *eq = getTexUntil(*post, 0);
@@ -187,7 +187,7 @@ static void SlurpEquation(int code, char **pre, char **eq, char **post)
             break;
 
         case EQN_ALIGN_STAR:
-            diagnostics(4, "Entering CmdDisplayMath -- align* ");
+            diagnostics(4, "SlurpEquation() --- align* ");
             *pre = strdup("\\begin{align*}");
             *post = strdup("\\end{align*}");
             *eq = getTexUntil(*post, 0);
@@ -253,19 +253,6 @@ static int EquationNeedsFields(char *eq)
 }
 
 /******************************************************************************
- purpose   : Writes equation to RTF file as plain text 
- ******************************************************************************/
-static void WriteEquationAsRawLatex(char *pre, char *eq, char *post)
-{
-    fprintRTF("<<:");
-    putRtfStrEscaped(pre);
-    putRtfStrEscaped(eq);
-    putRtfStrEscaped(post);
-    fprintRTF(":>>");
-}
-
-
-/******************************************************************************
  purpose   : Writes equation to RTF file as text of COMMENT field
  ******************************************************************************/
 static void WriteEquationAsComment(char *pre, char *eq, char *post)
@@ -291,14 +278,14 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
         case EQN_MATH:
             diagnostics(4, "PrepareRtfEquation ... \\begin{math}");
             if (getTexMode() == MODE_VERTICAL)
-                startParagraph("Normal", GENERIC_PARAGRAPH);
+                startParagraph("Normal", PARAGRAPH_GENERIC);
             setTexMode(MODE_MATH);
             break;
 
         case EQN_DOLLAR:
             diagnostics(4, "PrepareRtfEquation ... $");
             if (getTexMode() == MODE_VERTICAL)
-                startParagraph("Normal", GENERIC_PARAGRAPH);
+                startParagraph("Normal", PARAGRAPH_GENERIC);
             fprintRTF("{");
             setTexMode(MODE_MATH);
             break;
@@ -306,7 +293,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
         case EQN_ENSUREMATH:
             diagnostics(4, "PrepareRtfEquation ... \\ensuremath{}");
             if (getTexMode() == MODE_VERTICAL)
-                startParagraph("Normal", GENERIC_PARAGRAPH);
+                startParagraph("Normal", PARAGRAPH_GENERIC);
             fprintRTF("{");
             setTexMode(MODE_MATH);
             break;
@@ -314,7 +301,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
         case EQN_RND_OPEN:
             diagnostics(4, "PrepareRtfEquation ... \\(");
             if (getTexMode() == MODE_VERTICAL)
-                startParagraph("Normal", GENERIC_PARAGRAPH);
+                startParagraph("Normal", PARAGRAPH_GENERIC);
             fprintRTF("{");
             setTexMode(MODE_MATH);
             break;
@@ -333,7 +320,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
                 diagnostics(4, "PrepareRtfEquation -- equation*");
         
             g_show_equation_number = FALSE;
-            startParagraph("equation", EQUATION_PARAGRAPH);
+            startParagraph("equation", PARAGRAPH_EQUATION);
             fprintRTF("\\tab\n");
             setTexMode(MODE_DISPLAYMATH);
             break;
@@ -344,7 +331,7 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             g_show_equation_number = TRUE;
             g_suppress_equation_number = FALSE;
 
-            startParagraph("equationNum", EQUATION_PARAGRAPH);
+            startParagraph("equationNum", PARAGRAPH_EQUATION);
             fprintRTF("\\tab\n");
             setTexMode(MODE_DISPLAYMATH);
             break;
@@ -363,11 +350,11 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             g_multiline_equation_type = code;
             
             if (g_equation_display_bitmap)
-                startParagraph("bitmapCenter", EQUATION_PARAGRAPH);
+                startParagraph("bitmapCenter", PARAGRAPH_EQUATION);
             else if (code == EQN_ALIGN_STAR)
-                startParagraph("equationAlign", EQUATION_PARAGRAPH);
+                startParagraph("equationAlign", PARAGRAPH_EQUATION);
             else
-                startParagraph("equationArray", EQUATION_PARAGRAPH);
+                startParagraph("equationArray", PARAGRAPH_EQUATION);
             
             fprintRTF("\\tab\n");
             setTexMode(MODE_DISPLAYMATH);
@@ -387,11 +374,11 @@ static void PrepareRtfEquation(int code, int EQ_Needed)
             g_multiline_equation_type = code;
             
             if (g_equation_display_bitmap)
-                startParagraph("bitmapCenter", EQUATION_PARAGRAPH);
+                startParagraph("bitmapCenter", PARAGRAPH_EQUATION);
             else if (code == EQN_ALIGN)
-                startParagraph("equationAlignNum", EQUATION_PARAGRAPH);
+                startParagraph("equationAlignNum", PARAGRAPH_EQUATION);
             else
-                startParagraph("equationArrayNum", EQUATION_PARAGRAPH);
+                startParagraph("equationArrayNum", PARAGRAPH_EQUATION);
 
             fprintRTF("\\tab\n");
             setTexMode(MODE_DISPLAYMATH);
@@ -695,6 +682,24 @@ static void WriteEquationAsRTF(int code, char **eq)
     FinishRtfEquation(code, EQ_Needed);
 }
 
+#ifdef MTEF_IMPLEMENTED
+static void WriteEquationAsMTEF(int code, char **eq)
+
+/******************************************************************************
+ purpose   : Translate equation to MTEF 
+ ******************************************************************************/
+{
+    int EQ_Needed;
+
+    EQ_Needed = EquationNeedsFields(*eq);
+    PrepareRtfEquation(code, EQ_Needed);
+    ConvertOverToFrac(eq);
+/*
+    ConvertString(*eq);
+*/
+    FinishRtfEquation(code, EQ_Needed);
+}
+#endif
 
 /******************************************************************************
  purpose   : search an equation and determine the first label that appears
@@ -746,8 +751,33 @@ void CmdEquation(int code)
     if (g_equation_comment)
         WriteEquationAsComment(pre, eq, post);
 
-    if (g_equation_raw_latex)
-        WriteEquationAsRawLatex(pre, eq, post);
+    if (g_equation_raw_latex) {
+    	if (inline_equation) {
+			fprintRTF("$");
+			putRtfStrEscaped(eq);
+			fprintRTF("$");
+		} else {
+			char *eq1 = strdup(eq);
+			str_delete(eq1,"\\nonumber");
+			str_delete(eq1,"\\notag");
+			fprintRTF("\\\\[");
+			if (true_code == EQN_DOLLAR_DOLLAR || true_code == EQN_BRACKET_OPEN  || 
+				true_code == EQN_EQUATION      || true_code == EQN_EQUATION_STAR ||
+				true_code == EQN_DISPLAYMATH )
+					putRtfStrEscaped(eq1);
+			else if (true_code == EQN_ARRAY    || true_code == EQN_ARRAY_STAR) {
+					putRtfStrEscaped("\\begin{align}");
+					putRtfStrEscaped(eq1);
+					putRtfStrEscaped("\\end{align}");
+			} else {
+					putRtfStrEscaped(pre);
+					putRtfStrEscaped(eq1);
+					putRtfStrEscaped(post);
+			}
+			fprintRTF("\\\\]");
+			free(eq1);
+		}
+    }
 
     diagnostics(4, "inline=%d  inline_bitmap=%d", inline_equation, g_equation_inline_bitmap);
     diagnostics(4, "inline=%d display_bitmap=%d", inline_equation, g_equation_display_bitmap);
@@ -1237,6 +1267,7 @@ static void simpleRTFScript(int super)
 {
     char *s = NULL;
 
+	if (getTexMode()==MODE_VERTICAL) changeTexMode(MODE_HORIZONTAL);
     s=getBraceParam();
     fprintRTF("{\\%s%d\\fs%d ", super ? "up" : "dn", script_shift(), script_size());
     ConvertString(s);
@@ -1606,22 +1637,22 @@ void CmdEqnArraySlashSlash(int height)
 
     switch (g_multiline_equation_type) {
         case EQN_ALIGN_STAR:
-            startParagraph("equationAlign", EQUATION_PARAGRAPH);
+            startParagraph("equationAlign", PARAGRAPH_EQUATION);
             setTexMode(MODE_DISPLAYMATH); 
             g_processing_eqnarray = TRUE;
             break;
         case EQN_ARRAY_STAR:
-            startParagraph("equationArray", EQUATION_PARAGRAPH);
+            startParagraph("equationArray", PARAGRAPH_EQUATION);
             setTexMode(MODE_DISPLAYMATH); 
             g_processing_eqnarray = TRUE;
             break;
         case EQN_ALIGN:
-            startParagraph("equationAlignNum", EQUATION_PARAGRAPH);
+            startParagraph("equationAlignNum", PARAGRAPH_EQUATION);
             setTexMode(MODE_DISPLAYMATH); 
             g_processing_eqnarray = TRUE;
             break;
         case EQN_ARRAY:
-            startParagraph("equationArrayNum", EQUATION_PARAGRAPH);
+            startParagraph("equationArrayNum", PARAGRAPH_EQUATION);
             setTexMode(MODE_DISPLAYMATH); 
             g_processing_eqnarray = TRUE;
             break;
@@ -1667,7 +1698,10 @@ void CmdSlashSlash(int height)
 
     /* we are ending a line in an environment that is unknown
        so just start a new line with the whatever was used last */
-    startParagraph("last",0);
+//    parindent = getLength("parindent");
+//	CmdIndent(INDENT_NONE);
+	startParagraph("last", PARAGRAPH_SLASHSLASH);
+//	CmdIndent(parindent);
     
     if (restart_field) 
         startField(FIELD_EQ);

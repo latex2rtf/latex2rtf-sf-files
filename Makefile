@@ -8,6 +8,9 @@ PKGMANDIR?=man
 #reasonable default set of compiler flags
 CFLAGS?=-g -Wall -Wno-write-strings
 
+#reasonable default set of compiler flags while developing
+#CFLAGS = -g -D_FORTIFY_SOURCE=2 -Wall -Waggregate-return -Wmissing-declarations -Wmissing-prototypes -Wredundant-decls -Wshadow -Wstrict-prototypes -Wformat=2
+
 PLATFORM?=-DUNIX   # Mac OS X, Linux, BSD
 #PLATFORM?=-DMSDOS # Windows/DOS
 #PLATFORM?=-DOS2   # OS/2 (does anyone still use this?)
@@ -16,26 +19,32 @@ PLATFORM?=-DUNIX   # Mac OS X, Linux, BSD
 #Uncomment for some windows machines (neither needed for djgpp nor for MinGW)
 #EXE_SUFFIX=.exe
 
-#Uncomment next line for DOS/Windows
-#PREFIX_DRIVE=C:
-
 #Base directory - adapt as needed
 # Unix:
-PREFIX?=$(PREFIX_DRIVE)/usr/local
-# Windows:
-#PREFIX?=$(PREFIX_DRIVE)/PROGRA~1/latex2rtf
+DESTDIR?=/usr/local
+#Uncomment next 2 lines for Windows
+#DESTDIR_DRIVE=C:
+#DESTDIR?=$(DESTDIR_DRIVE)/PROGRA~1/latex2rtf
 
 #Name of executable binary --- beware of 8.3 restriction under DOS
 BINARY_NAME=latex2rtf$(EXE_SUFFIX)
 
 # Location of binary, man, info, and support files - adapt as needed
-BIN_INSTALL=$(PREFIX)/bin
-MAN_INSTALL=$(PREFIX)/$(PKGMANDIR)/man1
-INFO_INSTALL=$(PREFIX)/info
-SUPPORT_INSTALL=$(PREFIX)/share/latex2rtf
-CFG_INSTALL=$(PREFIX)/share/latex2rtf/cfg
+BINDIR=/bin
+MANDIR=/$(PKGMANDIR)/man1
+INFODIR=/info
+SUPPORTDIR=/share/latex2rtf
+CFGDIR=/share/latex2rtf/cfg
 
-# Nothing to change below this line
+#Uncomment next 5 lines for Windows
+#BINDIR=$(DESTDIR)
+#MANDIR=$(DESTDIR)
+#INFODIR=$(DESTDIR)
+#SUPPORTDIR=$(DESTDIR)
+#CFGDIR=$(DESTDIR)/cfg
+
+# Nothing to change below this line - except:
+# for Windows, change "all : checkdir latex2rtf" to "all : latex2rtf"
 
 CFLAGS:=$(CFLAGS) $(PLATFORM)
 
@@ -63,7 +72,7 @@ CFGS=cfg/fonts.cfg cfg/direct.cfg cfg/ignore.cfg cfg/style.cfg \
     cfg/latin.cfg cfg/lsorbian.cfg cfg/magyar.cfg cfg/norsk.cfg cfg/nynorsk.cfg \
     cfg/polish.cfg cfg/portuges.cfg cfg/romanian.cfg cfg/samin.cfg cfg/scottish.cfg \
     cfg/serbian.cfg cfg/slovak.cfg cfg/slovene.cfg cfg/spanish.cfg cfg/swedish.cfg \
-    cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg cfg/russian.cfg cfg/inc_test.tex \
+    cfg/turkish.cfg cfg/usorbian.cfg cfg/welsh.cfg cfg/russian.cfg \
     cfg/ukrainian.cfg
 
 DOCS= doc/latex2rtf.1   doc/latex2png.1    doc/latex2rtf.texi doc/latex2rtf.pdf \
@@ -137,16 +146,16 @@ OBJS=fonts.o direct.o encodings.o commands.o stack.o funct1.o tables.o \
 	mygetopt.o styles.o preparse.o vertical.o fields.o \
 	labels.o biblio.o auxfile.o	acronyms.o
 
-all : checkdir latex2rtf
+all : checkdir latex2rtf    # Windows: remove "checkdir"
 
 latex2rtf: $(OBJS) $(HDRS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS)	$(LIBS) -o $(BINARY_NAME)
 
 cfg.o: Makefile cfg.c
-	$(CC) $(CFLAGS) -DCFGDIR=\"$(CFG_INSTALL)\" -c cfg.c -o cfg.o
+	$(CC) $(CFLAGS) -DCFGDIR=\"$(DESTDIR)$(CFGDIR)\" -c cfg.c -o cfg.o
 
 main.o: Makefile main.c
-	$(CC) $(CFLAGS) -DCFGDIR=\"$(CFG_INSTALL)\" -c main.c -o main.o
+	$(CC) $(CFLAGS) -DCFGDIR=\"$(DESTDIR)$(CFGDIR)\" -c main.c -o main.o
 
 check test: latex2rtf
 	cd test && $(MAKE) clean
@@ -201,25 +210,25 @@ doc: doc/latex2rtf.texi doc/Makefile
 
 install: latex2rtf doc/latex2rtf.1 $(CFGS) scripts/latex2png
 	cd doc && $(MAKE)
-	$(MKDIR) $(BIN_INSTALL)
-	$(MKDIR) $(MAN_INSTALL)
-	$(MKDIR) $(CFG_INSTALL)
-	cp $(BINARY_NAME)     $(BIN_INSTALL)
-	cp scripts/latex2png  $(BIN_INSTALL)
-	cp doc/latex2rtf.1    $(MAN_INSTALL)
-	cp doc/latex2png.1    $(MAN_INSTALL)
-	cp $(CFGS)            $(CFG_INSTALL)
-	cp doc/latex2rtf.html $(SUPPORT_INSTALL)
-	cp doc/latex2rtf.pdf  $(SUPPORT_INSTALL)
-	cp doc/latex2rtf.txt  $(SUPPORT_INSTALL)
+	$(MKDIR) $(DESTDIR)$(BINDIR)
+	$(MKDIR) $(DESTDIR)$(MANDIR)
+	$(MKDIR) $(DESTDIR)$(CFGDIR)
+	cp $(BINARY_NAME)     $(DESTDIR)$(BINDIR)
+	cp scripts/latex2png  $(DESTDIR)$(BINDIR)
+	cp doc/latex2rtf.1    $(DESTDIR)$(MANDIR)
+	cp doc/latex2png.1    $(DESTDIR)$(MANDIR)
+	cp $(CFGS)            $(DESTDIR)$(CFGDIR)
+	cp doc/latex2rtf.html $(DESTDIR)$(SUPPORTDIR)
+	cp doc/latex2rtf.pdf  $(DESTDIR)$(SUPPORTDIR)
+	cp doc/latex2rtf.txt  $(DESTDIR)$(SUPPORTDIR)
 	@echo "******************************************************************"
 	@echo "*** latex2rtf successfully installed as \"$(BINARY_NAME)\""
-	@echo "*** in directory \"$(BIN_INSTALL)\""
+	@echo "*** in directory \"$(DESTDIR)$(BINDIR)\""
 	@echo "***"
 	@echo "*** \"make install-info\" will install TeXInfo files "
 	@echo "***"
 	@echo "*** latex2rtf was compiled to search for its configuration files in"
-	@echo "***           \"$(CFG_INSTALL)\" "
+	@echo "***           \"$(DESTDIR)$(CFGDIR)\" "
 	@echo "***"
 	@echo "*** If the configuration files are moved then either"
 	@echo "***   1) set the environment variable RTFPATH to this new location, or"
@@ -228,9 +237,9 @@ install: latex2rtf doc/latex2rtf.1 $(CFGS) scripts/latex2png
 	@echo "******************************************************************"
 
 install-info: doc/latex2rtf.info
-	$(MKDIR) $(INFO_INSTALL)
-	cp doc/latex2rtf.info $(INFO_INSTALL)
-	install-info --info-dir=$(INFO_INSTALL) doc/latex2rtf.info
+	$(MKDIR) $(DESTDIR)$(INFODIR)
+	cp doc/latex2rtf.info $(DESTDIR)$(INFODIR)
+	install-info --info-dir=$(DESTDIR)$(INFODIR) doc/latex2rtf.info
 
 realclean: checkdir clean
 	$(RM) makefile.depend $(L2R_VERSION).tar.gz

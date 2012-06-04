@@ -113,7 +113,6 @@ static CommandArray commands[] = {
     {"mathsl", CmdFontShape, F_SHAPE_SLANTED_2},
 
     {"tiny", CmdFontSize, 10},
-    {"ssmall", CmdFontSize, 12},    /* from moresize.sty */
     {"scriptsize", CmdFontSize, 14},
     {"footnotesize", CmdFontSize, 16},
     {"enotesize", CmdFontSize, 16},
@@ -171,6 +170,7 @@ static CommandArray commands[] = {
     {"d", CmdUnderdotChar, 0},
     {"v", CmdCaronChar, 0},
     {"r", CmdRingChar, 0},
+    {"accent", CmdRingChar, 1},
     {"b", CmdUnderbarChar, 0},
     {"c", CmdCedillaChar, 0},
     {"i", CmdDotlessChar, 0},
@@ -356,6 +356,7 @@ static CommandArray commands[] = {
     {"nobreakspace", CmdNonBreakSpace, 100},
     {"thinspace", CmdNonBreakSpace, 50},
     {"abstract", CmdAbstract, ABSTRACT_SIMPLE},
+    {"keywords", CmdKeywords, 0},
     {"endinput", CmdEndInput, 0},
     {"color", CmdTextColor, 0},
     {"textcolor", CmdTextColor, 1},
@@ -426,7 +427,8 @@ static CommandArray PreambleCommands[] = {
     {"markboth", CmdIgnoreParameter, No_Opt_Two_NormParam},
     {"markright", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"makeindex", CmdIgnoreParameter, 0},
-    {"hfil", CmdIgnoreParameter, 0},
+    {"hfil", CmdHfill, 0},
+    {"hfill", CmdHfill, 1},
     {"makeglossary", CmdIgnoreParameter, 0},
     {"listoffiles", CmdIgnoreParameter, 0},
     {"nofiles", CmdIgnoreParameter, 0},
@@ -462,7 +464,9 @@ static CommandArray PreambleCommands[] = {
     {"resizebox", CmdResizeBox, 0},
     {"resizebox*", CmdResizeBox, 1},    
     {"geometry",CmdGeometry,0},
-    {"doublespacing", CmdDoubleSpacing, 0},
+    {"singlespacing", CmdLineSpacing, LINE_SPACING_SINGLE},
+    {"onehalfspacing", CmdLineSpacing, LINE_SPACING_ONE_AND_A_HALF},
+    {"doublespacing", CmdLineSpacing, LINE_SPACING_DOUBLE},
     {"verbositylevel", CmdVerbosityLevel, 0},
     {"iflatextortf",CmdIflatextortf,0},
     {"latextortftrue",CmdIgnore,1}, 
@@ -476,12 +480,14 @@ static CommandArray PreambleCommands[] = {
     {"date", CmdTitle, TITLE_DATE},
     {"affiliation", CmdTitle, TITLE_AFFILIATION},
     {"abstract", CmdTitle, TITLE_ABSTRACT},
+    {"keywords", CmdKeywords, 0},
     {"acknowledgements", CmdTitle, TITLE_ACKNOWLEDGE},
     {"bibliographystyle", CmdBibliographyStyle, 0},
+    {"bibstyle", CmdBibStyle, 0},
     {"extrasfrench", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"AtEndDocument", CmdIgnoreParameter, No_Opt_One_NormParam},
     {"docnumber", CmdIgnoreParameter, No_Opt_One_NormParam},
-    { "graphicspath",  CmdGraphicsPath, 0 },
+    {"graphicspath",  CmdGraphicsPath, 0 },
     {"", NULL, 0}
 };                              /* end of list */
 
@@ -683,6 +689,10 @@ static CommandArray RussianModeCommands[] = {
     {"", NULL, 0}
 };
 
+static CommandArray spacingCommands[] = {
+    {"", NULL, 0}
+};
+
 /********************************************************************/
 
 /* commands for begin-end environments */
@@ -702,7 +712,6 @@ static CommandArray params[] = {
     {"picture", CmdPicture, 0},
     {"minipage", CmdMinipage, 0},
     {"music", CmdMusic, 0},
-    {"small", CmdTolerateEnviron, 0},
     {"pspicture", CmdPsPicture, 0},
     {"psgraph", CmdPsGraph, 0},
 
@@ -778,8 +787,21 @@ static CommandArray params[] = {
     {"theindex", CmdIgnoreEnviron, 0},
     {"landscape", CmdTolerateEnviron, 0},
     {"sloppypar", CmdTolerateEnviron, 0},
-    {"doublespace", CmdTolerateEnviron, 0},
-    {"", NULL, 0}
+    {"doublespace", CmdSpacingEnviron, 2},
+    {"spacing", CmdSpacingEnviron, 0},
+    
+    {"small", CmdFontSizeEnviron, 12},
+	{"tiny", CmdFontSizeEnviron, 10},
+	{"scriptsize", CmdFontSizeEnviron, 14},
+	{"footnotesize", CmdFontSizeEnviron, 16},
+	{"normalsize", CmdFontSizeEnviron, 20},
+	{"large", CmdFontSizeEnviron, 24},
+	{"Large", CmdFontSizeEnviron, 28},
+	{"LARGE", CmdFontSizeEnviron, 34},
+	{"huge", CmdFontSizeEnviron, 40},
+	{"Huge", CmdFontSizeEnviron, 50}, 
+	
+	{"", NULL, 0}
 };                              /* end of list */
 
 
@@ -1073,6 +1095,8 @@ static char *EnvironmentName(CommandArray *code)
         return strdup("generic");
     if (code == acronymCommands)
         return strdup("acronym");
+    if (code == spacingCommands)
+        return strdup("setpace");
     return strdup("unknown");
 }
 
@@ -1105,7 +1129,7 @@ globals: command-functions have side effects or recursive calls
     int iCommand, iEnv,user_def_index;
     char *macro_string;
 
-    diagnostics(6, "CallCommandFunc seeking <%s> (%d environments to look through)", cCommand, iEnvCount);
+    diagnostics(4, "CallCommandFunc seeking <%s> (%d environments to look through)", cCommand, iEnvCount);
 
     user_def_index = existsDefinition(cCommand);
     if (user_def_index > -1) {
@@ -1123,7 +1147,8 @@ globals: command-functions have side effects or recursive calls
         iCommand = 0;
         while (strcmp(Environments[iEnv][iCommand].cmd_name, "") != 0) {
 
-            /*if (iCommand<3)
+            /*
+            if (iCommand<3)
                 diagnostics(1,"CallCommandFunc (%d,%3d) Trying %s",iEnv,iCommand,Environments[iEnv][iCommand].cmd_name);
             */
         
@@ -1281,6 +1306,9 @@ globals: changes Environment - array of active environments
             break;
         case ACRONYM_MODE:
             Environments[iEnvCount] = acronymCommands;
+            break;
+        case SPACING_MODE:
+            Environments[iEnvCount] = spacingCommands;
             break;
 
         default:

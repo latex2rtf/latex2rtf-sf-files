@@ -143,31 +143,29 @@ typedef struct _GdiCommentMultiFormats {
  table for graphics format handling
  **********************************/
 
-static void PutPictFile(char *, double, double, double, double, int);
-static void PutPngFile (char *, double, double, double, double, int);
-static void PutJpegFile(char *, double, double, double, double, int);
-static void PutEmfFile (char *, double, double, double, double, int);
-static void PutWmfFile (char *, double, double, double, double, int);
-static void PutPdfFile (char *, double, double, double, double, int);
-static void PutEpsFile (char *, double, double, double, double, int);
-static void PutTiffFile(char *, double, double, double, double, int);
-static void PutGifFile (char *, double, double, double, double, int);
+static void PutPictFile(char *, double, double, double, double);
+static void PutPngFile (char *, double, double, double, double);
+static void PutJpegFile(char *, double, double, double, double);
+static void PutEmfFile (char *, double, double, double, double);
+static void PutWmfFile (char *, double, double, double, double);
+static void PutPdfFile (char *, double, double, double, double);
+static void PutEpsFile (char *, double, double, double, double);
+static void PutTiffFile(char *, double, double, double, double);
+static void PutGifFile (char *, double, double, double, double);
 
-#define MAX_EXTENSION_LENGTH 5 /* length of the longest extension string */
-
-static GraphConvertArray GraphConvertTable[] = {
-    { ".pict", PutPictFile },
+static GraphConvertElement GraphConvertTable[] = {
     { ".png",  PutPngFile  },
-    { ".gif",  PutGifFile  },
-    { ".emf",  PutEmfFile  },
-    { ".wmf",  PutWmfFile  },
-    { ".eps",  PutEpsFile  },
     { ".pdf",  PutPdfFile  },
-    { ".ps",   PutEpsFile  },
-    { ".tiff", PutTiffFile },
-    { ".tif",  PutTiffFile },
     { ".jpg",  PutJpegFile },
     { ".jpeg", PutJpegFile },
+    { ".gif",  PutGifFile  },
+    { ".eps",  PutEpsFile  },
+    { ".tiff", PutTiffFile },
+    { ".tif",  PutTiffFile },
+    { ".ps",   PutEpsFile  },
+    { ".pict", PutPictFile },
+    { ".emf",  PutEmfFile  },
+    { ".wmf",  PutWmfFile  },
     { NULL, NULL }
 };
 
@@ -181,7 +179,8 @@ static void appendGraphicsPath (char *newPath)
 {
     int i;
     void *ptr;
-    diagnostics(WARNING,"adding '%s' to graphics path",newPath);
+    char *add;
+    
     for (i = 0; i < nGraphicsPathElems; i++)
     {
         if (streq (graphicsPath[i], newPath)) {
@@ -193,8 +192,13 @@ static void appendGraphicsPath (char *newPath)
     ptr = realloc (ptr, sizeof (char *) * (nGraphicsPathElems + 1));
     graphicsPath = (char **) ptr;
     
-    graphicsPath[nGraphicsPathElems++] = newPath;
-    diagnostics (5, "Included %s in graphics search path", newPath);
+    /* path must end with a '/' */
+    if (*(newPath+strlen(newPath)-1) == '/')
+    	add = strdup(newPath);
+    else
+    	add = strdup_together(newPath,"/");
+    graphicsPath[nGraphicsPathElems++] = add;
+    diagnostics (WARNING, "Included %s in graphics search path", add);
 }
 
 void CmdGraphicsPath(int code)
@@ -203,7 +207,7 @@ void CmdGraphicsPath(int code)
     if (directories != NULL) {
         char *candidate=strtok(directories,"{}");
         while (NULL != candidate) {
-            appendGraphicsPath(strdup(candidate));
+            appendGraphicsPath(candidate);
             candidate = strtok(NULL,"{}");
         }
     }
@@ -233,15 +237,15 @@ static void my_unlink(char *filename)
  ******************************************************************************/
 static char *strdup_tmp_path(const char *s)
 {
-    char *tmp, *p, *fullname, c;
+    char *tmp, *p, *fullname;
 
     if (s == NULL)
         return NULL;
         
     tmp = getTmpPath();
 
-    c = PATHSEP;
-    p = strrchr(s, c);
+/* Even in Windows, LaTeX uses the forward slash as path separator */
+    p = strrchr(s, '/');
 
     if (!p)
         fullname = strdup_together(tmp, s);
@@ -323,24 +327,24 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
     }
 
     if (opt == CONVERT_SIMPLE) {
-        char format_simple[] = "convert '%s' '%s'";
+        const char format_simple[] = "convert '%s' '%s'";
         snprintf(cmd, N, format_simple, in, out_tmp);
     }
 
     if (opt == CONVERT_CROP) {
-        char format_crop[]   = "convert -trim +repage -units PixelsPerInch -density %d '%s' '%s'";
+        const char format_crop[]   = "convert -trim +repage -units PixelsPerInch -density %d '%s' '%s'";
         snprintf(cmd, N, format_crop, dpi, in, out_tmp);
     }
 
     if (opt == CONVERT_LATEX) {
         if (g_home_dir == NULL) {
-            char format_unix[] = "%slatex2png -d %d -o %d '%s'";
+            const char format_unix[] = "%slatex2png -d %d -o %d '%s'";
             if (g_script_dir)
                 snprintf(cmd, N, format_unix, g_script_dir, dpi, offset, in);
             else
                 snprintf(cmd, N, format_unix, "", dpi, offset, in);
         } else {
-            char format_unix[] = "%slatex2png -k -d %d -o %d -H '%s' '%s'";
+            const char format_unix[] = "%slatex2png -k -d %d -o %d -H '%s' '%s'";
             if (g_script_dir)
                 snprintf(cmd, N, format_unix, g_script_dir, dpi, offset, g_home_dir, in);
             else
@@ -349,7 +353,7 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
     }
     
     if (opt == CONVERT_PDF) {
-        char format_unix[] = "gs -q -dNOPAUSE -dSAFER -dBATCH -sDEVICE=pngalpha -r%d -sOutputFile='%s' '%s'";
+        const char format_unix[] = "gs -q -dNOPAUSE -dSAFER -dBATCH -sDEVICE=pngalpha -r%d -sOutputFile='%s' '%s'";
         snprintf(cmd, N, format_unix, dpi, out_tmp, in);
     }
 
@@ -429,7 +433,7 @@ static char *strdup_new_extension(const char *s, const char *old_ext, const char
     o_len = (int) strlen(old_ext);
     n_len = (int) strlen(new_ext);
         
-        /* make sure that old_ext exists */
+    /* make sure that old_ext exists */
     p= (char *) s;
     do {
         p = strstr(p, old_ext);
@@ -437,30 +441,90 @@ static char *strdup_new_extension(const char *s, const char *old_ext, const char
     
     if (p == NULL) return NULL;
 
-    siz = s_len - o_len + n_len;    
+    siz = s_len - o_len + n_len + 1;
     new_name = (char *) malloc(siz);
-    my_strlcpy(new_name, s, s_len - o_len);
+    my_strlcpy(new_name, s, s_len - o_len + 1);
     my_strlcat(new_name, new_ext, siz);
 
     return new_name;
 }
 
 /******************************************************************************
-     purpose : return a string containing an absolute path
+ purpose   : return true if ext is at end of s (case insensitively)
  ******************************************************************************/
-static char *strdup_absolute_path(char *s)
+static int has_extension(const char *s, const char *ext)
 {
-    char c = PATHSEP;
-    char *abs_path = NULL;
+    char *t;
 
-    if (s) {
-        if (*s == c || g_home_dir == NULL)
-            abs_path = strdup(s);
-        else
-            abs_path = strdup_together(g_home_dir, s);
+    t = (char *)s + strlen(s) - strlen(ext);
+
+    if (strcasecmp(t, ext) == 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+
+/******************************************************************************
+ purpose   : if the file has a graphic extension, return it otherwise return NULL
+ ******************************************************************************/
+static char *has_graphic_extension(const char *s)
+{
+    GraphConvertElement *thisFormat;
+	diagnostics(4,"testing for graphics extension '%s'",s);
+	
+    for (thisFormat = GraphConvertTable; thisFormat->extension != NULL; thisFormat++) {
+        if (has_extension(s,thisFormat->extension)) 
+            return strdup(thisFormat->extension);
     }
+    
+    return NULL;
+}
 
-    return abs_path;
+
+/******************************************************************************
+ purpose   : split filename into directory, name, and extension
+ ******************************************************************************/
+static void split_filename(const char *f, char **dir, char **name, char **ext)
+{
+	char *s, *t, *x;
+	
+	*dir = NULL;
+	*name = NULL;
+	*ext = NULL;
+	
+	if (f == NULL) return;
+	
+	/* first figure out the directory */
+	s = strrchr(f,'/');
+	if (s) {
+	    t = strdup(f);
+	    x = strrchr(t,'/')+1;
+	    *x = '\0';
+		if (*f == '/') {                /* absolute names start with '/' */
+	    	*dir=t;
+	    } else if (g_home_dir) {        /* names are relative to home_dir */
+	    	*dir = strdup_together(g_home_dir, t);
+	    	safe_free(t);
+	    } else {                        
+	    	*dir=t;
+	    }
+	    s++;
+	} else {
+		if (g_home_dir)
+			*dir = strdup(g_home_dir);
+		s = (char *) f;
+	}
+        
+	*name = strdup(s);
+    *ext = has_graphic_extension(s);
+
+	if (*ext) {
+		t = *name + strlen(*name) - strlen(*ext);
+		*t = '\0';
+	} 
+	
+	diagnostics(5,"filename='%s', dir='%s', name='%s', ext='%s'", f, *dir, *name, *ext);
 }
 
 
@@ -639,8 +703,6 @@ static char *pdf_to_png(char *pdf)
     char *png, *out;
     if (pdf == NULL) return NULL;
        
-    diagnostics(2, "converting '%s' to png file", pdf);
-
     if (strstr(pdf, ".pdf") != NULL)
         png = strdup_new_extension(pdf, ".pdf", ".png");
     else if (strstr(pdf, ".PDF") != NULL)
@@ -748,7 +810,7 @@ static void PutHexFile(FILE * fp)
 /******************************************************************************
      purpose : Include .pict file in RTF
  ******************************************************************************/
-static void PutPictFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutPictFile(char *s, double height0, double width0, double scale, double baseline)
 {
     FILE *fp;
     char *pict;
@@ -757,10 +819,7 @@ static void PutPictFile(char *s, double height0, double width0, double scale, do
     int16_t width, height;
     uint16_t sx,sy;
 
-    if (full_path)
-        pict = strdup(s);
-    else
-        pict = strdup_together(g_home_dir, s);
+    pict = strdup(s);
     diagnostics(2, "PutPictFile '%s'", pict);
 
     fp = fopen(pict, "rb");
@@ -964,7 +1023,7 @@ On entry baseline should be in pixels.
 \picscaleyN Vertical scaling as a percentage
 
 ******************************************************************************/
-static void PutPngFile(char *png, double height_goal, double width_goal, double scale, double baseline,int ignore)
+static void PutPngFile(char *png, double height_goal, double width_goal, double scale, double baseline)
 {
     FILE *fp;
     double xres,yres;
@@ -973,7 +1032,7 @@ static void PutPngFile(char *png, double height_goal, double width_goal, double 
     uint16_t sx, sy;
     int bad_res;
         
-    diagnostics(WARNING,"<%s>",png);
+    diagnostics(WARNING,"Encoding  '%s'",png);
     GetPngSize(png, &w_pixels, &h_pixels, &xres, &yres, &bad_res);
     if (w_pixels == 0 || h_pixels == 0) return;
 
@@ -1029,7 +1088,7 @@ static void PutPngFile(char *png, double height_goal, double width_goal, double 
 /******************************************************************************
      purpose : Include .jpeg file in RTF
  ******************************************************************************/
-static void PutJpegFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutJpegFile(char *s, double height0, double width0, double scale, double baseline)
 {
     FILE *fp;
     char *jpg;
@@ -1095,7 +1154,7 @@ static void PutJpegFile(char *s, double height0, double width0, double scale, do
     fclose(fp);
 }
 
-static void PutEmfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutEmfFile(char *s, double height0, double width0, double scale, double baseline)
 {
     FILE *fp;
     char *emf;
@@ -1113,10 +1172,7 @@ static void PutEmfFile(char *s, double height0, double width0, double scale, dou
     uint32_t w, h, width, height;
         uint16_t sx, sy;
         
-    if (full_path)
-        emf = strdup(s);
-    else
-        emf = strdup_together(g_home_dir, s);
+    emf = strdup(s);
     diagnostics(2, "PutEmfFile '%s'", emf);
     fp = fopen(emf, "rb");
     free(emf);
@@ -1191,7 +1247,7 @@ static void PutEmfFile(char *s, double height0, double width0, double scale, dou
 /******************************************************************************
  purpose   : Insert WMF file (from g_home_dir) into RTF file
  ******************************************************************************/
-static void PutWmfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutWmfFile(char *s, double height0, double width0, double scale, double baseline)
 {
     FILE *fp;
     char *wmf;
@@ -1286,16 +1342,15 @@ static void PutWmfFile(char *s, double height0, double width0, double scale, dou
 /******************************************************************************
  purpose   : convert pdf to png and insert in RTF file
  ******************************************************************************/
-static void PutPdfFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutPdfFile(char *s, double height0, double width0, double scale, double baseline)
 {
     char *png;
-    
-    diagnostics(WARNING, "Rendering PNG from '%s'", s);
+    diagnostics(WARNING, "Rendering '%s'", s);
 
     png = pdf_to_png(s);
     
     if (png) {
-        PutPngFile(png, height0, width0, scale, baseline,0);
+        PutPngFile(png, height0, width0, scale, baseline);
         my_unlink(png);
         safe_free(png);
     }
@@ -1304,16 +1359,16 @@ static void PutPdfFile(char *s, double height0, double width0, double scale, dou
 /******************************************************************************
  purpose   : convert eps to png and insert in RTF file
  ******************************************************************************/
-static void PutEpsFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutEpsFile(char *s, double height0, double width0, double scale, double baseline)
 {
     char *png, *emf, *pict;
 
-    diagnostics(WARNING, "Rendering PNG from '%s'", s);
+    diagnostics(WARNING, "Rendering '%s'", s);
 
     if (1) {
         png = eps_to_png(s);
         if (png) {
-            PutPngFile(png, height0, width0, scale, baseline,0);
+            PutPngFile(png, height0, width0, scale, baseline);
             my_unlink(png);
             free(png);
         }
@@ -1322,7 +1377,7 @@ static void PutEpsFile(char *s, double height0, double width0, double scale, dou
     if (0) {
         pict = eps_to_pict(s);
         if (pict) {
-            PutPictFile(pict, height0, width0, scale, baseline, TRUE);
+            PutPictFile(pict, height0, width0, scale, baseline);
             my_unlink(pict);
             free(pict);
         }
@@ -1331,7 +1386,7 @@ static void PutEpsFile(char *s, double height0, double width0, double scale, dou
     if (0) {
         emf = eps_to_emf(s);
         if (emf) {
-            PutEmfFile(emf, height0, width0, scale, baseline, TRUE);
+            PutEmfFile(emf, height0, width0, scale, baseline);
             my_unlink(emf);
             free(emf);
         }
@@ -1341,7 +1396,7 @@ static void PutEpsFile(char *s, double height0, double width0, double scale, dou
 /******************************************************************************
  purpose   : Insert TIFF file (from g_home_dir) into RTF file as a PNG image
  ******************************************************************************/
-static void PutTiffFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutTiffFile(char *s, double height0, double width0, double scale, double baseline)
 {
     char *tiff, *png, *out;
 
@@ -1357,7 +1412,7 @@ static void PutTiffFile(char *s, double height0, double width0, double scale, do
     out = SysGraphicsConvert(CONVERT_SIMPLE, 0, g_dots_per_inch, tiff, png);
         
     if (out != NULL) {
-        PutPngFile(out, height0, width0, scale, baseline, 0);
+        PutPngFile(out, height0, width0, scale, baseline);
         my_unlink(out);
         free(out);
     }
@@ -1369,7 +1424,7 @@ static void PutTiffFile(char *s, double height0, double width0, double scale, do
 /******************************************************************************
  purpose   : Insert GIF file (from g_home_dir) into RTF file as a PNG image
  ******************************************************************************/
-static void PutGifFile(char *s, double height0, double width0, double scale, double baseline, int full_path)
+static void PutGifFile(char *s, double height0, double width0, double scale, double baseline)
 {
     char *gif, *png, *out;
         
@@ -1385,7 +1440,7 @@ static void PutGifFile(char *s, double height0, double width0, double scale, dou
     out = SysGraphicsConvert(CONVERT_SIMPLE, 0, g_dots_per_inch, gif, png);
 
     if (out != NULL) {
-        PutPngFile(out, height0, width0, scale, baseline,0);
+        PutPngFile(out, height0, width0, scale, baseline);
         my_unlink(out);
         free(out);
     }
@@ -1568,7 +1623,7 @@ void PutLatexFile(const char *tex_file_stem, double scale, const char *pre)
     height_goal = (scale * png_height * POINTS_PER_METER / png_yres * 20.0 + 0.5);
     width_goal  = (scale * png_width  * POINTS_PER_METER / png_xres * 20.0 + 0.5);
     
-    PutPngFile(png_file_name, height_goal, width_goal, scale*100, baseline, 0);
+    PutPngFile(png_file_name, height_goal, width_goal, scale*100, baseline);
     
     safe_free(tmp_path);
     safe_free(png_file_name);
@@ -1639,7 +1694,7 @@ void PrepareDisplayedBitmap(char *the_type)
     CmdEndParagraph(0);
     CmdVspace(VSPACE_SMALL_SKIP);
     CmdIndent(INDENT_NONE);
-    startParagraph(the_type, FIRST_PARAGRAPH);
+    startParagraph(the_type, PARAGRAPH_FIRST);
 }
 
 /******************************************************************************
@@ -1697,7 +1752,7 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
     /* go to a bit a trouble to give the user some feedback */
     latex_to_convert = strdup_together3(pre,eq,post);
     abbrev = abbreviate(latex_to_convert, 50);
-    diagnostics(WARNING, "Rendering PNG for '%s'", abbrev);
+    diagnostics(WARNING, "Rendering '%s'", abbrev);
     safe_free(abbrev);
     safe_free(latex_to_convert);
         
@@ -1749,7 +1804,7 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
     }
 }
 
-static char *upper_case_string(char *s)
+static char *upper_case_string(const char *s)
 {
     char *t, *x;
 
@@ -1768,24 +1823,25 @@ static char *upper_case_string(char *s)
     return t;
 }
 
-static char *try_file_extension(char *s, char *ext) 
+/* does file exist with upper or lowercase extension */
+static char *exists_with_extension(const char *dir, const char *name, const char *ext) 
 {
     char *t, *x;
-    t = strdup_together(s, ext);
+    t = strdup_together3(dir, name, ext);
 
-    if (file_exists(t)) {
+    if (file_exists(t))
         return t;
-    }
+
     safe_free(t);
 
 /* now try upper case version of ext */
     x = upper_case_string(ext);
-    t = strdup_together(s, x);
-    free(x);
+    t = strdup_together3(dir, name, x);
+    safe_free(x);
 
-    if (file_exists(t)) {
+    if (file_exists(t))
         return t;
-    }
+
     safe_free(t);
     
     return NULL;
@@ -1794,58 +1850,25 @@ static char *try_file_extension(char *s, char *ext)
 /******************************************************************************
  purpose   : return s.ext or s.EXT if it exists otherwise return NULL
  ******************************************************************************/
-static char *exists_with_extension(char *s, char *ext)
+static char *exists_with_any_extension(const char *dir, const char *name, const char *ext)
 {
     char *x, *newpath;
-    char sep[] = { PATHSEP, '\0' };
     int  i;
-    
+
     /* if no graphics path or a name is fully specified then try the plain file only */
-    if (nGraphicsPathElems == 0 || strchr(s,PATHSEP)) {
-        return try_file_extension(s,ext);
-    } 
+    if (nGraphicsPathElems == 0)
+        return exists_with_extension(dir,name,ext);
     
     /* else try the different directories in the graphics path */
     for (i=0; i<nGraphicsPathElems; i++) {
-        newpath = strdup_together3(graphicsPath[i],sep,s);
-        x = try_file_extension(newpath,ext);
+        newpath = strdup_together(dir,graphicsPath[i]);
+        diagnostics(4,"does '%s%s%s' exist?",newpath,name,ext);
+        x = exists_with_extension(newpath,name,ext);
         safe_free(newpath);
         if (x) return x;
     }
     
     return NULL;
-}
-
-/******************************************************************************
- purpose   : return true if ext is at end of s (case insensitively)
- ******************************************************************************/
-static int has_extension(char *s, char *ext)
-{
-    char *t;
-
-    t = s + strlen(s) - strlen(ext);
-
-    if (strcasecmp(t, ext) == 0)
-        return TRUE;
-
-    return FALSE;
-}
-
-/* using the GraphConvertTable */
-
-static char *append_graphic_extension(char *s)
-{
-    GraphConvertArray *thisFormat;
-    for (thisFormat = GraphConvertTable; thisFormat->extension != NULL; thisFormat++) {
-        if (has_extension(s,thisFormat->extension))
-            return strdup(s);
-    }
-    for (thisFormat = GraphConvertTable; thisFormat->extension != NULL; thisFormat++) {
-        char *t = exists_with_extension(s,thisFormat->extension);
-        if (NULL != t)
-            return t;
-    }
-    return strdup(s);
 }
 
 /******************************************************************************
@@ -2030,7 +2053,7 @@ static void HandlePsfigOptions(char *opt, char **filename, double *h, double *w,
 void CmdGraphics(int code)
 {
     char *options, *options2;
-    char *filename=NULL, *fullpathname, *fullname;
+    char *filename=NULL;
     double scale    = 1.0;
     double baseline = 0.0;
     double height   = 0.0;
@@ -2043,8 +2066,8 @@ void CmdGraphics(int code)
 
         HandleGraphicsOptions(options,options2,&height,&width,&scale);
         
-        if (options) free(options);
-        if (options2)free(options2);
+        safe_free(options);
+        safe_free(options2);
     }
 
     if (code == FIGURE_EPSFFILE) {
@@ -2082,25 +2105,42 @@ void CmdGraphics(int code)
     }
 
     if (filename) {
-        GraphConvertArray *thisFormat;
+    	GraphConvertElement *thisFormat;
+		char *fullpathname=NULL;
+		char *dir=NULL;
+		char *name=NULL;
+		char *ext=NULL;
+		
         changeTexMode(MODE_HORIZONTAL);
 
-        fullname = strdup_absolute_path(filename);
-        fullpathname = append_graphic_extension(fullname);
-        free(fullname);
-
-        for (thisFormat = GraphConvertTable; thisFormat->extension != NULL; thisFormat++) {
-            if (has_extension(fullpathname,thisFormat->extension)) {
-                diagnostics(2,"selected encoder for '%s'",fullpathname);
-                thisFormat->encoder(fullpathname, height, width, scale, baseline, TRUE);
-                break;
-            }
-        }        
-        if (thisFormat->extension == NULL)
-            diagnostics(WARNING, "Conversion of \"%s\" not supported", filename);
-
-        free(filename);
-        free(fullpathname);
+        split_filename(filename,&dir,&name,&ext);
+        
+        if (ext) {
+        	fullpathname=exists_with_any_extension(dir,name,ext);
+        	if (fullpathname) {
+				for (thisFormat = GraphConvertTable; thisFormat->extension; thisFormat++) {
+					if (strcasecmp(ext,thisFormat->extension) == 0) break;
+				}
+			}
+        } else {   
+            /* implicit extension in file name ... try all of them until one is found */
+			for (thisFormat = GraphConvertTable; thisFormat->extension; thisFormat++) {
+        		fullpathname=exists_with_any_extension(dir,name,thisFormat->extension);
+				if (fullpathname) break;
+			}   
+       }
+       
+	   if (fullpathname && thisFormat->extension) {
+			diagnostics(2,"located graphics file as '%s'",fullpathname);
+			thisFormat->encoder(fullpathname, height, width, scale, baseline);
+	   } else 
+			diagnostics(WARNING, "The graphics file '%s' was not found", filename); 
+		
+       safe_free(dir);
+       safe_free(name);
+       safe_free(ext);
+       safe_free(fullpathname);
+       safe_free(filename);
     }
 }
 

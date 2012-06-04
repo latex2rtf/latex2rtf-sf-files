@@ -31,6 +31,7 @@
 #include "utils.h"
 #include "parser.h"
 #include "convert.h"
+#include "auxfile.h"
 
 /* List of commands to look for when parsing the aux file */
 /* TODO: put all commands in a CommandArray and create    */
@@ -53,7 +54,7 @@ char *acronymAux[] = {
  */
 
 static void FilterAuxFile(FILE *auxFile) {
-    char linebuffer[512];
+    char linebuffer[1024];
     char **candidate;
     int  tosFStack;
     FILE *fStack[16];
@@ -65,12 +66,8 @@ static void FilterAuxFile(FILE *auxFile) {
     fStack[tosFStack] = auxFile;
     
     while (tosFStack != -1) {
-        /*
-         * checked line reading with Linux only
-         * TODO: check with other OSes and change to char-by-char reading if necessary
-         * IDEA: common line reading routing @ program level
-         */
-        while (my_fgets(linebuffer,511,fStack[tosFStack]) != NULL) {
+
+        while (my_fgets(linebuffer,1023,fStack[tosFStack]) != NULL) {
             
             if (strlen(linebuffer) == 0) /* should not happen */
                 continue;

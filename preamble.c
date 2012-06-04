@@ -86,36 +86,47 @@ void ExecGeomOptions (char *option, char *value1, char *value2);
 
 void setPackageBabel(char *option)
 {
+   char *replica,*language,*comma;
 
-   if (strstr(option, "german")) { /* also catches ngerman */
-        GermanMode = TRUE;
-        PushEnvironment(GERMAN_MODE);
-        ReadLanguage("german");
+   if (option == NULL || *option == '\0') return;
+   diagnostics(2, "setPackageBabel [%s]", option);
+
+   replica = strdup_noblanks(option);
+   language = replica;
+   
+   while (language && *language) {
+       
+       comma = strchr(language,',');
+       if (comma != NULL) *comma = '\0';
+           
+	   if (strstr(language, "german")) { /* also catches ngerman */
+			GermanMode = TRUE;
+			PushEnvironment(GERMAN_MODE);
+			ReadLanguage("german");
+			return;
+		}
+	
+		if (strstr(language, "french")) { /* also frenchb */
+			FrenchMode = TRUE;
+			PushEnvironment(FRENCH_MODE);
+		}
+	
+		if (strstr(language, "russian")) {
+			RussianMode = TRUE;
+			PushEnvironment(RUSSIAN_MODE);
+		}
+	
+		if (strstr(language, "czech")) {
+			CzechMode = TRUE;
+			PushEnvironment(CZECH_MODE);
+			if (CurrentFontEncoding()==ENCODING_1252) /* has not been set already */
+				CmdFontEncoding(ENCODING_LATIN_2);
+		}
+	
+		ReadLanguage(language);
+		language = (comma) ? comma+1 : NULL;
     }
-
-    if (strstr(option, "french")) { /* also frenchb */
-        FrenchMode = TRUE;
-        PushEnvironment(FRENCH_MODE);
-        ReadLanguage("french");
-    }
-
-    if (strstr(option, "russian")) {
-        RussianMode = TRUE;
-        PushEnvironment(RUSSIAN_MODE);
-        ReadLanguage("russian");
-    }
-
-    if (strstr(option, "spanish")) {
-        ReadLanguage("spanish");
-    }
-
-    if (strstr(option, "czech")) {
-        CzechMode = TRUE;
-        PushEnvironment(CZECH_MODE);
-        ReadLanguage("czech");
-        CmdFontEncoding(ENCODING_LATIN_2);
-    }
-
+    safe_free(replica);
 }
 
 void setPackageInputenc(char *option)
@@ -125,7 +136,7 @@ void setPackageInputenc(char *option)
     else if (strstr(option, "decmulti"))
         CmdFontEncoding(ENCODING_DEC);
     else if (strstr(option, "latin1"))
-        CmdFontEncoding(ENCODING_1251);
+        CmdFontEncoding(ENCODING_1252);
     else if (strstr(option, "latin2"))
         CmdFontEncoding(ENCODING_LATIN_2);
     else if (strstr(option, "latin3"))
@@ -379,19 +390,19 @@ static void setPaperSize(char *option)
 static void setPointSize(char *option)
 {
     if (strcmp(option, "10pt") == 0) {
-        InitializeDocumentFont(-1, 20, -1, -1, ENCODING_1251);
+        InitializeDocumentFont(-1, 20, -1, -1, ENCODING_1252);
         setLength("baselineskip", 12 * 20);
         setLength("parindent", 15 * 20);
         setLength("parskip", 0 * 20);
 
     } else if (strcmp(option, "11pt") == 0) {
-        InitializeDocumentFont(-1, 22, -1, -1, ENCODING_1251);
+        InitializeDocumentFont(-1, 22, -1, -1, ENCODING_1252);
         setLength("baselineskip", 14 * 20);
         setLength("parindent", 17 * 20);
         setLength("parskip", 0 * 20);
 
     } else {
-        InitializeDocumentFont(-1, 24, -1, -1, ENCODING_1251);
+        InitializeDocumentFont(-1, 24, -1, -1, ENCODING_1252);
         setLength("baselineskip", (int) 14.5 * 20);
         setLength("parindent", 18 * 20);
         setLength("parskip", 0 * 20);
@@ -424,14 +435,46 @@ static void setDocumentOptions(char *optionlist)
                  strcmp(option, "landscape"  ) == 0 || 
                  strcmp(option, "legalpaper" ) == 0)
             setPaperSize(option);
-        else if (strcmp(option, "german" ) == 0 ||
-                 strcmp(option, "ngerman") == 0 ||
-                 strcmp(option, "spanish") == 0 ||
-                 strcmp(option, "english") == 0 ||
-                 strcmp(option, "russian") == 0 ||
-                 strcmp(option, "czech"  ) == 0 || 
-                 strcmp(option, "frenchb") == 0 || 
-                 strcmp(option, "french") == 0)
+        else if (  streq(option, "afrikaans")
+                || streq(option, "bahasa")
+                || streq(option, "basque")
+                || streq(option, "brazil")
+                || streq(option, "breton")
+                || streq(option, "catalan")
+                || streq(option, "croatian")
+                || streq(option, "czech")
+                || streq(option, "danish")
+                || streq(option, "dutch")
+                || streq(option, "english")
+                || streq(option, "esperanto")
+                || streq(option, "estonian")
+                || streq(option, "finnish")
+                || streq(option, "french")
+                || streq(option, "galician")
+                || streq(option, "german")
+                || streq(option, "icelandic")
+                || streq(option, "irish")
+                || streq(option, "italian")
+                || streq(option, "latin")
+                || streq(option, "lsorbian")
+                || streq(option, "magyar")
+                || streq(option, "norsk")
+                || streq(option, "nynorsk")
+                || streq(option, "polish")
+                || streq(option, "portuges")
+                || streq(option, "romanian")
+                || streq(option, "russian")
+                || streq(option, "samin")
+                || streq(option, "scottish")
+                || streq(option, "serbian")
+                || streq(option, "slovak")
+                || streq(option, "slovene")
+                || streq(option, "spanish")
+                || streq(option, "swedish")
+                || streq(option, "turkish")
+                || streq(option, "ukrainian")
+                || streq(option, "usorbian")
+                || streq(option, "welsh") )
             setPackageBabel(option);
         else if (strcmp(option, "twoside") == 0)
             g_preambleTwoside = TRUE;
@@ -493,6 +536,8 @@ static void setDocumentOptions(char *optionlist)
             diagnostics(WARNING, "ignoring [%s], assuming [doc]", option);
         } else if (strcmp(option, "doc") == 0) {
             diagnostics(WARNING, "Some support for apa class");
+        } else if (strcmp(option, "setspace") == 0) {
+            diagnostics(WARNING, "Incomplete support for setspace package");
         } else if (strcmp(option,"ifpdf") == 0) {
             diagnostics(WARNING, "Trivial support for the ifpdf package");
             ConvertString("\\newif\\ifpdf");
@@ -560,7 +605,7 @@ void CmdDocumentStyle(int code)
 ******************************************************************************/
 static void CmdUseOnepackage(char* package, char *options)
 {
-     diagnostics(4, "CmdUseOnepackage \\usepackage[%s]{%s}", options, package);
+     diagnostics(2, "CmdUseOnepackage \\usepackage[%s]{%s}", options, package);
 
     if (TryPackageIgnore(package) == TRUE) 
         return;
@@ -581,7 +626,7 @@ static void CmdUseOnepackage(char* package, char *options)
         setPackageBabel(package);
 
     else if (strcmp(package, "babel") == 0) {
-        if (options)
+        if (options && *options)
             setPackageBabel(options);
 
     } else if ( strcmp(package, "german")  == 0 ||
@@ -733,6 +778,8 @@ void ExecGeomOptions (char *key, char *value1, char *value2)
     int dist1 = 0;
     int dist2 = 0;
     
+    if (key == NULL) return;
+    
     if (strstr(key, "ratio")) {
         if (strchr(value1, ':')) { /* each value is a ratio */
             value1 = strtok(value1, ": ");
@@ -876,13 +923,13 @@ void CmdTitle(int code)
 
 void CmdTableOfContents(int code)
 {
-    startParagraph("contents", SECTION_TITLE_PARAGRAPH);
+    startParagraph("contents", PARAGRAPH_SECTION_TITLE);
     fprintRTF(" ");
     ConvertBabelName("CONTENTSNAME");
     CmdEndParagraph(0);
     
     g_tableofcontents = TRUE;
-    startParagraph("Normal", GENERIC_PARAGRAPH);
+    startParagraph("Normal", PARAGRAPH_GENERIC);
     CmdVspace(VSPACE_SMALL_SKIP);
     fprintRTF("{\\field{\\*\\fldinst TOC \\\\o \"1-3\" }{\\fldrslt }}\n");  
     CmdNewPage(NewPage);
@@ -894,7 +941,7 @@ void CmdTableOfContents(int code)
  ******************************************************************************/
 void CmdAnd(int code)
 {
-    startParagraph("author", GENERIC_PARAGRAPH);
+    startParagraph("author", PARAGRAPH_GENERIC);
 }
 
 
@@ -917,28 +964,28 @@ void CmdMakeTitle(int code)
     setAlignment(CENTERED);
     
     if (g_preambleTitle != NULL && strcmp(g_preambleTitle, "") != 0) {
-        startParagraph("title", GENERIC_PARAGRAPH);
+        startParagraph("title", PARAGRAPH_GENERIC);
         ConvertString(g_preambleTitle);
     }
     
     if (g_preambleAuthor != NULL && strcmp(g_preambleAuthor, "") != 0) {
-        startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", PARAGRAPH_GENERIC);
         ConvertString(g_preambleAuthor);
     }
 
     if (g_preambleAffiliation != NULL && strcmp(g_preambleAffiliation, "") != 0) {
-        startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", PARAGRAPH_GENERIC);
         ConvertString(g_preambleAffiliation);
     }
 
-    startParagraph("author", GENERIC_PARAGRAPH);
+    startParagraph("author", PARAGRAPH_GENERIC);
     if (g_preambleDate == NULL || strcmp(g_preambleDate, "") == 0) 
         fprintRTF("\\chdate ");
     else
         ConvertString(g_preambleDate);
 
     if (g_preambleAck != NULL && strcmp(g_preambleAck, "") != 0) {
-        startParagraph("author", GENERIC_PARAGRAPH);
+        startParagraph("author", PARAGRAPH_GENERIC);
         ConvertString(g_preambleAck);
     }
 
@@ -958,7 +1005,7 @@ void CmdMakeTitle(int code)
         fprintRTF("\\page ");
 
     if (g_document_type == FORMAT_APA)
-        startParagraph("Normal",FIRST_PARAGRAPH);
+        startParagraph("Normal", PARAGRAPH_FIRST);
 
     PopTrackLineNumber();
 }

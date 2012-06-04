@@ -1,6 +1,6 @@
 /* main.c - LaTeX to RTF conversion program
 
-Copyright (C) 1995-2007 The Free Software Foundation
+Copyright (C) 1995-2012 The Free Software Foundation
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -108,6 +108,7 @@ char *g_script_dir = NULL;
 char *g_tmp_dir = NULL;
 char *g_preamble = NULL;
 int g_escape_parens = FALSE;
+char *g_package_babel = NULL;
 
 int g_equation_display_rtf = TRUE;
 int g_equation_inline_rtf = TRUE;
@@ -115,6 +116,7 @@ int g_equation_inline_bitmap = FALSE;
 int g_equation_display_bitmap = FALSE;
 int g_equation_comment = FALSE;
 int g_equation_raw_latex = FALSE;
+int g_equation_mtef = FALSE;
 int g_tableofcontents = FALSE;
 
 int g_tabular_display_rtf = TRUE;
@@ -187,10 +189,10 @@ int main(int argc, char **argv)
                 set_fields_use_REF(x & 2);
                 break;
             case 'i':
-                setPackageBabel(optarg);
+                g_package_babel = strdup(optarg);
                 break;
             case 'l':
-                setPackageBabel("latin1");
+                g_package_babel = strdup("latin");
                 break;
             case 'o':
                 g_rtf_name = strdup(optarg);
@@ -222,6 +224,7 @@ int main(int argc, char **argv)
                 g_equation_inline_bitmap = (x &  8) ? TRUE : FALSE;
                 g_equation_comment       = (x & 16) ? TRUE : FALSE;
                 g_equation_raw_latex     = (x & 32) ? TRUE : FALSE;
+                g_equation_mtef          = (x & 64) ? TRUE : FALSE;
                 diagnostics(3, "Math option g_equation_display_rtf    = %d", g_equation_display_rtf);
                 diagnostics(3, "Math option g_equation_inline_rtf     = %d", g_equation_inline_rtf);
                 diagnostics(3, "Math option g_equation_display_bitmap = %d", g_equation_display_bitmap);
@@ -374,7 +377,7 @@ int main(int argc, char **argv)
     if (PushSource(g_tex_name, NULL) == 0) {
         OpenRtfFile(g_rtf_name, &fRtf);
 
-        InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM, ENCODING_1251);
+        InitializeDocumentFont(TexFontNumber("Roman"), 20, F_SHAPE_UPRIGHT, F_SERIES_MEDIUM, ENCODING_1252);
         PushTrackLineNumber(TRUE);
 
         ConvertWholeDocument();
@@ -414,6 +417,8 @@ static void ConvertWholeDocument(void)
     PushEnvironment(PREAMBLE_MODE);
     setTexMode(MODE_VERTICAL);
     ConvertLatexPreamble();
+    setPackageBabel(g_package_babel);
+    
     WriteRtfHeader();
     ConvertString(t);
 
@@ -478,7 +483,7 @@ static void ConvertWholeDocument(void)
 static void print_version(void)
 {
     fprintf(stdout, "latex2rtf %s\n\n", Version);
-    fprintf(stdout, "Copyright (C) 2010 Free Software Foundation, Inc.\n");
+    fprintf(stdout, "Copyright (C) 2012 Free Software Foundation, Inc.\n");
     fprintf(stdout, "This is free software; see the source for copying conditions.  There is NO\n");
     fprintf(stdout, "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n");
     fprintf(stdout, "Written by Prahl, Lehner, Granzer, Dorner, Polzer, Trisko, Schlatterbeck.\n");
@@ -516,7 +521,7 @@ static void print_usage(void)
     fprintf(stdout, "       -M8          inline equations to bitmap\n");
     fprintf(stdout, "       -M12         inline and displayed equations to bitmaps\n");
     fprintf(stdout, "       -M16         insert Word comment field that the original equation text\n");
-    fprintf(stdout, "       -M32         insert the raw LaTeX equation delimited by <<: and :>>\n");
+    fprintf(stdout, "       -M32         insert the raw LaTeX equation delimited by $...$ and \\[...\\]\n");
     fprintf(stdout, "  -o outputfile    file for RTF output\n");
     fprintf(stdout, "  -p               option to avoid bug in Word for some equations\n");
     fprintf(stdout, "  -P path          paths to *.cfg & latex2png\n");
@@ -526,7 +531,7 @@ static void print_usage(void)
     fprintf(stdout, "  -t#              table handling\n");
     fprintf(stdout, "       -t1          tabular and tabbing environments as RTF\n");
     fprintf(stdout, "       -t2          tabular and tabbing environments as bitmaps\n");
-    fprintf(stdout, "  -T /path/to/tmp  temporary directory (not used in DOS/Win version)\n");
+    fprintf(stdout, "  -T /path/to/tmp  temporary directory\n");
     fprintf(stdout, "  -v               version information\n");
     fprintf(stdout, "  -V               version information\n");
     fprintf(stdout, "  -W               include warnings in RTF\n");
@@ -856,17 +861,38 @@ char *getTmpPath(void)
 purpose: return the directory to store temporary files
  ****************************************************************************/
 {
-#if defined(MSDOS)
-
-    return strdup("");
-
-#else
-
     size_t n;
     char *t = NULL;
     char *u = NULL;
-    char pathsep_str[2] = { PATHSEP, 0 };   /* for os2 or w32 "unix" compiler */
+    char pathsep_str[2] = { PATHSEP, 0 };
 
+#if defined(MSDOS)
+    /* first use any temporary directory specified as an option */
+    if (g_tmp_dir) {
+        t = strdup(g_tmp_dir);
+
+    /* next try the environment variable TMPDIR */
+    } else {
+        u = getenv("TMPDIR");
+        if (u != NULL)
+            t = strdup(u);
+    }
+
+    /* finally just return ".\\" */
+    if (t==NULL)
+        t = strdup(".\\");
+
+    /* append a final '/' if missing */
+    
+    n=strlen(t)-1;
+    
+    if (n > 1 && t[n] != PATHSEP) {
+        u = strdup_together(t, pathsep_str);
+        free(t);
+        t = u;
+    }
+
+#else
    /* first use any temporary directory specified as an option */
     if (g_tmp_dir) {
         t = strdup(g_tmp_dir);
@@ -892,8 +918,8 @@ purpose: return the directory to store temporary files
         t = u;
     }
 
-    return t;
 #endif
+    return t;
 }
 
 char *my_strdup(const char *str)

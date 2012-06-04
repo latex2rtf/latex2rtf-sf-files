@@ -178,7 +178,7 @@ FILE *open_cfg(const char *name, int quit_on_error)
  
 /* failed ... give some feedback */
     if (quit_on_error) {
-        diagnostics(WARNING, "Cannot open the latex2rtf .cfg files");
+        diagnostics(WARNING, "Cannot open the latex2rtf config file '%s'",name);
         diagnostics(WARNING, "Locate the directory containing the .cfg files and");
         diagnostics(WARNING, "   (1) define the environment variable RTFPATH, *or*");
         diagnostics(WARNING, "   (2) use command line path option \"-P /path/to/cfg/file\", *or*");
@@ -428,10 +428,12 @@ void ReadLanguage(char *lang)
     FILE *fp;
     char *langfn;
 
+	if (lang == NULL) return;
     langfn = strdup_together(lang, ".cfg");
 
     fp = (FILE *) open_cfg(langfn, TRUE);
     free(langfn);
+    if (fp == NULL) return;
 
     configinfo[LANGUAGE_A].config_info_size
       = read_cfg(fp, &(configinfo[LANGUAGE_A].config_info), configinfo[LANGUAGE_A].remove_leading_backslash);
