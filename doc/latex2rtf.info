@@ -407,8 +407,9 @@ doesn't happen, these paths can be specified manually in the
 "Environment" tab of the LaTeX2RTF GUI shell window.
 
    If you need to start LaTeX2RTF not from its own shell but from
-another Windows application, you need to add the folder containing the
-latex2png script and the helper programs to the search path.
+commandline or another Windows application, you need to add the folder
+containing the latex2png script and the helper programs to the search
+path.
 Some applications (e.g. Lyx) allow to temporarily add the path by
 specifying it in the options.
 If this is not possible, you can add the latex2rtf folder to Windows'
@@ -438,7 +439,7 @@ path:
           select "Properties";
 
         * NT: Click the "Environment" tab;
-          XP: Click the "Extended" tab, then the "Environment
+          XP and up: Click the "Advanced" tab, then the "Environment
           variables" button;
 
         * Find the line beginning with `PATH=' and insert the string
@@ -4500,68 +4501,68 @@ Node: Obtaining LaTeX2RTF6422
 Node: UNIX8111
 Node: DOS or Windows10873
 Node: Win32 systems12562
-Node: Macintosh16765
-Node: Problems Compiling17688
-Node: Problems with make check18385
-Node: Using LaTeX2RTF18910
-Node: General Assumptions19113
-Node: LaTeX2RTF Options21077
-Node: Debugging32198
-Node: Features32939
-Node: LaTeX2e33386
-Node: Unicode Support33704
-Node: Input Encoding34380
-Node: Language Support35156
-Node: Cross References36670
-Node: Page Formatting39366
-Node: Equations39887
-Node: Math and Special Symbols42654
-Node: Tables44620
-Node: Graphics45228
-Node: Pagestyles45649
-Node: Hyperlatex46252
-Node: APA Support47345
-Node: Configuration47788
-Node: Input Processing48097
-Node: Conditional Parsing49467
-Node: Output Formatting51458
-Node: Direct Conversion52166
-Node: Ignore Command53451
-Node: Font Configuration55287
-Node: Language Configuration56590
-Node: Error Messages and Logging57208
-Node: History59494
-Node: LaTeX2RTF under Development61276
-Node: Unimplemented Features61570
-Node: Missing options62359
-Node: Known Bugs62940
-Node: Reporting Bugs63792
-Node: Todo List65429
-Node: LaTeX Commands66225
-Node: General Commands67185
-Node: Basic Commands67613
-Node: Font Commands67893
-Node: Logos68556
-Node: Special Characters68813
-Node: Sectioning Commands69119
-Node: Uncategorized69459
-Node: Preamble Commands73580
-Node: Letter Commands75201
-Node: Language Commands75463
-Node: German Commands75723
-Node: Czech Commands75967
-Node: French Commands76137
-Node: Russian Commands76553
-Node: Citation Commands77135
-Node: Apacite Commands77426
-Node: AuthorDate Commands78004
-Node: Harvard Commands78208
-Node: HyperLatex Commands78526
-Node: Natbib Commands78744
-Node: Acronym Commands79081
-Node: Other Commands79327
-Node: Environments79520
-Node: Function Index80374
-Node: Concept Index139749
+Node: Macintosh16787
+Node: Problems Compiling17710
+Node: Problems with make check18407
+Node: Using LaTeX2RTF18932
+Node: General Assumptions19135
+Node: LaTeX2RTF Options21099
+Node: Debugging32220
+Node: Features32961
+Node: LaTeX2e33408
+Node: Unicode Support33726
+Node: Input Encoding34402
+Node: Language Support35178
+Node: Cross References36692
+Node: Page Formatting39388
+Node: Equations39909
+Node: Math and Special Symbols42676
+Node: Tables44642
+Node: Graphics45250
+Node: Pagestyles45671
+Node: Hyperlatex46274
+Node: APA Support47367
+Node: Configuration47810
+Node: Input Processing48119
+Node: Conditional Parsing49489
+Node: Output Formatting51480
+Node: Direct Conversion52188
+Node: Ignore Command53473
+Node: Font Configuration55309
+Node: Language Configuration56612
+Node: Error Messages and Logging57230
+Node: History59516
+Node: LaTeX2RTF under Development61298
+Node: Unimplemented Features61592
+Node: Missing options62381
+Node: Known Bugs62962
+Node: Reporting Bugs63814
+Node: Todo List65451
+Node: LaTeX Commands66247
+Node: General Commands67207
+Node: Basic Commands67635
+Node: Font Commands67915
+Node: Logos68578
+Node: Special Characters68835
+Node: Sectioning Commands69141
+Node: Uncategorized69481
+Node: Preamble Commands73602
+Node: Letter Commands75223
+Node: Language Commands75485
+Node: German Commands75745
+Node: Czech Commands75989
+Node: French Commands76159
+Node: Russian Commands76575
+Node: Citation Commands77157
+Node: Apacite Commands77448
+Node: AuthorDate Commands78026
+Node: Harvard Commands78230
+Node: HyperLatex Commands78548
+Node: Natbib Commands78766
+Node: Acronym Commands79103
+Node: Other Commands79349
+Node: Environments79542
+Node: Function Index80396
+Node: Concept Index139771
 
 End Tag Table

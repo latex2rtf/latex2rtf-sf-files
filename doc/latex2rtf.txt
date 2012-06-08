@@ -266,8 +266,9 @@ doesn't happen, these paths can be specified manually in the
 "Environment" tab of the LaTeX2RTF GUI shell window.
 
    If you need to start LaTeX2RTF not from its own shell but from
-another Windows application, you need to add the folder containing the
-latex2png script and the helper programs to the search path.
+commandline or another Windows application, you need to add the folder
+containing the latex2png script and the helper programs to the search
+path.
 Some applications (e.g. Lyx) allow to temporarily add the path by
 specifying it in the options.
 If this is not possible, you can add the latex2rtf folder to Windows'
@@ -297,7 +298,7 @@ path:
           select "Properties";
 
         * NT: Click the "Environment" tab;
-          XP: Click the "Extended" tab, then the "Environment
+          XP and up: Click the "Advanced" tab, then the "Environment
           variables" button;
 
         * Find the line beginning with `PATH=' and insert the string

@@ -6,9 +6,9 @@ NAME
        latex2rtf − Convert a LaTeX file to an RTF file
 
 SYNTAX
-       latex2rtf  [‐hlpFSV] [ ‐d# ] [ ‐M# ] [ ‐a auxfile ] [ ‐b bblfile ] [ ‐C
-       codepage ] [ ‐D dots_per_inch ] [ ‐i language ] [ ‐o outputfile ] [  ‐P
-       /path/to/cfg ] [ inputfile ]
+       latex2rtf [‐hlpFSVW] [ ‐d# ] [ ‐D# ] [ ‐M# ]  [ ‐se#] [ ‐sf#] [ ‐t# ] [
+       ‐Z# ] [ ‐a auxfile ] [ ‐b bblfile ] [ ‐C codepage ]  [ ‐i language ]  [
+       ‐o outputfile ] [ ‐P /path/to/cfg ] [ ‐T /path/to/tmp ] [ inputfile ]
 
 
 DESCRIPTION
@@ -54,6 +54,15 @@ DESCRIPTION
               are  converted  to  bitmaps  and  for graphics that must be con‐
               verted.  Default is 300 dpi.
 
+       �−f use fields
+              ‐f0 do not use fields in RTF.  This is handy when primitive  RTF
+              editors are being used to view the RTF output.
+              ‐f1 use fields for equations but not \ref and \cite.
+              ‐f2 use fields for \ref and \cite but not equations.
+              ‐f3  use  fields when possible.  This is the default and is most
+              useful when the RTF file is being exported to be used  in  Word.
+              This  retains the most information from the original LaTeX file.
+
        �−F     use LaTeX to create bitmaps for all figures.  This may help when
               figures are not translated properly.
 
@@ -77,28 +86,43 @@ DESCRIPTION
               with the ‐o option, the resulting RTF is produced in a file with
               .tex replaced by .rtf.
 
-       �−M#    where  #  selects  the  type of equation conversion.  ‐M3 is the
-              default and converts both inline and displayed equations to RTF.
-              ‐M6  converts inline equations to RTF and displayed equations to
-              bitmaps. ‐M12 converts inline and displayed  equations  to  bit‐
-              maps.   Bitmap  conversion  requires a working latex2png script.
-              Producing bitmaps is slow.
+       �−M#    where # selects the type of equation conversion.
+              ‐M3  is the default and converts both inline and displayed equa‐
+              tions to RTF.
+              ‐M6 converts inline equations to RTF and displayed equations  to
+              bitmaps.
+              ‐M12 converts inline and displayed equations to bitmaps.
+              Bitmap  conversion requires a working latex2png script.  Produc‐
+              ing bitmaps is slow.
 
-       �−p     do not quote printed parentheses in  mathematical  formulas,  as
-              some  versions  of  Word (e.g Word 2000) have deep psychological
-              problems with EQ fields using quoted parentheses.  If Word  dis‐
-              plays  some  formulas  with  parentheses  as  ’Error!’, try this
-              option.  See also the ‐S option.
+       �−p     Escape printed parentheses in  mathematical  formulas,  as  some
+              versions  of  Word (e.g Word 2000) have deep psychological prob‐
+              lems with EQ fields using quoted parentheses.  If Word  displays
+              some  formulas  with  parentheses  as ’Error!’, try this option.
+              See also the ‐S option.
 
        �−P /path/to/cfg
               used to specify the  directory  that  contains  the  @code{.cfg}
               files
+
+       �−se#   selects  the scale for equation conversion, where # is the scale
+              factor (default 1.00).
+
+       �−sf#   selects the scale for figure conversion, where #  is  the  scale
+              factor (default 1.00).
 
        �−S     Use  semicolons  to  separate  arguments in RTF fields.  This is
               needed when the machine opening the RTF file has  a  version  of
               Word  that  uses  commas  for decimal points.  This also can fix
               displaying some formulas as ’Error!’  You may also need  to  try
               the ‐p option.
+
+       �−t#    selects the type of table conversion.
+              ‐t1 convert tables to RTF (default)
+              ‐t2 convert tables to bitmaps
+
+       �−T /path/to/tmp
+              used to specify the folder where to put temporary files.
 
        �−V     Prints version on standard output and exits.
 
