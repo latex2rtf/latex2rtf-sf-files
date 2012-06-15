@@ -39,9 +39,9 @@ from LaTeX to RTF. Be forewarned that the typeset output is not nearly
 as good as what you would get from using LaTeX directly. So, why bother
 translating? Consider,
 
-  1. You use LaTeX and hate everything beginning with MS-....
+  1. You use LaTeX and hate everything beginning with MS-...
      Nevertheless, you have to share your documents with people who
-     don't even know that there are alternatives to MS-....
+     don't even know that there are alternatives to MS-...
 
   2. You know somebody who frequently sends you very fine LaTeX
      documents.  Unfortunately, you are "on the other side" and need to
@@ -721,7 +721,7 @@ As of version 1.9.17, LaTeX2RTF has limited unicode support.  LaTeX
 files that use unicode sequences are just emitted directly into the RTF
 file.
 Symbols and odd characters in math sequences may also be converted to a
-unicode sequence. Some of them need the STIXGeneral fonts (see *Note
+unicode sequence. Some of them need the STIXGeneral fonts (see *note
 Math and Special Symbols::) to be installed on the system where the rtf
 file is to be displayed or printed.
 
@@ -765,7 +765,7 @@ This is not needed if your LaTeX file contains
 
    Encountering the `german' package or babel option (by H. Partl of the
 Vienna University) makes LaTeX2RTF behave like that: German Quotes,
-German Umlauts by `"a', etc....  This support is programmed directly
+German Umlauts by `"a', etc...  This support is programmed directly
 into LaTeX2RTF and supporting similar features for other languages will
 require patching the source code.
 
@@ -846,7 +846,7 @@ for many of them.
 =============
 
 There are five separate levels of equation translation based on the -M
-switch, see *Note LaTeX2RTF Options::.  Each equation is converted
+switch, see *note LaTeX2RTF Options::.  Each equation is converted
 either to an EQ field or to a bitmap or inserted as raw TeX code in the
 document.
 
@@ -909,7 +909,7 @@ displayed or printed.
 
    Many mathematical and special symbols are directly supported by
 LaTeX2RTF .  Less common symbols (not found in the standard font) are
-supported by the conversion table in the file `direct.cfg', see *Note
+supported by the conversion table in the file `direct.cfg', see *note
 Direct Conversion::.
 
    Required fonts are:
@@ -979,14 +979,14 @@ improve.
 which is a "little package that allows you to use LaTeX to prepare
 documents in HTML."  It brings an Emacs lisp program with it to convert
 the Hyperlatex file to HTML.  Hyperlatex can be obtained from the
-CTAN-sites, see *Note Obtaining LaTeX2RTF::.  There are two convenient
+CTAN-sites, see *note Obtaining LaTeX2RTF::.  There are two convenient
 commands that avoid typing: \link and \xlink that generate an
 "internal" label which then is used in the following \Ref and \Pageref
 commands.
 
    LaTeX makes it possible to write `\link{anchor}[ltx]{label}', which
 typesets: `anchor ltx'. LaTeX2RTF does NOT support this aproach since
-the optional parameter is thrown away right now, see *Note LaTeX2RTF
+the optional parameter is thrown away right now, see *note LaTeX2RTF
 under Development::.
 
    Note that you have to update your `.cfg' files if you are upgrading,
@@ -996,7 +996,7 @@ simply can `ignore'.
 4.13 APA Support
 ================
 
-Some APA citation styles are supported, see *Note Citation Commands::
+Some APA citation styles are supported, see *note Citation Commands::
 
    Support for APA text formatting is only rudimentary at the moment
 (headings without numbering).  If you want to format a document
@@ -1105,7 +1105,6 @@ the LaTeX file. Lines starting with a `#' character are ignored. After
 the `.' everything is ignored to end of line. To select a specific font
 use `*fontname*', where `fontname' be defined in `fonts.cfg'.  To write
 the `*' character use `**'.
-
 
 \bigstar,{\u8727**}.
 \copyright,\'a9.

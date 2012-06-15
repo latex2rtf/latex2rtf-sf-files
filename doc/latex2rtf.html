@@ -3,7 +3,7 @@
 <title>LaTeX2rtf</title>
 <meta http-equiv="Content-Type" content="text/html">
 <meta name="description" content="LaTeX2rtf">
-<meta name="generator" content="makeinfo 4.8">
+<meta name="generator" content="makeinfo 4.13">
 <link title="Top" rel="top" href="#Top">
 <link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
 <meta http-equiv="Content-Style-Type" content="text/css">
@@ -73,9 +73,9 @@ why bother translating? Consider,
 
      <ol type=1 start=1>
 <li>You use LaTeX
-and hate everything beginning with MS-<small class="enddots">....</small>
+and hate everything beginning with MS-<small class="enddots">...</small>
 Nevertheless, you have to share your documents with people who don't
-even know that there are alternatives to MS-<small class="enddots">....</small>
+even know that there are alternatives to MS-<small class="enddots">...</small>
 
      <li>You know somebody who frequently sends you very fine LaTeX
 documents. 
@@ -823,7 +823,7 @@ file contains <code>\usepackage[language]{babel}</code>.
    <p>Encountering the <samp><span class="option">german</span></samp> package or babel option (by H. Partl of the
 Vienna University) makes LaTeX2RTF
 behave like that: German Quotes, German
-Umlauts by <code>"a</code>, etc<small class="enddots">....</small>  This support is programmed directly
+Umlauts by <code>"a</code>, etc<small class="enddots">...</small>  This support is programmed directly
 into LaTeX2RTF
 and supporting similar features for other languages will require
 patching the source code.
@@ -1224,16 +1224,15 @@ are documented in the next four sections.
 commands by simple text
 replacement. The format consists of lines with a LaTeX
 command with backslash
-followed by comma. The rest of the line until a `<samp><span class="samp">.</span></samp>' character will be written
+followed by comma. The rest of the line until a &lsquo;<samp><span class="samp">.</span></samp>&rsquo; character will be written
 to the RTF file when the command is found in the LaTeX
 file. Lines
-starting with a `<samp><span class="samp">#</span></samp>' character are ignored. After the `<samp><span class="samp">.</span></samp>' everything is ignored
+starting with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the &lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored
 to end of line. To select a specific font use <code>*fontname*</code>, where
 <code>fontname</code> be defined in <samp><span class="file">fonts.cfg</span></samp>. 
-To write the `<samp><span class="samp">*</span></samp>' character use `<samp><span class="samp">**</span></samp>'.
+To write the &lsquo;<samp><span class="samp">*</span></samp>&rsquo; character use &lsquo;<samp><span class="samp">**</span></samp>&rsquo;.
 
-<pre class="verbatim">
-\bigstar,{\u8727**}.
+<pre class="verbatim">\bigstar,{\u8727**}.
 \copyright,\'a9.
 </pre>
 
@@ -1255,31 +1254,31 @@ variables, user defined variables, and
 some simple commands. All variables are ignored but the converter must know the
 names to correctly ignore assignments to variables. Lines in this file consist
 of a variable name with backslash, followed by comma and the type of the
-variable followed by `<samp><span class="samp">.</span></samp>'. Possible types are
+variable followed by &lsquo;<samp><span class="samp">.</span></samp>&rsquo;. Possible types are
 
      <dl>
-<dt>`<samp><span class="samp">NUMBER</span></samp>'<dd>simple numeric value
-<br><dt>`<samp><span class="samp">MEASURE</span></samp>'<dd>numeric value with following unit of measure
-<br><dt>`<samp><span class="samp">OTHER</span></samp>'<dd>ignores anything to the first character after `<samp><span class="samp">=</span></samp>' and from there to next
+<dt>&lsquo;<samp><span class="samp">NUMBER</span></samp>&rsquo;<dd>simple numeric value
+<br><dt>&lsquo;<samp><span class="samp">MEASURE</span></samp>&rsquo;<dd>numeric value with following unit of measure
+<br><dt>&lsquo;<samp><span class="samp">OTHER</span></samp>&rsquo;<dd>ignores anything to the first character after &lsquo;<samp><span class="samp">=</span></samp>&rsquo; and from there to next
 space. e.g., <code>\setbox\bak=\hbox</code>
-<br><dt>`<samp><span class="samp">COMMAND</span></samp>'<dd>ignores anything to next `<samp><span class="samp">\</span></samp>' and from there to the occurence of anything
+<br><dt>&lsquo;<samp><span class="samp">COMMAND</span></samp>&rsquo;<dd>ignores anything to next &lsquo;<samp><span class="samp">\</span></samp>&rsquo; and from there to the occurence of anything
 but a letter e.g., <code>\newbox\bak</code>
-<br><dt>`<samp><span class="samp">SINGLE</span></samp>'<dd>ignores single command e.g., <code>\noindent</code>
-<br><dt>`<samp><span class="samp">PARAMETER</span></samp>'<dd>ignores a command with one parameter e.g., <code>\foo{bar}</code>
-<br><dt>`<samp><span class="samp">PACKAGE</span></samp>'<dd>does not produce a Warning message if PACKAGE is encountered, e.g.,
+<br><dt>&lsquo;<samp><span class="samp">SINGLE</span></samp>&rsquo;<dd>ignores single command e.g., <code>\noindent</code>
+<br><dt>&lsquo;<samp><span class="samp">PARAMETER</span></samp>&rsquo;<dd>ignores a command with one parameter e.g., <code>\foo{bar}</code>
+<br><dt>&lsquo;<samp><span class="samp">PACKAGE</span></samp>&rsquo;<dd>does not produce a Warning message if PACKAGE is encountered, e.g.,
 `<code>\kleenex,PACKAGE.</code>' ignores `<code>\usepackage{kleenex}</code>'
-<br><dt>`<samp><span class="samp">ENVCMD</span></samp>'<dd>intended to process contents of unknown environment as if it were
+<br><dt>&lsquo;<samp><span class="samp">ENVCMD</span></samp>&rsquo;<dd>intended to process contents of unknown environment as if it were
 plain LaTeX
 , e.g. `<code>\environ,ENVCMD.</code>' <br>
 Therefore `<code>\begin{environ} text
 \end{environ}</code>' would be converted to `text'. Doesn't work in LaTeX2RTF
 version 2.1.0. 
-<br><dt>`<samp><span class="samp">ENVIRONMENT</span></samp>'<dd>ignores contents of that environment, e.g., with `<code>\ifhtml,ENVIRONMENT.</code>&rdquo;,
+<br><dt>&lsquo;<samp><span class="samp">ENVIRONMENT</span></samp>&rsquo;<dd>ignores contents of that environment, e.g., with `<code>\ifhtml,ENVIRONMENT.</code>&rdquo;,
 `<code>\begin{ifhtml} text \end{ifhtml}</code>' ignores `text'. 
 </dl>
 
    <p>The types are in upper case exactly as above. Do not use spaces. Lines starting
-with a `<samp><span class="samp">#</span></samp>' character are ignored. After the `<samp><span class="samp">.</span></samp>' everything is ignored to end of
+with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the &lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored to end of
 line. Example:
 <pre class="example">     \pagelength,MEASURE.
 </pre>
@@ -1292,7 +1291,7 @@ file determines what font is used to represent <code>\rm</code> characters in th
 
    <p>A line consists of a font name in LaTeX
 followed by comma and a font
-name in RTF. The end is marked by a `<samp><span class="samp">.</span></samp>'. No spaces are allowed. The
+name in RTF. The end is marked by a &lsquo;<samp><span class="samp">.</span></samp>&rsquo;. No spaces are allowed. The
 LaTeX
 font will be converted to the RTF font when it is found
 in the LaTeX
@@ -1302,8 +1301,8 @@ specified, only the first is used. All fonts in a LaTeX
 file that are
 not in this file will be mapped to the default font. All RTF fonts
 listed in this file will be in every RTF file header whether used or
-not.  Lines starting with a `<samp><span class="samp">#</span></samp>' character are ignored. After the
-`<samp><span class="samp">.</span></samp>' everything is ignored to end of line.
+not.  Lines starting with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the
+&lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored to end of line.
 
    <p>To add a RTF font not
 used as substitute for a LaTeX
@@ -1348,17 +1347,17 @@ listed in the console window. They can be redirected to a file
 &ldquo;latex2rtf.log&rdquo; by appending <code>2&gt;latex2rtf.log</code> to the command line.
 
      <dl>
-<dt>`<samp><span class="samp">Fatal error messages</span></samp>'<dd>indicate a bug in the source code. PLEASE report them, if they do not
+<dt>&lsquo;<samp><span class="samp">Fatal error messages</span></samp>&rsquo;<dd>indicate a bug in the source code. PLEASE report them, if they do not
 apear in the documentation (see <a href="#Reporting-Bugs">Reporting Bugs</a>).
 
-     <br><dt>`<samp><span class="samp">Error messages</span></samp>'<dd>always abort the program and are caused by conditions that prevent
+     <br><dt>&lsquo;<samp><span class="samp">Error messages</span></samp>&rsquo;<dd>always abort the program and are caused by conditions that prevent
 further conversion of the input file.  Typically this is cause by
 LaTeX2RTF
 getting hopelessly confused by the number of braces in the
 LaTeX
 file.
 
-     <br><dt>`<samp><span class="samp">Warning messages</span></samp>'<dd>inform you, that there is some conversion loss from LaTeX
+     <br><dt>&lsquo;<samp><span class="samp">Warning messages</span></samp>&rsquo;<dd>inform you, that there is some conversion loss from LaTeX
 to RTF, or that
 the output file has some restrictions on some RTF Readers. Most of these
 warnings can be supressed by add the offending command to the <samp><span class="file">ignore.cfg</span></samp>
