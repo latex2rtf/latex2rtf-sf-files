@@ -449,7 +449,8 @@ purpose: converts inputfile and writes result to outputfile
                 break;
 
             case '%':
-                diagnostics(WARNING, "This should not happen, ignoring %%");
+                /*diagnostics(WARNING, "This should not happen, ignoring %%");*/
+                skipToEOL();
                 cThis = ' ';
                 break;
 

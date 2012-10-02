@@ -116,7 +116,15 @@ int g_equation_inline_bitmap = FALSE;
 int g_equation_display_bitmap = FALSE;
 int g_equation_comment = FALSE;
 int g_equation_raw_latex = FALSE;
+int g_equation_inline_eps = FALSE;
+int g_equation_display_eps = FALSE;
 int g_equation_mtef = FALSE;
+
+int g_figure_include_direct = TRUE;
+int g_figure_include_converted = TRUE;
+int g_figure_comment_direct = FALSE;
+int g_figure_comment_converted = FALSE;
+
 int g_tableofcontents = FALSE;
 
 int g_tabular_display_rtf = TRUE;
@@ -168,7 +176,7 @@ int main(int argc, char **argv)
     InitializeLatexLengths();
     InitializeBibliography();
     
-    while ((c = my_getopt(argc, argv, "lhpuvFSVWZ:o:a:b:d:f:i:s:u:C:D:M:P:T:t:")) != EOF) {
+    while ((c = my_getopt(argc, argv, "lhpuvFSVWZ:o:a:b:d:f:i:s:u:C:D:E:M:P:T:t:")) != EOF) {
         switch (c) {
             case 'a':
                 g_aux_name = optarg;
@@ -212,6 +220,18 @@ int main(int argc, char **argv)
                 if (g_dots_per_inch < 25 || g_dots_per_inch > 600)
                     diagnostics(WARNING, "Dots per inch must be between 25 and 600 dpi\n");
                 break;
+            case 'E':
+                sscanf(optarg, "%d", &x);
+                diagnostics(3, "Figure option = %s x=%d", optarg, x);
+                g_figure_include_direct    = (x &  1) ? TRUE : FALSE;
+                g_figure_include_converted = (x &  2) ? TRUE : FALSE;
+                g_figure_comment_direct    = (x &  4) ? TRUE : FALSE;
+                g_figure_comment_converted = (x &  8) ? TRUE : FALSE;
+                diagnostics(3, "Option g_figure_include_direct    = %d", g_figure_include_direct);
+                diagnostics(3, "Option g_figure_include_converted = %d", g_figure_include_converted);
+                diagnostics(3, "Option g_figure_comment_direct    = %d", g_figure_comment_direct);
+                diagnostics(3, "Option g_figure_comment_converted = %d", g_figure_comment_converted);
+                break;
             case 'F':
                 g_latex_figures = TRUE;
                 break;
@@ -224,17 +244,21 @@ int main(int argc, char **argv)
                 g_equation_inline_bitmap = (x &  8) ? TRUE : FALSE;
                 g_equation_comment       = (x & 16) ? TRUE : FALSE;
                 g_equation_raw_latex     = (x & 32) ? TRUE : FALSE;
-                g_equation_mtef          = (x & 64) ? TRUE : FALSE;
+                g_equation_display_eps   = (x & 64) ? TRUE : FALSE;
+                g_equation_inline_eps    = (x & 128)? TRUE : FALSE;
+                g_equation_mtef          = (x & 256)? TRUE : FALSE;
+                if (!g_equation_comment && !g_equation_inline_rtf && !g_equation_inline_bitmap && !g_equation_raw_latex && !g_equation_inline_eps)
+                    g_equation_inline_rtf = TRUE;
+                if (!g_equation_comment && !g_equation_display_rtf && !g_equation_display_bitmap && !g_equation_raw_latex && !g_equation_display_eps)
+                    g_equation_display_rtf = TRUE;
                 diagnostics(3, "Math option g_equation_display_rtf    = %d", g_equation_display_rtf);
                 diagnostics(3, "Math option g_equation_inline_rtf     = %d", g_equation_inline_rtf);
                 diagnostics(3, "Math option g_equation_display_bitmap = %d", g_equation_display_bitmap);
                 diagnostics(3, "Math option g_equation_inline_bitmap  = %d", g_equation_inline_bitmap);
                 diagnostics(3, "Math option g_equation_comment        = %d", g_equation_comment);
                 diagnostics(3, "Math option g_equation_raw_latex      = %d", g_equation_raw_latex);
-                if (!g_equation_comment && !g_equation_inline_rtf && !g_equation_inline_bitmap && !g_equation_raw_latex)
-                    g_equation_inline_rtf = TRUE;
-                if (!g_equation_comment && !g_equation_display_rtf && !g_equation_display_bitmap && !g_equation_raw_latex)
-                    g_equation_display_rtf = TRUE;
+                diagnostics(3, "Math option g_equation_display_eps    = %d", g_equation_display_eps);
+                diagnostics(3, "Math option g_equation_inline_eps     = %d", g_equation_inline_eps);
                 break;
 
             case 't':
@@ -502,13 +526,20 @@ static void print_usage(void)
     fprintf(stdout, "  -b bblfile       use BibTex bblfile rather than input.bbl\n");
     fprintf(stdout, "  -C codepage      charset used by the latex document (latin1, cp850, raw, etc.)\n");
     fprintf(stdout, "  -d level         debugging output (level is 0-6)\n");
+    fprintf(stdout, "  -D dpi           number of dots per inch for bitmaps\n");
+    fprintf(stdout, "  -E#              figure handling\n");
+    fprintf(stdout, "       -E0          do not include any figures in RTF\n");
+    fprintf(stdout, "       -E1          include figures that need no conversion\n");
+    fprintf(stdout, "       -E2          include figures that need conversion\n");
+    fprintf(stdout, "       -E3          include all figures (default)\n");
+    fprintf(stdout, "       -E4          insert filenames for figures that do not need conversion\n");
+    fprintf(stdout, "       -E8          insert filenames for figures that need conversion\n");
     fprintf(stdout, "  -f#              field handling\n");
     fprintf(stdout, "       -f0          do not use fields\n");
     fprintf(stdout, "       -f1          use fields for equations but not \\ref{} & \\cite{}\n");
     fprintf(stdout, "       -f2          use fields for \\cite{} & \\ref{}, but not equations\n");
     fprintf(stdout, "       -f3          use fields when possible (default)\n");
     fprintf(stdout, "  -F               use LaTeX to convert all figures to bitmaps\n");
-    fprintf(stdout, "  -D dpi           number of dots per inch for bitmaps\n");
     fprintf(stdout, "  -h               display help\n");
     fprintf(stdout, "  -i language      idiom or language (e.g., german, french)\n");
     fprintf(stdout, "  -l               use latin1 encoding (default)\n");
@@ -520,8 +551,10 @@ static void print_usage(void)
     fprintf(stdout, "       -M6          inline equations to RTF and displayed equations to bitmaps\n");
     fprintf(stdout, "       -M8          inline equations to bitmap\n");
     fprintf(stdout, "       -M12         inline and displayed equations to bitmaps\n");
-    fprintf(stdout, "       -M16         insert Word comment field that the original equation text\n");
-    fprintf(stdout, "       -M32         insert the raw LaTeX equation delimited by $...$ and \\[...\\]\n");
+    fprintf(stdout, "       -M16         insert Word comment field containing the raw LaTeX equation\n");
+    fprintf(stdout, "       -M32         insert raw LaTeX equation delimited by $...$ and \\[...\\]\n");
+    fprintf(stdout, "       -M64         displayed equations to EPS files with filenames in RTF\n");
+    fprintf(stdout, "       -M128        inline equations to EPS files with filenames in RTF\n");
     fprintf(stdout, "  -o outputfile    file for RTF output\n");
     fprintf(stdout, "  -p               option to avoid bug in Word for some equations\n");
     fprintf(stdout, "  -P path          paths to *.cfg & latex2png\n");
@@ -703,6 +736,7 @@ static void ConvertLatexPreamble(void)
 purpose: reads the LaTeX preamble (to \begin{document} ) for the file
  ****************************************************************************/
 {
+    char *raw_latex;
     char t[] = "\\begin|{|document|}";
     FILE *rtf_file;
 
@@ -714,12 +748,15 @@ purpose: reads the LaTeX preamble (to \begin{document} ) for the file
     rtf_file = fRtf;
     fRtf = ERROUT;
     
-    g_preamble = getSpacedTexUntil(t, 1);
+    raw_latex = getSpacedTexUntil(t, 1);
 
     diagnostics(2, "Read LaTeX Preamble");
     diagnostics(5, "Entering ConvertString() from ConvertLatexPreamble");
 
-    show_string(5, g_preamble, "preamble"); 
+	g_preamble = strdup_nocomments(raw_latex);
+	free(raw_latex);
+	
+    show_string(2, g_preamble, "preamble"); 
 
     ConvertString(g_preamble);
     diagnostics(5, "Exiting ConvertString() from ConvertLatexPreamble");

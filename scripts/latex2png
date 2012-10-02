@@ -21,9 +21,11 @@
 #
 
 DVIPS="dvips -q -l 1 -E -R"
-LATEX="latex --interaction batchmode"
+LATEX="latex --interaction batchmode --output-format dvi"
 CONVERT="convert"
 GREP="grep"
+AWK="awk"
+SED="sed"
 # !!!!!!!!!!!!!!!! Note !!!!!!!!!!!!!!
 # Under MS Windows, although this script runs under bash shell,
 # LaTeX is run in the Windows environment and thus needs the ";" as separator.
@@ -36,13 +38,14 @@ help()
 cat <<HELP
 latex2png -- convert latex file to PNG image
 
-USAGE: latex2png [-d density] [-o offset] [-h] [-k] [-c] [-g] [-m] [-H home dir] file[.tex|.eps]
+USAGE: latex2png [-d density] [-o offset] [-h] [-e] [-k] [-c] [-g] [-m] [-H home dir] file[.tex|.eps]
 
 OPTIONS: 
          -c color image
          -g gray image  
          -m monochrome  (default)
-
+         -e create EPS file
+         
          -d density     (default 144 dpi)
          -o offset      = density/72+2
          -h             help
@@ -75,6 +78,7 @@ inline=0        # default to no special equation processing
 
 while [ -n "$1" ]; do
 case $1 in
+    -e) opt_eps=1;         shift 1;; #create eps file
     -g) out="-depth 8";    shift 1;; #gray
     -c) out="-depth 24";   shift 1;; #color
     -m) out="-monochrome"; shift 1;; #monochrome
@@ -99,6 +103,9 @@ fi
 # is it an eps file?
 if [ `echo $1 | ${GREP} -c eps` -eq 1 ] ; then
    ext="eps"
+   if [ $opt_eps ] ; then
+        exit 1
+   fi
 fi
 
 #process 'latex2png file.tex' and 'latex2png file' equivalently
@@ -134,10 +141,46 @@ if [ $ext = "tex" ] ; then
         echo "latex2png: error: dvips failed to translate $name.dvi to $name.eps"
         exit 1
     fi
+
+    if [ $opt_eps ] ; then
+        if [ $inline -eq 1 ] ; then
+           # extract the BoundingBox of the eps with adjustment stuff
+           # parameters are: llx lly urx ury
+           bbb=`${GREP} -C 0 %%BoundingBox: $name.eps`
+           llydraft=$(echo $bbb | $AWK -F" " '{print $3}' )
+           urydraft=$(echo $bbb | $AWK -F" " '{print $5}' )
+           # now create an eps without the adjustment stuff
+           $SED -e "s/\^I_g//" $name.tex >$name.tmp
+           rm $name.tex
+           mv $name.tmp $name.tex
+           $LATEX $name > /dev/null
+           $DVIPS -o $name.eps $name.dvi
+           # extract the BoundingBox of the eps without adjustment stuff
+           bbb=`${GREP} -C 0 %%BoundingBox: $name.eps`
+           llyfin=$(echo $bbb | $AWK -F" " '{print $3}' )
+           uryfin=$(echo $bbb | $AWK -F" " '{print $5}' )
+           # use the maximum y extension
+           if [ "$llydraft" -lt "$llyfin" ] ; then
+              $SED -e "/%%BoundingBox:/s/$llyfin/$llydraft/" $name.eps >$name.tmp
+              rm $name.eps
+              mv $name.tmp $name.eps
+           fi
+           if [ "$urydraft" -gt "$uryfin" ] ; then
+              $SED -e "/%%BoundingBox:/s/$uryfin/$urydraft/" $name.eps >$name.tmp
+              rm $name.eps
+              mv $name.tmp $name.eps
+           fi
+        fi
+        if [ $opt_k -eq 0 ] ; then
+            rm -f $name.dvi $name.aux $name.log
+        fi
+        exit 0
+    fi
     
 fi
 
-$CONVERT $out -units PixelsPerInch -density ${opt_d}x${opt_d} -trim +repage $name.eps $name.png
+# WH: added "-type PaletteMatte" to ensure compatibility with older versions of Word and with IrfanView
+$CONVERT $out -units PixelsPerInch -density ${opt_d}x${opt_d} -trim +repage $name.eps -type PaletteMatte $name.png
 
 if [ ! -e "$name.png" ] ; then
     echo "latex2png: error: convert (ImageMagick) failed to translate $name.eps to $name.png"
@@ -163,7 +206,7 @@ if [ $inline -eq 1 ] ; then
 	# strip the initial dot and white space on the left
 	# we must keep the white space on the bottom so we add border on the east
 	# so that the bottom does not get trimmed away
-	$CONVERT $name-tmp.png -chop ${width}x0 -gravity East -background black -splice 1x0 -trim +repage $name.png
+	$CONVERT $name-tmp.png -chop ${width}x0 -gravity East -background white -splice 1x0 -trim +repage -type PaletteMatte $name.png
 
 	# extract first column of png and stick it in a bitmap
 	$CONVERT $name-tmp.png -crop 1x0 +repage $name.pbm

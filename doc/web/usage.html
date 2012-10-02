@@ -18,7 +18,6 @@
 	</div>
 	<div id="logo"></div>
 	<div id="content">
-<a id="Top"></a>
 
 <h2 class="unnumbered">LaTeX2RTF</h2>
 
@@ -46,7 +45,7 @@ into another language, under the above conditions for modified versions,
 except that this permission notice may be stated in a translation
 approved by the Free Software Foundation.
 
-<!-- This document applies to version 2.2.0 of @ltor{}. -->
+<!-- This document applies to version 2.3.0 of @ltor{}. -->
 <p><a id="Introduction"></a>
 
 <h2 class="chapter">1 Introduction</h2>
@@ -70,9 +69,9 @@ why bother translating? Consider,
 
      <ol type=1 start=1>
 <li>You use LaTeX
-and hate everything beginning with MS-<small class="enddots">...</small>
+and hate everything beginning with MS-<small class="enddots">....</small>
 Nevertheless, you have to share your documents with people who don't
-even know that there are alternatives to MS-<small class="enddots">...</small>
+even know that there are alternatives to MS-<small class="enddots">....</small>
 
      <li>You know somebody who frequently sends you very fine LaTeX
 documents. 
@@ -129,8 +128,8 @@ For more details on RTF the specification consult the links at <a href="http://l
 
 <h3 class="section">2.1 General</h3>
 
-<p>The documentation of the program is found in the <samp><span class="file">doc/</span></samp> directory
-in the file <samp><span class="file">latex2rtf.texi</span></samp> in the GNU TeXInfo format. 
+<p>The documentation of the program is found in the <span class="file">doc/</span> directory
+in the file <span class="file">latex2rtf.texi</span> in the GNU TeXInfo format. 
 For your convenience, you can find <acronym>HTML</acronym> and <acronym>PDF</acronym>
 versions of the manual there as well.<br>
 Note: In this manual, the terms "directory" and "folder" are used interchangeably.
@@ -151,19 +150,19 @@ and &mdash; with some delay &mdash; on CTAN sites:
 e.g., <a href="http://www.dante.de">http://www.dante.de</a> or <a href="http://www.ctan.org">http://www.ctan.org</a>.
 
    <p>The DOS package will also run under all MS Windows versions
-up to Vista, except 64bit systems. 
+up to Windows 7, except 64bit systems. 
 It requires an i386 processor or better.<br>
 It should only be used on older Microsoft systems.<br>
 For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI package.
 
    <p>The win-NO-GUI package only runs under Win32
-(Win9x, ME, NT, 2000, XP, 2003, Vista, probably also Win7). 
+(Win9x, ME, NT, 2000, XP, 2003, Vista, Win7). 
 From LaTeX2RTF
 version 2.0.0 up it also runs on 64bit systems.
 
    <p>The win package is the win-NO-GUI package plus graphical user
 interface (GUI) shell (l2rshell) and installer.<br>
-It only runs under Win NT, 2000, XP, 2003 and Vista, probably also Win7.<br>
+It only runs under Win NT, 2000, XP, 2003, Vista, and Win7.<br>
 From LaTeX2RTF
 version 2.0.0 up it also runs on 64bit systems.
 
@@ -187,9 +186,9 @@ project pages for the latest news.
 
 <p>To install,
      <ol type=1 start=1>
-<li>Edit <samp><span class="file">Makefile</span></samp> for your local configuration.  In particular, pay attention
-to the <samp><span class="env">PREFIX</span></samp> variable.  If you do not have root access you might wish
-to set the makefile variable <samp><span class="env">PREFIX</span></samp> to be your home directory.
+<li>Edit <span class="file">Makefile</span> for your local configuration.  In particular, pay attention
+to the <span class="env">PREFIX</span> variable.  If you do not have root access you might wish
+to set the makefile variable <span class="env">PREFIX</span> to be your home directory.
 
      <p>On some machines the cc compiler will issue errors. Therefore the
 default compiler command in the Makefile is <code>CC=gcc</code>.
@@ -197,19 +196,19 @@ default compiler command in the Makefile is <code>CC=gcc</code>.
      <li>From version 1.9.13 up, LaTeX2RTF
 supports conversion of LaTeX
 equations to
-bitmaps using the shell script <samp><span class="file">latex2png</span></samp>, found in <samp><span class="file">scripts/</span></samp>. 
-<samp><span class="file">latex2png</span></samp> requires that
+bitmaps using the shell script <span class="file">latex2png</span>, found in <span class="file">scripts/</span>. 
+<span class="file">latex2png</span> requires that
 both LaTeX
-and <samp><span class="file">ImageMagick</span></samp> are installed. 
+and <span class="file">ImageMagick</span> are installed. 
 LaTeX2RTF
-will translate documents without a working <samp><span class="file">latex2png</span></samp>, but some
-features will be missing.  You can verify that the <samp><span class="file">latex2png</span></samp> script
-is working by typing <code>make</code> in the <samp><span class="file">scripts/</span></samp> directory.
+will translate documents without a working <span class="file">latex2png</span>, but some
+features will be missing.  You can verify that the <span class="file">latex2png</span> script
+is working by typing <code>make</code> in the <span class="file">scripts/</span> directory.
 
      <li><code>make</code>
 
      <p>If this is not your first time installation, you may want to preserve
-your old configuration (<samp><span class="file">*.cfg</span></samp>) files. Copy them to a safe place
+your old configuration (<span class="file">*.cfg</span>) files. Copy them to a safe place
 before installing.
 
      <p>On IBM AIX, the IBM make utility does not support some of the commands
@@ -224,11 +223,11 @@ for tsch-like shells <code>setenv XPG4_GREP /usr/xpg4/bin/grep</code>.
 
      <li><code>make install</code>
 
-     <p>If your <code>mkdir</code> doesn't support the <samp><span class="option">-p</span></samp> option, then create
+     <p>If your <code>mkdir</code> doesn't support the <span class="option">-p</span> option, then create
 the necessary directories by hand and remove the option from the
 <code>$MKDIR</code> variable. If you have other problems, just copy
-<samp><span class="file">latex2rtf</span></samp> and <samp><span class="file">latex2png</span></samp> to a binary directory, and move
-the contents of the <samp><span class="file">cfg/</span></samp> directory to the location specified by
+<span class="file">latex2rtf</span> and <span class="file">latex2png</span> to a binary directory, and move
+the contents of the <span class="file">cfg/</span> directory to the location specified by
 <code>$CFG_INSTALL</code>.
 
      <li><code>make check</code>
@@ -237,19 +236,19 @@ the contents of the <samp><span class="file">cfg/</span></samp> directory to the
 on a variety of LaTeX
 files.  Expect
 a whole lot of warnings, but no outright errors. (On IBM AIX, use <code>gmake check</code>.) 
-Note that this will check the basic functionality of the <samp><span class="file">latex2png</span></samp>
-script, and then that of <samp><span class="file">latex2rtf</span></samp>.
+Note that this will check the basic functionality of the <span class="file">latex2png</span>
+script, and then that of <span class="file">latex2rtf</span>.
 
      <li><code>make install-info</code>
 
-     <p>[OPTIONAL] This installs <samp><span class="file">.info</span></samp> files for use with the <code>info</code>
+     <p>[OPTIONAL] This installs <span class="file">.info</span> files for use with the <code>info</code>
 program.
 
         </ol>
 
-   <p>You no longer need to define the environment variable <samp><span class="env">RTFPATH</span></samp>. This
-is only necessary if you move the directory containing the <samp><span class="file">.cfg</span></samp> files. 
-Just define <samp><span class="env">RTFPATH</span></samp> to be the path for the new location of the <samp><span class="file">cfg</span></samp>
+   <p>You no longer need to define the environment variable <span class="env">RTFPATH</span>. This
+is only necessary if you move the directory containing the <span class="file">.cfg</span> files. 
+Just define <span class="env">RTFPATH</span> to be the path for the new location of the <span class="file">cfg</span>
 directory.
 
 <p><a id="DOS-or-Windows"></a>
@@ -259,34 +258,34 @@ directory.
 <p>The <acronym>UNIX</acronym> and Mac packages do not contain an executable for DOS
 or Windows. You may compile it yourself (with djgpp or MinGW)
 or get the <br>
-DOS package as file <samp><span class="file">latex2rtf-x.x.x_dos.zip</span></samp>
+DOS package as file <span class="file">latex2rtf-x.x.x_dos.zip</span>
 (where x.x.x is the version number) <br>
-or the win-NO-GUI package as file <samp><span class="file">latex2rtf-x.x.x_win-NO-GUI.zip</span></samp>
+or the win-NO-GUI package as file <span class="file">latex2rtf-x.x.x_win-NO-GUI.zip</span>
 (no installer, no graphical user interface (GUI))<br>
 from <a href="http://sourceforge.net/projects/latex2rtf/">SourceForge</a><br>
 
    <p>The DOS package contains a precompiled executable
 which should run under plain DOS and also in the command prompt
-(or &ldquo;console&rdquo;) of any MS Windows system including Vista
+(or &ldquo;console&rdquo;) of any MS Windows system including Vista and Windows 7
 but not on 64bit systems.<br>
 
    <p>To install the DOS or win-no-GUI package of LaTeX2RTF
 , extract all files
 from the zip archive, preserving the folder structure
 (winzip: check &ldquo;use folder names&rdquo;),
-preferably to <samp><span class="file">C:\l2r</span></samp>, or under Windows, to your "Program Files"
+preferably to <span class="file">C:\l2r</span>, or under Windows, to your "Program Files"
 folder (which ever it is named in your system)
 because then it will find its cfg files by default.<br>
-If you extracted them to another folder (e.g. <samp><span class="file">C:\my_files\l2r</span></samp>),
-either edit the file <samp><span class="file">L2RPREP.BAT</span></samp>
-and change the folder <samp><span class="file">C:\l2r</span></samp> to where you put them, or specify the
+If you extracted them to another folder (e.g. <span class="file">C:\my_files\l2r</span>),
+either edit the file <span class="file">L2RPREP.BAT</span>
+and change the folder <span class="file">C:\l2r</span> to where you put them, or specify the
 path to the cfg folder in the command line.<br>
 Avoid blanks in folder and file names!
 
-   <p>Make sure that the folder containing the file <samp><span class="file">L2RPREP.BAT</span></samp>
+   <p>Make sure that the folder containing the file <span class="file">L2RPREP.BAT</span>
 is in your search path, or put this file into a folder
 which is in your search path.<br>
-To display the current search path, enter <samp><span class="file">PATH</span></samp>
+To display the current search path, enter <span class="file">PATH</span>
 from the command prompt (with no arguments).
 
    <p>Under plain DOS, conversion of equations or figures to bitmaps is not
@@ -299,8 +298,8 @@ for plain DOS.
 
 <p>To install LaTeX2RTF
 on a Win32 system (WinNT, Win2000, WinXP,
-WinVista, Win7), download the win package,
-execute the <samp><span class="file">latex2rtf-x.x.x_win.exe</span></samp>
+Vista, Win7), download the win package,
+execute the <span class="file">latex2rtf-x.x.x_win.exe</span>
 (where x.x.x is the version number) and follow the instructions.
 
    <p>Note: The installer and GUI shell do not support Win9x and WinMe
@@ -312,7 +311,7 @@ win-NO-GUI package (1.9.19 and up) of LaTeX2RTF
 
    <p>To start the program double-click the LaTeX2RTF
 icon,
-or drag and drop a <samp><span class="file">.tex</span></samp> file onto the icon.
+or drag and drop a <span class="file">.tex</span> file onto the icon.
 
    <p>If your LaTeX
 document refers to external graphic files, e.g. eps,
@@ -323,10 +322,10 @@ freely available for download at <a href="http://www.miktex.org/">http://www.mik
 
    <p>The following versions were available at the time of writing
 and used together with LaTeX2RTF
-version 2.2.x: <br>
+version 2.3.x: <br>
 - MikTeX 2.9 <br>
-- Ghostscript 9.05 <br>
-- ImageMagick-6.7.7-5-Q8-windows-dll.exe
+- Ghostscript 9.06 <br>
+- ImageMagick-6.7.9-Q8-windows-dll.exe
 
    <p>If MikTeX, ImageMagick and Ghostscript are installed, the paths to their
 executables are detected automatically. If for any reason this doesn't
@@ -353,10 +352,10 @@ replaced by its DOS equivalent "PROGRA~1" which has the additional
 effect that this is similar for several if not all European languages.<br>
 <li>Win95, Win98, WinME
           <ul>
-<li>Open the file <samp><span class="file">C:\AUTOEXEC.BAT</span></samp> either with Edit (DOS) or
+<li>Open the file <span class="file">C:\AUTOEXEC.BAT</span> either with Edit (DOS) or
 with Notepad (Windows). 
 <li>At the end of that file, add the line
-<samp><span class="file">PATH=C:\PROGRA~1\latex2rtf;%PATH%</span></samp>
+<span class="file">PATH=C:\PROGRA~1\latex2rtf;%PATH%</span>
 <li>Save the file to its original location. Shutdown and reboot the PC.<br>
 </ul>
      <li>WinNT, Win2000, WinXP, Vista, Win7
@@ -364,22 +363,22 @@ with Notepad (Windows).
 <li>Right-click &ldquo;My Computer&rdquo; (German: &ldquo;Arbeitsplatz&rdquo;), then select &ldquo;Properties&rdquo;;
 <li>NT: Click the &ldquo;Environment&rdquo; tab;<br>
 XP and up: Click the &ldquo;Advanced&rdquo; tab, then the &ldquo;Environment variables&rdquo; button;
-<li>Find the line beginning with <samp><span class="file">PATH=</span></samp> and insert the string <br>
-<samp><span class="file">C:\PROGRA~1\latex2rtf;</span></samp><br>
+<li>Find the line beginning with <span class="file">PATH=</span> and insert the string <br>
+<span class="file">C:\PROGRA~1\latex2rtf;</span><br>
 so that the complete line looks like <br>
-<samp><span class="file">PATH=C:\PROGRA~1\latex2rtf;C:\WINDOWS;...</span></samp>
+<span class="file">PATH=C:\PROGRA~1\latex2rtf;C:\WINDOWS;...</span>
 <li>Click "OK"
 </ul>
      </ul>
 
    <p>If you do NOT use the GUI (l2rshell.exe),
 either the folders where TeX, ImageMagick and Ghostscript are installed
-must also be in your search path, or you must edit the file <samp><span class="file">L2RPREP.BAT</span></samp>,
+must also be in your search path, or you must edit the file <span class="file">L2RPREP.BAT</span>,
 ensure that the pathes in this file point to the folders where
 TeX, ImageMagick and Ghostscript are installed on your machine,
-and call <samp><span class="file">l2rprep</span></samp> before calling <samp><span class="file">latex2rt</span></samp>. <br>
-Or you edit <samp><span class="file">l2r.bat</span></samp> and call <samp><span class="file">l2r</span></samp> instead of
-calling <samp><span class="file">latex2rt</span></samp>.
+and call <span class="file">l2rprep</span> before calling <span class="file">latex2rt</span>. <br>
+Or you edit <span class="file">l2r.bat</span> and call <span class="file">l2r</span> instead of
+calling <span class="file">latex2rt</span>.
 
    <p>If you DO use the GUI (l2rshell.exe), the TeX, ImageMagick and Ghostscript folders
 are automatically added to the search path by the GUI.
@@ -388,7 +387,7 @@ are automatically added to the search path by the GUI.
 LaTeX2RTF
 first writes a temporary l2r_nnnn.tex file to disk which consists
 of only the equation to be converted. It then sends the call
-for <samp><span class="file">"bash latex2png l2r_nnnn.tex"</span></samp> to the operating system. <br>
+for <span class="file">"bash latex2png l2r_nnnn.tex"</span> to the operating system. <br>
 In previous versions of latex2rtf, some users got the message
 &ldquo;Out of environment space&rdquo; (can occur only under Windows 95, Windows 98
 or Windows ME); this should be solved now
@@ -412,10 +411,10 @@ See <a href="http://www.inf.ethz.ch/personal/fischerk/LaTeX2rtf/index.html">http
 To convert a LaTeX
 file using this version,  drag the file onto the LaTeX2RTF
 icon.  The
-translation is best if there are <samp><span class="file">.aux</span></samp> and <samp><span class="file">.bbl</span></samp> files in the same folder as
-the <samp><span class="file">.tex</span></samp> file to be converted.  These should be generated using LaTeX
+translation is best if there are <span class="file">.aux</span> and <span class="file">.bbl</span> files in the same folder as
+the <span class="file">.tex</span> file to be converted.  These should be generated using LaTeX
 and
-<samp><span class="file">bibtex</span></samp>.
+<span class="file">bibtex</span>.
 
 <p><a id="Problems-Compiling"></a>
 
@@ -430,7 +429,7 @@ The default is to use <code>gcc</code>.
 
      <li>Encountering errors because the compiler options.  During development
 all compiler warnings are turned on.  However, different compilers have
-different interpretations of <samp><span class="option">-Wall</span></samp> and
+different interpretations of <span class="option">-Wall</span> and
 may generate errors that were not found in a different development
 system.  Please report these, but a quick fix is to remove all compiler
 options.
@@ -441,7 +440,7 @@ options.
 
 <h3 class="section">2.8 Problems with <code>make check</code></h3>
 
-<p>All the files in the <samp><span class="file">test</span></samp> directory are converted (with varying degrees
+<p>All the files in the <span class="file">test</span> directory are converted (with varying degrees
 of success) using LaTeX2RTF
 and are tested before most CVS check-ins and with
 all released tarballs.  There will be many warning messages, but there should
@@ -457,29 +456,29 @@ some of the files will fail to be translated.
 <h3 class="section">3.1 General Assumptions</h3>
 
 <p>LaTeX2RTF
-assumes that the <samp><span class="file">.tex</span></samp> file you want to convert is a valid
+assumes that the <span class="file">.tex</span> file you want to convert is a valid
 LaTeX
 document.  The chances of a successful LaTeX2RTF
 conversion are slightly better than the
-proverbial snowball's if the <samp><span class="file">.tex</span></samp> file doesn't <code>latex</code> properly.  Use
+proverbial snowball's if the <span class="file">.tex</span> file doesn't <code>latex</code> properly.  Use
 LaTeX
 to find and correct errors before using LaTeX2RTF
 .<br>
 LaTeX2RTF
- also needs the <samp><span class="file">.aux</span></samp> file and <samp><span class="file">.bbl</span></samp> file
-which are generated by running <code>latex</code> on the <samp><span class="file">.tex</span></samp> file
+ also needs the <span class="file">.aux</span> file and <span class="file">.bbl</span> file
+which are generated by running <code>latex</code> on the <span class="file">.tex</span> file
 
-<p>To correctly convert font names you must edit the <samp><span class="file">fonts.cfg</span></samp> configuration file. 
+<p>To correctly convert font names you must edit the <span class="file">fonts.cfg</span> configuration file. 
 This file is used to specify the needed font names and how the LaTeX
 default font names
 should be converted to RTF (see <a href="#Font-Configuration">Font Configuration</a>). LaTeX
 variables and user
 defined commands are not evaluated. They will be simply ignored. To let LaTeX2RTF
 know the
-names of variables you can add them in the <samp><span class="file">ignore.cfg</span></samp> file (see <a href="#Ignore-Command">Ignore Command</a>).
+names of variables you can add them in the <span class="file">ignore.cfg</span> file (see <a href="#Ignore-Command">Ignore Command</a>).
 
    <p>The environment variable RTFPATH may contain a search path for the support files (all
-files ending in <samp><span class="file">.cfg</span></samp>). If no file is found during the search in the search-path or
+files ending in <span class="file">.cfg</span>). If no file is found during the search in the search-path or
 if the environment variable is not set, the compiled-in default for the configuration-file
 directory is used. If the files are not found at all the program aborts.
 
@@ -489,7 +488,7 @@ of RTFPATH.
 
    <p>Make sure that the configuration files are in the correct directory (or folder). LaTeX2RTF
 will need at
-least <samp><span class="file">fonts.cfg</span></samp>, <samp><span class="file">direct.cfg</span></samp>, <samp><span class="file">ignore.cfg</span></samp>, <samp><span class="file">english.cfg</span></samp>. You may
+least <span class="file">fonts.cfg</span>, <span class="file">direct.cfg</span>, <span class="file">ignore.cfg</span>, <span class="file">english.cfg</span>. You may
 have to change one ore more of them to suit your needs (see <a href="#Configuration">Configuration</a>).
 
    <p>See <a href="#Missing-options">Missing options</a>, for actual implementations irregularities.
@@ -519,18 +518,18 @@ command line options when clicking RUN.
    <p>The <code>-options</code> may consist of one or more of the following
 
      <dl>
-<dt><code>-a auxfile</code><dd>specify an <samp><span class="file">.aux</span></samp> file (for table and figure references) that
-differs from <samp><span class="file">inputfile.aux</span></samp>. If this is omitted, the name of the
-inputfile with the suffix replaced <samp><span class="file">.aux'</span></samp>will be taken.  You must
-provide both files (<samp><span class="file">.tex</span></samp> and the <samp><span class="file">.aux</span></samp>) to be able to
+<dt><code>-a auxfile</code><dd>specify an <span class="file">.aux</span> file (for table and figure references) that
+differs from <span class="file">inputfile.aux</span>. If this is omitted, the name of the
+inputfile with the suffix replaced <span class="file">.aux'</span>will be taken.  You must
+provide both files (<span class="file">.tex</span> and the <span class="file">.aux</span>) to be able to
 convert cross-references in a LaTeX
-file.  The <samp><span class="file">.aux</span></samp> is created
-by running the <samp><span class="file">inputfile.tex</span></samp> through <code>latex</code>.
+file.  The <span class="file">.aux</span> is created
+by running the <span class="file">inputfile.tex</span> through <code>latex</code>.
 
-     <br><dt><code>-b bblfile</code><dd>Unless an <samp><span class="file">bblfile</span></samp> is specified with the <code>-b</code> option, LaTeX2RTF
+     <br><dt><code>-b bblfile</code><dd>Unless an <span class="file">bblfile</span> is specified with the <code>-b</code> option, LaTeX2RTF
 uses a
-<samp><span class="file">inputfile.bbl</span></samp>.  The <samp><span class="file">bblfile</span></samp> file is used for citations and is typically
-created by running <samp><span class="file">inputfile.aux</span></samp> through <samp><span class="file">bibtex</span></samp>.
+<span class="file">inputfile.bbl</span>.  The <span class="file">bblfile</span> file is used for citations and is typically
+created by running <span class="file">inputfile.aux</span> through <span class="file">bibtex</span>.
 
      <br><dt><code>-C codepage</code><dd>used to specify the character set (code page) used in the LaTeX
 document. This is only
@@ -547,7 +546,7 @@ decmulti, cp1250, cp1252, latin1, latin2, latin3, latin4, latin5, latin9, next. 
 default behavior is to use ansinew (code page 1252).  Cyrillic support includes
 conversion of koi8-r, koi8-u, cp1251, cp855, cp866, maccyr, and macukr encodings.
 
-     <br><dt><code>-d debug_level</code><dd>The <samp><span class="option">-d</span></samp> option determines the amount of debugging information to send to
+     <br><dt><code>-d debug_level</code><dd>The <span class="option">-d</span> option determines the amount of debugging information to send to
 stderr while translating. debug_level=0 means only Errors, `1' Warning Messages
 (default) also.  The debug_level can go as high as `7' for insane amounts of
 debugging fun. Warnings and error messages are output to stderr and by default
@@ -558,6 +557,26 @@ by appending <code>2&gt;latex2rtf.log</code> to the command line.
 This value is also used when picture environments are converted to bitmaps as well
 as when EPS graphics are converted to png files.  The default value is 300 dots per
 inch.
+
+     <br><dt><code>-E# selects whether figures are included in the rtf (default) or created</code><dd>as external files with the filenames inserted in the rtf text.
+
+     <p>The options -E4, -E8 and -E12 are experimental and may not work as expected.
+
+          <dl>
+    <dt><code>-E0</code><dd>    Do not include any figures in RTF. 
+    <br><dt><code>-E1</code><dd>    Include figures that need no conversion. 
+    <br><dt><code>-E2</code><dd>    Include figures that need conversion. 
+    <br><dt><code>-E3</code><dd>    Include all figures (default). 
+    <br><dt><code>-E4</code><dd>    Insert filenames for figures that do not need conversion. 
+    <br><dt><code>-E8</code><dd>    Insert filenames for figures that need conversion. 
+    <br><dt><code>-E12</code><dd>    Insert filenames for all figures. 
+    </dl>
+     With options -E4, -E8 and -E12, pdf and ps are converted to eps
+and the eps filenames inserted. Bitmap files are inserted in
+their original format. 
+After opening the rtf in a textprocessing or dtp program,
+a macro can search for the inserted filenames
+and insert the files in their places.
 
      <br><dt><code>-f#</code><dd>where # selects which fields to use during conversion:
           <dl>
@@ -590,8 +609,8 @@ languages listed in the babel system are supported so far as translations for &l
 german, french, russian, and czech style
 are supported (see <a href="#Language-Configuration">Language Configuration</a>).
 
-     <br><dt><code>-l</code><dd>same as <samp><span class="option">-i latin1</span></samp> (Note that the default behavior is to use <samp><span class="option">ansinew</span></samp>
-which is a superset of <samp><span class="option">latin1</span></samp>). Included for
+     <br><dt><code>-l</code><dd>same as <span class="option">-i latin1</span> (Note that the default behavior is to use <span class="option">ansinew</span>
+which is a superset of <span class="option">latin1</span>). Included for
 backwards compatibility.
 
      <br><dt><code>-M#</code><dd>where # selects the type of equation conversion.  Use
@@ -600,33 +619,46 @@ backwards compatibility.
     <br><dt><code>-M2</code><dd>    convert inline equations to RTF
     <br><dt><code>-M4</code><dd>    convert displayed equations to bitmap
     <br><dt><code>-M8</code><dd>    convert inline equations to bitmap
-    <br><dt><code>-M16</code><dd>    insert Word comment field that contains the original equation text
-    <br><dt><code>-M32</code><dd>    insert the raw latex equation delimited by <code>$ ... $</code> for
+    <br><dt><code>-M16</code><dd>    insert Word comment field that contains the raw LaTeX equation
+    <br><dt><code>-M32</code><dd>    insert the raw latex equation in the RTF text delimited by <code>$ ... $</code> for
     inline equations and by <code>\[ ... \]</code> for displayed equations.<br>
     This is useful when using version 6 of the MathType equation
     editor, which converts typed or pasted TeX code into a MathType equation.<br>
     Probably this could also be useful for use in OpenOffice, as OO has an
     equation syntax which partially resembles TeX syntax. 
+    <br><dt><code>-M64</code><dd>    convert displayed equations to EPS files and insert filenames in RTF text. 
+    <br><dt><code>-M128</code><dd>    convert inline equations to EPS files and insert filenames in RTF text. 
     </dl>
-
-     <p>These switches can be combined to get different effects.  Handy examples are
+     These switches can be combined to get different effects.  Handy examples are
           <dl>
     <dt><code>-M3</code><dd>    convert both inline and displayed equations to RTF (default)
     <br><dt><code>-M6</code><dd>    convert inline equations to RTF and displayed equations to bitmaps
     <br><dt><code>-M12</code><dd>    convert both inline and displayed equations to bitmaps
+    <br><dt><code>-M192</code><dd>    convert both inline and displayed equations to EPS and insert filenames in RTF text
     </dl>
-     Bitmap conversion requires that you have installed a working latex2png script. 
+     Conversion to bitmaps or eps requires that you have installed a working latex2png script. 
 Producing bitmaps is slow.<br>
 When running the DOS version, conversion to bitmaps works for the first 26
 equations but fails for the rest with the message<br>
 "latex2png: pipe error: Too many open files (EMFILE)".<br>
 This is probably a bug in the djgpp 2.04 compiler.<br>
 The Windows version, compiled with MinGW, successfully
-converts at least 500 equations to bitmaps.
+converts at least 500 equations to bitmaps.<br>
+When -M64, -M128 or both are specified, equations are converted to
+individual eps files, the filenames of which are literally inserted in
+the rtf file, delimited by [###...###]. After loading the rtf file in a
+text processing program, a macro can be run which searches for "[###"
+and "###]", extracts the filename, and inserts the eps in that place. 
+The Windows installer package contains the code of such a macro for
+Word2010 in the file "WordMacro_InsertEPSfromNames.txt" in subfolder
+"scripts". (This macro may also run on other versions of Word but
+it was only tested on Word2010.) In Word, the inserted eps graphics
+display in bad quality on the screen and on non-postscript printers
+but can be printed in high quality on postscript and pdf printers.
 
-     <br><dt><code>-o outputfile</code><dd>Unless an <samp><span class="file">outputfile</span></samp> is specified with the <code>-o</code> option, the resulting RTF
-filename is formed by removing <samp><span class="file">.tex</span></samp> from the <samp><span class="file">inputfile</span></samp> and appending
-<samp><span class="file">.rtf</span></samp>.
+     <br><dt><code>-o outputfile</code><dd>Unless an <span class="file">outputfile</span> is specified with the <code>-o</code> option, the resulting RTF
+filename is formed by removing <span class="file">.tex</span> from the <span class="file">inputfile</span> and appending
+<span class="file">.rtf</span>.
 
      <br><dt><code>-p</code><dd>Escape parentheses in mathematical formulas.  This has no effect unless EQ fields
 are being generated.  When this option is used, then a `(' or `)' that appears
@@ -723,7 +755,7 @@ by removing the extension &ldquo;.tex&rdquo; and adding &ldquo;.rtf&rdquo;.
 
 <h3 class="section">3.3 Debugging</h3>
 
-<p>With the <samp><span class="option">-d</span></samp> option you can specify how much processing information
+<p>With the <span class="option">-d</span> option you can specify how much processing information
 LaTeX2RTF
 reports. 
 If there is a logfile specified the output goes to this file. Nonetheless
@@ -731,7 +763,7 @@ Warnings and Errors are logged to stderr always. They can be redirected
 to a file &ldquo;latex2rtf.log&rdquo; by appending <code>2&gt;latex2rtf.log</code>
 to the command line.
 
-   <p>Possible values of <samp><span class="option">-d</span></samp> are
+   <p>Possible values of <span class="option">-d</span> are
      <ol type=1 start=0>
 <li>only errors. 
 <li>Translation Warnings (default). 
@@ -784,7 +816,7 @@ or <br>
 
 <h3 class="section">4.3 Input Encoding</h3>
 
-<p>It is not necesary to specify the <samp><span class="option">-C</span></samp> option if you use <code>\usepackage{isolatin1}</code>
+<p>It is not necesary to specify the <span class="option">-C</span> option if you use <code>\usepackage{isolatin1}</code>
 or <code>\documentstyle[isolatin1]{...}</code>. LaTeX2RTF
 automagically detects these
 packages/style options and switches to processing of ISO-Latin1 codes.  The following
@@ -813,23 +845,23 @@ LaTeX2RTF
 will provide the correct translation of the word &ldquo;Chapter&rdquo; in
 the converted document.
 
-   <p>You can select any of the above languages using the <samp><span class="option">-l</span></samp> option.  This
+   <p>You can select any of the above languages using the <span class="option">-l</span> option.  This
 is not needed if your LaTeX
 file contains <code>\usepackage[language]{babel}</code>.
 
-   <p>Encountering the <samp><span class="option">german</span></samp> package or babel option (by H. Partl of the
+   <p>Encountering the <span class="option">german</span> package or babel option (by H. Partl of the
 Vienna University) makes LaTeX2RTF
 behave like that: German Quotes, German
-Umlauts by <code>"a</code>, etc<small class="enddots">...</small>  This support is programmed directly
+Umlauts by <code>"a</code>, etc<small class="enddots">....</small>  This support is programmed directly
 into LaTeX2RTF
 and supporting similar features for other languages will require
 patching the source code.
 
-   <p>There is similar support for <samp><span class="option">french</span></samp> packages.
+   <p>There is similar support for <span class="option">french</span> packages.
 
    <p>There is reasonable support for english, latin1, latin2, and cyrillic languages.
 
-   <p>See <a href="#Language-Configuration">Language Configuration</a>, for details on how to write a <samp><span class="file">language.cfg</span></samp> file
+   <p>See <a href="#Language-Configuration">Language Configuration</a>, for details on how to write a <span class="file">language.cfg</span> file
 for your language by yourself.
 
 <p><a id="Cross-References"></a>
@@ -847,12 +879,12 @@ means that Word does not automatically update the page references when the file
 is opened.  To update the page references you must select the entire document
 (in Word) and press <code>F9</code>.
 
-   <p><a id="index-bibliography-5"></a>Bibliographic references currently require that a valid <samp><span class="file">.aux</span></samp> file be
+   <p><a id="index-bibliography-5"></a>Bibliographic references currently require that a valid <span class="file">.aux</span> file be
 present.  This is where LaTeX2RTF
 obtains the reference numbers.  It would be
 nice if LaTeX2RTF
 just automatically numbered the references when there was
-no <samp><span class="file">.aux</span></samp> file, but LaTeX2RTF
+no <span class="file">.aux</span> file, but LaTeX2RTF
 does not do this yet.
 
    <p><a id="index-bibliography_002c-BibTeX-6"></a><a name="index-BibTeX-7"></a>LaTeX2RTF
@@ -862,7 +894,7 @@ Usually the style file for a particular BibTeX
  format does not use
 any special LaTeX
 commands and therefore the bibliography file
-<samp><span class="file">file.bbl</span></samp> can be processed by LaTeX2RTF
+<span class="file">file.bbl</span> can be processed by LaTeX2RTF
 without difficulty. As a
 consequence, LaTeX2RTF
 can handle most bibliography styles without
@@ -916,10 +948,11 @@ for many of them.
 <h3 class="section">4.7 Equations</h3>
 
 <p><a id="index-equations-28"></a>
-There are five separate levels of equation translation based on the -M switch,
+There are six separate levels of equation translation based on the -M switch,
 see <a href="#LaTeX2RTF-Options">LaTeX2RTF Options</a>. 
 Each equation is converted either to an EQ field or to a bitmap
-or inserted as raw TeX code in the document.
+or inserted as raw TeX code in the document or converted to an eps file with the
+eps file name inserted in the document text delimited by [###...###].
 
    <p>This is an interim solution (for some definition of &ldquo;interim&rdquo;). 
 Ideally the equations would become OLE equation objects in the
@@ -978,7 +1011,7 @@ observations.  If the symbol is found in the latin 1 character set, then
 the current font is used, else the unicode code is inserted in the rtf code. 
 (Implemented since version 2.1.0)
 
-   <p>The means that on the system where the <samp><span class="file">.rtf</span></samp> file is opened, a unicode
+   <p>The means that on the system where the <span class="file">.rtf</span> file is opened, a unicode
 font should be available or these glyphs will not be displayed correctly. 
 As only the STIX fonts contain all needed characters, these fonts should be
 installed on the system where the rtf file is to be displayed or printed.
@@ -986,7 +1019,7 @@ installed on the system where the rtf file is to be displayed or printed.
    <p>Many mathematical and special symbols are directly supported by LaTeX2RTF
 . 
 Less common symbols (not found in the standard font)
-are supported by the conversion table in the file <samp><span class="file">direct.cfg</span></samp>,
+are supported by the conversion table in the file <span class="file">direct.cfg</span>,
 see <a href="#Direct-Conversion">Direct Conversion</a>.
 
    <p>Required fonts are:
@@ -1035,7 +1068,7 @@ into the RTF file. This feature was added in version 1.9.19.
 <p><a id="index-graphics-32"></a>
 There is now rudimentary support for <code>\includegraphics</code>. 
 Three file types will be inserted into the RTF file without needing
-conversion: <samp><span class="file">.pict</span></samp>, <samp><span class="file">.jpeg</span></samp>, and <samp><span class="file">.png</span></samp> files. 
+conversion: <span class="file">.pict</span>, <span class="file">.jpeg</span>, and <span class="file">.png</span> files. 
 EPS and PDF files are converted to PNG using <code>convert</code> from the
 ImageMagick package.  Some options are even handled properly.
 
@@ -1077,7 +1110,7 @@ makes it possible to write `\link{anchor}[ltx]{label}', which typesets:
 does NOT support this aproach since the optional
 parameter is thrown away right now, see <a href="#LaTeX2RTF-under-Development">LaTeX2RTF under Development</a>.
 
-   <p>Note that you have to update your <samp><span class="file">.cfg</span></samp> files if you are upgrading, since
+   <p>Note that you have to update your <span class="file">.cfg</span> files if you are upgrading, since
 there are a lot of HTML oriented commands in Hyperlatex that we simply can
 `ignore'.
 
@@ -1110,14 +1143,14 @@ special
 characters. If it encounters one of the standard commands it is
 converted internally. If a command is not known to LaTeX2RTF
 it is first
-looked up in <samp><span class="file">direct.cfg</span></samp> and the RTF code specified there is
+looked up in <span class="file">direct.cfg</span> and the RTF code specified there is
 output. If not found there it is looked up in the section
-<samp><span class="file">ignore.cfg</span></samp>. This file includes a lot of LaTeX
+<span class="file">ignore.cfg</span>. This file includes a lot of LaTeX
 commands that do
 not affect the output (cross reference information and the like), or
 that we are not able or willing to convert to RTF.
 
-   <p>You can use <samp><span class="file">ignore.cfg</span></samp> if you get tired of seeing
+   <p>You can use <span class="file">ignore.cfg</span> if you get tired of seeing
 <pre class="example">     WARNING: command: `foo' not found - ignored
 </pre>
    <p class="noindent">and you don't need `foo' in your RTF document. It would be nice to send
@@ -1142,7 +1175,7 @@ select the proper code page (see <a href="#Input-Encoding">Input Encoding</a>).
 
 <h3 class="section">5.2 Conditional Parsing</h3>
 
-<p><a id="index-Conditional-Parsing-39"></a><a name="index-g_t_0025latex2rtf-40"></a><a name="index-iflatextortf-41"></a>
+<p><a id="index-Conditional-Parsing-39"></a><a name="index-_0025latex2rtf-40"></a><a name="index-iflatextortf-41"></a>
 Starting with LaTeX2RTF
 1.9.18, there is a handy method for controlling which content
 should be processed by LaTeX
@@ -1209,27 +1242,28 @@ not be affected.
 
    <p>LaTeX2RTF
 does not offer a whole lot of flexibility in how files are translated,
-but it does offer some.  This flexibility resides in four files <samp><span class="file">direct.cfg</span></samp>,
-<samp><span class="file">ignore.cfg</span></samp>, <samp><span class="file">fonts.cfg</span></samp>, and <samp><span class="file">language.cfg</span></samp>.  These filese
+but it does offer some.  This flexibility resides in four files <span class="file">direct.cfg</span>,
+<span class="file">ignore.cfg</span>, <span class="file">fonts.cfg</span>, and <span class="file">language.cfg</span>.  These filese
 are documented in the next four sections.
 
 <p><a id="Direct-Conversion"></a>
 
 <h3 class="section">5.4 Direct Conversion</h3>
 
-<p>The file <samp><span class="file">direct.cfg</span></samp> is used for converting LaTeX
+<p>The file <span class="file">direct.cfg</span> is used for converting LaTeX
 commands by simple text
 replacement. The format consists of lines with a LaTeX
 command with backslash
-followed by comma. The rest of the line until a &lsquo;<samp><span class="samp">.</span></samp>&rsquo; character will be written
+followed by comma. The rest of the line until a <span class="samp">.</span> character will be written
 to the RTF file when the command is found in the LaTeX
 file. Lines
-starting with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the &lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored
+starting with a <span class="samp">#</span> character are ignored. After the <span class="samp">.</span> everything is ignored
 to end of line. To select a specific font use <code>*fontname*</code>, where
-<code>fontname</code> be defined in <samp><span class="file">fonts.cfg</span></samp>. 
-To write the &lsquo;<samp><span class="samp">*</span></samp>&rsquo; character use &lsquo;<samp><span class="samp">**</span></samp>&rsquo;.
+<code>fontname</code> be defined in <span class="file">fonts.cfg</span>. 
+To write the <span class="samp">*</span> character use <span class="samp">**</span>.
 
-<pre class="verbatim">\bigstar,{\u8727**}.
+<pre class="verbatim">
+\bigstar,{\u8727**}.
 \copyright,\'a9.
 </pre>
 
@@ -1245,37 +1279,38 @@ not.  It was all very tedious to figure out a mechanism that was &ldquo;least br
 
 <h3 class="section">5.5 Ignore Command</h3>
 
-<p>The file <samp><span class="file">ignore.cfg</span></samp> is used for defining how to ignore specific commands. This
+<p>The file <span class="file">ignore.cfg</span> is used for defining how to ignore specific commands. This
 file is used for recognition of LaTeX
 variables, user defined variables, and
 some simple commands. All variables are ignored but the converter must know the
 names to correctly ignore assignments to variables. Lines in this file consist
 of a variable name with backslash, followed by comma and the type of the
-variable followed by &lsquo;<samp><span class="samp">.</span></samp>&rsquo;. Possible types are
+variable followed by <span class="samp">.</span>. Possible types are
 
      <dl>
-<dt>&lsquo;<samp><span class="samp">NUMBER</span></samp>&rsquo;<dd>simple numeric value
-<br><dt>&lsquo;<samp><span class="samp">MEASURE</span></samp>&rsquo;<dd>numeric value with following unit of measure
-<br><dt>&lsquo;<samp><span class="samp">OTHER</span></samp>&rsquo;<dd>ignores anything to the first character after &lsquo;<samp><span class="samp">=</span></samp>&rsquo; and from there to next
+<dt><span class="samp">NUMBER</span><dd>simple numeric value
+<br><dt><span class="samp">MEASURE</span><dd>numeric value with following unit of measure
+<br><dt><span class="samp">OTHER</span><dd>ignores anything to the first character after <span class="samp">=</span> and from there to next
 space. e.g., <code>\setbox\bak=\hbox</code>
-<br><dt>&lsquo;<samp><span class="samp">COMMAND</span></samp>&rsquo;<dd>ignores anything to next &lsquo;<samp><span class="samp">\</span></samp>&rsquo; and from there to the occurence of anything
+<br><dt><span class="samp">COMMAND</span><dd>ignores anything to next <span class="samp">\</span> and from there to the occurence of anything
 but a letter e.g., <code>\newbox\bak</code>
-<br><dt>&lsquo;<samp><span class="samp">SINGLE</span></samp>&rsquo;<dd>ignores single command e.g., <code>\noindent</code>
-<br><dt>&lsquo;<samp><span class="samp">PARAMETER</span></samp>&rsquo;<dd>ignores a command with one parameter e.g., <code>\foo{bar}</code>
-<br><dt>&lsquo;<samp><span class="samp">PACKAGE</span></samp>&rsquo;<dd>does not produce a Warning message if PACKAGE is encountered, e.g.,
+<br><dt><span class="samp">SINGLE</span><dd>ignores single command e.g., <code>\noindent</code>
+<br><dt><span class="samp">PARAMETER</span><dd>ignores a command with one parameter e.g., <code>\foo{bar}</code>
+<br><dt><span class="samp">PACKAGE</span><dd>does not produce a Warning message if PACKAGE is encountered, e.g.,
 `<code>\kleenex,PACKAGE.</code>' ignores `<code>\usepackage{kleenex}</code>'
-<br><dt>&lsquo;<samp><span class="samp">ENVCMD</span></samp>&rsquo;<dd>intended to process contents of unknown environment as if it were
+<br><dt><span class="samp">ENVCMD</span><dd>intended to process contents of unknown environment as if it were
 plain LaTeX
 , e.g. `<code>\environ,ENVCMD.</code>' <br>
 Therefore `<code>\begin{environ} text
-\end{environ}</code>' would be converted to `text'. Doesn't work in LaTeX2RTF
-version 2.1.0. 
-<br><dt>&lsquo;<samp><span class="samp">ENVIRONMENT</span></samp>&rsquo;<dd>ignores contents of that environment, e.g., with `<code>\ifhtml,ENVIRONMENT.</code>&rdquo;,
+\end{environ}</code>' would be converted to `text'. 
+Doesn't work in LaTeX2RTF
+version 2.1.0 up to and including 2.3.0. 
+<br><dt><span class="samp">ENVIRONMENT</span><dd>ignores contents of that environment, e.g., with `<code>\ifhtml,ENVIRONMENT.</code>&rdquo;,
 `<code>\begin{ifhtml} text \end{ifhtml}</code>' ignores `text'. 
 </dl>
 
    <p>The types are in upper case exactly as above. Do not use spaces. Lines starting
-with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the &lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored to end of
+with a <span class="samp">#</span> character are ignored. After the <span class="samp">.</span> everything is ignored to end of
 line. Example:
 <pre class="example">     \pagelength,MEASURE.
 </pre>
@@ -1283,12 +1318,12 @@ line. Example:
 
 <h3 class="section">5.6 Font Configuration</h3>
 
-<p>The file <samp><span class="file">fonts.cfg</span></samp> contains the font name mapping.  For example, this
+<p>The file <span class="file">fonts.cfg</span> contains the font name mapping.  For example, this
 file determines what font is used to represent <code>\rm</code> characters in the RTF file.
 
    <p>A line consists of a font name in LaTeX
 followed by comma and a font
-name in RTF. The end is marked by a &lsquo;<samp><span class="samp">.</span></samp>&rsquo;. No spaces are allowed. The
+name in RTF. The end is marked by a <span class="samp">.</span>. No spaces are allowed. The
 LaTeX
 font will be converted to the RTF font when it is found
 in the LaTeX
@@ -1298,13 +1333,13 @@ specified, only the first is used. All fonts in a LaTeX
 file that are
 not in this file will be mapped to the default font. All RTF fonts
 listed in this file will be in every RTF file header whether used or
-not.  Lines starting with a &lsquo;<samp><span class="samp">#</span></samp>&rsquo; character are ignored. After the
-&lsquo;<samp><span class="samp">.</span></samp>&rsquo; everything is ignored to end of line.
+not.  Lines starting with a <span class="samp">#</span> character are ignored. After the
+<span class="samp">.</span> everything is ignored to end of line.
 
    <p>To add a RTF font not
 used as substitute for a LaTeX
 font &mdash; for example a Symbol font used
-in <samp><span class="file">direct.cfg</span></samp> &mdash; use a dummy LaTeX
+in <span class="file">direct.cfg</span> &mdash; use a dummy LaTeX
 name like in the following
 <pre class="example">     Dummy3,MathematicalSymbols.
 </pre>
@@ -1316,7 +1351,7 @@ default fonts are named Roman <code>\rm</code>, Slanted <code>\sl</code>, Sans S
 
 <h3 class="section">5.7 Language Configuration</h3>
 
-<p>The file(s) <samp><span class="file">language.cfg</span></samp> control the translation of LaTeX
+<p>The file(s) <span class="file">language.cfg</span> control the translation of LaTeX
 's &ldquo;hardcoded&rdquo;
 sectioning names. 
 The standard LaTeX
@@ -1325,7 +1360,7 @@ or `Bibliography' that appeared in English or German in the output with the
 original versions of LaTeX2RTF
 .
 
-   <p>It is unlikely that you will need to create a new <samp><span class="file">language.cfg</span></samp> file. 
+   <p>It is unlikely that you will need to create a new <span class="file">language.cfg</span> file. 
 However, just look at one of the existing files and follow the pattern. 
 The format is really simple.
 
@@ -1335,7 +1370,7 @@ The format is really simple.
 
 <p>As stated in the Debugging section, LaTeX2RTF
 provides a means to control
-the amount of debugging information through the <samp><span class="option">-d#</span></samp> switch. 
+the amount of debugging information through the <span class="option">-d#</span> switch. 
 By using a debugging level of 4, you can get a pretty good idea of what
 LaTeX
 command caused the problem and what line that command might be
@@ -1344,20 +1379,20 @@ listed in the console window. They can be redirected to a file
 &ldquo;latex2rtf.log&rdquo; by appending <code>2&gt;latex2rtf.log</code> to the command line.
 
      <dl>
-<dt>&lsquo;<samp><span class="samp">Fatal error messages</span></samp>&rsquo;<dd>indicate a bug in the source code. PLEASE report them, if they do not
+<dt><span class="samp">Fatal error messages</span><dd>indicate a bug in the source code. PLEASE report them, if they do not
 apear in the documentation (see <a href="#Reporting-Bugs">Reporting Bugs</a>).
 
-     <br><dt>&lsquo;<samp><span class="samp">Error messages</span></samp>&rsquo;<dd>always abort the program and are caused by conditions that prevent
+     <br><dt><span class="samp">Error messages</span><dd>always abort the program and are caused by conditions that prevent
 further conversion of the input file.  Typically this is cause by
 LaTeX2RTF
 getting hopelessly confused by the number of braces in the
 LaTeX
 file.
 
-     <br><dt>&lsquo;<samp><span class="samp">Warning messages</span></samp>&rsquo;<dd>inform you, that there is some conversion loss from LaTeX
+     <br><dt><span class="samp">Warning messages</span><dd>inform you, that there is some conversion loss from LaTeX
 to RTF, or that
 the output file has some restrictions on some RTF Readers. Most of these
-warnings can be supressed by add the offending command to the <samp><span class="file">ignore.cfg</span></samp>
+warnings can be supressed by add the offending command to the <span class="file">ignore.cfg</span>
 file. 
 </dl>
 
@@ -1383,7 +1418,7 @@ gets better with each release.
 Don't try to make any sense in debugging levels above 4, these are for my
 own delight only and can change significantly between versions.
 
-   <p>The <samp><span class="file">inputfile</span></samp> may be incorrectly identified if it is incorporated
+   <p>The <span class="file">inputfile</span> may be incorrectly identified if it is incorporated
 through <code>\input</code> or <code>\include</code>.  The line may be also be wrong
 at times.  See <a href="#Known-Bugs">Known Bugs</a>.
 
@@ -1421,7 +1456,7 @@ For subscription to these lists visit the page:
 or
 <a href="http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers">developers list</a>
 
-   <p>As of June 2012, version 2.2.0 of LaTeX2RTF
+   <p>As of October 2012, version 2.3.0 of LaTeX2RTF
 is available.
 
    <p>The contents of this manual were composed by copying shamelessly what was
@@ -1456,10 +1491,10 @@ input.
 <p>Missing or buggy command line options.
 
      <dl>
-<dt><samp><span class="option">-d</span></samp><dd>Information logging and Error reporting is not implemented consistently. 
+<dt><span class="option">-d</span><dd>Information logging and Error reporting is not implemented consistently. 
 Need to test and track problems with the linenumber and with the file name.
 
-     <br><dt><samp><span class="option">--long_names</span></samp><dd>It would be useful to implement the GNU long option names, e.g.: `&ndash;debug',
+     <br><dt><span class="option">--long_names</span><dd>It would be useful to implement the GNU long option names, e.g.: `&ndash;debug',
 `&ndash;output_file', `&ndash;quiet', etc.  This could be done by switching to the GNU
 getopt package. 
 </dl>
@@ -1497,7 +1532,7 @@ guidelines when reporting a bug in the program:
      <ol type=1 start=1>
 <li>State the version of LaTeX2RTF
 that you are using.  You can get the version by
-specifying the <samp><span class="option">-V</span></samp> option to LaTeX2RTF
+specifying the <span class="option">-V</span> option to LaTeX2RTF
 .
 
      <li>Specify the your operating system and version. Be sure to check the file `Makefile'
@@ -1610,7 +1645,7 @@ They are arranged alphabetically within sections according to function.
 <p>These commands all work as expected.
 
      <dl>
-<dt>\<a id="index-g_t_005c-123"></a><br><dt>acute<a name="index-acute-124"></a><br><dt>b<a name="index-b-125"></a><br><dt>bar<a name="index-bar-126"></a><br><dt>breve<a name="index-breve-127"></a><br><dt>c<a name="index-c-128"></a><br><dt>check<a name="index-check-129"></a><br><dt>d<a name="index-d-130"></a><br><dt>ddot<a name="index-ddot-131"></a><br><dt>dot<a name="index-dot-132"></a><br><dt>grave<a name="index-grave-133"></a><br><dt>H<a name="index-H-134"></a><br><dt>hat<a name="index-hat-135"></a><br><dt>i<a name="index-i-136"></a><br><dt>j<a name="index-j-137"></a><br><dt>l<a name="index-l-138"></a><br><dt>L<a name="index-L-139"></a><br><dt>r<a name="index-r-140"></a><br><dt>tilde<a name="index-tilde-141"></a><br><dt>u<a name="index-u-142"></a><br><dt>v<a name="index-v-143"></a><br><dt>vec<a name="index-vec-144"></a><dd></dl>
+<dt>\<a id="index-_005c-123"></a><br><dt>acute<a name="index-acute-124"></a><br><dt>b<a name="index-b-125"></a><br><dt>bar<a name="index-bar-126"></a><br><dt>breve<a name="index-breve-127"></a><br><dt>c<a name="index-c-128"></a><br><dt>check<a name="index-check-129"></a><br><dt>d<a name="index-d-130"></a><br><dt>ddot<a name="index-ddot-131"></a><br><dt>dot<a name="index-dot-132"></a><br><dt>grave<a name="index-grave-133"></a><br><dt>H<a name="index-H-134"></a><br><dt>hat<a name="index-hat-135"></a><br><dt>i<a name="index-i-136"></a><br><dt>j<a name="index-j-137"></a><br><dt>l<a name="index-l-138"></a><br><dt>L<a name="index-L-139"></a><br><dt>r<a name="index-r-140"></a><br><dt>tilde<a name="index-tilde-141"></a><br><dt>u<a name="index-u-142"></a><br><dt>v<a name="index-v-143"></a><br><dt>vec<a name="index-vec-144"></a><dd></dl>
 
 <p><a id="Sectioning-Commands"></a>
 

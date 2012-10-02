@@ -39,9 +39,9 @@ from LaTeX to RTF. Be forewarned that the typeset output is not nearly
 as good as what you would get from using LaTeX directly. So, why bother
 translating? Consider,
 
-  1. You use LaTeX and hate everything beginning with MS-...
+  1. You use LaTeX and hate everything beginning with MS-....
      Nevertheless, you have to share your documents with people who
-     don't even know that there are alternatives to MS-...
+     don't even know that there are alternatives to MS-....
 
   2. You know somebody who frequently sends you very fine LaTeX
      documents.  Unfortunately, you are "on the other side" and need to
@@ -108,18 +108,19 @@ The latest version of LaTeX2RTF is available at SourceForge
 on CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
 
    The DOS package will also run under all MS Windows versions up to
-Vista, except 64bit systems.  It requires an i386 processor or better.
+Windows 7, except 64bit systems.  It requires an i386 processor or
+better.
 It should only be used on older Microsoft systems.
 For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
 package.
 
    The win-NO-GUI package only runs under Win32 (Win9x, ME, NT, 2000,
-XP, 2003, Vista, probably also Win7).  From LaTeX2RTF version 2.0.0 up
-it also runs on 64bit systems.
+XP, 2003, Vista, Win7).  From LaTeX2RTF version 2.0.0 up it also runs
+on 64bit systems.
 
    The win package is the win-NO-GUI package plus graphical user
 interface (GUI) shell (l2rshell) and installer.
-It only runs under Win NT, 2000, XP, 2003 and Vista, probably also Win7.
+It only runs under Win NT, 2000, XP, 2003, Vista, and Win7.
 From LaTeX2RTF version 2.0.0 up it also runs on 64bit systems.
 
    The win64 package (only LaTeX2RTF version 1.9.19) is the win package
@@ -211,7 +212,7 @@ installer, no graphical user interface (GUI))
 from SourceForge (http://sourceforge.net/projects/latex2rtf/)
 The DOS package contains a precompiled executable which should run
 under plain DOS and also in the command prompt (or "console") of any MS
-Windows system including Vista but not on 64bit systems.
+Windows system including Vista and Windows 7 but not on 64bit systems.
 To install the DOS or win-no-GUI package of LaTeX2RTF , extract all
 files from the zip archive, preserving the folder structure (winzip:
 check "use folder names"), preferably to `C:\l2r', or under Windows, to
@@ -236,10 +237,9 @@ plain DOS.
 2.5 Win32 systems
 =================
 
-To install LaTeX2RTF on a Win32 system (WinNT, Win2000, WinXP,
-WinVista, Win7), download the win package, execute the
-`latex2rtf-x.x.x_win.exe' (where x.x.x is the version number) and
-follow the instructions.
+To install LaTeX2RTF on a Win32 system (WinNT, Win2000, WinXP, Vista,
+Win7), download the win package, execute the `latex2rtf-x.x.x_win.exe'
+(where x.x.x is the version number) and follow the instructions.
 
    Note: The installer and GUI shell do not support Win9x and WinMe
 since LaTeX2RTF v.1.9.17.  If you have one of these systems, you should
@@ -255,10 +255,10 @@ freely available for download at `http://www.miktex.org/',
 `http://www.imagemagick.org' and `http://www.ghostscript.com'
 
    The following versions were available at the time of writing and
-used together with LaTeX2RTF version 2.2.x:
+used together with LaTeX2RTF version 2.3.x:
 - MikTeX 2.9
-- Ghostscript 9.05
-- ImageMagick-6.7.7-5-Q8-windows-dll.exe
+- Ghostscript 9.06
+- ImageMagick-6.7.9-Q8-windows-dll.exe
 
    If MikTeX, ImageMagick and Ghostscript are installed, the paths to
 their executables are detected automatically. If for any reason this
@@ -478,6 +478,38 @@ command line options when clicking RUN.
      are converted to png files.  The default value is 300 dots per
      inch.
 
+`-E# selects whether figures are included in the rtf (default) or created'
+     as external files with the filenames inserted in the rtf text.
+
+     The options -E4, -E8 and -E12 are experimental and may not work as
+     expected.
+
+    `-E0'
+          Do not include any figures in RTF.
+
+    `-E1'
+          Include figures that need no conversion.
+
+    `-E2'
+          Include figures that need conversion.
+
+    `-E3'
+          Include all figures (default).
+
+    `-E4'
+          Insert filenames for figures that do not need conversion.
+
+    `-E8'
+          Insert filenames for figures that need conversion.
+
+    `-E12'
+          Insert filenames for all figures.
+     With options -E4, -E8 and -E12, pdf and ps are converted to eps
+     and the eps filenames inserted. Bitmap files are inserted in their
+     original format.  After opening the rtf in a textprocessing or dtp
+     program, a macro can search for the inserted filenames and insert
+     the files in their places.
+
 `-f#'
      where # selects which fields to use during conversion:
     `-f0'
@@ -539,12 +571,12 @@ command line options when clicking RUN.
           convert inline equations to bitmap
 
     `-M16'
-          insert Word comment field that contains the original equation
-          text
+          insert Word comment field that contains the raw LaTeX equation
 
     `-M32'
-          insert the raw latex equation delimited by `$ ... $' for
-          inline equations and by `\[ ... \]' for displayed equations.
+          insert the raw latex equation in the RTF text delimited by `$
+          ... $' for     inline equations and by `\[ ... \]' for
+          displayed equations.
           This is useful when using version 6 of the MathType equation
             editor, which converts typed or pasted TeX code into a
           MathType equation.
@@ -552,6 +584,13 @@ command line options when clicking RUN.
           OO has an     equation syntax which partially resembles TeX
           syntax.
 
+    `-M64'
+          convert displayed equations to EPS files and insert filenames
+          in RTF text.
+
+    `-M128'
+          convert inline equations to EPS files and insert filenames in
+          RTF text.
      These switches can be combined to get different effects.  Handy
      examples are
     `-M3'
@@ -563,14 +602,30 @@ command line options when clicking RUN.
 
     `-M12'
           convert both inline and displayed equations to bitmaps
-     Bitmap conversion requires that you have installed a working
-     latex2png script.  Producing bitmaps is slow.
+
+    `-M192'
+          convert both inline and displayed equations to EPS and insert
+          filenames in RTF text
+     Conversion to bitmaps or eps requires that you have installed a
+     working latex2png script.  Producing bitmaps is slow.
      When running the DOS version, conversion to bitmaps works for the
      first 26 equations but fails for the rest with the message
      "latex2png: pipe error: Too many open files (EMFILE)".
      This is probably a bug in the djgpp 2.04 compiler.
      The Windows version, compiled with MinGW, successfully converts at
      least 500 equations to bitmaps.
+     When -M64, -M128 or both are specified, equations are converted to
+     individual eps files, the filenames of which are literally
+     inserted in the rtf file, delimited by [###...###]. After loading
+     the rtf file in a text processing program, a macro can be run
+     which searches for "[###" and "###]", extracts the filename, and
+     inserts the eps in that place.  The Windows installer package
+     contains the code of such a macro for Word2010 in the file
+     "WordMacro_InsertEPSfromNames.txt" in subfolder "scripts". (This
+     macro may also run on other versions of Word but it was only
+     tested on Word2010.) In Word, the inserted eps graphics display in
+     bad quality on the screen and on non-postscript printers but can
+     be printed in high quality on postscript and pdf printers.
 
 `-o outputfile'
      Unless an `outputfile' is specified with the `-o' option, the
@@ -721,7 +776,7 @@ As of version 1.9.17, LaTeX2RTF has limited unicode support.  LaTeX
 files that use unicode sequences are just emitted directly into the RTF
 file.
 Symbols and odd characters in math sequences may also be converted to a
-unicode sequence. Some of them need the STIXGeneral fonts (see *note
+unicode sequence. Some of them need the STIXGeneral fonts (see *Note
 Math and Special Symbols::) to be installed on the system where the rtf
 file is to be displayed or printed.
 
@@ -765,7 +820,7 @@ This is not needed if your LaTeX file contains
 
    Encountering the `german' package or babel option (by H. Partl of the
 Vienna University) makes LaTeX2RTF behave like that: German Quotes,
-German Umlauts by `"a', etc...  This support is programmed directly
+German Umlauts by `"a', etc....  This support is programmed directly
 into LaTeX2RTF and supporting similar features for other languages will
 require patching the source code.
 
@@ -845,10 +900,11 @@ for many of them.
 4.7 Equations
 =============
 
-There are five separate levels of equation translation based on the -M
-switch, see *note LaTeX2RTF Options::.  Each equation is converted
+There are six separate levels of equation translation based on the -M
+switch, see *Note LaTeX2RTF Options::.  Each equation is converted
 either to an EQ field or to a bitmap or inserted as raw TeX code in the
-document.
+document or converted to an eps file with the eps file name inserted in
+the document text delimited by [###...###].
 
    This is an interim solution (for some definition of "interim").
 Ideally the equations would become OLE equation objects in the RTF
@@ -909,7 +965,7 @@ displayed or printed.
 
    Many mathematical and special symbols are directly supported by
 LaTeX2RTF .  Less common symbols (not found in the standard font) are
-supported by the conversion table in the file `direct.cfg', see *note
+supported by the conversion table in the file `direct.cfg', see *Note
 Direct Conversion::.
 
    Required fonts are:
@@ -979,14 +1035,14 @@ improve.
 which is a "little package that allows you to use LaTeX to prepare
 documents in HTML."  It brings an Emacs lisp program with it to convert
 the Hyperlatex file to HTML.  Hyperlatex can be obtained from the
-CTAN-sites, see *note Obtaining LaTeX2RTF::.  There are two convenient
+CTAN-sites, see *Note Obtaining LaTeX2RTF::.  There are two convenient
 commands that avoid typing: \link and \xlink that generate an
 "internal" label which then is used in the following \Ref and \Pageref
 commands.
 
    LaTeX makes it possible to write `\link{anchor}[ltx]{label}', which
 typesets: `anchor ltx'. LaTeX2RTF does NOT support this aproach since
-the optional parameter is thrown away right now, see *note LaTeX2RTF
+the optional parameter is thrown away right now, see *Note LaTeX2RTF
 under Development::.
 
    Note that you have to update your `.cfg' files if you are upgrading,
@@ -996,7 +1052,7 @@ simply can `ignore'.
 4.13 APA Support
 ================
 
-Some APA citation styles are supported, see *note Citation Commands::
+Some APA citation styles are supported, see *Note Citation Commands::
 
    Support for APA text formatting is only rudimentary at the moment
 (headings without numbering).  If you want to format a document
@@ -1106,6 +1162,7 @@ the `.' everything is ignored to end of line. To select a specific font
 use `*fontname*', where `fontname' be defined in `fonts.cfg'.  To write
 the `*' character use `**'.
 
+
 \bigstar,{\u8727**}.
 \copyright,\'a9.
 
@@ -1158,7 +1215,8 @@ backslash, followed by comma and the type of the variable followed by
      intended to process contents of unknown environment as if it were
      plain LaTeX , e.g. ``\environ,ENVCMD.''
      Therefore ``\begin{environ} text \end{environ}'' would be
-     converted to `text'. Doesn't work in LaTeX2RTF version 2.1.0.
+     converted to `text'.  Doesn't work in LaTeX2RTF version 2.1.0 up
+     to and including 2.3.0.
 
 `ENVIRONMENT'
      ignores contents of that environment, e.g., with
@@ -1287,7 +1345,7 @@ subscription to these lists visit the page: users list
 developers list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers)
 
-   As of June 2012, version 2.2.0 of LaTeX2RTF is available.
+   As of October 2012, version 2.3.0 of LaTeX2RTF is available.
 
    The contents of this manual were composed by copying shamelessly
 what was available in the original sources and documentation.

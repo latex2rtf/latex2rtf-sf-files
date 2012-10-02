@@ -127,7 +127,14 @@ extern int      g_equation_inline_bitmap;
 extern int      g_equation_display_bitmap;
 extern int      g_equation_comment;
 extern int      g_equation_raw_latex;
+extern int      g_equation_inline_eps;
+extern int      g_equation_display_eps;
 extern int      g_equation_mtef;
+
+extern int      g_figure_include_direct;
+extern int      g_figure_include_converted;
+extern int      g_figure_comment_direct;
+extern int      g_figure_comment_converted;
 
 extern int      g_tabular_display_rtf;
 extern int      g_tabular_display_bitmap;

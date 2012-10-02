@@ -40,6 +40,7 @@ This file is available from http://sourceforge.net/projects/latex2rtf/
 #include "preamble.h"
 #include "counters.h"
 #include "vertical.h"
+#include "fields.h"
 
 /* number of points (72/inch) in a meter */
 #define POINTS_PER_METER 2834.65
@@ -150,6 +151,7 @@ static void PutEmfFile (char *, double, double, double, double);
 static void PutWmfFile (char *, double, double, double, double);
 static void PutPdfFile (char *, double, double, double, double);
 static void PutEpsFile (char *, double, double, double, double);
+static void PutPsFile  (char *, double, double, double, double);
 static void PutTiffFile(char *, double, double, double, double);
 static void PutGifFile (char *, double, double, double, double);
 
@@ -162,7 +164,7 @@ static GraphConvertElement GraphConvertTable[] = {
     { ".eps",  PutEpsFile  },
     { ".tiff", PutTiffFile },
     { ".tif",  PutTiffFile },
-    { ".ps",   PutEpsFile  },
+    { ".ps",   PutPsFile   },
     { ".pict", PutPictFile },
     { ".emf",  PutEmfFile  },
     { ".wmf",  PutWmfFile  },
@@ -214,10 +216,12 @@ void CmdGraphicsPath(int code)
     safe_free(directories);
 }
 
-#define CONVERT_SIMPLE 1
-#define CONVERT_CROP   2
-#define CONVERT_LATEX  3
-#define CONVERT_PDF    4
+#define CONVERT_SIMPLE        1
+#define CONVERT_CROP          2
+#define CONVERT_LATEX_TO_PNG  3
+#define CONVERT_LATEX_TO_EPS  4
+#define CONVERT_PDF           5
+#define CONVERT_PS_TO_EPS     6
 
 static char *g_psset_info   = NULL;
 static char *g_psstyle_info = NULL;
@@ -305,7 +309,7 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
 
     int N = 511;        
 
-    diagnostics(4, "SysGraphicsConvert '%s'", in);
+    diagnostics(4, "SysGraphicsConvert '%s' to '%s'", in, out);
 
     out_tmp = strdup_tmp_path(out);
 
@@ -336,7 +340,7 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
         snprintf(cmd, N, format_crop, dpi, in, out_tmp);
     }
 
-    if (opt == CONVERT_LATEX) {
+    if (opt == CONVERT_LATEX_TO_PNG) {
         if (g_home_dir == NULL) {
             const char format_unix[] = "%slatex2png -d %d -o %d '%s'";
             if (g_script_dir)
@@ -351,10 +355,31 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
                 snprintf(cmd, N, format_unix, "", dpi, offset, g_home_dir, in);
         }
     }
+
+    if (opt == CONVERT_LATEX_TO_EPS) {
+        if (g_home_dir == NULL) {
+            const char format_unix[] = "%slatex2png -e '%s'";
+            if (g_script_dir)
+                snprintf(cmd, N, format_unix, g_script_dir, in);
+            else
+                snprintf(cmd, N, format_unix, "", in);
+        } else {
+            const char format_unix[] = "%slatex2png -e -H '%s' '%s'";
+            if (g_script_dir)
+                snprintf(cmd, N, format_unix, g_script_dir, g_home_dir, in);
+            else
+                snprintf(cmd, N, format_unix, "", g_home_dir, in);
+        }
+    }
     
     if (opt == CONVERT_PDF) {
         const char format_unix[] = "gs -q -dNOPAUSE -dSAFER -dBATCH -sDEVICE=pngalpha -r%d -sOutputFile='%s' '%s'";
         snprintf(cmd, N, format_unix, dpi, out_tmp, in);
+    }
+
+    if (opt == CONVERT_PS_TO_EPS) {
+        const char format_unix[] = "eps2eps '%s' '%s'";
+        snprintf(cmd, N, format_unix, in, out_tmp);
     }
 
 #else
@@ -369,7 +394,7 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
         snprintf(cmd, N, format_crop, dpi, in, out_tmp);
     }
 
-    if (opt == CONVERT_LATEX) {
+    if (opt == CONVERT_LATEX_TO_PNG) {
         if (g_home_dir == NULL){
             char format_xp[] = "bash latex2png -d %d -o %d \"%s\"";
             snprintf(cmd, N, format_xp, dpi, offset, in);
@@ -378,14 +403,29 @@ static char *SysGraphicsConvert(int opt, int offset, uint16_t dpi, const char *i
             snprintf(cmd, N, format_xp, dpi, offset, g_home_dir, in);
         }
     }
+
+    if (opt == CONVERT_LATEX_TO_EPS) {
+        if (g_home_dir == NULL){
+            char format_xp[] = "bash latex2png -e \"%s\"";
+            snprintf(cmd, N, format_xp, in);
+        } else {
+            char format_xp[] = "bash latex2png -e -H \"%s\" \"%s\"";
+            snprintf(cmd, N, format_xp, g_home_dir, in);
+        }
+    }
     
     if (opt == CONVERT_PDF) {
         char format_xp[] = "bash pdf2pnga \"%s\" \"%s\" %d";
         snprintf(cmd, N, format_xp, in, out_tmp, dpi);
     }
+
+    if (opt == CONVERT_PS_TO_EPS) {
+        char format_xp[] = "eps2eps \"%s\" \"%s\"";
+        snprintf(cmd, N, format_xp, in, out_tmp);
+    }
         
 #endif
-    diagnostics(4, "`%s`", cmd);
+    diagnostics(3, "`%s`", cmd);
 
     err = system(cmd);
 
@@ -853,7 +893,7 @@ static void PutPictFile(char *s, double height0, double width0, double scale, do
     diagnostics(4, "width = %d, height = %d", width, height);
     fprintRTF("\n{\\pict\\macpict\\picw%d\\pich%d\n", width, height);
 
-        AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
+    AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
     if (sx != 100 && sy != 100)
         fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
@@ -911,6 +951,18 @@ static unsigned char * getPngChunk(FILE *fp, char *s)
     } while (strcmp(s,Type) != 0);
     
     return data;    
+}
+
+static void InsertFigureAsComment(const char *s, int hinline)
+{
+	if (!s) return;
+	if (*s=='\0') return;
+
+  if (hinline == 1) fprintRTF("{\\dn10 ");
+		putRtfStrEscaped("[###");
+		putRtfStrEscaped(s);
+		putRtfStrEscaped("###]");
+  if (hinline == 1) fprintRTF("}");
 }
 
 /******************************************************************************
@@ -1027,12 +1079,14 @@ static void PutPngFile(char *png, double height_goal, double width_goal, double 
 {
     FILE *fp;
     double xres,yres;
+    char *s;
     uint32_t w_pixels, h_pixels, b;
     uint32_t w_twips, h_twips;
     uint16_t sx, sy;
     int bad_res;
         
     diagnostics(WARNING,"Encoding  '%s'",png);
+
     GetPngSize(png, &w_pixels, &h_pixels, &xres, &yres, &bad_res);
     if (w_pixels == 0 || h_pixels == 0) return;
 
@@ -1144,7 +1198,7 @@ static void PutJpegFile(char *s, double height0, double width0, double scale, do
     fprintRTF("\n{\\pict\\jpegblip\\picw%ld\\pich%ld", w, h);
     fprintRTF("\\picwgoal%ld\\pichgoal%ld\n", width * 20, height * 20);
 
-        AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
+    AdjustScaling(height*20,width*20,height0,width0,scale,&sx,&sy);
     if (sx != 100 && sy != 100)
         fprintRTF("\\picscalex%d\\picscaley%d", sx,sy);
 
@@ -1344,15 +1398,43 @@ static void PutWmfFile(char *s, double height0, double width0, double scale, dou
  ******************************************************************************/
 static void PutPdfFile(char *s, double height0, double width0, double scale, double baseline)
 {
-    char *png;
-    diagnostics(WARNING, "Rendering '%s'", s);
-
-    png = pdf_to_png(s);
+    char *png, *pdf, *eps, *out;
     
-    if (png) {
-        PutPngFile(png, height0, width0, scale, baseline);
-        my_unlink(png);
-        safe_free(png);
+    if (g_figure_include_converted) {
+		diagnostics(WARNING, "Rendering '%s'", s);
+		diagnostics(3,"Converting PDF to PNG and inserting into RTF.");
+	
+		png = pdf_to_png(s);
+		
+		if (png) {
+			PutPngFile(png, height0, width0, scale, baseline);
+			my_unlink(png);
+			safe_free(png);
+		}
+    }
+
+    if (g_figure_comment_converted) {
+    diagnostics(3,"Converting PDF to EPS and inserting file name in text");
+    eps = strdup_new_extension(s, ".pdf", ".eps");
+    if (eps == NULL) {
+        eps = strdup_new_extension(s, ".PDF", ".eps");
+        if (eps == NULL)
+            return;
+    }
+
+    pdf = strdup_together(g_home_dir, s);
+    eps = strdup_together(g_home_dir, eps);
+    out = SysGraphicsConvert(CONVERT_PS_TO_EPS, 0, g_dots_per_inch, pdf, eps);
+        
+    if (out != NULL) {
+		    putRtfStrEscaped("[###");
+		    putRtfStrEscaped(eps);
+		    putRtfStrEscaped("###]");
+        free(out);
+    }
+    
+    free(pdf);
+    free(eps);
     }
 }
 
@@ -1361,11 +1443,11 @@ static void PutPdfFile(char *s, double height0, double width0, double scale, dou
  ******************************************************************************/
 static void PutEpsFile(char *s, double height0, double width0, double scale, double baseline)
 {
-    char *png, *emf, *pict;
+    char *png, *eps;
 
-    diagnostics(WARNING, "Rendering '%s'", s);
-
-    if (1) {
+    if (g_figure_include_converted) {
+    	diagnostics(WARNING, "Rendering '%s'", s);
+		  diagnostics(3,"Converting EPS to PNG and inserting in RTF.");
         png = eps_to_png(s);
         if (png) {
             PutPngFile(png, height0, width0, scale, baseline);
@@ -1374,22 +1456,49 @@ static void PutEpsFile(char *s, double height0, double width0, double scale, dou
         }
     }
 
-    if (0) {
-        pict = eps_to_pict(s);
-        if (pict) {
-            PutPictFile(pict, height0, width0, scale, baseline);
-            my_unlink(pict);
-            free(pict);
+    if (g_figure_comment_converted) {
+		  diagnostics(3,"Inserting EPS file name in text");
+		  putRtfStrEscaped("[###");
+		  putRtfStrEscaped(eps);
+		  putRtfStrEscaped("###]");
+      free (eps);  
+    }
+}
+/******************************************************************************
+ purpose   : convert ps to png and insert in RTF file
+ ******************************************************************************/
+static void PutPsFile(char *s, double height0, double width0, double scale, double baseline)
+{
+    char *png, *eps, *out;
+
+    if (g_figure_include_converted) {
+    	diagnostics(WARNING, "Rendering '%s'", s);
+		  diagnostics(3,"Converting PS to PNG and inserting in RTF.");
+        png = eps_to_png(s);
+        if (png) {
+            PutPngFile(png, height0, width0, scale, baseline);
+            my_unlink(png);
+            free(png);
         }
     }
 
-    if (0) {
-        emf = eps_to_emf(s);
-        if (emf) {
-            PutEmfFile(emf, height0, width0, scale, baseline);
-            my_unlink(emf);
-            free(emf);
+    if (g_figure_comment_converted) {
+		  diagnostics(3,"Inserting PS file name in text");
+      eps = strdup_new_extension(s, ".ps", ".eps");
+      if (eps == NULL) { 
+        eps = strdup_new_extension(s, ".PS", ".eps");
+        if (eps == NULL) { 
+		       diagnostics(ERROR,"PutPsFile: Graphicsfile hat not .ps extension");
+           return;
         }
+      }  
+    	diagnostics(3,"Converting PS to EPS");
+      out = SysGraphicsConvert(CONVERT_PS_TO_EPS, 0, g_dots_per_inch, s, eps);
+      free (out);  
+		  putRtfStrEscaped("[###");
+		  putRtfStrEscaped(eps);
+		  putRtfStrEscaped("###]");
+      free (eps);  
     }
 }
 
@@ -1558,7 +1667,7 @@ static double GetBaseline(const char *tex_file_stem, const char *pre)
 /******************************************************************************
  purpose   : Convert LaTeX to Bitmap and insert in RTF file
  ******************************************************************************/
-void PutLatexFile(const char *tex_file_stem, double scale, const char *pre)
+void PutLatexFile(const char *tex_file_stem, double scale, const char *pre, conversion_t convertTo, int hinline)
 {
     char *png_file_name = NULL;
     char *tmp_path;
@@ -1572,6 +1681,21 @@ void PutLatexFile(const char *tex_file_stem, double scale, const char *pre)
     uint16_t png_resolution=0;
     double max_fig_size = 32767.0 / 20.0;  /* in twips */
         
+    if (convertTo == EPS) {
+    	char *eps_file_name = NULL;
+        eps_file_name = strdup_together(tex_file_stem, ".eps");
+        diagnostics(1, "Converting LaTeX to EPS...");
+        tmp_path = SysGraphicsConvert(CONVERT_LATEX_TO_EPS, bmoffset, png_resolution, tex_file_stem, eps_file_name);
+
+    	if (NULL == tmp_path)
+        	diagnostics(WARNING, "PutLatexFile failed to convert '%s.tex' to '%s'",tex_file_stem,eps_file_name);
+        else 
+			InsertFigureAsComment(eps_file_name, hinline);
+			
+        safe_free(eps_file_name);
+        return;
+    }
+
     diagnostics(4, "Rendering LaTeX as a bitmap...");
 
     /* arrived at by trial and error ... works for sizes from 72 to 1200 dpi */
@@ -1584,7 +1708,7 @@ void PutLatexFile(const char *tex_file_stem, double scale, const char *pre)
     png_resolution = (uint16_t) g_dots_per_inch;
     
     png_file_name = strdup_together(tex_file_stem, ".png");
-    tmp_path = SysGraphicsConvert(CONVERT_LATEX, bmoffset, png_resolution, tex_file_stem, png_file_name);
+    tmp_path = SysGraphicsConvert(CONVERT_LATEX_TO_PNG, bmoffset, png_resolution, tex_file_stem, png_file_name);
 
     if (NULL == tmp_path) {
         diagnostics(WARNING, "PutLatexFile failed to convert '%s.tex' to '%s'",tex_file_stem,png_file_name);
@@ -1604,7 +1728,7 @@ void PutLatexFile(const char *tex_file_stem, double scale, const char *pre)
             png_resolution = (uint16_t)((double)g_dots_per_inch / (double)png_width * max_fig_size);
 
         safe_free(tmp_path);
-        tmp_path = SysGraphicsConvert(CONVERT_LATEX, bmoffset, png_resolution, tex_file_stem, png_file_name);
+        tmp_path = SysGraphicsConvert(CONVERT_LATEX_TO_PNG, bmoffset, png_resolution, tex_file_stem, png_file_name);
         if (tmp_path == NULL) {
             safe_free(png_file_name);
             return;
@@ -1673,7 +1797,12 @@ static char *SaveEquationAsFile(const char *post_begin_document,
     
     if ( streq(pre, "$") || streq(pre, "\\begin{math}") || streq(pre, "\\(") ) {
         fprintf(f, "%%INLINE_DOT_ON_BASELINE\n");
-        fprintf(f, "%s\n.\\quad %s\n%s", pre, eq, post);
+        if ((g_equation_inline_eps) || (g_equation_display_eps)) {
+        fprintf(f, "%s\n^I_g%s\n%s", pre, eq, post);  
+        }
+        else {
+        fprintf(f, "%s\n.\\quad %s\n%s", pre, eq, post);  
+        }
     } else if (strstr(pre, "equation"))
         fprintf(f, "$$%s$$", eq);
     else
@@ -1744,10 +1873,11 @@ static char * abbreviate(const char *s, int len)
 /******************************************************************************
  purpose   : Convert LaTeX to Bitmap and write to RTF file
  ******************************************************************************/
-void WriteLatexAsBitmap(char *pre, char *eq, char *post)
+void WriteLatexAsBitmapOrEPS(char *pre, char *eq, char *post, conversion_t convertTo)
 {
     char *p, *abbrev, *latex_to_convert;
     char *name = NULL;
+    int hinline;
     
     /* go to a bit a trouble to give the user some feedback */
     latex_to_convert = strdup_together3(pre,eq,post);
@@ -1757,6 +1887,7 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
     safe_free(latex_to_convert);
         
     if (eq == NULL) return;
+    hinline = 0;
 
 /* suppress bitmap equation numbers in eqnarrays with zero or one \label{}'s*/
     if (pre && streq(pre, "\\begin{eqnarray}")) {
@@ -1785,8 +1916,10 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
         name = SaveEquationAsFile(p, pre, eq, post);
         safe_free(p);
         
-    } else 
+    } else  {
         name = SaveEquationAsFile(NULL, pre, eq, post);
+        if ( streq(pre, "$") || streq(pre, "\\begin{math}") || streq(pre, "\\(") ) hinline=1;
+        }
     
     if (name) {
         if (strstr(pre, "music") 
@@ -1796,9 +1929,9 @@ void WriteLatexAsBitmap(char *pre, char *eq, char *post)
             || strstr(pre, "tabbing")
             || strstr(pre, "psgraph")
             || strstr(pre, "pspicture")) 
-            PutLatexFile(name, g_png_figure_scale, pre);
+            PutLatexFile(name, g_png_figure_scale, pre, convertTo, hinline);
         else
-            PutLatexFile(name, g_png_equation_scale, pre);
+            PutLatexFile(name, g_png_equation_scale, pre, convertTo, hinline);
 
         safe_free(name);
     }
@@ -2163,7 +2296,7 @@ void CmdPsPicture(int code)
     contents = getTexUntil(post, 0);
 
     PrepareDisplayedBitmap("PS picture");
-    WriteLatexAsBitmap("\\begin{pspicture}", contents, post);
+    WriteLatexAsBitmapOrEPS("\\begin{pspicture}", contents, post, BITMAP);
     FinishDisplayedBitmap();
 
     ConvertString(post);    /* to balance the \begin{picture} */    
@@ -2188,7 +2321,7 @@ void CmdPsGraph(int code)
     contents = getTexUntil(post, 0);
 
     PrepareDisplayedBitmap("PS Graph");
-    WriteLatexAsBitmap("\\begin{psgraph}", contents, post);
+    WriteLatexAsBitmapOrEPS("\\begin{psgraph}", contents, post, BITMAP);
     FinishDisplayedBitmap();
 
     ConvertString(post);    /* to balance the \begin{graph} */
@@ -2245,7 +2378,7 @@ void CmdPicture(int code)
     picture = getTexUntil(post, 0);
 
     PrepareDisplayedBitmap("latex picture");
-    WriteLatexAsBitmap("\\begin{picture}", picture, post);
+    WriteLatexAsBitmapOrEPS("\\begin{picture}", picture, post, BITMAP);
     FinishDisplayedBitmap();
 
     ConvertString(post);    /* to balance the \begin{picture} */
@@ -2270,7 +2403,7 @@ void CmdMusic(int code)
     contents = getTexUntil(endmusic, TRUE);
 
     PrepareDisplayedBitmap("music");
-    WriteLatexAsBitmap("\\begin{music}", contents, endmusic);
+    WriteLatexAsBitmapOrEPS("\\begin{music}", contents, endmusic, BITMAP);
     FinishDisplayedBitmap();
 
     ConvertString(endmusic);             /* to balance the \begin{music} */
