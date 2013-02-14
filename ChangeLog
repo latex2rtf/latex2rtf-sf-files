@@ -2,6 +2,37 @@
 ## latex2rtf changes from 2.3.0
 ##############
 
+r1226 | whennings
+WH: in graphics.c, fixed incorrect handling of tmp_dir
+in latex2png, delete existing output files before conversion
+
+r1225 | whennings
+WH: in latex2png, changed parameter in call to xelatex
+
+r1224 | whennings
+WH: in graphics.c, adding tmp_path to PutPdfFile and PutPsFile
+incremented version to 2.3.2
+
+r1223 | whennings
+WH: latex2png script for unix (previous upload was for Windows, sorry)
+
+r1222 | whennings
+WH: modified latex2png script to that it also tries xelatex
+
+r1221 | whennings
+WH: increased buffer size in parser.c for an extra large \begin{environment} ... \end{environment}
+
+r1220 | whennings
+WH: modified latex2png script -
+- also try conversion with pdflatex
+- in call of ImageMagick convert, changed to "-type TrueColor" for better quality of png bitmaps
+
+r1219 | prahl
+update man pages
+
+r1218 | prahl
+bump version number of latex2png
+
 r1217 | whennings
 WH: graphics.c: fixed bug in "PutEpsFile" (variable eps was undefined)
 fixed bug in funct1.c (figure numbers missing with "-F" option, patch tracker no.3537371)
