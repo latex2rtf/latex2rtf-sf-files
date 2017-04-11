@@ -1137,21 +1137,21 @@ parameter: type of operand
         switch (code) {
             case 4:
                 if (upper_limit || lower_limit)
-                    fprintRTF("( %c %c )\\\\I", g_field_separator, g_field_separator);
+                    fprintRTF("( %c %c )\\\\i", g_field_separator, g_field_separator);
                 else
-                    fprintRTF("\\\\in( %c %c )\\\\I", g_field_separator, g_field_separator);
+                    fprintRTF("\\\\in( %c %c )\\\\i", g_field_separator, g_field_separator);
                 /* \iiint --- fall through */
             case 3:
                 if (upper_limit || lower_limit)
-                    fprintRTF("( %c %c )\\\\I", g_field_separator, g_field_separator);
+                    fprintRTF("( %c %c )\\\\i", g_field_separator, g_field_separator);
                 else
-                    fprintRTF("\\\\in( %c %c )\\\\I", g_field_separator, g_field_separator);
+                    fprintRTF("\\\\in( %c %c )\\\\i", g_field_separator, g_field_separator);
                 /* \iint --- fall through */
             case 0:
                 if (upper_limit || lower_limit)
-                    fprintRTF("(", g_field_separator, g_field_separator);
+                    fprintRTF("(");
                 else
-                    fprintRTF("\\\\in(", g_field_separator, g_field_separator);
+                    fprintRTF("\\\\in(");
                 break;
             case 1:
                 fprintRTF("\\\\su(");
@@ -1209,7 +1209,15 @@ parameter: type of operand
     }
 
     if (command) {
+        if (strcmp(command, "\\left") == 0) {
+            CmdLeftRight(0);
+            }
+        else if (strcmp(command, "\\right") == 0) {
+            CmdLeftRight(1);
+            }
+        else{
         ConvertString(command);
+            }
         free(command);
     }
     if (lower_limit)
