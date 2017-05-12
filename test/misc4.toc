@@ -1,0 +1,66 @@
+\contentsline {chapter}{\numberline {1}Getting acquainted with T\kern -.1667em\lower .5ex\hbox {E}\kern -.125emX\spacefactor \@m {}}{1}
+\contentsline {section}{\numberline {1.1}The spirit of T\kern -.1667em\lower .5ex\hbox {E}\kern -.125emX\spacefactor \@m {}}{1}
+\contentsline {subsection}{\numberline {1.1.1}T\kern -.1667em\lower .5ex\hbox {E}\kern -.125emX\spacefactor \@m {}\ is a typesetter, not a word-processor}{1}
+\contentsline {subsection}{\numberline {1.1.2}Typical T\kern -.1667em\lower .5ex\hbox {E}\kern -.125emX\spacefactor \@m {}\ interfaces}{3}
+\contentsline {chapter}{\numberline {2}Getting started with \LaTeX }{6}
+\contentsline {section}{\numberline {2.1}Why start with \LaTeX ?}{6}
+\contentsline {section}{\numberline {2.2}\LaTeX \ formats, and we compose}{7}
+\contentsline {section}{\numberline {2.3}Document styles}{8}
+\contentsline {section}{\numberline {2.4}Preparing a non-mathematical document}{9}
+\contentsline {subsection}{\numberline {2.4.1}Sentences and paragraphs}{9}
+\contentsline {subsection}{\numberline {2.4.2}Punctuation}{11}
+\contentsline {subsection}{\numberline {2.4.3}Ties}{13}
+\contentsline {subsection}{\numberline {2.4.4}Specially reserved symbols}{14}
+\contentsline {subsection}{\numberline {2.4.5}So what are control symbols and words?}{14}
+\contentsline {subsection}{\numberline {2.4.6}Commands to change appearance}{16}
+\contentsline {subsection}{\numberline {2.4.7}Accents}{18}
+\contentsline {subsection}{\numberline {2.4.8}Over-ruling some of T\kern -.1667em\lower .5ex\hbox {E}\kern -.125emX\spacefactor \@m {}'s choices}{18}
+\contentsline {subsection}{\numberline {2.4.9}Commenting your document}{20}
+\contentsline {subsection}{\numberline {2.4.10}Footnotes}{20}
+\contentsline {subsection}{\numberline {2.4.11}Topmatter}{20}
+\contentsline {subsection}{\numberline {2.4.12}Sectioning commands}{21}
+\contentsline {subsection}{\numberline {2.4.13}\LaTeX \ environments}{22}
+\contentsline {subsection}{\numberline {2.4.14}{\tt em} environment}{22}
+\contentsline {subsection}{\numberline {2.4.15}{\tt quote} and {\tt quotation} environments}{23}
+\contentsline {subsection}{\numberline {2.4.16}{\tt verse} environment}{24}
+\contentsline {subsection}{\numberline {2.4.17}{\tt center} environment}{25}
+\contentsline {subsection}{\numberline {2.4.18}{\tt flushright} and {\tt flushleft} environments}{25}
+\contentsline {subsection}{\numberline {2.4.19}{\tt verbatim} environment}{26}
+\contentsline {subsection}{\numberline {2.4.20}{\tt itemize}, {\tt enumerate}, {\tt description} environments}{27}
+\contentsline {subsection}{\numberline {2.4.21}{\tt tabbing} environment}{30}
+\contentsline {subsection}{\numberline {2.4.22}{\tt tabular} environment}{31}
+\contentsline {subsection}{\numberline {2.4.23}{\tt figure} and {\tt table} environments}{33}
+\contentsline {subsection}{\numberline {2.4.24}The {\tt letter} document style}{34}
+\contentsline {subsection}{\numberline {2.4.25}Common pitfalls; Error messages}{34}
+\contentsline {section}{\numberline {2.5}Summary}{37}
+\contentsline {chapter}{\numberline {3}Mathematical typesetting with \LaTeX }{39}
+\contentsline {section}{\numberline {3.1}Introduction}{39}
+\contentsline {section}{\numberline {3.2}Displaying a formula}{42}
+\contentsline {section}{\numberline {3.3}Using mathematical symbols}{43}
+\contentsline {subsection}{\numberline {3.3.1}Symbols available from the keyboard}{44}
+\contentsline {subsection}{\numberline {3.3.2}Greek letters}{44}
+\contentsline {subsection}{\numberline {3.3.3}Calligraphic uppercase letters}{45}
+\contentsline {subsection}{\numberline {3.3.4}Binary operators}{45}
+\contentsline {subsection}{\numberline {3.3.5}Binary relations}{45}
+\contentsline {subsection}{\numberline {3.3.6}Miscellaneous symbols}{46}
+\contentsline {subsection}{\numberline {3.3.7}Arrow symbols}{46}
+\contentsline {subsection}{\numberline {3.3.8}Expression delimiters}{47}
+\contentsline {subsection}{\numberline {3.3.9}Operators like $\displaystyle \intop \nolimits $ and $\displaystyle \sum $}{47}
+\contentsline {subsection}{\numberline {3.3.10}Accents}{48}
+\contentsline {section}{\numberline {3.4}Some common mathematical structures}{48}
+\contentsline {subsection}{\numberline {3.4.1}Subscripts and superscripts}{49}
+\contentsline {subsection}{\numberline {3.4.2}Primes}{51}
+\contentsline {subsection}{\numberline {3.4.3}Fractions}{51}
+\contentsline {subsection}{\numberline {3.4.4}Roots}{52}
+\contentsline {subsection}{\numberline {3.4.5}Ellipsis}{52}
+\contentsline {subsection}{\numberline {3.4.6}Text within an expression}{52}
+\contentsline {subsection}{\numberline {3.4.7}Log-like functions}{53}
+\contentsline {subsection}{\numberline {3.4.8}Over- and Underlining and bracing}{53}
+\contentsline {subsection}{\numberline {3.4.9}Stacking symbols}{54}
+\contentsline {subsection}{\numberline {3.4.10}Operators; Sums, Integrals, etc.}{54}
+\contentsline {subsection}{\numberline {3.4.11}Arrays}{55}
+\contentsline {subsection}{\numberline {3.4.12}Changes to spacing}{56}
+\contentsline {section}{\numberline {3.5}Alignment}{56}
+\contentsline {section}{\numberline {3.6}Theorems, Propositions, Lemmas, $\dots $}{57}
+\contentsline {section}{\numberline {3.7}Where to from here?}{58}
+\contentsline {section}{\numberline {3.8}{\the \textfont 2 A}\kern -.1667em\lower .5ex\hbox {\the \textfont 2 M}\kern -.125em{\the \textfont 2 S}-\LaTeX }{59}

@@ -1,0 +1,14 @@
+\contentsline {chapter}{\numberline {1}Einleitung}{2}
+\contentsline {chapter}{\numberline {2}Die Besonderheiten deutscher Texte}{3}
+\contentsline {section}{\numberline {2.1}Umlaute}{3}
+\contentsline {subsection}{\numberline {2.1.1}Umlaute ohne das Paket \active@dq \dq@prtct {`}german.sty\active@dq \dq@prtct {'}}{3}
+\contentsline {subsection}{\numberline {2.1.2}Umlaute mit dem Paket \active@dq \dq@prtct {`}german.sty\active@dq \dq@prtct {'}}{3}
+\contentsline {section}{\numberline {2.2}Beschriftungen}{4}
+\contentsline {section}{\numberline {2.3}Anf\active@dq \dq@prtct {u}hrungszeichen}{4}
+\contentsline {chapter}{\numberline {3}Another Chapter}{6}
+\contentsline {chapter}{\numberline {A}this should be ``Anhang A''}{7}
+\contentsline {section}{\numberline {A.1}first section in Anhang A}{7}
+\contentsline {subsection}{\numberline {A.1.1}here is a subsection}{7}
+\contentsline {section}{\numberline {A.2}second section in Anhang A}{7}
+\contentsline {subsection}{\numberline {A.2.1}here is a subsection}{7}
+\contentsline {chapter}{\numberline {B}this should be ``Anhang B''}{8}

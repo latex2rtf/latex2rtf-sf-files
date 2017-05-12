@@ -1,0 +1,55 @@
+\select@language {english}
+\contentsline {section}{\numberline {0.1}OPEN PUBLICATION LICENSE}{V}
+\contentsline {subsection}{\numberline {0.1.1}REQUIREMENTS ON BOTH UNMODIFIED AND MODIFIED VERSIONS}{V}
+\contentsline {subsection}{\numberline {0.1.2}COPYRIGHT}{V}
+\contentsline {subsection}{\numberline {0.1.3}SCOPE OF LICENSE}{V}
+\contentsline {subsection}{\numberline {0.1.4}REQUIREMENTS ON MODIFIED WORKS}{V}
+\contentsline {subsection}{\numberline {0.1.5}GOOD-PRACTICE RECOMMENDATIONS }{VI}
+\contentsline {subsection}{\numberline {0.1.6}LICENSE OPTIONS}{VI}
+\contentsline {section}{\numberline {0.2}CHANGES}{VII}
+\contentsline {chapter}{\numberline {1}INTRODUCTION}{1}
+\contentsline {section}{\numberline {1.1}PROBLEM DEFINITION}{1}
+\contentsline {section}{\numberline {1.2}AIM}{2}
+\contentsline {section}{\numberline {1.3}QUESTIONS AT ISSUE}{2}
+\contentsline {section}{\numberline {1.4}EXPECTED RESULT}{2}
+\contentsline {chapter}{\numberline {2}THEORETICAL BACKGROUND}{3}
+\contentsline {section}{\numberline {2.1}KERNEL/OPERATING SYSTEM}{3}
+\contentsline {section}{\numberline {2.2}HISTORY OF UNIX}{4}
+\contentsline {section}{\numberline {2.3}UNIX PRODUCT OVERVIEW}{4}
+\contentsline {section}{\numberline {2.4}PREVIOUS RESEARCH}{5}
+\contentsline {section}{\numberline {2.5}IMPORTANT THEORIES}{6}
+\contentsline {subsection}{\numberline {2.5.1}KERNEL SPECIFIC FEATURES}{6}
+\contentsline {subsection}{\numberline {2.5.2}DISTRIBUTED SYSTEMS}{7}
+\contentsline {subsection}{\numberline {2.5.3}DISTRIBUTED FILE SYSTEMS}{7}
+\contentsline {subsection}{\numberline {2.5.4}FILE SYSTEMS}{8}
+\contentsline {subsection}{\numberline {2.5.5}NETWORK}{10}
+\contentsline {section}{\numberline {2.6}DELIMINATION OF THE PROBLEM AREA}{13}
+\contentsline {chapter}{\numberline {3}METHOD}{14}
+\contentsline {section}{\numberline {3.1}CHOICE OF METHOD}{14}
+\contentsline {section}{\numberline {3.2}DESCRIPTION OF METHOD}{14}
+\contentsline {chapter}{\numberline {4}REALIZATION}{16}
+\contentsline {section}{\numberline {4.1}IMPLEMENTATION}{16}
+\contentsline {chapter}{\numberline {5}RESULT}{17}
+\contentsline {section}{\numberline {5.1}TABLES}{17}
+\contentsline {subsection}{\numberline {5.1.1}TABLE WITH KERNEL SPECIFIC FUNCTIONS}{17}
+\contentsline {subsection}{\numberline {5.1.2}TABLE WITH FILE SYSTEM SPECIFIC FUNCTIONS}{18}
+\contentsline {subsection}{\numberline {5.1.3}TABLE WITH NETWORK SPECIFIC FUNCTIONS}{20}
+\contentsline {section}{\numberline {5.2}RESULT ANALYSIS}{22}
+\contentsline {chapter}{\numberline {6}DISCUSSION}{23}
+\contentsline {section}{\numberline {6.1}METHOD EVALUATION}{24}
+\contentsline {section}{\numberline {6.2}RECEIVED RESULTS VERSUS EXPECTED RESULT}{24}
+\contentsline {chapter}{\numberline {7}CONCLUSIONS}{25}
+\contentsline {section}{\numberline {7.1}PROPOSAL FOR FURTHER RESEARCH}{25}
+\contentsline {chapter}{\numberline {8}Bibliography}{26}
+\contentsline {section}{References}{I}
+\contentsline {subsubsection}{\numberline {8.0.0.1}Technical persons/resources}{IV}
+\contentsline {subsubsection}{\numberline {8.0.0.2}Websites}{IV}
+\contentsline {chapter}{\numberline {A}MESSAGE REPLIES FROM THE KERNEL DEVELOPMEN LIST}{V}
+\contentsline {section}{\numberline {A.1}Jeff Garzik 26 May 2001 22:27:09}{V}
+\contentsline {section}{\numberline {A.2}Jonathan Morton 27 May 2001}{VII}
+\contentsline {section}{\numberline {A.3}Jeff Garzik 26 May 2001 22:55:04}{VII}
+\contentsline {section}{\numberline {A.4}Dan Hollis 26 May 2001}{VIII}
+\contentsline {section}{\numberline {A.5}James Sutherland 27 May 2001}{IX}
+\contentsline {section}{\numberline {A.6}Ingo Oeser 27 May 2001}{X}
+\contentsline {section}{\numberline {A.7}Dominik Kubla 27 May 2001}{X}
+\contentsline {section}{\numberline {A.8}Ville Herva 27 May 2001}{XI}
