@@ -63,7 +63,7 @@ ul.no-bullet {list-style: none}
 
 
 <p>Copyright 1998-2002 Georg Lehner,
-updates Copyright 1999-2017 by Wilfried Hennings and Scott Prahl,
+updates Copyright 1999-2018 by Wilfried Hennings and Scott Prahl,
 with contributions by Mikhail Polianski.
 </p>
 <p>Permission is granted to make and distribute verbatim copies of this
@@ -239,7 +239,17 @@ for tsch-like shells <code>setenv XPG4_GREP /usr/xpg4/bin/grep</code>.
 </p>
 </li><li> <code>make install</code>
 
-<p>If your <code>mkdir</code> doesn&rsquo;t support the <samp>-p</samp> option, then create
+<p>Note that the Makefile does not contain a rule for make uninstall.<br>
+This is by design.<br>
+On modern Linux distributions, you would prefer to install LaTeX2RTF by the package manager
+of your distribution, which also provides an easy means for update and uninstallation.<br>
+If your package manager does not provide the LaTeX2RTF package 
+or you need to install LaTeX2RTF from the sources for some other reason,
+you should consider using <code>checkinstall</code> which creates a package for your
+package manager which then can be installed and uninstalled by the package manager.
+</p>
+<p>If you nevertheless need to run <code>make install</code>, note the following:<br>
+If your <code>mkdir</code> doesn&rsquo;t support the <samp>-p</samp> option, then create
 the necessary directories by hand and remove the option from the
 <code>$MKDIR</code> variable. If you have other problems, just copy
 <samp>latex2rtf</samp> and <samp>latex2png</samp> to a binary directory, and move

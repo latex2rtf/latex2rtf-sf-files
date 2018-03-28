@@ -114,7 +114,7 @@ Citation Commands
 * Natbib Commands::             
 
 
-   Copyright 1998-2002 Georg Lehner, updates Copyright 1999-2017 by
+   Copyright 1998-2002 Georg Lehner, updates Copyright 1999-2018 by
 Wilfried Hennings and Scott Prahl, with contributions by Mikhail
 Polianski.
 
@@ -306,6 +306,18 @@ To install,
 
   4. 'make install'
 
+     Note that the Makefile does not contain a rule for make uninstall.
+     This is by design.
+     On modern Linux distributions, you would prefer to install
+     LaTeX2RTF by the package manager of your distribution, which also
+     provides an easy means for update and uninstallation.
+     If your package manager does not provide the LaTeX2RTF package or
+     you need to install LaTeX2RTF from the sources for some other
+     reason, you should consider using 'checkinstall' which creates a
+     package for your package manager which then can be installed and
+     uninstalled by the package manager.
+
+     If you nevertheless need to run 'make install', note the following:
      If your 'mkdir' doesn't support the '-p' option, then create the
      necessary directories by hand and remove the option from the
      '$MKDIR' variable.  If you have other problems, just copy
@@ -4216,70 +4228,70 @@ Node: Installation6632
 Node: General7042
 Node: Obtaining LaTeX2RTF7468
 Node: UNIX9162
-Node: DOS or Windows11960
-Node: MS Windows systems13688
-Node: Macintosh18015
-Node: Problems Compiling18972
-Node: Problems with make check19667
-Node: Using LaTeX2RTF20192
-Node: General Assumptions20434
-Node: LaTeX2RTF Options22406
-Node: Debugging35803
-Node: Features36539
-Node: LaTeX2e37172
-Node: Unicode Support37490
-Node: Input Encoding38173
-Node: Language Support38950
-Node: Cross References40463
-Node: Page Formatting43163
-Node: Equations43685
-Node: Math and Special Symbols46566
-Node: Tables48534
-Node: Graphics49142
-Node: Pagestyles49563
-Node: Hyperlatex50167
-Node: APA Support51259
-Node: Configuration51701
-Node: Input Processing52074
-Node: Conditional Parsing53448
-Node: Output Formatting55436
-Node: Direct Conversion56144
-Node: Ignore Command57433
-Node: Font Configuration59300
-Node: Language Configuration60611
-Node: Error Messages and Logging61227
-Node: History63513
-Node: LaTeX2RTF under Development65299
-Node: Unimplemented Features65677
-Node: Missing options66467
-Node: Known Bugs67048
-Node: Reporting Bugs67904
-Node: Todo List69544
-Node: LaTeX Commands70334
-Node: General Commands71383
-Node: Basic Commands71897
-Node: Font Commands72169
-Node: Logos72774
-Node: Special Characters73021
-Node: Sectioning Commands73306
-Node: Uncategorized73633
-Node: Preamble Commands77767
-Node: Letter Commands79388
-Node: Language Commands79650
-Node: German Commands79962
-Node: Czech Commands80206
-Node: French Commands80376
-Node: Russian Commands80762
-Node: Citation Commands81281
-Node: Apacite Commands81627
-Node: AuthorDate Commands82153
-Node: Harvard Commands82356
-Node: HyperLatex Commands82664
-Node: Natbib Commands82877
-Node: Acronym Commands83195
-Node: Other Commands83435
-Node: Environments83629
-Node: Function Index84483
-Node: Concept Index144369
+Node: DOS or Windows12643
+Node: MS Windows systems14371
+Node: Macintosh18698
+Node: Problems Compiling19655
+Node: Problems with make check20350
+Node: Using LaTeX2RTF20875
+Node: General Assumptions21117
+Node: LaTeX2RTF Options23089
+Node: Debugging36486
+Node: Features37222
+Node: LaTeX2e37855
+Node: Unicode Support38173
+Node: Input Encoding38856
+Node: Language Support39633
+Node: Cross References41146
+Node: Page Formatting43846
+Node: Equations44368
+Node: Math and Special Symbols47249
+Node: Tables49217
+Node: Graphics49825
+Node: Pagestyles50246
+Node: Hyperlatex50850
+Node: APA Support51942
+Node: Configuration52384
+Node: Input Processing52757
+Node: Conditional Parsing54131
+Node: Output Formatting56119
+Node: Direct Conversion56827
+Node: Ignore Command58116
+Node: Font Configuration59983
+Node: Language Configuration61294
+Node: Error Messages and Logging61910
+Node: History64196
+Node: LaTeX2RTF under Development65982
+Node: Unimplemented Features66360
+Node: Missing options67150
+Node: Known Bugs67731
+Node: Reporting Bugs68587
+Node: Todo List70227
+Node: LaTeX Commands71017
+Node: General Commands72066
+Node: Basic Commands72580
+Node: Font Commands72852
+Node: Logos73457
+Node: Special Characters73704
+Node: Sectioning Commands73989
+Node: Uncategorized74316
+Node: Preamble Commands78450
+Node: Letter Commands80071
+Node: Language Commands80333
+Node: German Commands80645
+Node: Czech Commands80889
+Node: French Commands81059
+Node: Russian Commands81445
+Node: Citation Commands81964
+Node: Apacite Commands82310
+Node: AuthorDate Commands82836
+Node: Harvard Commands83039
+Node: HyperLatex Commands83347
+Node: Natbib Commands83560
+Node: Acronym Commands83878
+Node: Other Commands84118
+Node: Environments84312
+Node: Function Index85166
+Node: Concept Index145052
 
 End Tag Table

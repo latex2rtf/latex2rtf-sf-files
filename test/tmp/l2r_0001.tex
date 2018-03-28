@@ -1,0 +1,30 @@
+\documentclass[british]{article}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage{array}
+\usepackage{booktabs}
+
+\makeatletter
+
+\providecommand{\tabularnewline}{\\}
+
+\makeatother
+
+\usepackage{babel}
+
+\thispagestyle{empty}
+\begin{document}
+\setcounter{equation}{0}
+\begin{tabular}{>{\raggedright}p{0.05\columnwidth}>{\raggedright}p{0.2\columnwidth}>{\raggedright}p{0.2\textwidth}>{\raggedright}p{0.2\textwidth}>{\raggedright}p{0.2\columnwidth}}
+\toprule 
+ &  & \multicolumn{2}{l}{Final Allocation } & \\
+\cmidrule{3-4} 
+ &  & Lemonade Rich  & Crisps Rich  & Total \\
+\midrule 
+\multicolumn{2}{l}{Endowment} &  &  & \\
+ & Lemonade Rich  & \multicolumn{1}{r}{73} & \multicolumn{1}{r}{37} & \multicolumn{1}{r}{110}\\
+ & Crisps Rich  & \multicolumn{1}{r}{40} & \multicolumn{1}{r}{60} & \multicolumn{1}{r}{100}\\
+\multicolumn{2}{l}{Total} & \multicolumn{1}{r}{113} & \multicolumn{1}{r}{97} & \multicolumn{1}{r}{210}\\
+\bottomrule
+\end{tabular}
+\end{document}

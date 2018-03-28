@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage{lscape}
+\thispagestyle{empty}
+\begin{document}
+\setcounter{equation}{0}
+\begin{tabular}{cccc}
+A & B & C & D \\
+\multicolumn{1}{||c||}{A} & B & C & D \\
+A & \multicolumn{2}{||c||}{BC} & D \\
+\multicolumn{1}{||c||}{A} &  \multicolumn{2}{|c|}{BC} & D \\
+\multicolumn{1}{||c||}{A} &  \multicolumn{2}{||c||}{BC} & D \\
+\end{tabular}
+\end{document}
