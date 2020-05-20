@@ -1,0 +1,121 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.1.18)  30 MAY 2020 17:35
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**dblspace
+(./dblspace.tex
+LaTeX2e <2017-04-15>
+Babel <3.18> and hyphenation patterns for 8 language(s) loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/report.cls
+Document Class: report 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texlive/texmf-dist/tex/latex/setspace/setspace.sty
+Package: setspace 2011/12/19 v6.7a set line spacing
+)
+No file dblspace.aux.
+\openout1 = `dblspace.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 4.
+LaTeX Font Info:    ... okay on input line 4.
+No file dblspace.toc.
+\tf@toc=\write3
+\openout3 = `dblspace.toc'.
+
+[1
+
+
+]
+No file dblspace.lof.
+\tf@lof=\write4
+\openout4 = `dblspace.lof'.
+
+[2
+
+]
+Chapter 1.
+
+LaTeX Warning: Reference `fig1' on page 3 undefined on input line 18.
+
+
+LaTeX Warning: Reference `fig1' on page 3 undefined on input line 32.
+
+
+LaTeX Warning: Reference `fig3' on page 3 undefined on input line 32.
+
+[3
+
+]
+
+LaTeX Warning: Reference `fig1' on page 4 undefined on input line 43.
+
+
+LaTeX Warning: Reference `fig3' on page 4 undefined on input line 43.
+
+
+LaTeX Warning: Reference `fig1' on page 4 undefined on input line 54.
+
+
+LaTeX Warning: Reference `fig3' on page 4 undefined on input line 54.
+
+
+LaTeX Warning: Reference `fig2' on page 4 undefined on input line 67.
+
+[4] [5]
+Chapter 2.
+
+LaTeX Warning: Reference `fig1' on page 6 undefined on input line 84.
+
+
+LaTeX Warning: Reference `fig3' on page 6 undefined on input line 84.
+
+
+LaTeX Warning: Reference `fig2' on page 6 undefined on input line 104.
+
+
+LaTeX Warning: Reference `fig4' on page 6 undefined on input line 104.
+
+[6
+
+] [7] [8] (./dblspace.aux)
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 271 strings out of 494872
+ 3109 string characters out of 6178408
+ 51748 words of memory out of 5000000
+ 3681 multiletter control sequences out of 15000+600000
+ 5765 words of font info for 21 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 23i,4n,17p,133b,190s stack positions out of 5000i,500n,10000p,200000b,80000s
+
+Output written on dblspace.dvi (8 pages, 7676 bytes).

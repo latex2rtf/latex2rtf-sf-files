@@ -20,7 +20,7 @@ for (@files) {
 		my $before = $level;
 		s/(\\\\)+//g;
 		s/\\}//g;
-		s/\\{//g;
+		s/\\\{//g;
 		$level += tr/{/{/;
 		$level -= tr/}/}/;
 #		print "braces becomes $level after line $.\n" if ($level<=0 && $before!=$level);

@@ -1,0 +1,49 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex)
+ restricted \write18 enabled.
+entering extended mode
+(./hyperref.tex
+LaTeX2e <2017-04-15>
+Babel <3.18> and hyphenation patterns for 8 language(s) loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo))
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/hyperref.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty)
+(/usr/share/texlive/texmf-dist/tex/generic/ifxetex/ifxetex.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/auxhook.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/kvoptions.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/pd1enc.def)
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/hyperref.cfg)
+(/usr/share/texlive/texmf-dist/tex/latex/url/url.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/hdvips.def
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/pdfmark.def
+(/usr/share/texlive/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty)))
+(/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
+(/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty))
+No file hyperref.aux.
+(./hyperref.out) (./hyperref.out)
+
+Package hyperref Warning: Rerun to get /PageLabels entry.
+
+
+LaTeX Warning: Reference `randomlabel' on page 1 undefined on input line 32.
+
+
+LaTeX Warning: Reference `randomlabel' on page 1 undefined on input line 32.
+
+
+Overfull \hbox (7.359pt too wide) in paragraph at lines 41--44
+[]\OT1/cmr/m/n/10 Now this link [][][][] does
+[1] (./hyperref.aux)
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ )
+(see the transcript file for additional information)
+Output written on hyperref.dvi (1 page, 5580 bytes).
+Transcript written on hyperref.log.

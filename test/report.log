@@ -1,0 +1,152 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.1.18)  30 MAY 2020 17:35
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**report
+(./report.tex
+LaTeX2e <2017-04-15>
+Babel <3.18> and hyphenation patterns for 8 language(s) loaded.
+(/usr/share/texlive/texmf-dist/tex/latex/base/report.cls
+Document Class: report 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+No file report.aux.
+\openout1 = `report.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 5.
+LaTeX Font Info:    ... okay on input line 5.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 6.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 6.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 6.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <9> on input line 6.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 6.
+[1
+
+]
+No file report.toc.
+\tf@toc=\write3
+\openout3 = `report.toc'.
+
+[1
+
+]
+No file report.lof.
+\tf@lof=\write4
+\openout4 = `report.lof'.
+
+[2
+
+]
+Chapter 1.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 19.
+
+LaTeX Warning: Reference `fig1' on page 3 undefined on input line 26.
+
+
+LaTeX Warning: Reference `fig1' on page 3 undefined on input line 40.
+
+
+LaTeX Warning: Reference `fig3' on page 3 undefined on input line 40.
+
+[3
+
+]
+
+LaTeX Warning: Reference `fig1' on page 4 undefined on input line 51.
+
+
+LaTeX Warning: Reference `fig3' on page 4 undefined on input line 51.
+
+
+LaTeX Warning: Reference `fig1' on page 4 undefined on input line 62.
+
+
+LaTeX Warning: Reference `fig3' on page 4 undefined on input line 62.
+
+
+LaTeX Warning: Reference `fig2' on page 4 undefined on input line 75.
+
+[4]
+Chapter 2.
+
+LaTeX Warning: Reference `fig1' on page 5 undefined on input line 92.
+
+
+LaTeX Warning: Reference `fig3' on page 5 undefined on input line 92.
+
+
+LaTeX Warning: Reference `fig2' on page 5 undefined on input line 112.
+
+
+LaTeX Warning: Reference `fig4' on page 5 undefined on input line 112.
+
+[5
+
+] [6]
+Appendix A.
+
+LaTeX Warning: Reference `fig1' on page 7 undefined on input line 143.
+
+
+LaTeX Warning: Reference `fig3' on page 7 undefined on input line 143.
+
+[7
+
+]
+Appendix B.
+
+LaTeX Warning: Reference `fig1' on page 8 undefined on input line 152.
+
+
+LaTeX Warning: Reference `fig3' on page 8 undefined on input line 152.
+
+[8
+
+] (./report.aux)
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 264 strings out of 494872
+ 2804 string characters out of 6178408
+ 51681 words of memory out of 5000000
+ 3670 multiletter control sequences out of 15000+600000
+ 9712 words of font info for 34 fonts, out of 8000000 for 9000
+ 14 hyphenation exceptions out of 8191
+ 24i,11n,17p,337b,240s stack positions out of 5000i,500n,10000p,200000b,80000s
+
+Output written on report.dvi (9 pages, 10588 bytes).

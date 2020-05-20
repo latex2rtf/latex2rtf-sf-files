@@ -63,7 +63,7 @@ ul.no-bullet {list-style: none}
 
 
 <p>Copyright 1998-2002 Georg Lehner,
-updates Copyright 1999-2018 by Wilfried Hennings and Scott Prahl,
+updates Copyright 1999-2016 by Wilfried Hennings and Scott Prahl,
 with contributions by Mikhail Polianski.
 </p>
 <p>Permission is granted to make and distribute verbatim copies of this
@@ -180,12 +180,12 @@ It should only be used on older Microsoft systems.<br>
 For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI package.
 </p>
 <p>The win-NO-GUI package only runs under Win32 
-(Win9x, ME, NT, 2000, XP, 2003, Vista, Win7, probably Win8 and Win10).
+(Win9x, ME, NT, 2000, XP, 2003, Vista, Win7).
 From LaTeX2RTF version 2.0.0 up it also runs on 64bit systems.
 </p>
 <p>The win package is the win-NO-GUI package plus graphical user 
 interface (GUI) shell (l2rshell) and installer.<br>
-It only runs under Win NT, 2000, XP, 2003, Vista, Win7 and newer.<br>
+It only runs under Win NT, 2000, XP, 2003, Vista, and Win7.<br>
 From LaTeX2RTF version 2.0.0 up it also runs on 64bit systems.
 </p>
 <p>The win64 package (only LaTeX2RTF version 1.9.19) is the win package
@@ -206,9 +206,9 @@ project pages for the latest news.
 
 <p>To install, 
 </p><ol>
-<li> Edit <samp>MAKEFILE</samp> for your local configuration.  In particular, pay attention
-to the <code>DESTDIR</code> variable (MAKEFILE line 21).  If you do not have root access 
-you might wish to set the makefile variable <code>DESTDIR</code> to be your home directory. 
+<li> Edit <samp>Makefile</samp> for your local configuration.  In particular, pay attention
+to the <code>DESTDIR</code> variable.  If you do not have root access you might wish 
+to set the makefile variable <code>DESTDIR</code> to be your home directory. 
 
 <p>On some machines the cc compiler will issue errors. Therefore the 
 default compiler command in the Makefile is <code>CC=gcc</code>.
@@ -239,17 +239,7 @@ for tsch-like shells <code>setenv XPG4_GREP /usr/xpg4/bin/grep</code>.
 </p>
 </li><li> <code>make install</code>
 
-<p>Note that the Makefile does not contain a rule for make uninstall.<br>
-This is by design.<br>
-On modern Linux distributions, you would prefer to install LaTeX2RTF by the package manager
-of your distribution, which also provides an easy means for update and uninstallation.<br>
-If your package manager does not provide the LaTeX2RTF package 
-or you need to install LaTeX2RTF from the sources for some other reason,
-you should consider using <code>checkinstall</code> which creates a package for your
-package manager which then can be installed and uninstalled by the package manager.
-</p>
-<p>If you nevertheless need to run <code>make install</code>, note the following:<br>
-If your <code>mkdir</code> doesn&rsquo;t support the <samp>-p</samp> option, then create
+<p>If your <code>mkdir</code> doesn&rsquo;t support the <samp>-p</samp> option, then create
 the necessary directories by hand and remove the option from the
 <code>$MKDIR</code> variable. If you have other problems, just copy
 <samp>latex2rtf</samp> and <samp>latex2png</samp> to a binary directory, and move
@@ -1559,7 +1549,7 @@ For subscription to these lists visit the page:
 or
 <a href="http://lists.sourceforge.net/lists/listinfo/latex2rtf-developers">developers list</a>
 </p>
-<p>As of Januar 2017, version 2.3.12 of LaTeX2RTF is available. 
+<p>As of June 2016, version 2.3.11 of LaTeX2RTF is available. 
 </p>
 <p>The contents of this manual were composed by copying shamelessly what was
 available in the original sources and documentation.

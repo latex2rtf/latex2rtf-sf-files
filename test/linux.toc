@@ -1,4 +1,4 @@
-\select@language {english}
+\babel@toc {english}{}
 \contentsline {section}{\numberline {0.1}OPEN PUBLICATION LICENSE}{V}
 \contentsline {subsection}{\numberline {0.1.1}REQUIREMENTS ON BOTH UNMODIFIED AND MODIFIED VERSIONS}{V}
 \contentsline {subsection}{\numberline {0.1.2}COPYRIGHT}{V}

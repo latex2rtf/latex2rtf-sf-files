@@ -27,16 +27,16 @@ translation approved by the Free Software Foundation.
 **************
 
 LaTeX2RTF is a translator program from LaTeX text into "rich text
-format" files.  These files are commonly referred to as RTF files.  RTF
-is a published standard format by Microsoft.  This standard can be
+format" files. These files are commonly referred to as RTF files. RTF
+is a published standard format by Microsoft. This standard can be
 ambiguous in places and Microsoft ignores parts of the standard it finds
 inconvenient, but RTF is widely used by many WYSIWIG text editors and is
 supported by Microsoft Word and most text processors.
 
    LaTeX2RTF translates the text and as much of the formatting
 information from LaTeX to RTF. Be forewarned that the typeset output is
-not nearly as good as what you would get from using LaTeX directly.  So,
-why bother translating?  Consider,
+not nearly as good as what you would get from using LaTeX directly. So,
+why bother translating? Consider,
 
   1. You use LaTeX and hate everything beginning with MS-...
      Nevertheless, you have to share your documents with people who
@@ -47,18 +47,19 @@ why bother translating?  Consider,
      import her files, steal some part, and then desktop publish it in
      your fine MS-... environment.
 
-  3. You like LaTeX and BibTeX. You interact with the rest of the world.
-     You know someone that wants to include your writing in a Word
-     document.
+  3. You like LaTeX and BibTeX. You interact with the rest of the
+     world. You know someone that wants to include your writing in a
+     Word document.
 
-   There are drawbacks to the conversion process.  In fact, don't expect
+
+   There are drawbacks to the conversion process. In fact, don't expect
 any LaTeX file to be converted as you would like, don't expect it to be
 converted without errors or warnings, and don't be especially surprised
 when it doesn't convert at all.  LaTeX2RTF is known to have many bugs
-and many missing features.  Paradoxically, this number seems to grow
+and many missing features. Paradoxically, this number seems to grow
 more and more with each day.  However, we can categorically state that
-there are some special cases in which a LaTeX file will be translated to
-RTF satisfactorily by LaTeX2RTF--This was sort of disclaimer, ok?  OK!
+there are some special cases in which a LaTeX file will be translated
+to RTF satisfactorily by LaTeX2RTF--This was sort of disclaimer, ok? OK!
 
    LaTeX is a system for typesetting text and therefore it focuses on
 the logical structure of a document, whilst RTF is meant to be a
@@ -72,13 +73,13 @@ implemented to date (*note Unimplemented Features::).
    Some of the capabilities of LaTeX2RTF are restricted in scope or
 buggy (*note Known Bugs::).
 
-   RTF is a moving target, because Microsoft does not stop inventing new
-extensions and features; consequently you cannot view newer RTF files
-with older word processors.  The syntax and semantics of RTF are
+   RTF is a moving target, because Microsoft does not stop inventing
+new extensions and features; consequently you cannot view newer RTF
+files with older word processors.  The syntax and semantics of RTF are
 somewhat artistic, i.e., you can generate a syntactically correct RTF
 file that cannot be displayed by some/most word processors.  For more
 details on RTF the specification consult the links at
-<http://latex2rtf.sf.net/>
+`http://latex2rtf.sf.net/'
 
 2 Installation
 **************
@@ -86,9 +87,10 @@ details on RTF the specification consult the links at
 2.1 General
 ===========
 
-The documentation of the program is found in the 'doc/' directory in the
-file 'latex2rtf.texi' in the GNU TeXInfo format.  For your convenience,
-you can find HTML and PDF versions of the manual there as well.
+The documentation of the program is found in the `doc/' directory in
+the file `latex2rtf.texi' in the GNU TeXInfo format.  For your
+convenience, you can find HTML and PDF versions of the manual there as
+well.
 Note: In this manual, the terms "directory" and "folder" are used
 interchangeably.
 
@@ -100,7 +102,7 @@ for MS-DOS, including all versions of MS Windows.
 
    The latest version of LaTeX2RTF is available at SourceForge
 (http://sourceforge.net/projects/latex2rtf/) and -- with some delay --
-on CTAN sites: e.g., <http://www.dante.de> or <http://www.ctan.org>.
+on CTAN sites: e.g., `http://www.dante.de' or `http://www.ctan.org'.
 
    The DOS package will also run under all MS Windows versions up to
 Windows 7, except 64bit systems.  It requires an i386 processor or
@@ -110,8 +112,8 @@ For Win9x, ME, NT, or newer, you should use the win or win-NO-GUI
 package.
 
    The win-NO-GUI package only runs under Win32 (Win9x, ME, NT, 2000,
-XP, 2003, Vista, Win7, probably Win8 and Win10).  From LaTeX2RTF version
-2.0.0 up it also runs on 64bit systems.
+XP, 2003, Vista, Win7, probably Win8 and Win10).  From LaTeX2RTF
+version 2.0.0 up it also runs on 64bit systems.
 
    The win package is the win-NO-GUI package plus graphical user
 interface (GUI) shell (l2rshell) and installer.
@@ -120,7 +122,7 @@ From LaTeX2RTF version 2.0.0 up it also runs on 64bit systems.
 
    The win64 package (only LaTeX2RTF version 1.9.19) is the win package
 but with 32bit versions of the shell utilities so that it also runs on
-64bit systems.  From LaTeX2RTF version 2.0.0 up, there is no separate
+64bit systems. From LaTeX2RTF version 2.0.0 up, there is no separate
 win64 package, as the win32 package also runs on 64bit systems.
 
    There are a few people working on LaTeX2RTF, and some more make
@@ -133,41 +135,41 @@ latest news.
 ========
 
 To install,
-  1. Edit 'MAKEFILE' for your local configuration.  In particular, pay
-     attention to the 'DESTDIR' variable (MAKEFILE line 21).  If you do
+  1. Edit `MAKEFILE' for your local configuration.  In particular, pay
+     attention to the `DESTDIR' variable (MAKEFILE line 21).  If you do
      not have root access you might wish to set the makefile variable
-     'DESTDIR' to be your home directory.
+     `DESTDIR' to be your home directory.
 
-     On some machines the cc compiler will issue errors.  Therefore the
-     default compiler command in the Makefile is 'CC=gcc'.
+     On some machines the cc compiler will issue errors. Therefore the
+     default compiler command in the Makefile is `CC=gcc'.
 
   2. From version 1.9.13 up, LaTeX2RTF supports conversion of LaTeX
-     equations to bitmaps using the shell script 'latex2png', found in
-     'scripts/'.  'latex2png' requires that LaTeX, 'Ghostscript' and
-     'ImageMagick' are installed.  LaTeX2RTF will translate documents
-     without a working 'latex2png', but some features will be missing.
-     You can verify that the 'latex2png' script is working by typing
-     'make' in the 'scripts/' directory.
+     equations to bitmaps using the shell script `latex2png', found in
+     `scripts/'.  `latex2png' requires that LaTeX, `Ghostscript' and
+     `ImageMagick' are installed.  LaTeX2RTF will translate documents
+     without a working `latex2png', but some features will be missing.
+     You can verify that the `latex2png' script is working by typing
+     `make' in the `scripts/' directory.
 
-  3. 'make'
+  3. `make'
 
      If this is not your first time installation, you may want to
-     preserve your old configuration ('*.cfg') files.  Copy them to a
+     preserve your old configuration (`*.cfg') files. Copy them to a
      safe place before installing.
 
      On IBM AIX, the IBM make utility does not support some of the
-     commands used in Makefile.  In this case use 'gmake' (from GNU)
+     commands used in Makefile. In this case use `gmake' (from GNU)
      instead.
 
      Sun has decided to support the XPG4 standard on Solaris by an
      alternative set of binaries.  To allow bitmap conversion of
      equations, two things are needed.  First, change the first line of
-     latex2png to '#!/usr/xpg4/bin/sh' Second, define the XPG4_GREP
+     latex2png to `#!/usr/xpg4/bin/sh' Second, define the XPG4_GREP
      environment variable accordingly, for bash-like shells
-     'XPG4_GREP=/usr/xpg4/bin/grep; export XPG4_GREP' or for tsch-like
-     shells 'setenv XPG4_GREP /usr/xpg4/bin/grep'.
+     `XPG4_GREP=/usr/xpg4/bin/grep; export XPG4_GREP' or for tsch-like
+     shells `setenv XPG4_GREP /usr/xpg4/bin/grep'.
 
-  4. 'make install'
+  4. `make install'
 
      Note that the Makefile does not contain a rule for make uninstall.
      This is by design.
@@ -176,91 +178,91 @@ To install,
      provides an easy means for update and uninstallation.
      If your package manager does not provide the LaTeX2RTF package or
      you need to install LaTeX2RTF from the sources for some other
-     reason, you should consider using 'checkinstall' which creates a
+     reason, you should consider using `checkinstall' which creates a
      package for your package manager which then can be installed and
      uninstalled by the package manager.
 
-     If you nevertheless need to run 'make install', note the following:
-     If your 'mkdir' doesn't support the '-p' option, then create the
+     If you nevertheless need to run `make install', note the following:
+     If your `mkdir' doesn't support the `-p' option, then create the
      necessary directories by hand and remove the option from the
-     '$MKDIR' variable.  If you have other problems, just copy
-     'latex2rtf' and 'latex2png' to a binary directory, and move the
-     contents of the 'cfg/' directory to the location specified by
-     '$CFG_INSTALL'.
+     `$MKDIR' variable. If you have other problems, just copy
+     `latex2rtf' and `latex2png' to a binary directory, and move the
+     contents of the `cfg/' directory to the location specified by
+     `$CFG_INSTALL'.
 
-  5. 'make check'
+  5. `make check'
 
      [OPTIONAL] This tests LaTeX2RTF on a variety of LaTeX files.
-     Expect a whole lot of warnings, but no outright errors.  (On IBM
-     AIX, use 'gmake check'.)  Note that this will check the basic
-     functionality of the 'latex2png' script, and then that of
-     'latex2rtf'.
+     Expect a whole lot of warnings, but no outright errors. (On IBM
+     AIX, use `gmake check'.)  Note that this will check the basic
+     functionality of the `latex2png' script, and then that of
+     `latex2rtf'.
 
-  6. 'make install-info'
+  6. `make install-info'
 
-     [OPTIONAL] This installs '.info' files for use with the 'info'
+     [OPTIONAL] This installs `.info' files for use with the `info'
      program.
 
-   You no longer need to define the environment variable 'RTFPATH'.
-This is only necessary if you move the directory containing the '.cfg'
-files.  Just define 'RTFPATH' to be the path for the new location of the
-'cfg' directory.
+
+   You no longer need to define the environment variable `RTFPATH'. This
+is only necessary if you move the directory containing the `.cfg' files.
+Just define `RTFPATH' to be the path for the new location of the `cfg'
+directory.
 
 2.4 plain DOS
 =============
 
 The UNIX and Mac packages do not contain an executable for DOS or
-Windows.  You may compile it yourself (with djgpp or MinGW) or get the
-DOS package as file 'latex2rtf-x.x.x_dos.zip' (where x.x.x is the
+Windows. You may compile it yourself (with djgpp or MinGW) or get the
+DOS package as file `latex2rtf-x.x.x_dos.zip' (where x.x.x is the
 version number)
-or the win-NO-GUI package as file 'latex2rtf-x.x.x_win-NO-GUI.zip' (no
+or the win-NO-GUI package as file `latex2rtf-x.x.x_win-NO-GUI.zip' (no
 installer, no graphical user interface (GUI))
 from SourceForge (http://sourceforge.net/projects/latex2rtf/)
-
-   The DOS package contains a precompiled executable which should run
+The DOS package contains a precompiled executable which should run
 under plain DOS and also in the command prompt (or "console") of any MS
 Windows system including Vista and Windows 7 but not on 64bit systems.
-
-   To install the DOS or win-no-GUI package of LaTeX2RTF, extract all
-files from the zip archive, preserving the folder structure (winzip:
-check "use folder names"), preferably to 'C:\l2r', or under Windows, to
-your "Program Files" folder (which ever it is named in your system)
-because then it will find its cfg files by default.
-If you extracted them to another folder (e.g. 'C:\my_files\l2r'), either
-edit the file 'L2RPREP.BAT' and change the folder 'C:\l2r' to where you
-put them, or specify the path to the cfg folder in the command line.
+To install the DOS or win-no-GUI package of LaTeX2RTF, extract all files
+from the zip archive, preserving the folder structure (winzip: check
+"use folder names"), preferably to `C:\l2r', or under Windows, to your
+"Program Files" folder (which ever it is named in your system) because
+then it will find its cfg files by default.
+If you extracted them to another folder (e.g. `C:\my_files\l2r'),
+either edit the file `L2RPREP.BAT' and change the folder `C:\l2r' to
+where you put them, or specify the path to the cfg folder in the
+command line.
 Avoid blanks in folder and file names!
 
-   Make sure that the folder containing the file 'L2RPREP.BAT' is in
-your search path, or put this file into a folder which is in your search
-path.
-To display the current search path, enter 'PATH' from the command prompt
-(with no arguments).
+   Make sure that the folder containing the file `L2RPREP.BAT' is in
+your search path, or put this file into a folder which is in your
+search path.
+To display the current search path, enter `PATH' from the command
+prompt (with no arguments).
 
    Under plain DOS, conversion of equations or figures to bitmaps is not
-possible because Ghostscript and ImageMagick are not available for plain
-DOS.
+possible because Ghostscript and ImageMagick are not available for
+plain DOS.
 
 2.5 MS Windows systems
 ======================
 
 To install LaTeX2RTF on a MS Windows system (WinNT, Win2000, WinXP,
 Vista, Win7), download the win package, execute the
-'latex2rtf-x.x.x_win.exe' (where x.x.x is the version number) and follow
-the instructions.
+`latex2rtf-x.x.x_win.exe' (where x.x.x is the version number) and
+follow the instructions.
 
    Note: The installer and GUI shell do not support Win9x and WinMe
 since LaTeX2RTF v.1.9.17.  If you have one of these systems, you should
 use the win-NO-GUI package (1.9.19 and up) of LaTeX2RTF.
 
    To start the program double-click the LaTeX2RTF icon, or drag and
-drop a '.tex' file onto the icon.
+drop a `.tex' file onto the icon.
 
-   If your LaTeX document refers to external graphic files, e.g. eps, or
-you want to use the option to convert equations to bitmaps, you must
-have LaTeX, ImageMagick and Ghostscript installed.  These programs are
-freely available for download at <http://www.miktex.org/>,
-<http://www.imagemagick.org> and <http://www.ghostscript.com>
+   If your LaTeX document refers to external graphic files, e.g. eps,
+or you want to use the option to convert equations to bitmaps, you must
+have LaTeX, ImageMagick and Ghostscript installed. These programs are
+freely available for download at `http://www.miktex.org/',
+`http://www.imagemagick.org' and `http://www.ghostscript.com'
 
    The following versions were available at the time of writing and
 tested with LaTeX2RTF version 2.3.11:
@@ -269,10 +271,10 @@ tested with LaTeX2RTF version 2.3.11:
 - ImageMagick-7.0.1-8-Q16-x86-dll.exe
 
    When installing ImageMagick, be sure to choose (check)
-"Install legacy utilities (e.g.  convert)"
+"Install legacy utilities (e.g. convert)"
 
    If MikTeX, ImageMagick and Ghostscript are installed, the paths to
-their executables are detected automatically.  If for any reason this
+their executables are detected automatically. If for any reason this
 doesn't happen, these paths can be specified manually in the
 "Environment" tab of the LaTeX2RTF GUI shell window.
 
@@ -289,36 +291,43 @@ default path like follows:
 path:
    * Note that the folder name "Program Files" contains a blank.  This
      would lead to some problems as some parts of the latex2rtf program
-     package interpret the blank as a parameter delimiter.  Therefore in
-     the following example the folder name "Program Files" is replaced
-     by its DOS equivalent "PROGRA~1" which has the additional effect
-     that this is similar for several if not all European languages.
+     package interpret the blank as a parameter delimiter.  Therefore
+     in the following example the folder name "Program Files" is
+     replaced by its DOS equivalent "PROGRA~1" which has the additional
+     effect that this is similar for several if not all European
+     languages.
    * Win95, Win98, WinME
-        * Open the file 'C:\AUTOEXEC.BAT' either with Edit (DOS) or with
-          Notepad (Windows).
+        * Open the file `C:\AUTOEXEC.BAT' either with Edit (DOS) or
+          with Notepad (Windows).
+
         * At the end of that file, add the line
-          'PATH=C:\PROGRA~1\latex2rtf;%PATH%'
-        * Save the file to its original location.  Shutdown and reboot
+          `PATH=C:\PROGRA~1\latex2rtf;%PATH%'
+
+        * Save the file to its original location. Shutdown and reboot
           the PC.
+
    * WinNT, Win2000, WinXP, Vista, Win7
         * Right-click "My Computer" (German: "Arbeitsplatz"), then
           select "Properties";
+
         * NT: Click the "Environment" tab;
           XP and up: Click the "Advanced" tab, then the "Environment
           variables" button;
-        * Find the line beginning with 'PATH=' and insert the string
-          'C:\PROGRA~1\latex2rtf;'
+
+        * Find the line beginning with `PATH=' and insert the string
+          `C:\PROGRA~1\latex2rtf;'
           so that the complete line looks like
-          'PATH=C:\PROGRA~1\latex2rtf;C:\WINDOWS;...'
+          `PATH=C:\PROGRA~1\latex2rtf;C:\WINDOWS;...'
+
         * Click "OK"
 
    If you do NOT use the GUI (l2rshell.exe), either the folders where
 TeX, ImageMagick and Ghostscript are installed must also be in your
-search path, or you must edit the file 'L2RPREP.BAT', ensure that the
+search path, or you must edit the file `L2RPREP.BAT', ensure that the
 pathes in this file point to the folders where TeX, ImageMagick and
-Ghostscript are installed on your machine, and call 'l2rprep' before
-calling 'latex2rt'.
-Or you edit 'l2r.bat' and call 'l2r' instead of calling 'latex2rt'.
+Ghostscript are installed on your machine, and call `l2rprep' before
+calling `latex2rt'.
+Or you edit `l2r.bat' and call `l2r' instead of calling `latex2rt'.
 
    If you DO use the GUI (l2rshell.exe), the TeX, ImageMagick and
 Ghostscript folders are automatically added to the search path by the
@@ -326,8 +335,8 @@ GUI.
 
    When equations are to be converted to bitmaps, for each equation
 LaTeX2RTF first writes a temporary l2r_nnnn.tex file to disk which
-consists of only the equation to be converted.  It then sends the call
-for '"bash latex2png l2r_nnnn.tex"' to the operating system.
+consists of only the equation to be converted. It then sends the call
+for `"bash latex2png l2r_nnnn.tex"' to the operating system.
 In previous versions of latex2rtf, some users got the message "Out of
 environment space" (can occur only under Windows 95, Windows 98 or
 Windows ME); this should be solved now by using bash.exe instead of
@@ -339,37 +348,38 @@ command.com.
 If you want a MacOS X version, make sure that you have installed the
 developer tools CD that is appropriate for your OS version, and then
 follow the directions above for a UNIX installation.  Alternatively you
-can install using fink <http://www.finkproject.org/> and
-<http://sourceforge.net/projects/fink/>.
+can install using fink `http://www.finkproject.org/' and
+`http://sourceforge.net/projects/fink/'.
 
    As of 2006-01-30 there was a GUI shell for Macintosh at
-<http://www.inf.ethz.ch/personal/fischerk/LaTeX2rtf/index.html>
-but now (Nov.  2013) this is not available anymore.
+`http://www.inf.ethz.ch/personal/fischerk/LaTeX2rtf/index.html'
+but now (Nov. 2013) this is not available anymore.
 
    There is a PPC port of an old version 1.9k for Classic MacOS
-LaTeX2RTF. To convert a LaTeX file using this version, drag the file
-onto the LaTeX2RTF icon.  The translation is best if there are '.aux'
-and '.bbl' files in the same folder as the '.tex' file to be converted.
-These should be generated using LaTeX and 'bibtex'.
+LaTeX2RTF.  To convert a LaTeX file using this version,  drag the file
+onto the LaTeX2RTF icon.  The translation is best if there are `.aux'
+and `.bbl' files in the same folder as the `.tex' file to be converted.
+These should be generated using LaTeX and `bibtex'.
 
 2.7 Problems Compiling
 ======================
 
-The code for LaTeX2RTF is standard ANSI C. Some possible pitfalls are
+The code for LaTeX2RTF is standard ANSI C.  Some possible pitfalls are
    * Not correctly defining your compiler in the Makefile.  The default
-     is to use 'gcc'.
+     is to use `gcc'.
 
    * Encountering errors because the compiler options.  During
      development all compiler warnings are turned on.  However,
-     different compilers have different interpretations of '-Wall' and
+     different compilers have different interpretations of `-Wall' and
      may generate errors that were not found in a different development
      system.  Please report these, but a quick fix is to remove all
      compiler options.
 
-2.8 Problems with 'make check'
+
+2.8 Problems with `make check'
 ==============================
 
-All the files in the 'test' directory are converted (with varying
+All the files in the `test' directory are converted (with varying
 degrees of success) using LaTeX2RTF and are tested before most CVS
 check-ins and with all released tarballs.  There will be many warning
 messages, but there should be no actual error messages.  If you do not
@@ -382,35 +392,35 @@ translated.
 3.1 General Assumptions
 =======================
 
-LaTeX2RTF assumes that the '.tex' file you want to convert is a valid
+LaTeX2RTF assumes that the `.tex' file you want to convert is a valid
 LaTeX document.  The chances of a successful LaTeX2RTF conversion are
-slightly better than the proverbial snowball's if the '.tex' file
-doesn't 'latex' properly.  Use LaTeX to find and correct errors before
+slightly better than the proverbial snowball's if the `.tex' file
+doesn't `latex' properly.  Use LaTeX to find and correct errors before
 using LaTeX2RTF.
-LaTeX2RTF also needs the '.aux' file and '.bbl' file which are generated
-by running 'latex' on the '.tex' file
+LaTeX2RTF also needs the `.aux' file and `.bbl' file which are
+generated by running `latex' on the `.tex' file
 
-   To correctly convert font names you must edit the 'fonts.cfg'
+   To correctly convert font names you must edit the `fonts.cfg'
 configuration file.  This file is used to specify the needed font names
 and how the LaTeX default font names should be converted to RTF (*note
-Font Configuration::).  LaTeX variables and user defined commands are
-not evaluated.  They will be simply ignored.  To let LaTeX2RTF know the
-names of variables you can add them in the 'ignore.cfg' file (*note
+Font Configuration::). LaTeX variables and user defined commands are
+not evaluated. They will be simply ignored. To let LaTeX2RTF know the
+names of variables you can add them in the `ignore.cfg' file (*note
 Ignore Command::).
 
    The environment variable RTFPATH may contain a search path for the
-support files (all files ending in '.cfg').  If no file is found during
-the search in the search-path or if the environment variable is not set,
-the compiled-in default for the configuration-file directory is used.
-If the files are not found at all the program aborts.
+support files (all files ending in `.cfg'). If no file is found during
+the search in the search-path or if the environment variable is not
+set, the compiled-in default for the configuration-file directory is
+used. If the files are not found at all the program aborts.
 
-   In the DOS and Windows versions the search path is separated by ';'
-in the Unix version by ':'.  For the paths themselves apply '\' and '/'.
+   In the DOS and Windows versions the search path is separated by `;'
+in the Unix version by `:'. For the paths themselves apply `\' and `/'.
 A separator may appear at the beginning or ending of RTFPATH.
 
    Make sure that the configuration files are in the correct directory
-(or folder).  LaTeX2RTF will need at least 'fonts.cfg', 'direct.cfg',
-'ignore.cfg', 'english.cfg'.  You may have to change one ore more of
+(or folder). LaTeX2RTF will need at least `fonts.cfg', `direct.cfg',
+`ignore.cfg', `english.cfg'. You may have to change one ore more of
 them to suit your needs (*note Configuration::).
 
    *Note Missing options::, for actual implementations irregularities.
@@ -421,7 +431,7 @@ maintainer.
 3.2 LaTeX2RTF Options
 =====================
 
-The LaTeX2RTF command converts a LaTeX file into RTF text format.  The
+The LaTeX2RTF command converts a LaTeX file into RTF text format. The
 text and much of the formatting information is translated to RTF making
 the new file look similar to the original.  The command line syntax is:
 
@@ -434,29 +444,29 @@ the new file look similar to the original.  The command line syntax is:
    The options set in the Windows GUI (l2rshell.exe) are inserted as
 command line options when clicking RUN.
 
-   The '-options' may consist of one or more of the following
+   The `-options' may consist of one or more of the following
 
-'-a auxfile'
-     specify an '.aux' file (for table and figure references) that
-     differs from 'inputfile.aux'.  If this is omitted, the name of the
-     inputfile with the suffix replaced '.aux''will be taken.  You must
-     provide both files ('.tex' and the '.aux') to be able to convert
-     cross-references in a LaTeX file.  The '.aux' is created by running
-     the 'inputfile.tex' through 'latex'.
+`-a auxfile'
+     specify an `.aux' file (for table and figure references) that
+     differs from `inputfile.aux'. If this is omitted, the name of the
+     inputfile with the suffix replaced `.aux''will be taken.  You must
+     provide both files (`.tex' and the `.aux') to be able to convert
+     cross-references in a LaTeX file.  The `.aux' is created by
+     running the `inputfile.tex' through `latex'.
 
-'-b bblfile'
-     Unless an 'bblfile' is specified with the '-b' option, LaTeX2RTF
-     uses a 'inputfile.bbl'.  The 'bblfile' file is used for citations
-     and is typically created by running 'inputfile.aux' through
-     'bibtex'.
+`-b bblfile'
+     Unless an `bblfile' is specified with the `-b' option, LaTeX2RTF
+     uses a `inputfile.bbl'.  The `bblfile' file is used for citations
+     and is typically created by running `inputfile.aux' through
+     `bibtex'.
 
-'-C codepage'
+`-C codepage'
      used to specify the character set (code page) used in the LaTeX
-     document.  This is only important when non-ansi characters are
-     included in the LaTeX document.  Typically this is done in a
-     LaTeX2e file by using '\usepackage[codepage]{inputenc}' and in this
-     case you need not specify the -C codepage option.  If NO
-     '\usepackage[codepage]{inputenc}' is in the LaTeX2e file, you must
+     document. This is only important when non-ansi characters are
+     included in the LaTeX document. Typically this is done in a
+     LaTeX2e file by using `\usepackage[codepage]{inputenc}' and in
+     this case you need not specify the -C codepage option.  If NO
+     `\usepackage[codepage]{inputenc}' is in the LaTeX2e file, you must
      inform the converter about the codepage by the -C codepage option.
      You may select any of the following code pages: ansinew, applemac,
      cp437, cp437de, cp850, cp852, cp865, decmulti, cp1250, cp1252,
@@ -465,22 +475,23 @@ command line options when clicking RUN.
      includes conversion of koi8-r, koi8-u, cp1251, cp855, cp866,
      maccyr, and macukr encodings.
 
-'-d debug_level'
-     The '-d' option determines the amount of debugging information to
-     send to stderr while translating.  debug_level=0 means only Errors,
-     '1' Warning Messages (default) also.  The debug_level can go as
-     high as '7' for insane amounts of debugging fun.  Warnings and
+`-d debug_level'
+     The `-d' option determines the amount of debugging information to
+     send to stderr while translating. debug_level=0 means only Errors,
+     `1' Warning Messages (default) also.  The debug_level can go as
+     high as `7' for insane amounts of debugging fun. Warnings and
      error messages are output to stderr and by default listed in the
-     console window.  They can be redirected to a file "latex2rtf.log"
-     by appending '2>latex2rtf.log' to the command line.
+     console window. They can be redirected to a file "latex2rtf.log"
+     by appending `2>latex2rtf.log' to the command line.
 
-'-D dots_per_inch'
-     used to specify the number of dots per inch for equations converted
-     to bitmaps.  This value is also used when picture environments are
-     converted to bitmaps as well as when EPS graphics are converted to
-     png files.  The default value is 300 dots per inch.
+`-D dots_per_inch'
+     used to specify the number of dots per inch for equations
+     converted to bitmaps.  This value is also used when picture
+     environments are converted to bitmaps as well as when EPS graphics
+     are converted to png files.  The default value is 300 dots per
+     inch.
 
-'-E#'
+`-E#'
      selects whether figures are included in the rtf (default) or
      created as external files with the filenames inserted in the rtf
      text.
@@ -488,109 +499,128 @@ command line options when clicking RUN.
      The options -E4, -E8 and -E12 are experimental and may not work as
      expected.
 
-     '-E0'
+    `-E0'
           Do not include any figures in RTF.
-     '-E1'
+
+    `-E1'
           Include figures that need no conversion.
-     '-E2'
+
+    `-E2'
           Include figures that need conversion.
-     '-E3'
+
+    `-E3'
           Include all figures (default).
-     '-E4'
+
+    `-E4'
           Insert filenames for figures that do not need conversion.
-     '-E8'
+
+    `-E8'
           Insert filenames for figures that need conversion.
-     '-E12'
+
+    `-E12'
           Insert filenames for all figures.
      With options -E8 and -E12, pdf and ps graphics as well as tikz
-     graphics are converted to eps and the eps filenames inserted in the
-     document text.  With -E4 and -E12, bitmap files are inserted in
-     their original format.  After opening the rtf in a textprocessing
-     or dtp program, a macro can search for the inserted filenames and
-     insert the files in their places.  Further info is in the
-     description of the -M option.
+     graphics are converted to eps and the eps filenames inserted in
+     the document text.  With -E4 and -E12, bitmap files are inserted
+     in their original format.  After opening the rtf in a
+     textprocessing or dtp program, a macro can search for the inserted
+     filenames and insert the files in their places.  Further info is
+     in the description of the -M option.
 
-'-f#'
+`-f#'
      where # selects which fields to use during conversion:
-     '-f0'
-          do not use fields in RTF. This is handy when primitive RTF
-          editors are being used to view the RTF output.
-     '-f1'
-          use fields for equations but not '\ref' and '\cite'.
-     '-f2'
-          use fields for '\ref' and '\cite' but not equations.  This
-          will be useful for versions of OpenOffice that import
-          cross-references properly (as of Sept 2003 in a soon-to-be
-          released version) but do not properly handle fields in
-          equations.
-     '-f3'
-          use fields when possible.  This is the default and is most
-          useful when the RTF file is being exported to be used in Word.
-          This retains the most information from the original LaTeX
-          file.
+    `-f0'
+          do not use fields in RTF.  This is handy when primitive RTF
+           editors are being used to view the RTF output.
 
-'-F'
+    `-f1'
+          use fields for equations but not `\ref' and `\cite'.
+
+    `-f2'
+          use fields for `\ref' and `\cite' but not equations.  This
+          will be useful for versions of OpenOffice that import
+          cross-references     properly (as of Sept 2003 in a
+          soon-to-be released version) but do not properly     handle
+          fields in equations.
+
+    `-f3'
+          use fields when possible.  This is the default and is most
+          useful when     the RTF file is being exported to be used in
+          Word.  This retains the most     information from the
+          original LaTeX file.
+
+`-F'
      use LaTeX to create bitmaps for all figures.  This may help when
      figures are not translated properly with the default settings.
-     This typically requires a functional version of ImageMagick on your
-     machine to work properly.
+     This typically requires a functional version of ImageMagick on
+     your machine to work properly.
 
-'-h'
+`-h'
      a short usage description
 
-'-i language'
+`-i language'
      used to set the idiom or language used by the LaTeX document.
      Typically, this is specified in a LaTeX2e document by including
-     '\usepackage[language]{babel}' where 'language' is one of the
-     languages supported by the 'babel' package.  All languages listed
+     `\usepackage[language]{babel}' where `language' is one of the
+     languages supported by the `babel' package.   All languages listed
      in the babel system are supported so far as translations for
      "Chapter," "References," and the like.  Furthermore, some commands
      found in the style files for german, french, russian, and czech
      style are supported (*note Language Configuration::).
 
-'-l'
-     same as '-i latin1' (Note that the default behavior is to use
-     'ansinew' which is a superset of 'latin1').  Included for backwards
+`-l'
+     same as `-i latin1' (Note that the default behavior is to use
+     `ansinew' which is a superset of `latin1'). Included for backwards
      compatibility.
 
-'-M#'
+`-M#'
      where # selects the type of equation conversion.  Use
-     '-M1'
+    `-M1'
           convert displayed equations to RTF
-     '-M2'
+
+    `-M2'
           convert inline equations to RTF
-     '-M4'
+
+    `-M4'
           convert displayed equations to bitmap
-     '-M8'
+
+    `-M8'
           convert inline equations to bitmap
-     '-M16'
+
+    `-M16'
           insert Word comment field that contains the raw LaTeX equation
-     '-M32'
-          insert the raw latex equation in the RTF text delimited by '$
-          ... $' for inline equations and by '\[ ... \]' for displayed
-          equations.
+
+    `-M32'
+          insert the raw latex equation in the RTF text delimited by `$
+          ... $' for     inline equations and by `\[ ... \]' for
+          displayed equations.
           This is useful when using version 6 of the MathType equation
-          editor, which converts typed or pasted TeX code into a
+            editor, which converts typed or pasted TeX code into a
           MathType equation.
           Probably this could also be useful for use in OpenOffice, as
-          OO has an equation syntax which partially resembles TeX
+          OO has an     equation syntax which partially resembles TeX
           syntax.
-     '-M64'
+
+    `-M64'
           convert displayed equations to EPS files and insert filenames
           in RTF text.
-     '-M128'
+
+    `-M128'
           convert inline equations to EPS files and insert filenames in
           RTF text.
      These switches can be combined to get different effects.  Handy
      examples are
-     '-M3'
+    `-M3'
           convert both inline and displayed equations to RTF (default)
-     '-M6'
+
+    `-M6'
           convert inline equations to RTF and displayed equations to
           bitmaps
-     '-M12'
+
+    `-M12'
           convert both inline and displayed equations to bitmaps
-     '-M192'
+
+    `-M192'
           convert both inline and displayed equations to EPS and insert
           filenames in RTF text
      Conversion to bitmaps or eps requires that you have installed a
@@ -602,134 +632,144 @@ command line options when clicking RUN.
      The Windows version, compiled with MinGW, successfully converts at
      least 500 equations to bitmaps.
      When -M64, -M128 or both are specified, equations are converted to
-     individual eps files, the filenames of which are literally inserted
-     in the rtf file, delimited by [###...###].  After loading the rtf
-     file in a text processing program, a macro can be run which
-     searches for "[###" and "###]", extracts the filename, and inserts
-     the eps in that place.  The Windows installer package contains the
-     code of such a macro for Word2010 in the file
-     "WordMacro_InsertEPSfromNames.txt" in subfolder "scripts".  (This
-     macro may also run on other versions of Word but it was only tested
-     on Word2010.)  In Word, the inserted eps graphics display in bad
-     quality on the screen and on non-postscript printers but can be
-     printed in high quality on postscript and pdf printers.
+     individual eps files, the filenames of which are literally
+     inserted in the rtf file, delimited by [###...###]. After loading
+     the rtf file in a text processing program, a macro can be run
+     which searches for "[###" and "###]", extracts the filename, and
+     inserts the eps in that place.  The Windows installer package
+     contains the code of such a macro for Word2010 in the file
+     "WordMacro_InsertEPSfromNames.txt" in subfolder "scripts". (This
+     macro may also run on other versions of Word but it was only
+     tested on Word2010.) In Word, the inserted eps graphics display in
+     bad quality on the screen and on non-postscript printers but can
+     be printed in high quality on postscript and pdf printers.
 
-'-o outputfile'
-     Unless an 'outputfile' is specified with the '-o' option, the
-     resulting RTF filename is formed by removing '.tex' from the
-     'inputfile' and appending '.rtf'.
+`-o outputfile'
+     Unless an `outputfile' is specified with the `-o' option, the
+     resulting RTF filename is formed by removing `.tex' from the
+     `inputfile' and appending `.rtf'.
 
-'-p'
+`-p'
      Escape parentheses in mathematical formulas.  This has no effect
      unless EQ fields are being generated.  When this option is used,
-     then a '(' or ')' that appears in an EQ field will be preceeded by
+     then a `(' or `)' that appears in an EQ field will be preceeded by
      a backslash.  Despite documentation to the contrary (which says
      that all parentheses should be escaped), adding escapes usually
-     produces a worse result than doing nothing.  If Word displays some
-     formulas with parentheses as "Error!", you might try this option as
-     a last resort.  See also the -S option.
+     produces a worse result than doing nothing. If Word displays some
+     formulas with parentheses as "Error!", you might try this option
+     as a last resort.  See also the -S option.
 
      This is an option because it will break typesetting equations with
-     non-matching parentheses (because an unmatched unquoted parenthesis
-     would terminate the field).
+     non-matching parentheses (because an unmatched unquoted
+     parenthesis would terminate the field).
 
-'-P /path/to/cfg'
-     used to specify the folder (i.e.  directory) that contains the
-     '.cfg' files and/or the folder that contains the latex2png script.
+`-P /path/to/cfg'
+     used to specify the folder (i.e. directory) that contains the
+     `.cfg' files and/or the folder that contains the latex2png script.
      Unix, Mac: The folder that contains the latex2png script must be
      prepended by a ":".
      DOS, Windows: The scripts folder is not used, the scripts are
      always taken from the search path, therefore the folder containing
-     the scripts and the helper programs must be the first in the search
-     path.  You can either add it to the search path permanently or add
-     it temporarily by calling l2rprep.bat before starting conversions.
-     If any of the folder names contains a blank, the folder string must
-     be enclosed in single (Unix, Mac) or double (DOS, Windows) quotes.
+     the scripts and the helper programs must be the first in the
+     search path.  You can either add it to the search path permanently
+     or add it temporarily by calling l2rprep.bat before starting
+     conversions.
+     If any of the folder names contains a blank, the folder string
+     must be enclosed in single (Unix, Mac) or double (DOS, Windows)
+     quotes.
      Examples:
-     (Unix:) 'latex2rtf -P ./cfg/:./scripts/ foo'
-     (DOS/Windows:) 'latex2rt -P "C:\Program Files\latex2rtf\cfg" foo'
-     Note that without specifying the -P option, LaTeX2RTF tries to find
-     its cfg files in the following locations:
-     1.  the folder specified by the environment variable 'RTFPATH', if
+     (Unix:) `latex2rtf -P ./cfg/:./scripts/ foo'
+     (DOS/Windows:) `latex2rt -P "C:\Program Files\latex2rtf\cfg" foo'
+     Note that without specifying the -P option, LaTeX2RTF tries to
+     find its cfg files in the following locations:
+     1. the folder specified by the environment variable `RTFPATH', if
      this variable exists;
-     2.  The folder '%PROGRAMFILES%\latex2rtf\cfg', if the variable
-     'PROGRAMFILES' exists - this is the folder in which LaTeX2RTF is
+     2. The folder `%PROGRAMFILES%\latex2rtf\cfg', if the variable
+     `PROGRAMFILES' exists - this is the folder in which LaTeX2RTF is
      installed by the Windows GUI installer with default settings;
-     3.  the folder specified at compilation time by the variable
-     'CFGDIR'.  This is set in the Makefile.  The DOS version is
-     compiled with 'CFGDIR=C:/l2r', the Windows version with
-     'CFGDIR=C:/PROGRA~1/latex2rtf'.
+     3. the folder specified at compilation time by the variable
+     `CFGDIR'. This is set in the Makefile. The DOS version is compiled
+     with `CFGDIR=C:/l2r', the Windows version with
+     `CFGDIR=C:/PROGRA~1/latex2rtf'.
 
-'-se#'
+`-se#'
      selects the scale for equation conversion, where # is the scale
      factor (default 1.00).
 
-'-sf#'
+`-sf#'
      selects the scale for figure conversion, where # is the scale
      factor (default 1.00).
 
-'-t#'
+`-t#'
      where # selects the type of table conversion.  Use
-     '-t1'
+    `-t1'
           convert tables to RTF (default)
-     '-t2'
+
+    `-t2'
           convert tables to bitmaps
 
-'-v or -V'
+`-v or -V'
      prints version information on standard output and exits.
 
-'-S'
+`-S'
      used to specify that semicolons should be used to separate
      arguments in RTF fields (instead of commas).  Typically this is
      needed when the machine that opens the RTF file has a version of
-     Windows that uses ',' for decimal points.
+     Windows that uses `,' for decimal points.
 
-'-T /path/to/tmp'
+`-T /path/to/tmp'
      used to specify the folder where to put temporary files.  The path
-     can be absolute, e.g. '/path/to/tmp' or relative to the folder
-     where the .tex input file is in, e.g. 'tmp' or './tmp'.
+     can be absolute, e.g. `/path/to/tmp' or relative to the folder
+     where the .tex input file is in, e.g. `tmp' or `./tmp'.
      If you call LaTeX2RTF from the commandline (e.g. under Linux or
-     when called as export filter by LyX), make sure that the tmp folder
-     exists.  Only the LaTeX2RTF Windows shell tries to create the tmp
-     folder, the command line program doesn't.
+     when called as export filter by LyX), make sure that the tmp
+     folder exists.  Only the LaTeX2RTF Windows shell tries to create
+     the tmp folder, the command line program doesn't.
 
-'-W'
+`-W'
      includes warnings directly in the RTF file
 
-'-Z#'
-     add the specified number of extra '}' to the end of the RTF file.
+`-Z#'
+     add the specified number of extra `}' to the end of the RTF file.
      This is useful for files that are not cleanly converted by
      LaTeX2RTF.
 
+
    With no arguments other than switches starting with a "-", LaTeX2RTF
-acts as a filter, i.e., it reads from 'stdin' and writes to 'stdout'.
-In addition, diagnostic messages are sent to 'stderr'.  If these
-standard channels are not redirected using '<' and '>', then the input
+acts as a filter, i.e., it reads from `stdin' and writes to `stdout'.
+In addition, diagnostic messages are sent to `stderr'.  If these
+standard channels are not redirected using `<' and `>', then the input
 is read from the command line, and both output and error messages are
 printed on the screen.  To redirect warnings and error messages to a
-file "latex2rtf.log", append '2>latex2rtf.log' to the command line.
+file "latex2rtf.log", append `2>latex2rtf.log' to the command line.
 
-   If a non-switch argument is present, LaTeX2RTF assumes it is the name
-of the input file.  The file must have extension ".tex" but the
-extension is optional.  The output file is constructed from the input
+   If a non-switch argument is present, LaTeX2RTF assumes it is the
+name of the input file. The file must have extension ".tex" but the
+extension is optional. The output file is constructed from the input
 file name by removing the extension ".tex" and adding ".rtf".
 
 3.3 Debugging
 =============
 
-With the '-d' option you can specify how much processing information
+With the `-d' option you can specify how much processing information
 LaTeX2RTF reports.  If there is a logfile specified the output goes to
-this file.  Nonetheless Warnings and Errors are logged to stderr always.
+this file. Nonetheless Warnings and Errors are logged to stderr always.
 They can be redirected to a file "latex2rtf.log" by appending
-'2>latex2rtf.log' to the command line.
+`2>latex2rtf.log' to the command line.
 
-   Possible values of '-d' are
+   Possible values of `-d' are
   0. only errors.
+
   1. Translation Warnings (default).
+
   2. shows preparsing of sections
+
   3. Reasonably high level debugging messages
+
   4. Show all function calls
+
   5. Show each character as it is processed
+
   6. Show processing of characters as they are output as well
 
 4 Features
@@ -743,8 +783,8 @@ correctly to RTF.
 
 LaTeX2RTF understands most of the commands introduced with LaTeX2e.  It
 translates both the old 2.09 version of
-'\documentstyle[options]{format#}' and the newer
-'\documentclass[options]{format}'.
+`\documentstyle[options]{format#}' and the newer
+`\documentclass[options]{format}'.
 
 4.2 Unicode Support
 ===================
@@ -753,20 +793,20 @@ As of version 1.9.17 and up, LaTeX2RTF has limited unicode support.
 LaTeX files that use unicode sequences are just emitted directly into
 the RTF file.
 Symbols and odd characters in math sequences may also be converted to a
-unicode sequence.  Some of them need the STIXGeneral fonts (see *note
+unicode sequence. Some of them need the STIXGeneral fonts (see *note
 Math and Special Symbols::) to be installed on the system where the rtf
 file is to be displayed or printed.
 
    Support for unicode encoded input is activated by the LaTeX command
-'\usepackage[utf8]{inputenc}'
+`\usepackage[utf8]{inputenc}'
 or
-'\usepackage[utf8x]{inputenc}'.
+`\usepackage[utf8x]{inputenc}'.
 
 4.3 Input Encoding
 ==================
 
-It is not necesary to specify the '-C' option if you use
-'\usepackage{isolatin1}' or '\documentstyle[isolatin1]{...}'.  LaTeX2RTF
+It is not necesary to specify the `-C' option if you use
+`\usepackage{isolatin1}' or `\documentstyle[isolatin1]{...}'. LaTeX2RTF
 automagically detects these packages/style options and switches to
 processing of ISO-Latin1 codes.  The following encodings are supported:
 ansinew, applemac, cp437, cp437de, cp850, cp852, cp865, decmulti,
@@ -791,47 +831,47 @@ usually emitted by LaTeX during processing.  For example, this ensures
 that the LaTeX2RTF will provide the correct translation of the word
 "Chapter" in the converted document.
 
-   You can select any of the above languages using the '-l' option.
+   You can select any of the above languages using the `-l' option.
 This is not needed if your LaTeX file contains
-'\usepackage[language]{babel}'.
+`\usepackage[language]{babel}'.
 
-   Encountering the 'german' package or babel option (by H. Partl of the
+   Encountering the `german' package or babel option (by H. Partl of the
 Vienna University) makes LaTeX2RTF behave like that: German Quotes,
-German Umlauts by '"a', etc...  This support is programmed directly into
-LaTeX2RTF and supporting similar features for other languages will
+German Umlauts by `"a', etc...  This support is programmed directly
+into LaTeX2RTF and supporting similar features for other languages will
 require patching the source code.
 
-   There is similar support for 'french' packages.
+   There is similar support for `french' packages.
 
-   There is reasonable support for english, latin1, latin2, and cyrillic
-languages.
+   There is reasonable support for english, latin1, latin2, and
+cyrillic languages.
 
    *Note Language Configuration::, for details on how to write a
-'language.cfg' file for your language by yourself.
+`language.cfg' file for your language by yourself.
 
 4.5 Cross References
 ====================
 
 Cross references include everything that you might expect and then some:
 bibliographic citations, equation references, table references, figure
-references, and section references.  Section, equation, table and figure
-references are implemented by placing RTF bookmarks around the equation
-number (or table number or figure number).
+references, and section references.  Section, equation, table and
+figure references are implemented by placing RTF bookmarks around the
+equation number (or table number or figure number).
 
    Page references work but are implemented as "warm" cross-references.
 This means that Word does not automatically update the page references
 when the file is opened.  To update the page references you must select
-the entire document (in Word) and press 'F9'.
+the entire document (in Word) and press `F9'.
 
-   Bibliographic references currently require that a valid '.aux' file
+   Bibliographic references currently require that a valid `.aux' file
 be present.  This is where LaTeX2RTF obtains the reference numbers.  It
 would be nice if LaTeX2RTF just automatically numbered the references
-when there was no '.aux' file, but LaTeX2RTF does not do this yet.
+when there was no `.aux' file, but LaTeX2RTF does not do this yet.
 
    LaTeX2RTF relies on BibTeX to convert and format bibliographic
-entries.  Usually the style file for a particular BibTeX format does not
-use any special LaTeX commands and therefore the bibliography file
-'file.bbl' can be processed by LaTeX2RTF without difficulty.  As a
+entries.  Usually the style file for a particular BibTeX format does
+not use any special LaTeX commands and therefore the bibliography file
+`file.bbl' can be processed by LaTeX2RTF without difficulty. As a
 consequence, LaTeX2RTF can handle most bibliography styles without
 problem.
 
@@ -845,23 +885,23 @@ with formatting in special cases.
    As of LaTeX2RTF 1.9.17 and up, the natbib command bibpunct is
 supported.
 
-   Footnotes are implemented and appear at the bottom of each page.
+   Footnotes are implemented and appear at the bottom of each page.  
 
    Indexing is reasonably-well supported.  The simple mark-up of
-'makeindex'
+`makeindex'
      \index{topic!subtopic@\textit{subtopic}}
    is supported.  The rest of the fancy indexing stuff is not
-implemented.  The index is created at the location of the '\printindex'
+implemented.  The index is created at the location of the `\printindex'
 command.  When a file with an index is first opened in Word, you must
 select the entire file and update the page references and fields by
-pressing 'F9'.
+pressing `F9'.
 
-   Currently, there is no support for '\labels' of '\item's in enumerate
-environments.
+   Currently, there is no support for `\labels' of `\item's in
+enumerate environments.
 
    The conversion of cross-references is not perfect because of the
 different mechanisms in the LaTeX and Word worlds.  In particular, if
-there are multiple '\label' in a figure, table, or section environment
+there are multiple `\label' in a figure, table, or section environment
 then only the first gets processed.  It is also possible to confuse the
 LaTeX2RTF in eqnarray environments.
 
@@ -871,7 +911,7 @@ LaTeX2RTF in eqnarray environments.
 LaTeX2RTF will handle some basic page formatting options, including
 \doublespacing (as implemented in the setspace package), and the margin
 setting options provided by the geometry package including commands in
-the ratio, centering and margin families.  Not all geometry options are
+the ratio, centering and margin families. Not all geometry options are
 implemented yet, in part because there are no corresponding rtf commands
 for many of them.
 
@@ -885,48 +925,47 @@ document or converted to an eps file with the eps file name inserted in
 the document text delimited by [###...###].
 
    This is an interim solution (for some definition of "interim").
-Ideally the equations would become OLE equation objects in the RTF file,
-but this needs to be implemented.
+Ideally the equations would become OLE equation objects in the RTF
+file, but this needs to be implemented.
 
    Some functions in the EQ fields have two or more parameters with a
-separator between each two.  Unfortunately, the interpretation of these
+separator between each two. Unfortunately, the interpretation of these
 separators depends on the country specific settings in the MS Windows
-system in which the rtf file is opened.  e.g. in English versions of MS
+system in which the rtf file is opened. e.g. in English versions of MS
 Windows, the default parameter separator is the comma, in German
-versions the default is the semicolon.  If the parameter in the RTF file
+versions the default is the semicolon. If the parameter in the RTF file
 does not match the Windows setting, some EQ fields are not interpreted
-correctly.  You can check and set the separator in [Windows control
-panel - country settings - numbers - list separator].  By default,
-LaTeX2RTF uses the comma as separator.  If LaTeX2RTF is called with the
-command line parameter -S , the semicolon is inserted as parameter
-delimiter.
+correctly. You can check and set the separator in [Windows control panel
+- country settings - numbers - list separator]. By default, LaTeX2RTF
+uses the comma as separator. If LaTeX2RTF is called with the command
+line parameter -S , the semicolon is inserted as parameter delimiter.
 
-   Theoretically, according to the Word help file, parentheses '(' or
-')' in mathematical formulas should be escaped (by a preceding
+   Theoretically, according to the Word help file, parentheses `(' or
+`)' in mathematical formulas should be escaped (by a preceding
 backslash).  Despite this, adding escapes usually produces a worse
 result than doing nothing.  If Word displays some formulas with
 parentheses as "Error!", you might try the -p option as a last resort.
 
    It is also possible to convert an EQ field generated by LaTeX2RTF to
 an Equation Editor object by opening the rtf file in Word and
-double-clicking on the equation.  However there are bugs in the
-interface between Word and Equation Editor which prevent symbols in font
-Symbol or MTExtra to be converted correctly.  The full commercial
-version of the Equation Editor, called MathType, handles this conversion
-correctly.
+double-clicking on the equation. However there are bugs in the
+interface between Word and Equation Editor which prevent symbols in
+font Symbol or MTExtra to be converted correctly.  The full commercial
+version of the Equation Editor, called MathType, handles this
+conversion correctly.
 
    If you have MathType version 6 or later, an even better way to
-convert LaTeX equations to MathType is letting LaTeX2RTF write the LaTeX
-code of the equations verbatim in the rtf file (option -M32), then open
-the rtf file in Word, select the LaTeX code of an equation, cut it to
-the clipboard, open MathType, and paste the code.  MathType will convert
-the code into an equation.  Wilfried tried to automate this in a Word
-macro, but this fails because the macro does not wait until MathType is
-started and ready to receive the pasted code.  Maybe the MathType
-authors will give us a hint or provide such a macro.
+convert LaTeX equations to MathType is letting LaTeX2RTF write the
+LaTeX code of the equations verbatim in the rtf file (option -M32),
+then open the rtf file in Word, select the LaTeX code of an equation,
+cut it to the clipboard, open MathType, and paste the code.  MathType
+will convert the code into an equation. Wilfried tried to automate this
+in a Word macro, but this fails because the macro does not wait until
+MathType is started and ready to receive the pasted code. Maybe the
+MathType authors will give us a hint or provide such a macro.
 
-   MathType can be downloaded from <http://www.dessci.com/> (30 day test
-version).
+   MathType can be downloaded from `http://www.dessci.com/' (30 day
+test version).
 
 4.8 Math and Special Symbols
 ============================
@@ -936,65 +975,66 @@ observations.  If the symbol is found in the latin 1 character set, then
 the current font is used, else the unicode code is inserted in the rtf
 code.  (Implemented since version 2.1.0)
 
-   The means that on the system where the '.rtf' file is opened, a
+   The means that on the system where the `.rtf' file is opened, a
 unicode font should be available or these glyphs will not be displayed
 correctly.  As only the STIX fonts contain all needed characters, these
 fonts should be installed on the system where the rtf file is to be
 displayed or printed.
 
    Many mathematical and special symbols are directly supported by
-LaTeX2RTF. Less common symbols (not found in the standard font) are
-supported by the conversion table in the file 'direct.cfg', see *note
+LaTeX2RTF.  Less common symbols (not found in the standard font) are
+supported by the conversion table in the file `direct.cfg', see *note
 Direct Conversion::.
 
    Required fonts are:
 
    * "Times" / "Times New Roman" or "Helvetica" / "Arial", preferably
-     with Unicode extension (i.e.  supporting all European languages
-     including Cyrillic, Greek, and Hebrew).  "Times" or "Times New
+     with Unicode extension (i.e. supporting all European languages
+     including Cyrillic, Greek, and Hebrew). "Times" or "Times New
      Roman" and "Helvetica" or "Arial" are standard on all systems, but
      not their Unicode extension.
 
-   * "STIXGeneral" (4 fonts in plain, italic, bold, bold-italic).  These
+   * "STIXGeneral" (4 fonts in plain, italic, bold, bold-italic). These
      fonts are available from
-     <http://sourceforge.net/projects/stixfonts/>.
+     `http://sourceforge.net/projects/stixfonts/'.
 
      Note that while Office 2003 on Vista works correctly with the Open
      Type version, it does not on Windows XP (Word 2003 assigns no
      character spacing, and Publisher doesn't display the character at
-     all).  On Windows XP, Office 2003 only displays the symbols
-     correctly with the TrueType (ttf) version of the fonts.  But
+     all). On Windows XP, Office 2003 only displays the symbols
+     correctly with the TrueType (ttf) version of the fonts. But
      stixfonts.org only supplies the Open Type (otf) version.  TrueType
      versions of the fonts can be downloaded from
-     <http://sites.google.com/site/olegueret/stixfonts-ttf>.
+     `http://sites.google.com/site/olegueret/stixfonts-ttf'.
+
 
 4.9 Tables
 ==========
 
 Conversion of tabular and tabbing environments is somewhat lame.  The
 main difficulty is that LaTeX (and html) will size the columns of a
-table automatically.  There is no such feature in RTF. Consequently, the
-conversion defaults to making all the columns have equal size.  This is
-suboptimal and should be revised.
+table automatically.  There is no such feature in RTF.  Consequently,
+the conversion defaults to making all the columns have equal size.  This
+is suboptimal and should be revised.
 
    Another way is to use the option -t2 to make latex render them as
-bitmaps and insert the bitmaps into the RTF file.  This feature was
+bitmaps and insert the bitmaps into the RTF file. This feature was
 added in version 1.9.19.
 
 4.10 Graphics
 =============
 
-There is now rudimentary support for '\includegraphics'.  Three file
+There is now rudimentary support for `\includegraphics'.  Three file
 types will be inserted into the RTF file without needing conversion:
-'.pict', '.jpeg', and '.png' files.  EPS and PDF files are converted to
-PNG using 'convert' from the ImageMagick package.  Some options are even
-handled properly.
+`.pict', `.jpeg', and `.png' files.  EPS and PDF files are converted to
+PNG using `convert' from the ImageMagick package.  Some options are
+even handled properly.
 
 4.11 Pagestyles
 ===============
 
-If there is no '\pagestyle' command, the RTF output is generated as with
-plain pagestyle, i.e.  each page has its page number centered at the
+If there is no `\pagestyle' command, the RTF output is generated as with
+plain pagestyle, i.e. each page has its page number centered at the
 bottom.
 
    You must turn this off with the \pagestyle{empty} command in the
@@ -1011,20 +1051,21 @@ improve.
 
    Otfried Schwarzkopf has created the "Hyperlatex Markup Language"
 which is a "little package that allows you to use LaTeX to prepare
-documents in HTML." It brings an Emacs lisp program with it to convert
-the Hyperlatex file to HTML. Hyperlatex can be obtained from the
+documents in HTML."  It brings an Emacs lisp program with it to convert
+the Hyperlatex file to HTML.  Hyperlatex can be obtained from the
 CTAN-sites, see *note Obtaining LaTeX2RTF::.  There are two convenient
-commands that avoid typing: \link and \xlink that generate an "internal"
-label which then is used in the following \Ref and \Pageref commands.
+commands that avoid typing: \link and \xlink that generate an
+"internal" label which then is used in the following \Ref and \Pageref
+commands.
 
-   LaTeX makes it possible to write '\link{anchor}[ltx]{label}', which
-typesets: 'anchor ltx'.  LaTeX2RTF does NOT support this aproach since
+   LaTeX makes it possible to write `\link{anchor}[ltx]{label}', which
+typesets: `anchor ltx'. LaTeX2RTF does NOT support this aproach since
 the optional parameter is thrown away right now, see *note LaTeX2RTF
 under Development::.
 
-   Note that you have to update your '.cfg' files if you are upgrading,
+   Note that you have to update your `.cfg' files if you are upgrading,
 since there are a lot of HTML oriented commands in Hyperlatex that we
-simply can 'ignore'.
+simply can `ignore'.
 
 4.13 APA Support
 ================
@@ -1043,46 +1084,47 @@ cfg/styleAPA.cfg to style.cfg before starting LaTeX2RTF.
 ====================
 
 On processing input LaTeX2RTF first converts the LaTeX special
-characters.  If it encounters one of the standard commands it is
-converted internally.  If a command is not known to LaTeX2RTF it is
-first looked up in 'direct.cfg' and the RTF code specified there is
-output.  If not found there it is looked up in the section 'ignore.cfg'.
-This file includes a lot of LaTeX commands that do not affect the output
+characters. If it encounters one of the standard commands it is
+converted internally. If a command is not known to LaTeX2RTF it is first
+looked up in `direct.cfg' and the RTF code specified there is output.
+If not found there it is looked up in the section `ignore.cfg'. This
+file includes a lot of LaTeX commands that do not affect the output
 (cross reference information and the like), or that we are not able or
 willing to convert to RTF.
 
-   You can use 'ignore.cfg' if you get tired of seeing
+   You can use `ignore.cfg' if you get tired of seeing
      WARNING: command: `foo' not found - ignored
 
-and you don't need 'foo' in your RTF document.  It would be nice to send
+and you don't need `foo' in your RTF document. It would be nice to send
 your additions to the LaTeX2RTF mailing list for inclusion in later
 distributions.
 
    LaTeX2RTF accepts Unix, MS-DOS, and Macintosh line ending codes (\n,
-\r\n and \r).  The files it creates get the line ending for the platform
-on which LaTeX2RTF was compiled.
+\r\n and \r).  The files it creates get the line ending for the
+platform on which LaTeX2RTF was compiled.
 
    The LaTeX file may have been created with a wide variety of character
-sets.  If the LaTeX lacks the '\package[codepage]{inputenc}' definition,
-then you may need to use the command line switch to manually select the
-proper code page (*note Input Encoding::).
+sets.  If the LaTeX lacks the `\package[codepage]{inputenc}'
+definition, then you may need to use the command line switch to manually
+select the proper code page (*note Input Encoding::).
 
 5.2 Conditional Parsing
 =======================
 
 Starting with LaTeX2RTF 1.9.18, there is a handy method for controlling
-which content should be processed by LaTeX or by LaTeX2RTF. Control is
-achieved using the standard '\if' facility of TeX.  If you include the
+which content should be processed by LaTeX or by LaTeX2RTF.  Control is
+achieved using the standard `\if' facility of TeX.  If you include the
 following line in the preamble of your document (i.e., before
-'\begin{document}')
+`\begin{document}')
 
      \newif\iflatextortf
 
-   Then you will create a new '\iflatextortf' command in LaTeX. TeX sets
-the value of this to 'false' by default.  Now, LaTeX2RTF internally sets
-'\iflatextortf' to be true, and to ensure that this is always the case,
-LaTeX2RTF ignores the command '\latextortffalse'.  This means that you
-can control how different applications process your document by
+   Then you will create a new `\iflatextortf' command in LaTeX.  TeX
+sets the value of this to `false' by default.  Now, LaTeX2RTF
+internally sets `\iflatextortf' to be true, and to ensure that this is
+always the case, LaTeX2RTF ignores the command `\latextortffalse'.
+This means that you can control how different applications process your
+document by
 
      \iflatextortf
      This code is processed only by latex2rtf
@@ -1090,23 +1132,22 @@ can control how different applications process your document by
      This code is processed only by latex
      \fi
 
-   Note that '\iflatextortf' will only work within a section; you cannot
-use this command to conditionally parse code that crosses section
-boundaries.  Also, it will only work on complete table or figure
-environments.  Due to the mechanism used by LaTeX2RTF in processing
-these environments, at this time the only way to conditionally parse
-tables and figures is to include two complete versions of the
-environment in question, nested within an appropriate '\iflatex2rtf'
-structure.
+   Note that `\iflatextortf' will only work within a section; you
+cannot use this command to conditionally parse code that crosses section
+boundaries. Also, it will only work on complete table or figure
+environments. Due to the mechanism used by LaTeX2RTF in processing these
+environments, at this time the only way to conditionally parse tables
+and figures is to include two complete versions of the environment in
+question, nested within an appropriate `\iflatex2rtf' structure.
 
    LaTeX2RTF versions 1.9.15 to 1.9.18 had the ability to hide contents
 from LaTeX but expose them to LaTeX2RTF by starting a line with
-'%latex2rtf:'.  This code was horribly broken, and it was removed.  The
-same functionality is readily achieved using the '\iflatextortf'
+`%latex2rtf:'.  This code was horribly broken, and it was removed.  The
+same functionality is readily achieved using the `\iflatextortf'
 mechanism.  For example, the old method allowed
 
      %latex2rtf: This line will only appear in the latex2rtf output,
-   To get the same behavior, define '\iflatextortf' and use
+   To get the same behavior, define `\iflatextortf' and use
 
      \iflatextortf
      This code is processed only by latex2rtf
@@ -1116,26 +1157,26 @@ mechanism.  For example, the old method allowed
 =====================
 
 On writing output, LaTeX2RTF generates the operating system specific
-line ending code ('\n' on Unix, '\r\n' on DOS or Windows), depending on
-which system LaTeX2RTF was compiled.  As both should be legal to any RTF
-Reader the resulting RTF rendering should not be affected.
+line ending code (`\n' on Unix, `\r\n' on DOS or Windows), depending on
+which system LaTeX2RTF was compiled.  As both should be legal to any
+RTF Reader the resulting RTF rendering should not be affected.
 
    LaTeX2RTF does not offer a whole lot of flexibility in how files are
 translated, but it does offer some.  This flexibility resides in four
-files 'direct.cfg', 'ignore.cfg', 'fonts.cfg', and 'language.cfg'.
+files `direct.cfg', `ignore.cfg', `fonts.cfg', and `language.cfg'.
 These filese are documented in the next four sections.
 
 5.4 Direct Conversion
 =====================
 
-The file 'direct.cfg' is used for converting LaTeX commands by simple
-text replacement.  The format consists of lines with a LaTeX command
-with backslash followed by comma.  The rest of the line until a '.'
+The file `direct.cfg' is used for converting LaTeX commands by simple
+text replacement. The format consists of lines with a LaTeX command
+with backslash followed by comma. The rest of the line until a `.'
 character will be written to the RTF file when the command is found in
-the LaTeX file.  Lines starting with a '#' character are ignored.  After
-the '.' everything is ignored to end of line.  To select a specific font
-use '*fontname*', where 'fontname' be defined in 'fonts.cfg'.  To write
-the '*' character use '**'.
+the LaTeX file. Lines starting with a `#' character are ignored. After
+the `.' everything is ignored to end of line. To select a specific font
+use `*fontname*', where `fontname' be defined in `fonts.cfg'.  To write
+the `*' character use `**'.
 
 \bigstar,{\u8727**}.
 \copyright,\'a9.
@@ -1153,82 +1194,91 @@ broken."
 5.5 Ignore Command
 ==================
 
-The file 'ignore.cfg' is used for defining how to ignore specific
-commands.  This file is used for recognition of LaTeX variables, user
-defined variables, and some simple commands.  All variables are ignored
-but the converter must know the names to correctly ignore assignments to
-variables.  Lines in this file consist of a variable name with
+The file `ignore.cfg' is used for defining how to ignore specific
+commands. This file is used for recognition of LaTeX variables, user
+defined variables, and some simple commands. All variables are ignored
+but the converter must know the names to correctly ignore assignments
+to variables. Lines in this file consist of a variable name with
 backslash, followed by comma and the type of the variable followed by
-'.'.  Possible types are
+`.'. Possible types are
 
-'NUMBER'
+`NUMBER'
      simple numeric value
-'MEASURE'
-     numeric value with following unit of measure
-'OTHER'
-     ignores anything to the first character after '=' and from there to
-     next space.  e.g., '\setbox\bak=\hbox'
-'COMMAND'
-     ignores anything to next '\' and from there to the occurence of
-     anything but a letter e.g., '\newbox\bak'
-'SINGLE'
-     ignores single command e.g., '\noindent'
-'PARAMETER'
-     ignores a command with one parameter e.g., '\foo{bar}'
-'PACKAGE'
-     does not produce a Warning message if PACKAGE is encountered, e.g.,
-     ''\kleenex,PACKAGE.'' ignores ''\usepackage{kleenex}''
-'ENVCMD'
-     intended to process contents of unknown environment as if it were
-     plain LaTeX, e.g. ''\environ,ENVCMD.''
-     Therefore ''\begin{environ} text \end{environ}'' would be converted
-     to 'text'.  Doesn't work in LaTeX2RTF version 2.1.0 up to and
-     including 2.3.4.
-'ENVIRONMENT'
-     ignores contents of that environment, e.g., with
-     ''\ifhtml,ENVIRONMENT.'", ''\begin{ifhtml} text \end{ifhtml}''
-     ignores 'text'.
 
-   The types are in upper case exactly as above.  Do not use spaces.
-Lines starting with a '#' character are ignored.  After the '.'
-everything is ignored to end of line.  Example:
+`MEASURE'
+     numeric value with following unit of measure
+
+`OTHER'
+     ignores anything to the first character after `=' and from there
+     to next space. e.g., `\setbox\bak=\hbox'
+
+`COMMAND'
+     ignores anything to next `\' and from there to the occurence of
+     anything but a letter e.g., `\newbox\bak'
+
+`SINGLE'
+     ignores single command e.g., `\noindent'
+
+`PARAMETER'
+     ignores a command with one parameter e.g., `\foo{bar}'
+
+`PACKAGE'
+     does not produce a Warning message if PACKAGE is encountered, e.g.,
+     ``\kleenex,PACKAGE.'' ignores ``\usepackage{kleenex}''
+
+`ENVCMD'
+     intended to process contents of unknown environment as if it were
+     plain LaTeX, e.g. ``\environ,ENVCMD.''
+     Therefore ``\begin{environ} text \end{environ}'' would be
+     converted to `text'.  Doesn't work in LaTeX2RTF version 2.1.0 up
+     to and including 2.3.4.
+
+`ENVIRONMENT'
+     ignores contents of that environment, e.g., with
+     ``\ifhtml,ENVIRONMENT.'", ``\begin{ifhtml} text \end{ifhtml}''
+     ignores `text'.
+
+   The types are in upper case exactly as above. Do not use spaces.
+Lines starting with a `#' character are ignored. After the `.'
+everything is ignored to end of line. Example:
      \pagelength,MEASURE.
 
 5.6 Font Configuration
 ======================
 
-The file 'fonts.cfg' contains the font name mapping.  For example, this
-file determines what font is used to represent '\rm' characters in the
+The file `fonts.cfg' contains the font name mapping.  For example, this
+file determines what font is used to represent `\rm' characters in the
 RTF file.
 
    A line consists of a font name in LaTeX followed by comma and a font
-name in RTF. The end is marked by a '.'.  No spaces are allowed.  The
+name in RTF. The end is marked by a `.'. No spaces are allowed. The
 LaTeX font will be converted to the RTF font when it is found in the
-LaTeX file.  If multiple translations for the same LaTeX font are
-specified, only the first is used.  All fonts in a LaTeX file that are
-not in this file will be mapped to the default font.  All RTF fonts
+LaTeX file. If multiple translations for the same LaTeX font are
+specified, only the first is used. All fonts in a LaTeX file that are
+not in this file will be mapped to the default font. All RTF fonts
 listed in this file will be in every RTF file header whether used or
-not.  Lines starting with a '#' character are ignored.  After the '.'
+not.  Lines starting with a `#' character are ignored. After the `.'
 everything is ignored to end of line.
 
    To add a RTF font not used as substitute for a LaTeX font -- for
-example a Symbol font used in 'direct.cfg' -- use a dummy LaTeX name
+example a Symbol font used in `direct.cfg' -- use a dummy LaTeX name
 like in the following
      Dummy3,MathematicalSymbols.
 
-   Make sure you use the correct font name.  Take care of spaces in font
-names.  The default fonts are named Roman '\rm', Slanted '\sl', Sans
-Serif '\sf', Typewriter '\tt', or Calligraphic '\cal'.
+   Make sure you use the correct font name. Take care of spaces in font
+names. The default fonts are named Roman `\rm', Slanted `\sl', Sans
+Serif `\sf', Typewriter `\tt', or Calligraphic `\cal'.
 
 5.7 Language Configuration
 ==========================
 
-The file(s) 'language.cfg' control the translation of LaTeX's
-"hardcoded" sectioning names.  The standard LaTeX styles have some fixed
-Title names like 'Part', 'Reference' or 'Bibliography' that appeared in
-English or German in the output with the original versions of LaTeX2RTF.
+The file(s) `language.cfg' control the translation of LaTeX's
+"hardcoded" sectioning names.  The standard LaTeX styles have some
+fixed Title names like `Part', `Reference' or `Bibliography' that
+appeared in English or German in the output with the original versions
+of LaTeX2RTF.
 
-   It is unlikely that you will need to create a new 'language.cfg'
+   It is unlikely that you will need to create a new `language.cfg'
 file.  However, just look at one of the existing files and follow the
 pattern.  The format is really simple.
 
@@ -1236,62 +1286,62 @@ pattern.  The format is really simple.
 ****************************
 
 As stated in the Debugging section, LaTeX2RTF provides a means to
-control the amount of debugging information through the '-d#' switch.
+control the amount of debugging information through the `-d#' switch.
 By using a debugging level of 4, you can get a pretty good idea of what
 LaTeX command caused the problem and what line that command might be
-found on.  Warnings and error messages are output to stderr and by
-default listed in the console window.  They can be redirected to a file
-"latex2rtf.log" by appending '2>latex2rtf.log' to the command line.
+found on. Warnings and error messages are output to stderr and by
+default listed in the console window. They can be redirected to a file
+"latex2rtf.log" by appending `2>latex2rtf.log' to the command line.
 
-'Fatal error messages'
-     indicate a bug in the source code.  PLEASE report them, if they do
+`Fatal error messages'
+     indicate a bug in the source code. PLEASE report them, if they do
      not apear in the documentation (*note Reporting Bugs::).
 
-'Error messages'
+`Error messages'
      always abort the program and are caused by conditions that prevent
      further conversion of the input file.  Typically this is cause by
      LaTeX2RTF getting hopelessly confused by the number of braces in
      the LaTeX file.
 
-'Warning messages'
+`Warning messages'
      inform you, that there is some conversion loss from LaTeX to RTF,
      or that the output file has some restrictions on some RTF Readers.
      Most of these warnings can be supressed by add the offending
-     command to the 'ignore.cfg' file.
+     command to the `ignore.cfg' file.
 
    Error and Warning messages should follow the GNU Coding standards,
-i.e.  they have the format
+i.e. they have the format
      inputfile':line: Error|Warning: message
 
    You can also control the level of debugging output by inserting
-'\verbositylevel{#}' in the LaTeX file.  This is very handy if you have
+`\verbositylevel{#}' in the LaTeX file.  This is very handy if you have
 a large LaTeX file that is failing in only a small section.  For
 example,
      problem free latex file ....
      \verbositylevel{5}
      problematic code
      \verbositylevel{0}
-will cause a huge amount of debugging information to be emitted for the
-problematic code.
+   will cause a huge amount of debugging information to be emitted for
+the problematic code.
 
    Error reporting and logging still has many inconsistencies, but it
-gets better with each release.  Don't try to make any sense in debugging
-levels above 4, these are for my own delight only and can change
-significantly between versions.
+gets better with each release.  Don't try to make any sense in
+debugging levels above 4, these are for my own delight only and can
+change significantly between versions.
 
-   The 'inputfile' may be incorrectly identified if it is incorporated
-through '\input' or '\include'.  The line may be also be wrong at times.
-*Note Known Bugs::.
+   The `inputfile' may be incorrectly identified if it is incorporated
+through `\input' or `\include'.  The line may be also be wrong at
+times.  *Note Known Bugs::.
 
 7 History & Copyright
 *********************
 
 In 1994 the first Version of LaTeX2RTF was written by Fernando Dorner
 and Andreas Granzer of the Viena University supervised by Ralf
-Schlatterbeck in a one-semester course.  They created a simple LaTeX
+Schlatterbeck in a one-semester course. They created a simple LaTeX
 parser and added most of the infrastructure for the program.  This was
-version 1.0 of LaTeX2RTF. In 1995, work on LaTeX2RTF was continued in
-another one-semester course by Friedrich Polzer and Gerhard Trisko.  The
+version 1.0 of LaTeX2RTF.  In 1995, work on LaTeX2RTF was continued in
+another one-semester course by Friedrich Polzer and Gerhard Trisko. The
 result was LaTeX2RTF version 1.5.  Ralf Schlatterbeck (ralf "at"
 zoo.priv.at) maintained and extended LaTeX2RTF until 1998.
 
@@ -1303,7 +1353,7 @@ The last version release by Georg is 1.8aa.  The bulk of development
 post 1.8aa was done by Scott Prahl.  Wilfried Hennings now coordinates
 the development of the program and maintains the project on SourceForge
 (http://sourceforge.net/projects/latex2rtf/) where there are also (low
-volume) mailing lists for users and developers.  Mailing via one of
+volume) mailing lists for users and developers. Mailing via one of
 these lists requires subscription to the list (to prevent spam).  For
 subscription to these lists visit the page: users list
 (http://lists.sourceforge.net/lists/listinfo/latex2rtf-users) or
@@ -1312,8 +1362,8 @@ developers list
 
    As of Januar 2017, version 2.3.12 of LaTeX2RTF is available.
 
-   The contents of this manual were composed by copying shamelessly what
-was available in the original sources and documentation.
+   The contents of this manual were composed by copying shamelessly
+what was available in the original sources and documentation.
 
 8 LaTeX2RTF under Development
 *****************************
@@ -1321,75 +1371,78 @@ was available in the original sources and documentation.
 8.1 Unimplemented Features
 ==========================
 
-   * LaTeX2RTF ignores some optional parameters of '\documentstyle'
+   * LaTeX2RTF ignores some optional parameters of `\documentstyle'
+
    * Add the code to produce the corresponding chapter, section, and
-     page numbering with headings and myheadings pagestyles.  Implement
-     '\markboth' and '\markright'.
-   * To support '\tableofcontents' there would be two approaches:
+     page numbering with headings and myheadings pagestyles. Implement
+     `\markboth' and `\markright'.
+
+   * To support `\tableofcontents' there would be two approaches:
      Transfer sectioning information, title text and then produce page
-     numbers by the rtf- reader.  Scan and label all of the sectioning
+     numbers by the rtf- reader. Scan and label all of the sectioning
      commands while reading and then construct the sectioning
-     information using these labels.  Needs two passes on LaTeX input.
+     information using these labels. Needs two passes on LaTeX input.
 
 8.2 Missing options
 ===================
 
 Missing or buggy command line options.
 
-'-d'
+`-d'
      Information logging and Error reporting is not implemented
      consistently.  Need to test and track problems with the linenumber
      and with the file name.
 
-'--long_names'
+`--long_names'
      It would be useful to implement the GNU long option names, e.g.:
-     '-debug', '-output_file', '-quiet', etc.  This could be done by
+     `-debug', `-output_file', `-quiet', etc.  This could be done by
      switching to the GNU getopt package.
 
 8.3 Known Bugs
 ==============
 
   1. The first parameter of a \link{anchor}[ltx]{label} is converted to
-     the rtf-output.  Label is stored to hyperref for later use, the
-     optional parameter is ignored.  [ltx] should be processed as
+     the rtf-output. Label is stored to hyperref for later use, the
+     optional parameter is ignored. [ltx] should be processed as
      Otfried recommends it, to use for exclusive LaTeX output.e.g:
-     \link{readhere}[~\Ref]{explaining: chapter}.  Since
+     \link{readhere}[~\Ref]{explaining: chapter}. Since
      {explaining:chapter} is yet read by LaTeX and hyperlatex when [...]
-     is evaluated it produces the correct reference.  LaTeX2RTF is only
+     is evaluated it produces the correct reference. LaTeX2RTF is only
      strolling from left to right through the text and can't remember
      what she will see in the future.
+
   2. The diagnostics routine does not output the correct (actual) input
-     filename.  ('.aux', '.bbl', '\input').
+     filename. (`.aux', `.bbl', `\input').
 
 8.4 Reporting Bugs
 ==================
 
 Report bugs to to the bug tracking system at SourceForge
 (http://sourceforge.net/projects/latex2rtf/).  Only report bugs for the
-latest version of LaTeX2RTF that is available.  Please provide the
+latest version of LaTeX2RTF that is available.   Please provide the
 following information and observe the following guidelines when
 reporting a bug in the program:
-  1. State the version of LaTeX2RTF that you are using.  You can get the
-     version by specifying the '-V' option to LaTeX2RTF.
+  1. State the version of LaTeX2RTF that you are using.  You can get
+     the version by specifying the `-V' option to LaTeX2RTF.
 
-  2. Specify the your operating system and version.  Be sure to check
-     the file 'Makefile' for settings that may be specific to your
+  2. Specify the your operating system and version. Be sure to check
+     the file `Makefile' for settings that may be specific to your
      machine, especially for some versions of SunOS there may be
-     settings which are needed to compile successfully.  Do this before
+     settings which are needed to compile successfully. Do this before
      submitting a bug report.
 
   3. If the program produces wrong output or does not work for you,
-     include a short LaTeX file along with a description of the problem.
-     Isolating the bug into a small LaTeX file does two things.  First,
-     it provides a file that can be used to test future versions of
-     LaTeX2RTF and second, it certainly improves the chances that the
-     bug will get some attention.  Do not send me large LaTeX or RTF
-     files, I simply do not have the time to wade through large files to
-     search for a bug!
+     include a short LaTeX file along with a description of the
+     problem.  Isolating the bug into a small LaTeX file does two
+     things.  First, it provides a file that can be used to test future
+     versions of LaTeX2RTF and second, it certainly improves the
+     chances that the bug will get some attention.  Do not send me
+     large LaTeX or RTF files, I simply do not have the time to wade
+     through large files to search for a bug!
 
-  4. Be patient.  I am maintaining the program in my free time.  I did
-     not write most of the code.  Often I do not have the time to answer
-     to your question.  I will, however, try to fix reported bugs in
+  4. Be patient. I am maintaining the program in my free time. I did not
+     write most of the code. Often I do not have the time to answer to
+     your question. I will, however, try to fix reported bugs in
      upcoming releases.
 
 8.5 Todo List
@@ -1397,15 +1450,21 @@ reporting a bug in the program:
 
 Scott's ToDo list
    * Use lex/yacc to implement getSection
+
    * Add support for pagestyle
+
    * Better support for ignoring commands
 
 Georg's todo list
    * Make this Manual more consistent, the ToDo and Known Bug List
      shorter and the Features List longer.
+
    * Harmonize all of the error and warning messages.
+
    * Put warnings everywhere applicable about producing RTF 1.4 tokens.
+
    * Provide an Error and Warning recovery guide to the user.
+
    * Add a chapter with lists of all LaTeX commands that convert, and
      that do not convert to RTF, including their status (for future
      releases, never, partially functional, ...).
@@ -1416,18 +1475,18 @@ Georg's todo list
 Listed here are all the LaTeX commands currently parsed by LaTeX2RTF.
 Note: inclusion in this list does not mean that a command is fully and
 correctly handled by LaTeX2RTF. In some cases the commands here are
-place-holders only, and are not implemented at all.  The list is
-provided to encourage developers to note any departures from the
-behaviour that LaTeX users will expect.  The location of the commands is
-noted to assist anyone interested in hacking on the C source code.  This
-list is a work in progress, and may not be immediately useful to general
-users, other than to indicate those commands that we have at least
-contemplated implementing.
+place-holders only, and are not implemented at all. The list is provided
+to encourage developers to note any departures from the behaviour that
+LaTeX users will expect. The location of the commands is noted to
+assist anyone interested in hacking on the C source code. This list is a
+work in progress, and may not be immediately useful to general users,
+other than to indicate those commands that we have at least contemplated
+implementing.
 
 8.6.1 General Commands
 ----------------------
 
-These commands are found in the 'commands[]' array in commands.c.  They
+These commands are found in the `commands[]' array in commands.c.  They
 are arranged alphabetically within sections according to function.
 
 8.6.1.1 Basic Commands
@@ -1436,13 +1495,21 @@ are arranged alphabetically within sections according to function.
 All listed commands work as expected.
 
 begin
+
 centerline
+
 end
+
 endnote
+
 footnote
+
 raggedright
+
 the
+
 today
+
 vcenter
 
 8.6.1.2 Font Commands
@@ -1451,63 +1518,121 @@ vcenter
 All listed commands work as expected.
 
 bf
+
 bfseries
+
 cal
+
 em
+
 emph
+
 enotesize
+
 footnotesize
+
 HUGE
+
 Huge
+
 huge
+
 it
+
 itshape
+
 LARGE
+
 Large
+
 large
+
 mathbf
+
 mathcal
+
 mathit
+
 mathmd
+
 mathnormal
+
 mathrm
+
 mathsc
+
 mathsf
+
 mathsl
+
 mathtt
+
 mathup
+
 mdseries
+
 mit
+
 normalfont
+
 normalsize
+
 rm
+
 rmfamily
+
 sc
+
 scfamily
+
 scriptsize
+
 scshape
+
 sf
+
 sffamily
+
 sl
+
 slshape
+
 small
+
 ssmall
+
 textbf
+
 textfont
+
 textit
+
 textmd
+
 textnormal
+
 textrm
+
 textsc
+
 textsf
+
 textsl
+
 texttt
+
 textup
+
 tiny
+
 tt
+
 ttfamily
+
 underbar
+
 underline
+
 upshape
 
 8.6.1.3 Logos
@@ -1516,15 +1641,25 @@ upshape
 All listed commands work as expected.
 
 AmSLaTeX
+
 AmSTeX
+
 BibTeX
+
 kern
+
 LaTeX
+
 latex
+
 LaTeXe
+
 lower
+
 LyX
+
 SLiTeX
+
 TeX
 
 8.6.1.4 Special Characters
@@ -1533,44 +1668,78 @@ TeX
 These commands all work as expected.
 
 \
+
 acute
+
 b
+
 bar
+
 breve
+
 c
+
 check
+
 d
+
 ddot
+
 dot
+
 grave
+
 H
+
 hat
+
 i
+
 j
+
 l
+
 L
+
 r
+
 tilde
+
 u
+
 v
+
 vec
 
 8.6.1.5 Sectioning Commands
 ...........................
 
 chapter
+
 chapter*
+
 paragraph
+
 paragraph*
+
 part
+
 part*
+
 section
+
 section*
+
 subparagraph
+
 subparagraph*
+
 subsection
+
 subsection*
+
 subsubsection
+
 subsubsection*
 
 8.6.1.6 Uncategorized
@@ -2336,7 +2505,7 @@ zeta
 8.6.2 Preamble Commands
 -----------------------
 
-These commands are found in 'PreambleCommands[]' in commands.c, and are
+These commands are found in `PreambleCommands[]' in commands.c, and are
 implemented in preamble.c.
 
 addtocounter
@@ -2515,7 +2684,7 @@ voffset
 8.6.3 Letter Commands
 ---------------------
 
-Found in 'LetterCommands[]' in commands.c.
+Found in `LetterCommands[]' in commands.c.
 
 address
 
@@ -2537,7 +2706,7 @@ signature
 8.6.4.1 German Commands
 .......................
 
-Found in 'GermanModeCommands[]' in commands.c.
+Found in `GermanModeCommands[]' in commands.c.
 
 ck
 
@@ -2558,103 +2727,196 @@ uv
 .......................
 
 deuxpoints
+
 dittomark
+
 FCS
+
 fg
+
 fup
+
 ieme
+
 iemes
+
 ier
+
 iere
+
 ieres
+
 iers
+
 inferieura
+
 LCS
+
 lq
+
 lqq
+
 numero
+
 Numero
+
 numeros
+
 Numeros
+
 og
+
 pointexclamation
+
 pointinterrogation
+
 pointvirgule
+
 primo
+
 quarto
+
 rq
+
 rqq
+
 secundo
+
 superieura
+
 tertio
+
 up
 
 8.6.4.4 Russian Commands
 ........................
 
 CYRA
+
 cyra
+
 CYRB
+
 cyrb
+
 CYRC
+
 cyrc
+
 CYRCH
+
 cyrch
+
 CYRCHSH
+
 cyrchsh
+
 CYRD
+
 cyrd
+
 CYRE
+
 cyre
+
 CYREREV
+
 cyrerev
+
 CYRERY
+
 cyrery
+
 CYRF
+
 cyrf
+
 CYRG
+
 cyrg
+
 CYRH
+
 cyrh
+
 CYRHRDSN
+
 cyrhrdsn
+
 CYRI
+
 cyri
+
 CYRISHRT
+
 cyrishrt
+
 CYRK
+
 cyrk
+
 CYRL
+
 cyrl
+
 CYRM
+
 cyrm
+
 CYRN
+
 cyrn
+
 CYRO
+
 cyro
+
 CYRP
+
 cyrp
+
 CYRR
+
 cyrr
+
 CYRS
+
 cyrs
+
 CYRSFTSN
+
 cyrsftsn
+
 CYRSH
+
 cyrsh
+
 CYRT
+
 cyrt
+
 CYRU
+
 cyru
+
 CYRV
+
 cyrv
+
 CYRYA
+
 cyrya
+
 CYRYU
+
 cyryu
+
 CYRZ
+
 cyrz
+
 CYRZH
+
 cyrzh
 
 8.6.5 Citation Commands
@@ -2664,123 +2926,216 @@ cyrzh
 ........................
 
 AX
+
 BAnd
+
 BBA
+
 BBAA
+
 BBAB
+
 BBAY
+
 BBC
+
 BBCP
+
 BBCQ
+
 BBN
+
 BBOP
+
 BBOQ
+
 BCAY
+
 BCBL
+
 BCBT
+
 BCHAIR
+
 BCHAIRS
+
 BCnt
+
 BCntIP
+
 BED
+
 BEd
+
 BEDS
+
 Bem
+
 BIP
+
 BMTh
+
 BNUM
+
 BNUMS
+
 BOthers
+
 BOWP
+
 BPG
+
 BPGS
+
 BPhD
+
 BREPR
+
 BTR
+
 BTRANS
+
 BTRANSS
+
 BUMTh
+
 BUPhD
+
 BVOL
+
 BVOLS
+
 citeA
+
 citeauthor
+
 citeNP
+
 citeyear
+
 citeyearNP
+
 fullcite
+
 fullciteA
+
 fullciteauthor
+
 fullciteNP
+
 shortcite
+
 shortciteA
+
 shortciteauthor
+
 shortciteNP
 
 8.6.5.2 AuthorDate Commands
 ...........................
 
 citename
+
 shortcite
 
 8.6.5.3 Harvard Commands
 ........................
 
 cite
+
 citeaffixed
+
 citeasnoun
+
 citename
+
 citeyear
+
 citeyear*
+
 harvardand
+
 harvarditem
+
 harvardyearleft
+
 harvardyearright
+
 possessivecite
 
 8.6.5.4 HyperLatex Commands
 ...........................
 
 Cite
+
 link
+
 Pageref
+
 Ref
+
 S
+
 xlink
 
 8.6.5.5 Apacite Commands
 ........................
 
 bibpunct
+
 cite
+
 citealp
+
 Citealp
+
 citealp*
+
 citealt
+
 Citealt
+
 citealt*
+
 citeauthor
+
 Citeauthor
+
 citeauthor*
+
 citep
+
 Citep
+
 citep*
+
 citet
+
 Citet
+
 citet*
+
 citetext
+
 citeyear
+
 citeyearpar
 
 8.6.6 Acronym Commands
 ----------------------
 
 usepackage [options] {acronym}
+
 ac
+
 acfi
+
 acro
+
 acrodef
+
 acrodefplural
+
 acused
 
 8.6.7 Other Commands
@@ -2790,11 +3145,10 @@ Other Commands:
 item
 caption
 center
-
 8.6.8 Environments
 ------------------
 
-Environments processed - found in 'params[]' in commands.c.
+Environments processed - found in `params[]' in commands.c.
 
 abstract
 
@@ -2937,971 +3291,6 @@ verse
 9 Function Index
 ****************
 
-* Menu:
-
-* \:                                     Special Characters. (line 1534)
-* abstract:                              Uncategorized.      (line 1580)
-* abstract <1>:                          Environments.       (line 2798)
-* ac:                                    Acronym Commands.   (line 2778)
-* acfi:                                  Acronym Commands.   (line 2779)
-* acknowledgments:                       Environments.       (line 2800)
-* acro:                                  Acronym Commands.   (line 2780)
-* acrodef:                               Acronym Commands.   (line 2781)
-* acrodefplural:                         Acronym Commands.   (line 2782)
-* acused:                                Acronym Commands.   (line 2783)
-* acute:                                 Special Characters. (line 1535)
-* addcontents:                           Uncategorized.      (line 1582)
-* addcontentsline:                       Uncategorized.      (line 1585)
-* address:                               Letter Commands.    (line 2519)
-* addtocounter:                          Preamble Commands.  (line 2341)
-* addtolength:                           Preamble Commands.  (line 2343)
-* addvspace:                             Uncategorized.      (line 1588)
-* aleph:                                 Uncategorized.      (line 1591)
-* align:                                 Environments.       (line 2802)
-* align*:                                Environments.       (line 2804)
-* alltt:                                 Environments.       (line 2806)
-* Alph:                                  Uncategorized.      (line 1593)
-* alph:                                  Uncategorized.      (line 1595)
-* alpha:                                 Uncategorized.      (line 1598)
-* Alpha:                                 Uncategorized.      (line 1600)
-* amalg:                                 Uncategorized.      (line 1603)
-* AmSLaTeX:                              Logos.              (line 1517)
-* AmSTeX:                                Logos.              (line 1518)
-* and:                                   Uncategorized.      (line 1605)
-* angle:                                 Uncategorized.      (line 1607)
-* appendix:                              Uncategorized.      (line 1609)
-* approx:                                Uncategorized.      (line 1612)
-* arabic:                                Uncategorized.      (line 1614)
-* array:                                 Environments.       (line 2808)
-* ast:                                   Uncategorized.      (line 1617)
-* author:                                Uncategorized.      (line 1619)
-* AX:                                    Apacite Commands.   (line 2665)
-* b:                                     Special Characters. (line 1536)
-* BAnd:                                  Apacite Commands.   (line 2666)
-* bar:                                   Special Characters. (line 1537)
-* baselineskip:                          Uncategorized.      (line 1621)
-* baselineskip <1>:                      Preamble Commands.  (line 2345)
-* BBA:                                   Apacite Commands.   (line 2667)
-* BBAA:                                  Apacite Commands.   (line 2668)
-* BBAB:                                  Apacite Commands.   (line 2669)
-* BBAY:                                  Apacite Commands.   (line 2670)
-* BBC:                                   Apacite Commands.   (line 2671)
-* BBCP:                                  Apacite Commands.   (line 2672)
-* BBCQ:                                  Apacite Commands.   (line 2673)
-* BBN:                                   Apacite Commands.   (line 2674)
-* BBOP:                                  Apacite Commands.   (line 2675)
-* BBOQ:                                  Apacite Commands.   (line 2676)
-* BCAY:                                  Apacite Commands.   (line 2677)
-* BCBL:                                  Apacite Commands.   (line 2678)
-* BCBT:                                  Apacite Commands.   (line 2679)
-* BCHAIR:                                Apacite Commands.   (line 2680)
-* BCHAIRS:                               Apacite Commands.   (line 2681)
-* BCnt:                                  Apacite Commands.   (line 2682)
-* BCntIP:                                Apacite Commands.   (line 2683)
-* because:                               Uncategorized.      (line 1623)
-* BED:                                   Apacite Commands.   (line 2684)
-* BEd:                                   Apacite Commands.   (line 2685)
-* BEDS:                                  Apacite Commands.   (line 2686)
-* begin:                                 Basic Commands.     (line 1437)
-* Bem:                                   Apacite Commands.   (line 2687)
-* beta:                                  Uncategorized.      (line 1625)
-* Beta:                                  Uncategorized.      (line 1627)
-* bf:                                    Font Commands.      (line 1452)
-* bf <1>:                                Environments.       (line 2810)
-* bfseries:                              Font Commands.      (line 1453)
-* bfseries <1>:                          Environments.       (line 2812)
-* bibentry:                              Uncategorized.      (line 1629)
-* bibitem:                               Uncategorized.      (line 1631)
-* bibliography:                          Uncategorized.      (line 1633)
-* bibliographystyle:                     Uncategorized.      (line 1635)
-* bibliographystyle <1>:                 Uncategorized.      (line 1637)
-* bibpunct:                              Natbib Commands.    (line 2753)
-* BibTeX:                                Logos.              (line 1519)
-* bigskip:                               Uncategorized.      (line 1640)
-* BIP:                                   Apacite Commands.   (line 2688)
-* BMTh:                                  Apacite Commands.   (line 2689)
-* BNUM:                                  Apacite Commands.   (line 2690)
-* BNUMS:                                 Apacite Commands.   (line 2691)
-* bot:                                   Uncategorized.      (line 1642)
-* BOthers:                               Apacite Commands.   (line 2692)
-* BOWP:                                  Apacite Commands.   (line 2693)
-* BoxedEPSF:                             Uncategorized.      (line 1644)
-* BPG:                                   Apacite Commands.   (line 2694)
-* BPGS:                                  Apacite Commands.   (line 2695)
-* BPhD:                                  Apacite Commands.   (line 2696)
-* BREPR:                                 Apacite Commands.   (line 2697)
-* breve:                                 Special Characters. (line 1538)
-* BTR:                                   Apacite Commands.   (line 2698)
-* BTRANS:                                Apacite Commands.   (line 2699)
-* BTRANSS:                               Apacite Commands.   (line 2700)
-* bullet:                                Uncategorized.      (line 1646)
-* BUMTh:                                 Apacite Commands.   (line 2701)
-* BUPhD:                                 Apacite Commands.   (line 2702)
-* BVOL:                                  Apacite Commands.   (line 2703)
-* BVOLS:                                 Apacite Commands.   (line 2704)
-* c:                                     Special Characters. (line 1539)
-* cal:                                   Font Commands.      (line 1454)
-* cap:                                   Uncategorized.      (line 1648)
-* caption:                               Uncategorized.      (line 1650)
-* cc:                                    Letter Commands.    (line 2521)
-* cdot:                                  Uncategorized.      (line 1652)
-* cdots:                                 Uncategorized.      (line 1654)
-* celsius:                               Preamble Commands.  (line 2347)
-* center:                                Environments.       (line 2814)
-* centering:                             Uncategorized.      (line 1656)
-* centerline:                            Basic Commands.     (line 1438)
-* cfoot:                                 Preamble Commands.  (line 2349)
-* chapter:                               Sectioning Commands.
-                                                             (line 1560)
-* chapter*:                              Sectioning Commands.
-                                                             (line 1561)
-* char:                                  Uncategorized.      (line 1658)
-* chead:                                 Preamble Commands.  (line 2351)
-* check:                                 Special Characters. (line 1540)
-* chi:                                   Uncategorized.      (line 1660)
-* Chi:                                   Uncategorized.      (line 1662)
-* circ:                                  Uncategorized.      (line 1664)
-* cite:                                  Uncategorized.      (line 1666)
-* cite <1>:                              Harvard Commands.   (line 2728)
-* Cite:                                  HyperLatex Commands.
-                                                             (line 2743)
-* cite <2>:                              Natbib Commands.    (line 2754)
-* citeA:                                 Apacite Commands.   (line 2705)
-* citeaffixed:                           Harvard Commands.   (line 2729)
-* citealp:                               Natbib Commands.    (line 2755)
-* Citealp:                               Natbib Commands.    (line 2756)
-* citealp*:                              Natbib Commands.    (line 2757)
-* citealt:                               Natbib Commands.    (line 2758)
-* Citealt:                               Natbib Commands.    (line 2759)
-* citealt*:                              Natbib Commands.    (line 2760)
-* citeasnoun:                            Harvard Commands.   (line 2730)
-* citeauthor:                            Apacite Commands.   (line 2706)
-* citeauthor <1>:                        Natbib Commands.    (line 2761)
-* Citeauthor:                            Natbib Commands.    (line 2762)
-* citeauthor*:                           Natbib Commands.    (line 2763)
-* citename:                              AuthorDate Commands.
-                                                             (line 2722)
-* citename <1>:                          Harvard Commands.   (line 2731)
-* citeNP:                                Apacite Commands.   (line 2707)
-* citeonline:                            Uncategorized.      (line 1668)
-* citep:                                 Natbib Commands.    (line 2764)
-* Citep:                                 Natbib Commands.    (line 2765)
-* citep*:                                Natbib Commands.    (line 2766)
-* citet:                                 Natbib Commands.    (line 2767)
-* Citet:                                 Natbib Commands.    (line 2768)
-* citet*:                                Natbib Commands.    (line 2769)
-* citetext:                              Natbib Commands.    (line 2770)
-* citeyear:                              Apacite Commands.   (line 2708)
-* citeyear <1>:                          Harvard Commands.   (line 2732)
-* citeyear <2>:                          Natbib Commands.    (line 2771)
-* citeyear*:                             Harvard Commands.   (line 2733)
-* citeyearNP:                            Apacite Commands.   (line 2709)
-* citeyearpar:                           Natbib Commands.    (line 2772)
-* ck:                                    German Commands.    (line 2541)
-* cleardoublepage:                       Uncategorized.      (line 1670)
-* clearpage:                             Uncategorized.      (line 1672)
-* cline:                                 Preamble Commands.  (line 2353)
-* closing:                               Letter Commands.    (line 2523)
-* clubsuit:                              Uncategorized.      (line 1674)
-* comment:                               Environments.       (line 2816)
-* compactenum:                           Environments.       (line 2818)
-* compactitem:                           Environments.       (line 2820)
-* cong:                                  Uncategorized.      (line 1676)
-* contentsline:                          Uncategorized.      (line 1678)
-* coprod:                                Uncategorized.      (line 1680)
-* cup:                                   Uncategorized.      (line 1682)
-* CYRA:                                  Russian Commands.   (line 2594)
-* cyra:                                  Russian Commands.   (line 2595)
-* CYRB:                                  Russian Commands.   (line 2596)
-* cyrb:                                  Russian Commands.   (line 2597)
-* CYRC:                                  Russian Commands.   (line 2598)
-* cyrc:                                  Russian Commands.   (line 2599)
-* CYRCH:                                 Russian Commands.   (line 2600)
-* cyrch:                                 Russian Commands.   (line 2601)
-* CYRCHSH:                               Russian Commands.   (line 2602)
-* cyrchsh:                               Russian Commands.   (line 2603)
-* CYRD:                                  Russian Commands.   (line 2604)
-* cyrd:                                  Russian Commands.   (line 2605)
-* CYRE:                                  Russian Commands.   (line 2606)
-* cyre:                                  Russian Commands.   (line 2607)
-* CYREREV:                               Russian Commands.   (line 2608)
-* cyrerev:                               Russian Commands.   (line 2609)
-* CYRERY:                                Russian Commands.   (line 2610)
-* cyrery:                                Russian Commands.   (line 2611)
-* CYRF:                                  Russian Commands.   (line 2612)
-* cyrf:                                  Russian Commands.   (line 2613)
-* CYRG:                                  Russian Commands.   (line 2614)
-* cyrg:                                  Russian Commands.   (line 2615)
-* CYRH:                                  Russian Commands.   (line 2616)
-* cyrh:                                  Russian Commands.   (line 2617)
-* CYRHRDSN:                              Russian Commands.   (line 2618)
-* cyrhrdsn:                              Russian Commands.   (line 2619)
-* CYRI:                                  Russian Commands.   (line 2620)
-* cyri:                                  Russian Commands.   (line 2621)
-* CYRISHRT:                              Russian Commands.   (line 2622)
-* cyrishrt:                              Russian Commands.   (line 2623)
-* CYRK:                                  Russian Commands.   (line 2624)
-* cyrk:                                  Russian Commands.   (line 2625)
-* CYRL:                                  Russian Commands.   (line 2626)
-* cyrl:                                  Russian Commands.   (line 2627)
-* CYRM:                                  Russian Commands.   (line 2628)
-* cyrm:                                  Russian Commands.   (line 2629)
-* CYRN:                                  Russian Commands.   (line 2630)
-* cyrn:                                  Russian Commands.   (line 2631)
-* CYRO:                                  Russian Commands.   (line 2632)
-* cyro:                                  Russian Commands.   (line 2633)
-* CYRP:                                  Russian Commands.   (line 2634)
-* cyrp:                                  Russian Commands.   (line 2635)
-* CYRR:                                  Russian Commands.   (line 2636)
-* cyrr:                                  Russian Commands.   (line 2637)
-* CYRS:                                  Russian Commands.   (line 2638)
-* cyrs:                                  Russian Commands.   (line 2639)
-* CYRSFTSN:                              Russian Commands.   (line 2640)
-* cyrsftsn:                              Russian Commands.   (line 2641)
-* CYRSH:                                 Russian Commands.   (line 2642)
-* cyrsh:                                 Russian Commands.   (line 2643)
-* CYRT:                                  Russian Commands.   (line 2644)
-* cyrt:                                  Russian Commands.   (line 2645)
-* CYRU:                                  Russian Commands.   (line 2646)
-* cyru:                                  Russian Commands.   (line 2647)
-* CYRV:                                  Russian Commands.   (line 2648)
-* cyrv:                                  Russian Commands.   (line 2649)
-* CYRYA:                                 Russian Commands.   (line 2650)
-* cyrya:                                 Russian Commands.   (line 2651)
-* CYRYU:                                 Russian Commands.   (line 2652)
-* cyryu:                                 Russian Commands.   (line 2653)
-* CYRZ:                                  Russian Commands.   (line 2654)
-* cyrz:                                  Russian Commands.   (line 2655)
-* CYRZH:                                 Russian Commands.   (line 2656)
-* cyrzh:                                 Russian Commands.   (line 2657)
-* d:                                     Special Characters. (line 1541)
-* date:                                  Uncategorized.      (line 1684)
-* ddot:                                  Special Characters. (line 1542)
-* ddots:                                 Uncategorized.      (line 1686)
-* DeclareRobustCommand:                  Preamble Commands.  (line 2355)
-* DeclareRobustCommand*:                 Preamble Commands.  (line 2357)
-* def:                                   Preamble Commands.  (line 2359)
-* degreecelsius:                         Preamble Commands.  (line 2361)
-* delta:                                 Uncategorized.      (line 1688)
-* Delta:                                 Uncategorized.      (line 1690)
-* description:                           Environments.       (line 2822)
-* deuxpoints:                            French Commands.    (line 2559)
-* dfrac:                                 Uncategorized.      (line 1692)
-* Diamond:                               Uncategorized.      (line 1694)
-* diamondsuit:                           Uncategorized.      (line 1696)
-* displaymath:                           Environments.       (line 2824)
-* dittomark:                             French Commands.    (line 2560)
-* div:                                   Uncategorized.      (line 1698)
-* document:                              Environments.       (line 2826)
-* documentclass:                         Preamble Commands.  (line 2363)
-* documentstyle:                         Preamble Commands.  (line 2365)
-* dot:                                   Special Characters. (line 1543)
-* doteq:                                 Uncategorized.      (line 1700)
-* dotfill:                               Uncategorized.      (line 1702)
-* dots:                                  Uncategorized.      (line 1706)
-* dots <1>:                              Uncategorized.      (line 1708)
-* doublespacing:                         Preamble Commands.  (line 2367)
-* downarrow:                             Uncategorized.      (line 1710)
-* Downarrow:                             Uncategorized.      (line 1712)
-* efloatseparator:                       Uncategorized.      (line 1714)
-* ell:                                   Uncategorized.      (line 1716)
-* em:                                    Font Commands.      (line 1455)
-* em <1>:                                Environments.       (line 2828)
-* emph:                                  Font Commands.      (line 1456)
-* emptyset:                              Uncategorized.      (line 1718)
-* encl:                                  Letter Commands.    (line 2525)
-* end:                                   Basic Commands.     (line 1439)
-* endinput:                              Uncategorized.      (line 1720)
-* endnote:                               Basic Commands.     (line 1440)
-* endnotemark:                           Uncategorized.      (line 1722)
-* endnotetext:                           Preamble Commands.  (line 2371)
-* enotesize:                             Font Commands.      (line 1457)
-* ensuremath:                            Uncategorized.      (line 1725)
-* enumerate:                             Environments.       (line 2830)
-* epsfbox:                               Uncategorized.      (line 1727)
-* epsffile:                              Uncategorized.      (line 1729)
-* epsilon:                               Uncategorized.      (line 1731)
-* eqnarray:                              Environments.       (line 2832)
-* eqnarray*:                             Environments.       (line 2834)
-* eqref:                                 Uncategorized.      (line 1733)
-* equation:                              Environments.       (line 2836)
-* equation*:                             Environments.       (line 2838)
-* equiv:                                 Uncategorized.      (line 1735)
-* eta:                                   Uncategorized.      (line 1737)
-* EUR:                                   Preamble Commands.  (line 2373)
-* euro:                                  Preamble Commands.  (line 2375)
-* evensidemargin:                        Preamble Commands.  (line 2377)
-* exists:                                Uncategorized.      (line 1739)
-* fancyfoot:                             Preamble Commands.  (line 2379)
-* fancyhead:                             Preamble Commands.  (line 2381)
-* fbox:                                  Uncategorized.      (line 1741)
-* fbox <1>:                              Uncategorized.      (line 1743)
-* FCS:                                   French Commands.    (line 2561)
-* fg:                                    French Commands.    (line 2562)
-* figure:                                Environments.       (line 2840)
-* figure*:                               Environments.       (line 2842)
-* flushbottom:                           Preamble Commands.  (line 2383)
-* flushleft:                             Environments.       (line 2844)
-* flushright:                            Environments.       (line 2846)
-* fnsymbol:                              Uncategorized.      (line 1745)
-* footnote:                              Basic Commands.     (line 1441)
-* footnotemark:                          Uncategorized.      (line 1748)
-* footnotesize:                          Font Commands.      (line 1458)
-* footnotetext:                          Preamble Commands.  (line 2385)
-* forall:                                Uncategorized.      (line 1751)
-* frac:                                  Uncategorized.      (line 1753)
-* Frac:                                  Uncategorized.      (line 1755)
-* framebox:                              Uncategorized.      (line 1757)
-* frenchspacing:                         Uncategorized.      (line 1760)
-* fullcite:                              Apacite Commands.   (line 2710)
-* fullciteA:                             Apacite Commands.   (line 2711)
-* fullciteauthor:                        Apacite Commands.   (line 2712)
-* fullciteNP:                            Apacite Commands.   (line 2713)
-* fup:                                   French Commands.    (line 2563)
-* gamma:                                 Uncategorized.      (line 1763)
-* Gamma:                                 Uncategorized.      (line 1765)
-* ge:                                    Uncategorized.      (line 1767)
-* geometry:                              Preamble Commands.  (line 2387)
-* geq:                                   Uncategorized.      (line 1769)
-* gg:                                    Uncategorized.      (line 1771)
-* glossary:                              Uncategorized.      (line 1773)
-* glossaryentry:                         Uncategorized.      (line 1776)
-* glq:                                   German Commands.    (line 2545)
-* glqq:                                  German Commands.    (line 2543)
-* grave:                                 Special Characters. (line 1544)
-* grq:                                   German Commands.    (line 2547)
-* grqq:                                  German Commands.    (line 2549)
-* H:                                     Special Characters. (line 1545)
-* harvardand:                            Harvard Commands.   (line 2734)
-* harvarditem:                           Harvard Commands.   (line 2735)
-* harvardyearleft:                       Harvard Commands.   (line 2736)
-* harvardyearright:                      Harvard Commands.   (line 2737)
-* hat:                                   Special Characters. (line 1546)
-* hbar:                                  Uncategorized.      (line 1779)
-* hbox:                                  Uncategorized.      (line 1781)
-* headheight:                            Preamble Commands.  (line 2392)
-* headsep:                               Preamble Commands.  (line 2394)
-* heartsuit:                             Uncategorized.      (line 1783)
-* hline:                                 Preamble Commands.  (line 2396)
-* hoffset:                               Preamble Commands.  (line 2398)
-* hsize:                                 Uncategorized.      (line 1785)
-* hslash:                                Uncategorized.      (line 1787)
-* hspace:                                Uncategorized.      (line 1789)
-* hspace*:                               Uncategorized.      (line 1792)
-* htmladdnormallink:                     Uncategorized.      (line 1795)
-* htmladdnormallink <1>:                 Preamble Commands.  (line 2400)
-* htmlonly:                              Environments.       (line 2848)
-* htmlref:                               Uncategorized.      (line 1797)
-* htmlref <1>:                           Preamble Commands.  (line 2402)
-* HUGE:                                  Font Commands.      (line 1459)
-* Huge:                                  Font Commands.      (line 1460)
-* huge:                                  Font Commands.      (line 1461)
-* hyphenation:                           Preamble Commands.  (line 2404)
-* i:                                     Special Characters. (line 1547)
-* ieme:                                  French Commands.    (line 2564)
-* iemes:                                 French Commands.    (line 2565)
-* ier:                                   French Commands.    (line 2566)
-* iere:                                  French Commands.    (line 2567)
-* ieres:                                 French Commands.    (line 2568)
-* iers:                                  French Commands.    (line 2569)
-* iflatextortf:                          Preamble Commands.  (line 2406)
-* ifx:                                   Preamble Commands.  (line 2408)
-* iiint:                                 Uncategorized.      (line 1799)
-* iint:                                  Uncategorized.      (line 1801)
-* Im:                                    Uncategorized.      (line 1803)
-* in:                                    Uncategorized.      (line 1805)
-* include:                               Uncategorized.      (line 1807)
-* include <1>:                           Preamble Commands.  (line 2410)
-* includegraphics:                       Uncategorized.      (line 1809)
-* includegraphics*:                      Uncategorized.      (line 1811)
-* includeonly:                           Uncategorized.      (line 1813)
-* indent:                                Uncategorized.      (line 1816)
-* index:                                 Uncategorized.      (line 1818)
-* indexentry:                            Uncategorized.      (line 1820)
-* inferieura:                            French Commands.    (line 2570)
-* infty:                                 Uncategorized.      (line 1823)
-* input:                                 Uncategorized.      (line 1825)
-* input <1>:                             Preamble Commands.  (line 2412)
-* int:                                   Uncategorized.      (line 1827)
-* int <1>:                               Uncategorized.      (line 1829)
-* iota:                                  Uncategorized.      (line 1831)
-* it:                                    Font Commands.      (line 1462)
-* it <1>:                                Environments.       (line 2851)
-* itemize:                               Environments.       (line 2853)
-* itshape:                               Font Commands.      (line 1463)
-* itshape <1>:                           Environments.       (line 2855)
-* j:                                     Special Characters. (line 1548)
-* kappa:                                 Uncategorized.      (line 1833)
-* kern:                                  Logos.              (line 1520)
-* l:                                     Special Characters. (line 1549)
-* L:                                     Special Characters. (line 1550)
-* label:                                 Uncategorized.      (line 1835)
-* lambda:                                Uncategorized.      (line 1837)
-* Lambda:                                Uncategorized.      (line 1839)
-* land:                                  Uncategorized.      (line 1841)
-* landscape:                             Environments.       (line 2857)
-* langle:                                Uncategorized.      (line 1843)
-* LARGE:                                 Font Commands.      (line 1464)
-* Large:                                 Font Commands.      (line 1465)
-* large:                                 Font Commands.      (line 1466)
-* LaTeX:                                 Logos.              (line 1521)
-* latex:                                 Logos.              (line 1522)
-* LaTeXe:                                Logos.              (line 1523)
-* latexonly:                             Environments.       (line 2859)
-* latextortffalse:                       Preamble Commands.  (line 2414)
-* latextortftrue:                        Preamble Commands.  (line 2417)
-* lceil:                                 Uncategorized.      (line 1845)
-* LCS:                                   French Commands.    (line 2571)
-* ldots:                                 Uncategorized.      (line 1847)
-* le:                                    Uncategorized.      (line 1849)
-* left:                                  Uncategorized.      (line 1851)
-* leftarrow:                             Uncategorized.      (line 1853)
-* Leftarrow:                             Uncategorized.      (line 1855)
-* leftharpoondown:                       Uncategorized.      (line 1857)
-* leftleftarrows:                        Uncategorized.      (line 1859)
-* leftrightarrow:                        Uncategorized.      (line 1861)
-* Leftrightarrow:                        Uncategorized.      (line 1863)
-* leftrightarrows:                       Uncategorized.      (line 1865)
-* leq:                                   Uncategorized.      (line 1867)
-* let:                                   Uncategorized.      (line 1869)
-* letter:                                Environments.       (line 2862)
-* letterspace:                           Uncategorized.      (line 1872)
-* lfloor:                                Uncategorized.      (line 1874)
-* lfoot:                                 Preamble Commands.  (line 2420)
-* lhead:                                 Preamble Commands.  (line 2422)
-* lim:                                   Uncategorized.      (line 1876)
-* liminf:                                Uncategorized.      (line 1878)
-* limsup:                                Uncategorized.      (line 1880)
-* linebreak:                             Uncategorized.      (line 1882)
-* lineskip:                              Uncategorized.      (line 1885)
-* link:                                  HyperLatex Commands.
-                                                             (line 2744)
-* list:                                  Environments.       (line 2864)
-* listoffigures:                         Uncategorized.      (line 1887)
-* listoffiles:                           Preamble Commands.  (line 2424)
-* listoftables:                          Uncategorized.      (line 1889)
-* ll:                                    Uncategorized.      (line 1891)
-* longleftarrow:                         Uncategorized.      (line 1893)
-* longleftrightarrows:                   Uncategorized.      (line 1895)
-* longrightarrow:                        Uncategorized.      (line 1897)
-* longtable:                             Environments.       (line 2866)
-* longtable*:                            Environments.       (line 2868)
-* lor:                                   Uncategorized.      (line 1899)
-* lower:                                 Logos.              (line 1524)
-* lq:                                    French Commands.    (line 2572)
-* lqq:                                   French Commands.    (line 2573)
-* LyX:                                   Logos.              (line 1525)
-* makebox:                               Uncategorized.      (line 1901)
-* makeglossary:                          Preamble Commands.  (line 2427)
-* makeindex:                             Preamble Commands.  (line 2430)
-* makelabels:                            Preamble Commands.  (line 2433)
-* maketitle:                             Uncategorized.      (line 1904)
-* mapsto:                                Uncategorized.      (line 1906)
-* marginpar:                             Uncategorized.      (line 1908)
-* markboth:                              Uncategorized.      (line 1911)
-* markboth <1>:                          Preamble Commands.  (line 2436)
-* markright:                             Uncategorized.      (line 1914)
-* markright <1>:                         Preamble Commands.  (line 2439)
-* math:                                  Environments.       (line 2870)
-* mathbf:                                Font Commands.      (line 1467)
-* mathcal:                               Font Commands.      (line 1468)
-* mathit:                                Font Commands.      (line 1469)
-* mathmd:                                Font Commands.      (line 1470)
-* mathnormal:                            Font Commands.      (line 1471)
-* mathrm:                                Font Commands.      (line 1472)
-* mathsc:                                Font Commands.      (line 1473)
-* mathsf:                                Font Commands.      (line 1474)
-* mathsl:                                Font Commands.      (line 1475)
-* mathtt:                                Font Commands.      (line 1476)
-* mathup:                                Font Commands.      (line 1477)
-* matrix:                                Uncategorized.      (line 1917)
-* mbox:                                  Uncategorized.      (line 1919)
-* mdseries:                              Font Commands.      (line 1478)
-* mdseries <1>:                          Environments.       (line 2872)
-* measuredangle:                         Uncategorized.      (line 1921)
-* medskip:                               Uncategorized.      (line 1923)
-* mho:                                   Uncategorized.      (line 1925)
-* minipage:                              Environments.       (line 2874)
-* mit:                                   Font Commands.      (line 1479)
-* moveleft:                              Uncategorized.      (line 1927)
-* moveright:                             Uncategorized.      (line 1929)
-* mp:                                    Uncategorized.      (line 1931)
-* mu:                                    Uncategorized.      (line 1933)
-* multicolumn:                           Uncategorized.      (line 1935)
-* multicolumn <1>:                       Environments.       (line 2876)
-* music:                                 Environments.       (line 2878)
-* nabla:                                 Uncategorized.      (line 1937)
-* ne:                                    Uncategorized.      (line 1939)
-* nearrow:                               Uncategorized.      (line 1941)
-* neg:                                   Uncategorized.      (line 1943)
-* neq:                                   Uncategorized.      (line 1945)
-* newblock:                              Uncategorized.      (line 1947)
-* newcommand:                            Preamble Commands.  (line 2442)
-* newcount:                              Uncategorized.      (line 1949)
-* newcounter:                            Preamble Commands.  (line 2444)
-* newenvironment:                        Preamble Commands.  (line 2446)
-* newfont:                               Uncategorized.      (line 1952)
-* newif:                                 Preamble Commands.  (line 2448)
-* newlength:                             Preamble Commands.  (line 2450)
-* newpage:                               Uncategorized.      (line 1955)
-* newsavebox:                            Uncategorized.      (line 1957)
-* newtheorem:                            Preamble Commands.  (line 2452)
-* nobibliography:                        Uncategorized.      (line 1960)
-* nobreakspace:                          Uncategorized.      (line 1963)
-* nobreakspace <1>:                      Preamble Commands.  (line 2454)
-* nocite:                                Uncategorized.      (line 1965)
-* nofiles:                               Preamble Commands.  (line 2456)
-* noindent:                              Uncategorized.      (line 1967)
-* nolinebreak:                           Uncategorized.      (line 1969)
-* nonfrenchspacing:                      Uncategorized.      (line 1972)
-* nonumber:                              Uncategorized.      (line 1975)
-* nopagebreak:                           Uncategorized.      (line 1977)
-* normalfont:                            Font Commands.      (line 1480)
-* normalsize:                            Font Commands.      (line 1481)
-* notag:                                 Uncategorized.      (line 1980)
-* nu:                                    Uncategorized.      (line 1982)
-* numberline:                            Uncategorized.      (line 1984)
-* numero:                                French Commands.    (line 2574)
-* Numero:                                French Commands.    (line 2575)
-* numeros:                               French Commands.    (line 2576)
-* Numeros:                               French Commands.    (line 2577)
-* nwarrow:                               Uncategorized.      (line 1986)
-* oddsidemargin:                         Preamble Commands.  (line 2459)
-* og:                                    French Commands.    (line 2578)
-* omega:                                 Uncategorized.      (line 1988)
-* Omega:                                 Uncategorized.      (line 1990)
-* omicron:                               Uncategorized.      (line 1992)
-* onecolumn:                             Uncategorized.      (line 1994)
-* onlinecite:                            Uncategorized.      (line 1996)
-* opening:                               Letter Commands.    (line 2527)
-* oplus:                                 Uncategorized.      (line 1998)
-* oslash:                                Uncategorized.      (line 2000)
-* otimes:                                Uncategorized.      (line 2002)
-* output:                                Uncategorized.      (line 2004)
-* overline:                              Uncategorized.      (line 2007)
-* pagebreak:                             Uncategorized.      (line 2009)
-* pagenumbering:                         Uncategorized.      (line 2011)
-* pagenumbering <1>:                     Preamble Commands.  (line 2461)
-* pageref:                               Uncategorized.      (line 2014)
-* Pageref:                               HyperLatex Commands.
-                                                             (line 2745)
-* pagestyle:                             Uncategorized.      (line 2016)
-* pagestyle <1>:                         Preamble Commands.  (line 2464)
-* par:                                   Uncategorized.      (line 2019)
-* paragraph:                             Sectioning Commands.
-                                                             (line 1562)
-* paragraph*:                            Sectioning Commands.
-                                                             (line 1563)
-* parbox:                                Uncategorized.      (line 2021)
-* parindent:                             Preamble Commands.  (line 2466)
-* parskip:                               Preamble Commands.  (line 2468)
-* part:                                  Sectioning Commands.
-                                                             (line 1564)
-* part*:                                 Sectioning Commands.
-                                                             (line 1565)
-* partial:                               Uncategorized.      (line 2023)
-* perp:                                  Uncategorized.      (line 2025)
-* phi:                                   Uncategorized.      (line 2027)
-* Phi:                                   Uncategorized.      (line 2029)
-* pi:                                    Uncategorized.      (line 2031)
-* Pi:                                    Uncategorized.      (line 2033)
-* picture:                               Environments.       (line 2880)
-* pm:                                    Uncategorized.      (line 2035)
-* pointexclamation:                      French Commands.    (line 2579)
-* pointinterrogation:                    French Commands.    (line 2580)
-* pointvirgule:                          French Commands.    (line 2581)
-* possessivecite:                        Harvard Commands.   (line 2738)
-* prec:                                  Uncategorized.      (line 2037)
-* primo:                                 French Commands.    (line 2582)
-* printindex:                            Uncategorized.      (line 2039)
-* prod:                                  Uncategorized.      (line 2041)
-* prod <1>:                              Uncategorized.      (line 2043)
-* propto:                                Uncategorized.      (line 2045)
-* protect:                               Uncategorized.      (line 2047)
-* providecommand:                        Preamble Commands.  (line 2470)
-* ps:                                    Letter Commands.    (line 2529)
-* psfig:                                 Uncategorized.      (line 2050)
-* psfrag:                                Uncategorized.      (line 2052)
-* psi:                                   Uncategorized.      (line 2055)
-* Psi:                                   Uncategorized.      (line 2057)
-* qquad:                                 Uncategorized.      (line 2059)
-* quad:                                  Uncategorized.      (line 2061)
-* quarto:                                French Commands.    (line 2583)
-* quotation:                             Environments.       (line 2882)
-* quote:                                 Environments.       (line 2884)
-* r:                                     Special Characters. (line 1551)
-* raggedbottom:                          Preamble Commands.  (line 2472)
-* raggedright:                           Basic Commands.     (line 1442)
-* raisebox:                              Uncategorized.      (line 2063)
-* rangle:                                Uncategorized.      (line 2066)
-* rawhtml:                               Environments.       (line 2886)
-* rceil:                                 Uncategorized.      (line 2068)
-* Re:                                    Uncategorized.      (line 2070)
-* ref:                                   Uncategorized.      (line 2072)
-* Ref:                                   HyperLatex Commands.
-                                                             (line 2746)
-* refstepcounter:                        Uncategorized.      (line 2074)
-* renewcommand:                          Preamble Commands.  (line 2474)
-* renewenvironment:                      Preamble Commands.  (line 2476)
-* renewtheorem:                          Preamble Commands.  (line 2478)
-* resizebox:                             Preamble Commands.  (line 2481)
-* resizebox*:                            Preamble Commands.  (line 2483)
-* rfloor:                                Uncategorized.      (line 2076)
-* rfoot:                                 Preamble Commands.  (line 2485)
-* rhead:                                 Preamble Commands.  (line 2487)
-* rho:                                   Uncategorized.      (line 2078)
-* right:                                 Uncategorized.      (line 2080)
-* Rightarrow:                            Uncategorized.      (line 2082)
-* rightarrow:                            Uncategorized.      (line 2084)
-* rightharpoonup:                        Uncategorized.      (line 2086)
-* rightleftarrows:                       Uncategorized.      (line 2088)
-* rightleftharpoons:                     Uncategorized.      (line 2090)
-* rightrightarrows:                      Uncategorized.      (line 2092)
-* rm:                                    Font Commands.      (line 1482)
-* rm <1>:                                Environments.       (line 2889)
-* rmfamily:                              Font Commands.      (line 1483)
-* rmfamily <1>:                          Environments.       (line 2891)
-* Roman:                                 Uncategorized.      (line 2094)
-* roman:                                 Uncategorized.      (line 2097)
-* rq:                                    French Commands.    (line 2584)
-* rqq:                                   French Commands.    (line 2585)
-* rule:                                  Uncategorized.      (line 2100)
-* S:                                     HyperLatex Commands.
-                                                             (line 2747)
-* samepage:                              Uncategorized.      (line 2102)
-* savebox:                               Uncategorized.      (line 2105)
-* sbox:                                  Uncategorized.      (line 2108)
-* sc:                                    Font Commands.      (line 1484)
-* sc <1>:                                Environments.       (line 2893)
-* scfamily:                              Font Commands.      (line 1485)
-* scriptsize:                            Font Commands.      (line 1486)
-* scshape:                               Font Commands.      (line 1487)
-* scshape <1>:                           Environments.       (line 2895)
-* searrow:                               Uncategorized.      (line 2111)
-* section:                               Sectioning Commands.
-                                                             (line 1566)
-* section*:                              Sectioning Commands.
-                                                             (line 1567)
-* secundo:                               French Commands.    (line 2586)
-* setbox:                                Uncategorized.      (line 2113)
-* setcounter:                            Preamble Commands.  (line 2489)
-* setlength:                             Preamble Commands.  (line 2491)
-* settowidth:                            Uncategorized.      (line 2115)
-* sf:                                    Font Commands.      (line 1488)
-* sf <1>:                                Environments.       (line 2897)
-* sffamily:                              Font Commands.      (line 1489)
-* sffamily <1>:                          Environments.       (line 2899)
-* shortcite:                             Apacite Commands.   (line 2714)
-* shortcite <1>:                         AuthorDate Commands.
-                                                             (line 2723)
-* shortciteA:                            Apacite Commands.   (line 2715)
-* shortciteauthor:                       Apacite Commands.   (line 2716)
-* shortciteNP:                           Apacite Commands.   (line 2717)
-* sigma:                                 Uncategorized.      (line 2118)
-* Sigma:                                 Uncategorized.      (line 2120)
-* signature:                             Preamble Commands.  (line 2493)
-* signature <1>:                         Letter Commands.    (line 2531)
-* sim:                                   Uncategorized.      (line 2122)
-* simeq:                                 Uncategorized.      (line 2124)
-* sl:                                    Font Commands.      (line 1490)
-* sl <1>:                                Environments.       (line 2901)
-* SLiTeX:                                Logos.              (line 1526)
-* sloppypar:                             Environments.       (line 2903)
-* slshape:                               Font Commands.      (line 1491)
-* slshape <1>:                           Environments.       (line 2905)
-* small:                                 Font Commands.      (line 1492)
-* small <1>:                             Environments.       (line 2907)
-* smallskip:                             Uncategorized.      (line 2126)
-* spadesuit:                             Uncategorized.      (line 2128)
-* sqrt:                                  Uncategorized.      (line 2130)
-* ssmall:                                Font Commands.      (line 1493)
-* stackrel:                              Uncategorized.      (line 2132)
-* stepcounter:                           Uncategorized.      (line 2134)
-* stretch:                               Uncategorized.      (line 2137)
-* subparagraph:                          Sectioning Commands.
-                                                             (line 1568)
-* subparagraph*:                         Sectioning Commands.
-                                                             (line 1569)
-* subsection:                            Sectioning Commands.
-                                                             (line 1570)
-* subsection*:                           Sectioning Commands.
-                                                             (line 1571)
-* subset:                                Uncategorized.      (line 2140)
-* subseteq:                              Uncategorized.      (line 2142)
-* subsubsection:                         Sectioning Commands.
-                                                             (line 1572)
-* subsubsection*:                        Sectioning Commands.
-                                                             (line 1573)
-* succ:                                  Uncategorized.      (line 2144)
-* sum:                                   Uncategorized.      (line 2146)
-* sum <1>:                               Uncategorized.      (line 2148)
-* superieura:                            French Commands.    (line 2587)
-* supset:                                Uncategorized.      (line 2150)
-* supseteq:                              Uncategorized.      (line 2152)
-* surd:                                  Uncategorized.      (line 2154)
-* swarrow:                               Uncategorized.      (line 2156)
-* tabbing:                               Environments.       (line 2909)
-* table:                                 Environments.       (line 2911)
-* table*:                                Environments.       (line 2913)
-* tableofcontents:                       Uncategorized.      (line 2158)
-* tabular:                               Environments.       (line 2915)
-* tabular*:                              Environments.       (line 2917)
-* tau:                                   Uncategorized.      (line 2160)
-* tertio:                                French Commands.    (line 2588)
-* TeX:                                   Logos.              (line 1527)
-* textalpha:                             Uncategorized.      (line 2162)
-* textbeta:                              Uncategorized.      (line 2164)
-* textbf:                                Font Commands.      (line 1494)
-* textbullet:                            Uncategorized.      (line 2166)
-* textchi:                               Uncategorized.      (line 2168)
-* textcolor:                             Uncategorized.      (line 2170)
-* textDelta:                             Uncategorized.      (line 2172)
-* textdelta:                             Uncategorized.      (line 2174)
-* textellipsis:                          Uncategorized.      (line 2176)
-* textepsilon:                           Uncategorized.      (line 2178)
-* texteta:                               Uncategorized.      (line 2180)
-* textfont:                              Font Commands.      (line 1495)
-* textGamma:                             Uncategorized.      (line 2182)
-* textgamma:                             Uncategorized.      (line 2184)
-* textheight:                            Preamble Commands.  (line 2495)
-* textiota:                              Uncategorized.      (line 2186)
-* textit:                                Font Commands.      (line 1496)
-* textkappa:                             Uncategorized.      (line 2188)
-* textLambda:                            Uncategorized.      (line 2190)
-* textlambda:                            Uncategorized.      (line 2192)
-* textmd:                                Font Commands.      (line 1497)
-* textmu:                                Uncategorized.      (line 2194)
-* textnormal:                            Font Commands.      (line 1498)
-* textnu:                                Uncategorized.      (line 2196)
-* textOmega:                             Uncategorized.      (line 2198)
-* textomega:                             Uncategorized.      (line 2200)
-* textperiodcentered:                    Uncategorized.      (line 2202)
-* textPhi:                               Uncategorized.      (line 2204)
-* textphi:                               Uncategorized.      (line 2206)
-* textPi:                                Uncategorized.      (line 2208)
-* textpi:                                Uncategorized.      (line 2210)
-* textPsi:                               Uncategorized.      (line 2212)
-* textpsi:                               Uncategorized.      (line 2214)
-* textrm:                                Font Commands.      (line 1499)
-* textsc:                                Font Commands.      (line 1500)
-* textsf:                                Font Commands.      (line 1501)
-* textSigma:                             Uncategorized.      (line 2216)
-* textsigma:                             Uncategorized.      (line 2218)
-* textsl:                                Font Commands.      (line 1502)
-* textsubscript:                         Uncategorized.      (line 2220)
-* textsuperscript:                       Uncategorized.      (line 2222)
-* textTau:                               Uncategorized.      (line 2224)
-* texttau:                               Uncategorized.      (line 2226)
-* textTheta:                             Uncategorized.      (line 2228)
-* texttheta:                             Uncategorized.      (line 2230)
-* texttt:                                Font Commands.      (line 1503)
-* textup:                                Font Commands.      (line 1504)
-* textwidth:                             Preamble Commands.  (line 2497)
-* textXi:                                Uncategorized.      (line 2232)
-* textxi:                                Uncategorized.      (line 2234)
-* textzeta:                              Uncategorized.      (line 2236)
-* thanks:                                Uncategorized.      (line 2238)
-* the:                                   Basic Commands.     (line 1443)
-* thebibliography:                       Environments.       (line 2919)
-* theendnotes:                           Preamble Commands.  (line 2499)
-* theindex:                              Environments.       (line 2921)
-* thepage:                               Preamble Commands.  (line 2501)
-* therefore:                             Uncategorized.      (line 2240)
-* Theta:                                 Uncategorized.      (line 2242)
-* theta:                                 Uncategorized.      (line 2244)
-* thispagestyle:                         Preamble Commands.  (line 2503)
-* tikzpicture:                           Uncategorized.      (line 2246)
-* tilde:                                 Special Characters. (line 1552)
-* times:                                 Uncategorized.      (line 2248)
-* tiny:                                  Font Commands.      (line 1505)
-* title:                                 Uncategorized.      (line 2250)
-* titlepage:                             Environments.       (line 2924)
-* to:                                    Uncategorized.      (line 2252)
-* today:                                 Basic Commands.     (line 1444)
-* topmargin:                             Preamble Commands.  (line 2506)
-* triangleleft:                          Uncategorized.      (line 2254)
-* triangleright:                         Uncategorized.      (line 2256)
-* tt:                                    Font Commands.      (line 1506)
-* tt <1>:                                Environments.       (line 2926)
-* ttfamily:                              Font Commands.      (line 1507)
-* ttfamily <1>:                          Environments.       (line 2928)
-* twocolumn:                             Uncategorized.      (line 2258)
-* typeaout:                              Uncategorized.      (line 2260)
-* Typein:                                Uncategorized.      (line 2263)
-* typein:                                Uncategorized.      (line 2266)
-* typeout:                               Uncategorized.      (line 2269)
-* u:                                     Special Characters. (line 1553)
-* underbar:                              Font Commands.      (line 1508)
-* underline:                             Font Commands.      (line 1509)
-* up:                                    French Commands.    (line 2589)
-* Uparrow:                               Uncategorized.      (line 2272)
-* uparrow:                               Uncategorized.      (line 2274)
-* updownarrow:                           Uncategorized.      (line 2276)
-* Updownarrow:                           Uncategorized.      (line 2278)
-* upshape:                               Font Commands.      (line 1510)
-* upsilon:                               Uncategorized.      (line 2280)
-* Upsilon:                               Uncategorized.      (line 2282)
-* url:                                   Uncategorized.      (line 2284)
-* usebox:                                Uncategorized.      (line 2286)
-* usepackage:                            Preamble Commands.  (line 2508)
-* usepackage [options] {acronym}:        Acronym Commands.   (line 2777)
-* uv:                                    Czech Commands.     (line 2554)
-* v:                                     Special Characters. (line 1554)
-* value:                                 Uncategorized.      (line 2289)
-* varepsilon:                            Uncategorized.      (line 2291)
-* varnothing:                            Uncategorized.      (line 2293)
-* varphi:                                Uncategorized.      (line 2295)
-* varpi:                                 Uncategorized.      (line 2297)
-* varpropto:                             Uncategorized.      (line 2299)
-* varsigma:                              Uncategorized.      (line 2301)
-* vartheta:                              Uncategorized.      (line 2303)
-* vbox:                                  Uncategorized.      (line 2305)
-* vcenter:                               Basic Commands.     (line 1445)
-* vdots:                                 Uncategorized.      (line 2307)
-* vec:                                   Special Characters. (line 1555)
-* vee:                                   Uncategorized.      (line 2309)
-* verb:                                  Uncategorized.      (line 2311)
-* verb*:                                 Uncategorized.      (line 2313)
-* verbatim:                              Environments.       (line 2930)
-* Verbatim:                              Environments.       (line 2932)
-* verbositylevel:                        Preamble Commands.  (line 2510)
-* verse:                                 Environments.       (line 2934)
-* voffset:                               Preamble Commands.  (line 2512)
-* vref:                                  Uncategorized.      (line 2315)
-* vsize:                                 Uncategorized.      (line 2317)
-* vskip:                                 Uncategorized.      (line 2319)
-* vspace:                                Uncategorized.      (line 2321)
-* vspace*:                               Uncategorized.      (line 2323)
-* wedge:                                 Uncategorized.      (line 2325)
-* wp:                                    Uncategorized.      (line 2327)
-* xi:                                    Uncategorized.      (line 2329)
-* Xi:                                    Uncategorized.      (line 2331)
-* xlink:                                 HyperLatex Commands.
-                                                             (line 2748)
-* zeta:                                  Uncategorized.      (line 2333)
-
 10 Concept Index
 ****************
 
-* Menu:
-
-* %latex2rtf:                            Conditional Parsing.
-                                                             (line 1072)
-* APA Support:                           APA Support.        (line 1031)
-* apacite:                               Cross References.   (line  837)
-* apalike:                               Cross References.   (line  837)
-* apanat1b:                              Cross References.   (line  837)
-* authordate:                            Cross References.   (line  837)
-* babel:                                 Language Support.   (line  781)
-* bibliography:                          Cross References.   (line  825)
-* bibliography, apacite:                 Cross References.   (line  837)
-* bibliography, apalike:                 Cross References.   (line  837)
-* bibliography, apanat1b:                Cross References.   (line  837)
-* bibliography, authordate:              Cross References.   (line  837)
-* bibliography, BibTeX:                  Cross References.   (line  830)
-* bibliography, harvard:                 Cross References.   (line  837)
-* bibliography, natbib:                  Cross References.   (line  837)
-* BibTeX:                                Cross References.   (line  830)
-* Conditional Parsing:                   Conditional Parsing.
-                                                             (line 1072)
-* Copyright issues:                      History.            (line 1288)
-* direct.cfg:                            Input Processing.   (line 1044)
-* double spacing:                        Page Formatting.    (line  870)
-* equations:                             Equations.          (line  880)
-* footnotes:                             Cross References.   (line  847)
-* geometry package:                      Page Formatting.    (line  870)
-* graphics:                              Graphics.           (line  986)
-* harvard:                               Cross References.   (line  837)
-* History of the program:                History.            (line 1288)
-* hyperlatex:                            Hyperlatex.         (line 1008)
-* iflatextortf:                          Conditional Parsing.
-                                                             (line 1072)
-* ignore.cfg:                            Input Processing.   (line 1044)
-* index:                                 Cross References.   (line  849)
-* input processing:                      Input Processing.   (line 1044)
-* installation:                          Installation.       (line   85)
-* language support:                      Language Support.   (line  781)
-* line spacing:                          Page Formatting.    (line  870)
-* margins:                               Page Formatting.    (line  870)
-* math:                                  Math and Special Symbols.
-                                                             (line  933)
-* natbib:                                Cross References.   (line  837)
-* page formatting:                       Page Formatting.    (line  870)
-* pagestyles:                            Pagestyles.         (line  995)
-* RTF sucks:                             Introduction.       (line   74)
-* setspace package:                      Page Formatting.    (line  870)
-* special symbols:                       Math and Special Symbols.
-                                                             (line  933)
-* tables:                                Tables.             (line  973)
-
-LaTeX2RTF
-1 Introduction
-2 Installation
-  2.1 General
-  2.2 Obtaining LaTeX2RTF
-  2.3 UNIX
-  2.4 plain DOS
-  2.5 MS Windows systems
-  2.6 Macintosh
-  2.7 Problems Compiling
-  2.8 Problems with 'make check'
-3 Using LaTeX2RTF
-  3.1 General Assumptions
-  3.2 LaTeX2RTF Options
-  3.3 Debugging
-4 Features
-  4.1 LaTeX2e
-  4.2 Unicode Support
-  4.3 Input Encoding
-  4.4 Language Support
-  4.5 Cross References
-  4.6 Page Formatting
-  4.7 Equations
-  4.8 Math and Special Symbols
-  4.9 Tables
-  4.10 Graphics
-  4.11 Pagestyles
-  4.12 Hyperlatex
-  4.13 APA Support
-5 Configuration
-  5.1 Input processing
-  5.2 Conditional Parsing
-  5.3 Output Formatting
-  5.4 Direct Conversion
-  5.5 Ignore Command
-  5.6 Font Configuration
-  5.7 Language Configuration
-6 Error Messages and Logging
-7 History & Copyright
-8 LaTeX2RTF under Development
-  8.1 Unimplemented Features
-  8.2 Missing options
-  8.3 Known Bugs
-  8.4 Reporting Bugs
-  8.5 Todo List
-  8.6 Command List
-    8.6.1 General Commands
-      8.6.1.1 Basic Commands
-      8.6.1.2 Font Commands
-      8.6.1.3 Logos
-      8.6.1.4 Special Characters
-      8.6.1.5 Sectioning Commands
-      8.6.1.6 Uncategorized
-    8.6.2 Preamble Commands
-    8.6.3 Letter Commands
-    8.6.4 Language Commands
-      8.6.4.1 German Commands
-      8.6.4.2 Czech Commands
-      8.6.4.3 French Commands
-      8.6.4.4 Russian Commands
-    8.6.5 Citation Commands
-      8.6.5.1 Apacite Commands
-      8.6.5.2 AuthorDate Commands
-      8.6.5.3 Harvard Commands
-      8.6.5.4 HyperLatex Commands
-      8.6.5.5 Apacite Commands
-    8.6.6 Acronym Commands
-    8.6.7 Other Commands
-    8.6.8 Environments
-9 Function Index
-10 Concept Index
